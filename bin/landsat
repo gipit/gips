@@ -4,7 +4,7 @@ import os, sys, argparse
 import datetime
 import agspy.utils.pretty as pretty
 import multiprocessing
-import agspy.data.landsatlib as landsat
+import gippy.landsat as landsat
 import traceback
 
 if __name__ == "__main__":
@@ -61,7 +61,7 @@ if __name__ == "__main__":
     # Auto-import list of algorithms in alg module
     algorithms = ['acloud']
     for alg in algorithms:
-        exec('import agspy.alg.%s as %s' % (alg,alg))
+        exec('import gippy.algorithms.%s as %s' % (alg,alg))
         exec('%s.add_options(psubparser,[gparser,pparser])' % alg)
 
     args = parser0.parse_args()

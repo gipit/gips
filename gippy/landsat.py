@@ -12,7 +12,7 @@ import tarfile
 from copy import deepcopy as deepcopy
 
 import gippy
-from agspy.data.atmosphere import atmosphere
+from gippy.atmosphere import atmosphere
 
 import traceback
 
