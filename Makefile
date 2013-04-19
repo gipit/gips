@@ -13,6 +13,7 @@ install:
 	cp GIP/gippy/gippylib.py /usr/lib/python2.7/
 	cp bin/* /usr/local/bin/
 	cp -R gippy /usr/lib/python2.7/
+	pip install -r requirements.txt
 
 clean:
 	rm /usr/lib/libgip.so
