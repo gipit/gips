@@ -1,0 +1,1 @@
+-e git://github.com/matthewhanson/Py6S.git@ags#egg=Py6S

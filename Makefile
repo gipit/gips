@@ -1,8 +1,10 @@
 install_debug:
-	cp gip/bin/Debug/libgip.so /usr/lib/	
-	cp giputils/bin/Debug/* /usr/local/bin/
-	cp gippy/bin/Debug/_gippylib.so /usr/lib/python2.7/
-	cp gippy/gippy.py /usr/lib/python2.7/
+	cp GIP/gip/bin/Debug/libgip.so /usr/lib/	
+	cp GIP/giputils/bin/Debug/* /usr/local/bin/
+	cp GIP/gippy/bin/Debug/_gippylib.so /usr/lib/python2.7/
+	cp GIP/gippy/gippylib.py /usr/lib/python2.7/
+	cp bin/* /usr/local/bin/
+	cp -R gippy /usr/lib/python2.7/
 
 install:
 	cp GIP/gip/bin/Release/libgip.so /usr/lib/	
