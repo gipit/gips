@@ -1,0 +1,33 @@
+#!/usr/bin/env python
+
+import os, argparse
+import gippy
+
+if __name__ == "__main__":
+	prog = os.path.split(__file__)[1]
+	hformat = argparse.ArgumentDefaultsHelpFormatter
+	parser0 = argparse.ArgumentParser(prog=prog, formatter_class=hformat, description='Geospatial Image Process IT!')
+	subparser = parser0.add_subparsers(dest='command')
+
+	# Global options
+	gparser = argparse.ArgumentParser(add_help=False, formatter_class=hformat)
+	gparser.add_argument('--out', help='Output filename', default='')
+	gparser.add_argument('--format', help='Output format', default='GTiff')
+
+
+	# Class change
+	parser = subparser.add_parser('classmod',help='Classification Modifier', parents=[gparser], formatter_class=hformat)
+	group = parser.add_argument_group('algorithm arguments')
+	group.add_argument('image1', help='Input Image')
+	group.add_argument('c2c', help='Change class from A to B when operator is true (A,B)')
+	group.add_argument('image2', help='Operand Image')
+	group.add_argument('op', help='Comparison operator (lt, gt, eq)')
+	group.add_argument('th', help='Threshold used with comparison operator')
+
+	args = parser0.parse_args()
+
+	#eval('%s.process(args.command)' % args.command)
+
+	if args.command == 'classmod':
+
+

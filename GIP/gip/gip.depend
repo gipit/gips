@@ -1,0 +1,349 @@
+# depslib dependency file v1.0
+1365011838 source:/home/mhanson/work/GIP/gip/GeoAlgorithms.cpp
+	<gip/Options.h>
+	<gip/GeoAlgorithms.h>
+	<gip/GeoImageIO.h>
+	<gip/gip_CImg.h>
+
+1365000689 /home/mhanson/work/GIP/gip//gip/GeoAlgorithms.h
+	<gip/GeoImage.h>
+	<gip/GeoRaster.h>
+
+1365010585 /home/mhanson/work/GIP/gip//gip/GeoImage.h
+	<gip/Colors.h>
+	<gip/GeoData.h>
+	<gip/GeoRaster.h>
+	<gip/GeoRasterIO.h>
+
+1364225597 /home/mhanson/work/GIP/gip//gip/GeoData.h
+	<vector>
+	<string>
+	<gdal/gdal_priv.h>
+	<boost/shared_ptr.hpp>
+	<boost/geometry/geometry.hpp>
+	<boost/geometry/geometries/point_xy.hpp>
+	<boost/filesystem.hpp>
+	<gip/Utils.h>
+
+1351804987 /usr/include/gdal/gdal_priv.h
+	"gdal.h"
+	"gdal_frmts.h"
+	"cpl_vsi.h"
+	"cpl_conv.h"
+	"cpl_string.h"
+	"cpl_minixml.h"
+	<vector>
+
+1351804986 /usr/include/gdal/gdal.h
+	"gdal_version.h"
+	"cpl_port.h"
+	"cpl_error.h"
+
+1351804987 /usr/include/gdal/gdal_version.h
+
+1351804986 /usr/include/gdal/cpl_port.h
+	<vld.h>
+	"cpl_config.h"
+	<stdio.h>
+	<stdlib.h>
+	<math.h>
+	<stdarg.h>
+	<string.h>
+	<ctype.h>
+	<limits.h>
+	<time.h>
+	<wce_time.h>
+	<wce_errno.h>
+	<errno.h>
+	<locale.h>
+	<direct.h>
+	<strings.h>
+	<dbmalloc.h>
+	<dmalloc.h>
+	<float.h>
+
+1351804986 /usr/include/gdal/cpl_config.h
+
+1351804986 /usr/include/gdal/cpl_error.h
+	"cpl_port.h"
+
+1351804986 /usr/include/gdal/gdal_frmts.h
+	"cpl_port.h"
+
+1351804986 /usr/include/gdal/cpl_vsi.h
+	"cpl_port.h"
+	<unistd.h>
+	<sys/stat.h>
+	<wce_stat.h>
+	"cpl_error.h"
+
+1351804986 /usr/include/gdal/cpl_conv.h
+	"cpl_port.h"
+	"cpl_vsi.h"
+	"cpl_error.h"
+
+1351804986 /usr/include/gdal/cpl_string.h
+	"cpl_vsi.h"
+	"cpl_error.h"
+	"cpl_conv.h"
+	<string>
+
+1351804986 /usr/include/gdal/cpl_minixml.h
+	"cpl_port.h"
+
+1355349584 /home/mhanson/work/GIP/gip//gip/Options.h
+	<string>
+	<boost/program_options.hpp>
+	<boost/filesystem.hpp>
+	<gip/Colors.h>
+
+1354813380 /home/mhanson/work/GIP/gip//gip/gip.h
+	<iostream>
+	<sstream>
+	<map>
+	<gdal_priv.h>
+
+1365010618 /home/mhanson/work/GIP/gip//gip/GeoRaster.h
+	<boost/filesystem.hpp>
+	<boost/geometry/geometry.hpp>
+	<boost/geometry/geometries/point_xy.hpp>
+	<gip/GeoData.h>
+	<gip/gip_CImg.h>
+	<gip/Sensor.h>
+	<gip/Atmosphere.h>
+	<iostream>
+	<iomanip>
+
+1300461336 /home/mhanson/work/GIP/gip//gip/gip_CImg.h
+	<CImg.h>
+
+1354642859 /home/mhanson/work/GIP/gip//CImg.h
+	<cstdio>
+	<cstdlib>
+	<cstdarg>
+	<cstring>
+	<cmath>
+	<ctime>
+	<exception>
+	<sys/types.h>
+	<sys/time.h>
+	<unistd.h>
+	<windows.h>
+	<shlobj.h>
+	<process.h>
+	<io.h>
+	<stdio.h>
+	<X11/Xlib.h>
+	<X11/Xutil.h>
+	<X11/keysym.h>
+	<pthread.h>
+	<sys/ipc.h>
+	<sys/shm.h>
+	<X11/extensions/XShm.h>
+	<X11/extensions/Xrandr.h>
+	"omp.h"
+	<cstddef>
+	"cv.h"
+	"highgui.h"
+	"png.h"
+	"jpeglib.h"
+	"setjmp.h"
+	"tiffio.h"
+	"minc_io_simple_volume.h"
+	"minc_1_simple.h"
+	"minc_1_simple_rw.h"
+	"avformat.h"
+	"avcodec.h"
+	"swscale.h"
+	"zlib.h"
+	"Magick++.h"
+	"fftw3.h"
+	"Board.h"
+	"ImfRgbaFile.h"
+	"ImfInputFile.h"
+	"ImfChannelList.h"
+	"ImfMatrixAttribute.h"
+	"ImfArray.h"
+	"CImg.h"
+
+1365011856 /home/mhanson/work/GIP/gip//gip/GeoImageIO.h
+	<gip/GeoImage.h>
+	<gip/GeoRasterIO.h>
+
+1365000740 /home/mhanson/work/GIP/gip//gip/GeoRasterIO.h
+	<exception>
+	<gip/GeoRaster.h>
+	<cmath>
+
+1364494214 source:/home/mhanson/work/GIP/gip/GeoData.cpp
+	<gip/Options.h>
+	<gip/GeoData.h>
+	<boost/make_shared.hpp>
+	<iostream>
+
+1358963209 source:/home/mhanson/work/GIP/gip/GeoImage.cpp
+	<gip/GeoImage.h>
+	<gip/GeoRaster.h>
+
+1365011977 source:/home/mhanson/work/GIP/gip/GeoRaster.cpp
+	<gip/GeoRaster.h>
+	<gip/GeoImage.h>
+
+1364226383 source:/home/mhanson/work/GIP/gip/Options.cpp
+	<vector>
+	<fstream>
+	<gdal/gdal_priv.h>
+	<gip/Options.h>
+	<gip/Utils.h>
+
+1364501084 /home/mhanson/work/GIP/gip//gip/Utils.h
+	<iostream>
+	<sstream>
+	<string>
+
+1358190600 /home/mhanson/work/GIP/gip//gip/Colors.h
+	<map>
+	<string>
+
+1363798396 /home/mhanson/work/GIP/gip//gip/Atmosphere.h
+
+1363628909 /home/mhanson/work/GIP/gip//gip/Sensor.h
+
+1366212692 source:/home/mhanson/work/gippy/GIP/gip/GeoAlgorithms.cpp
+	<gip/Options.h>
+	<gip/GeoAlgorithms.h>
+	<gip/GeoImageIO.h>
+	<gip/gip_CImg.h>
+
+1355349584 /home/mhanson/work/gippy/GIP/gip//gip/Options.h
+	<string>
+	<boost/program_options.hpp>
+	<boost/filesystem.hpp>
+	<gip/Colors.h>
+
+1358190600 /home/mhanson/work/gippy/GIP/gip//gip/Colors.h
+	<map>
+	<string>
+
+1366212149 /home/mhanson/work/gippy/GIP/gip//gip/GeoAlgorithms.h
+	<gip/GeoImage.h>
+	<gip/GeoRaster.h>
+
+1365010585 /home/mhanson/work/gippy/GIP/gip//gip/GeoImage.h
+	<gip/Colors.h>
+	<gip/GeoData.h>
+	<gip/GeoRaster.h>
+	<gip/GeoRasterIO.h>
+
+1364225597 /home/mhanson/work/gippy/GIP/gip//gip/GeoData.h
+	<vector>
+	<string>
+	<gdal/gdal_priv.h>
+	<boost/shared_ptr.hpp>
+	<boost/geometry/geometry.hpp>
+	<boost/geometry/geometries/point_xy.hpp>
+	<boost/filesystem.hpp>
+	<gip/Utils.h>
+
+1364501084 /home/mhanson/work/gippy/GIP/gip//gip/Utils.h
+	<iostream>
+	<sstream>
+	<string>
+
+1366212542 /home/mhanson/work/gippy/GIP/gip//gip/GeoRaster.h
+	<boost/filesystem.hpp>
+	<boost/geometry/geometry.hpp>
+	<boost/geometry/geometries/point_xy.hpp>
+	<gip/GeoData.h>
+	<gip/gip_CImg.h>
+	<gip/Sensor.h>
+	<gip/Atmosphere.h>
+	<iostream>
+	<iomanip>
+
+1300461336 /home/mhanson/work/gippy/GIP/gip//gip/gip_CImg.h
+	<CImg.h>
+
+1354642859 /home/mhanson/work/gippy/GIP/gip//CImg.h
+	<cstdio>
+	<cstdlib>
+	<cstdarg>
+	<cstring>
+	<cmath>
+	<ctime>
+	<exception>
+	<sys/types.h>
+	<sys/time.h>
+	<unistd.h>
+	<windows.h>
+	<shlobj.h>
+	<process.h>
+	<io.h>
+	<stdio.h>
+	<X11/Xlib.h>
+	<X11/Xutil.h>
+	<X11/keysym.h>
+	<pthread.h>
+	<sys/ipc.h>
+	<sys/shm.h>
+	<X11/extensions/XShm.h>
+	<X11/extensions/Xrandr.h>
+	"omp.h"
+	<cstddef>
+	"cv.h"
+	"highgui.h"
+	"png.h"
+	"jpeglib.h"
+	"setjmp.h"
+	"tiffio.h"
+	"minc_io_simple_volume.h"
+	"minc_1_simple.h"
+	"minc_1_simple_rw.h"
+	"avformat.h"
+	"avcodec.h"
+	"swscale.h"
+	"zlib.h"
+	"Magick++.h"
+	"fftw3.h"
+	"Board.h"
+	"ImfRgbaFile.h"
+	"ImfInputFile.h"
+	"ImfChannelList.h"
+	"ImfMatrixAttribute.h"
+	"ImfArray.h"
+	"CImg.h"
+
+1363628909 /home/mhanson/work/gippy/GIP/gip//gip/Sensor.h
+
+1363798396 /home/mhanson/work/gippy/GIP/gip//gip/Atmosphere.h
+
+1365089670 /home/mhanson/work/gippy/GIP/gip//gip/GeoRasterIO.h
+	<exception>
+	<gip/GeoRaster.h>
+	<cmath>
+
+1365011856 /home/mhanson/work/gippy/GIP/gip//gip/GeoImageIO.h
+	<gip/GeoImage.h>
+	<gip/GeoRasterIO.h>
+
+1364494214 source:/home/mhanson/work/gippy/GIP/gip/GeoData.cpp
+	<gip/Options.h>
+	<gip/GeoData.h>
+	<boost/make_shared.hpp>
+	<iostream>
+
+1366212647 source:/home/mhanson/work/gippy/GIP/gip/GeoImage.cpp
+	<gip/GeoImage.h>
+	<gip/GeoRaster.h>
+
+1365011977 source:/home/mhanson/work/gippy/GIP/gip/GeoRaster.cpp
+	<gip/GeoRaster.h>
+	<gip/GeoImage.h>
+
+1364226383 source:/home/mhanson/work/gippy/GIP/gip/Options.cpp
+	<vector>
+	<fstream>
+	<gdal/gdal_priv.h>
+	<gip/Options.h>
+	<gip/Utils.h>
+

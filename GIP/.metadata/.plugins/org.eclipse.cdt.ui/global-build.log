@@ -1,0 +1,7 @@
+
+**** Build of configuration Default for project gip ****
+
+make all 
+make: *** No rule to make target `all'.  Stop.
+
+**** Build Finished ****

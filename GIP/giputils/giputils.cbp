@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="giputils" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug_test">
+				<Option output="bin/Debug/gip_test" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+				<Linker>
+					<Add directory="../gip/bin/Debug" />
+				</Linker>
+			</Target>
+			<Target title="Release_test">
+				<Option output="bin/Release/gip_test" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add directory="../gip/bin/Release" />
+				</Linker>
+			</Target>
+			<Target title="Debug_info">
+				<Option output="bin/Debug/gip_info" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+				<Linker>
+					<Add directory="../gip/bin/Debug" />
+				</Linker>
+			</Target>
+			<Target title="Release_info">
+				<Option output="bin/Release/gip_info" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add directory="../gip/bin/Release" />
+				</Linker>
+			</Target>
+			<Target title="Debug_qtest">
+				<Option output="bin/Debug/gip_qtest" prefix_auto="1" extension_auto="1" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+			</Target>
+			<Target title="Debug_classchange">
+				<Option output="bin/Debug/gip_classchange" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+				<Linker>
+					<Add directory="../gip/bin/Debug" />
+				</Linker>
+			</Target>
+			<Target title="Release_classchange">
+				<Option output="bin/Release/gip_classchange" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add directory="../gip/bin/Release" />
+				</Linker>
+			</Target>
+		</Build>
+		<VirtualTargets>
+			<Add alias="Debug" targets="Debug_test;Debug_info;Debug_qtest;Debug_classchange;" />
+			<Add alias="Release" targets="Release_test;Release_info;Release_classchange;" />
+		</VirtualTargets>
+		<Compiler>
+			<Add option="-Wall" />
+			<Add option="-fexceptions" />
+			<Add directory="../gip" />
+		</Compiler>
+		<Linker>
+			<Add library="gip" />
+			<Add library="gdal" />
+			<Add library="boost_system" />
+			<Add library="boost_filesystem" />
+			<Add library="boost_program_options" />
+		</Linker>
+		<Unit filename="gip_classchange.cpp">
+			<Option target="Debug_classchange" />
+			<Option target="Release_classchange" />
+		</Unit>
+		<Unit filename="gip_info.cpp">
+			<Option target="Release_info" />
+			<Option target="Debug_info" />
+		</Unit>
+		<Unit filename="gip_qtest.cpp">
+			<Option target="Debug_qtest" />
+		</Unit>
+		<Unit filename="gip_test.cpp">
+			<Option target="Debug_test" />
+			<Option target="Release_test" />
+		</Unit>
+		<Extensions>
+			<code_completion />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

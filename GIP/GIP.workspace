@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_workspace_file>
+	<Workspace title="GIP">
+		<Project filename="gip/gip.cbp" />
+		<Project filename="giputils/giputils.cbp" active="1">
+			<Depends filename="gip/gip.cbp" />
+		</Project>
+		<Project filename="gippy/gippy.cbp">
+			<Depends filename="gip/gip.cbp" />
+		</Project>
+	</Workspace>
+</CodeBlocks_workspace_file>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_layout_file>
+	<ActiveTarget name="Release" />
+	<File name="gip_classchange.cpp" open="1" top="1" tabpos="3">
+		<Cursor position="2178" topLine="29" />
+	</File>
+	<File name="gip_info.cpp" open="1" top="0" tabpos="1">
+		<Cursor position="1011" topLine="0" />
+	</File>
+	<File name="gip_qtest.cpp" open="0" top="0" tabpos="0">
+		<Cursor position="1048" topLine="43" />
+	</File>
+	<File name="gip_test.cpp" open="0" top="0" tabpos="2">
+		<Cursor position="995" topLine="11" />
+	</File>
+</CodeBlocks_layout_file>
