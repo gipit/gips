@@ -24,6 +24,35 @@ def _interp(arr, x, y):
     b4 = arr[0,0] - arr[1,0] - arr[0,1] + arr[1,1]
     return b1 + b2*x + b3*y + b4*x*y
 
+def fetchmerra(date):
+    if date.year < 1993:
+        stream = 1
+    elif date.year < 2001:
+        stream = 2
+    else: stream = 3
+
+    minorversion = ['0','1']
+
+    for mv in minorversion:
+        hdf = 'MERRA%s0%s.prod.assim.inst6_3d_ana_Nv.%s.hdf' % (stream, date.strftime('%Y%m%d'),mv)
+        fname = os.path.join(_merraroot,product,date.strftime('%Y'),date.strftime('%m'),hdf)
+        if not os.path.exists(fname):
+            wfname = fname.replace(_merraroot,'ftp://goldsmr3.sci.gsfc.nasa.gov/data/s4pa/MERRA/')
+            try:
+                os.makedirs(os.path.dirname(fname))
+            except:
+                pass
+            import urllib
+            sys.stdout.write('%s: Downloading...' % hdf)
+            start = datetime.datetime.now()
+            try:
+                urllib.urlretrieve(wfname, fname)
+                print 'done %s' % datetime.datetime.now()-start
+                break
+            except:
+                pass
+    return fname
+
 def atmprofile(lat,lon,date):
     """ Fetch atmospheric profile from MERRA data """
     product = 'MAI6NVANA.5.2.0'
@@ -42,25 +71,8 @@ def atmprofile(lat,lon,date):
         timeindex = 3
     else: timeindex = 0
 
-    if date.year < 1993:
-        stream = 1
-    elif date.year < 2001:
-        stream = 2
-    else: stream = 3
-
-    hdf = 'MERRA%s00.prod.assim.inst6_3d_ana_Nv.%s.hdf' % (stream, date.strftime('%Y%m%d'))
-    fname = os.path.join(_merraroot,product,date.strftime('%Y'),date.strftime('%m'),hdf)
-    if not os.path.exists(fname):
-        wfname = fname.replace(_merraroot,'ftp://goldsmr3.sci.gsfc.nasa.gov/data/s4pa/MERRA/')
-        try:
-            os.makedirs(os.path.dirname(fname))
-        except:
-            pass
-        import urllib
-        sys.stdout.write('%s: Downloading...' % hdf)
-        start = datetime.datetime.now()
-        urllib.urlretrieve(wfname, fname)
-        print 'done %s' % datetime.datetime.now()-start
+    print 'fetch merra'
+    fname = fetchmerra(date)
 
     import nio
     f = nio.open_file(fname)
