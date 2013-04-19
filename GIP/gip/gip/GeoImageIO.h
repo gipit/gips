@@ -174,8 +174,8 @@ namespace gip {
             return mask;
 		}
 
-		//! Return a simple cloud mask
-        CImg<bool> BasicCloudMask(bbox chunk) const {
+		//! Return array of potential cloud pixels
+        CImg<bool> PCP(bbox chunk) const {
             CImg<float> nir = (*this)["NIR"].Read(chunk, RADIANCE);
             CImg<float> swir1 = (*this)["SWIR1"].Read(chunk, RADIANCE);
             CImg<float> swir2 = (*this)["SWIR2"].Read(chunk, RADIANCE);

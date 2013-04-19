@@ -177,16 +177,16 @@ namespace gip {
 	}
 
     //! Basic cloud mask
-    GeoImage BasicCloudMask(const GeoImage& image, string filename) {
+    GeoImage Fmask(const GeoImage& image, string filename) {
         GeoImageIO<float> imgin(image);
         GeoImageIO<unsigned char> imgout(GeoImage(filename,image,GDT_Byte,1));
-        //imgout.SetNoData(0);
+        imgout.SetNoData(0);
 
         CImg<unsigned char> cloudmask;
         std::vector<bbox> Chunks = image.Chunk();
         std::vector<bbox>::const_iterator iChunk;
         for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
-            cloudmask = imgin.BasicCloudMask(*iChunk);
+            cloudmask = imgin.PCP(*iChunk);
             //nodatamask = imgin.NoDataMask(*iChunk);
             //cimg_forXY(cloudmask,x,y) if (nodatamask(x,y))
 

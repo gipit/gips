@@ -29,7 +29,7 @@ namespace gip {
 	GeoImage AutoCloud(const GeoImage&, std::string, int=4000, float=0.2, float=14, float=0.2, int=20);
 
 	//! Create new file with a basic cloud mask
-	GeoImage BasicCloudMask(const GeoImage&, std::string);
+	GeoImage Fmask(const GeoImage&, std::string);
 
 	//! Spectral Matched Filter
 	//GeoImage SMF(const GeoImage& image, std::string, CImg<double>);

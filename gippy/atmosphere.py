@@ -25,6 +25,7 @@ def _interp(arr, x, y):
     return b1 + b2*x + b3*y + b4*x*y
 
 def fetchmerra(date):
+    product = 'MAI6NVANA.5.2.0'
     if date.year < 1993:
         stream = 1
     elif date.year < 2001:
@@ -34,7 +35,7 @@ def fetchmerra(date):
     minorversion = ['0','1']
 
     for mv in minorversion:
-        hdf = 'MERRA%s0%s.prod.assim.inst6_3d_ana_Nv.%s.hdf' % (stream, date.strftime('%Y%m%d'),mv)
+        hdf = 'MERRA%s0%s.prod.assim.inst6_3d_ana_Nv.%s.hdf' % (stream, mv, date.strftime('%Y%m%d'))
         fname = os.path.join(_merraroot,product,date.strftime('%Y'),date.strftime('%m'),hdf)
         if not os.path.exists(fname):
             wfname = fname.replace(_merraroot,'ftp://goldsmr3.sci.gsfc.nasa.gov/data/s4pa/MERRA/')
@@ -43,11 +44,9 @@ def fetchmerra(date):
             except:
                 pass
             import urllib
-            sys.stdout.write('%s: Downloading...' % hdf)
             start = datetime.datetime.now()
             try:
                 urllib.urlretrieve(wfname, fname)
-                print 'done %s' % datetime.datetime.now()-start
                 break
             except:
                 pass
@@ -55,7 +54,6 @@ def fetchmerra(date):
 
 def atmprofile(lat,lon,date):
     """ Fetch atmospheric profile from MERRA data """
-    product = 'MAI6NVANA.5.2.0'
     minutes = date.hour * 60 + date.minute
 
     # Determine best time to use
@@ -71,7 +69,6 @@ def atmprofile(lat,lon,date):
         timeindex = 3
     else: timeindex = 0
 
-    print 'fetch merra'
     fname = fetchmerra(date)
 
     import nio

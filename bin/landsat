@@ -59,7 +59,7 @@ if __name__ == "__main__":
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     psubparser = parser.add_subparsers(dest='alg')
     # Auto-import list of algorithms in alg module
-    algorithms = ['acloud']
+    algorithms = ['acloud','fmask']
     for alg in algorithms:
         exec('import gippy.algorithms.%s as %s' % (alg,alg))
         exec('%s.add_options(psubparser,[gparser,pparser])' % alg)

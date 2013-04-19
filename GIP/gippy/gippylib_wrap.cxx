@@ -15046,7 +15046,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_BasicCloudMask(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_Fmask(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   gip::GeoImage *arg1 = 0 ;
   std::string arg2 ;
@@ -15056,27 +15056,27 @@ SWIGINTERN PyObject *_wrap_BasicCloudMask(PyObject *SWIGUNUSEDPARM(self), PyObje
   PyObject * obj1 = 0 ;
   SwigValueWrapper< gip::GeoImage > result;
   
-  if (!PyArg_ParseTuple(args,(char *)"OO:BasicCloudMask",&obj0,&obj1)) SWIG_fail;
+  if (!PyArg_ParseTuple(args,(char *)"OO:Fmask",&obj0,&obj1)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1, SWIGTYPE_p_gip__GeoImage,  0  | 0);
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "BasicCloudMask" "', argument " "1"" of type '" "gip::GeoImage const &""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Fmask" "', argument " "1"" of type '" "gip::GeoImage const &""'"); 
   }
   if (!argp1) {
-    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "BasicCloudMask" "', argument " "1"" of type '" "gip::GeoImage const &""'"); 
+    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "Fmask" "', argument " "1"" of type '" "gip::GeoImage const &""'"); 
   }
   arg1 = reinterpret_cast< gip::GeoImage * >(argp1);
   {
     std::string *ptr = (std::string *)0;
     int res = SWIG_AsPtr_std_string(obj1, &ptr);
     if (!SWIG_IsOK(res) || !ptr) {
-      SWIG_exception_fail(SWIG_ArgError((ptr ? res : SWIG_TypeError)), "in method '" "BasicCloudMask" "', argument " "2"" of type '" "std::string""'"); 
+      SWIG_exception_fail(SWIG_ArgError((ptr ? res : SWIG_TypeError)), "in method '" "Fmask" "', argument " "2"" of type '" "std::string""'"); 
     }
     arg2 = *ptr;
     if (SWIG_IsNewObj(res)) delete ptr;
   }
   {
     try {
-      result = gip::BasicCloudMask((gip::GeoImage const &)*arg1,arg2);
+      result = gip::Fmask((gip::GeoImage const &)*arg1,arg2);
     } catch (const std::exception& e) {
       SWIG_exception(SWIG_RuntimeError, e.what());
     }
@@ -15504,7 +15504,7 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"Copy", _wrap_Copy, METH_VARARGS, NULL},
 	 { (char *)"Indices", _wrap_Indices, METH_VARARGS, NULL},
 	 { (char *)"AutoCloud", _wrap_AutoCloud, METH_VARARGS, NULL},
-	 { (char *)"BasicCloudMask", _wrap_BasicCloudMask, METH_VARARGS, NULL},
+	 { (char *)"Fmask", _wrap_Fmask, METH_VARARGS, NULL},
 	 { (char *)"InfReplace", _wrap_InfReplace, METH_VARARGS, NULL},
 	 { (char *)"reg", _wrap_reg, METH_VARARGS, NULL},
 	 { (char *)"Options_DefaultFormat", _wrap_Options_DefaultFormat, METH_VARARGS, NULL},

@@ -352,9 +352,9 @@ GeoImage_swigregister = _gippylib.GeoImage_swigregister
 GeoImage_swigregister(GeoImage)
 
 
-def BasicCloudMask(*args):
-  return _gippylib.BasicCloudMask(*args)
-BasicCloudMask = _gippylib.BasicCloudMask
+def Fmask(*args):
+  return _gippylib.Fmask(*args)
+Fmask = _gippylib.Fmask
 
 def InfReplace(*args):
   return _gippylib.InfReplace(*args)
