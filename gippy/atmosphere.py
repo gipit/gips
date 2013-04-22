@@ -50,6 +50,7 @@ def fetchmerra(date):
                 break
             except:
                 pass
+        else: break
     return fname
 
 def atmprofile(lat,lon,date):

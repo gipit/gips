@@ -38,7 +38,10 @@ def readmtl(filename):
                 tfile = tarfile.open(filename)
             else:
                 raise Exception('Not a valid landsat tar file')
-            mtl = ([f for f in tfile.getnames() if "MTL.txt" in f])[0]
+            try:
+                mtl = ([f for f in tfile.getnames() if "MTL.txt" in f])[0]
+            except:
+                raise Exception(': possibly an (unsupported) NLAPS processed file')
             tfile.extract(mtl,os.path.dirname(filename))
             filename = os.path.join(os.path.dirname(filename),mtl)
         else:
