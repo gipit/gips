@@ -27,7 +27,7 @@ from scipy.weave import converters
 # absolute filename bad, should at least come from landsatlib file
 vangname = '/titan/data/landsat/documents/StandardLandsatViewAngle.tif'
 
-def AddShadowMask(inputname, se_degrees, sa_degrees, cloudheight):
+def AddShadowMask(inputname, se_degrees, sa_degrees, cloudheight, bandnum=1):
 
     #required input is 1. a full cloudmask, 2. a full map of view angles in radians,
     #3. an output cloud shadowmask, 4. sunelevation in radians, 5. solarazimuth in radians,
@@ -69,7 +69,8 @@ def AddShadowMask(inputname, se_degrees, sa_degrees, cloudheight):
     #open full cloudmask
     
     fo_in=gdal.Open(inputname, gdal.GA_Update)
-    inmask=fo_in.ReadAsArray()
+    tband = fo_in.GetRasterBand(bandnum)
+    inmask=tband.ReadAsArray()
     proj = fo_in.GetProjection()
     gt = fo_in.GetGeoTransform()
     nx = fo_in.RasterXSize
@@ -129,7 +130,7 @@ def AddShadowMask(inputname, se_degrees, sa_degrees, cloudheight):
     #tfh.SetProjection(proj)
     #tfh.SetGeoTransform(gt)
 
-    tband = fo_in.GetRasterBand(1)
+    #tband = fo_in.GetRasterBand(bandnum)
     tband.WriteArray(outmask)
  
     fo_in = None
