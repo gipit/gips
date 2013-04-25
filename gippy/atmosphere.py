@@ -26,6 +26,10 @@ def _interp(arr, x, y):
 
 def fetchmerra(date):
     product = 'MAI6NVANA.5.2.0'
+    minutes = date.hour * 60 + date.minute
+    if minutes < 180:
+        date = date - datetime.timedelta(days=1)
+
     if date.year < 1993:
         stream = 1
     elif date.year < 2001:
@@ -61,7 +65,7 @@ def atmprofile(lat,lon,date):
     if minutes < 180:
         # use previous day midnight
         timeindex = 0
-        date = date - datetime.timedelta(days=1)
+        #date = date - datetime.timedelta(days=1)
     elif minutes < 540:
         timeindex = 1
     elif minutes < 900:

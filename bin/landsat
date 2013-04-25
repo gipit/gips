@@ -36,9 +36,10 @@ if __name__ == "__main__":
 
     # Misc
     #parser_info = subparser.add_parser('info',help='Print summary metadata', parents=[gparser])
-    parser_unzip = subparser.add_parser('unzip',help='Unzip Landsat tar file', parents=[gparser])
+    #parser_unzip = subparser.add_parser('unzip',help='Unzip Landsat tar file', parents=[gparser])
     parser_archive = subparser.add_parser('archive',help='Move files from this directory to Landsat archive')
     parser_clean = subparser.add_parser('clean',help='Clean archive of all temporary files')
+    parser_getmerra = subparser.add_parser('getmerra',help='Get MERRA profile for matching files', parents=[gparser])
 
     # General processing options
     pparser = argparse.ArgumentParser(add_help=False,formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -173,6 +174,20 @@ if __name__ == "__main__":
 
     elif args.command == 'clean':
         landsat.clean()
+
+    elif args.command == 'getmerra':
+        from gippy.atmosphere import fetchmerra
+        for pr in args.pathrow:
+            fnames = landsat.inventory(pr,args.dates)
+            print 'Downloading %s merra profiles' % len(fnames)
+            for f in fnames:
+                start = datetime.datetime.now()
+                try:
+                    meta = landsat.readmtl(f)
+                    merrafname = fetchmerra(meta['datetime'])
+                    print '%s: %s' % (os.path.basename(merrafname),datetime.datetime.now()-start)
+                except Exception,e:
+                    print '%s %s' % (os.path.basename(f)[:16],e) 
 
     else:
         print 'Command %s not recognized' % cmd

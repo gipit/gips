@@ -326,7 +326,7 @@ def process(img, fname_out, product='radi', datatype='Int16', verbose=1):
 
     # Set gippy verbosity to 1 less (so a v of 1 is verbose only for python code)
     gippy.Options.SetVerbose(verbose)
-    gippy.Options.SetChunkSize(32.0)
+    gippy.Options.SetChunkSize(64.0)
 
     # Copy input into output
     if product == 'radi' or product == 'refl' or product == 'temp':
@@ -365,8 +365,9 @@ def process(img, fname_out, product='radi', datatype='Int16', verbose=1):
         imgout = gippy.Indices(img,fname_out)
     elif product == 'temptest':
         meta = readmtl(img.Filename())
-        imgout = gippy.GeoImage(fname_out,img,gippy.GDT_Float32,3)
+        imgout = gippy.GeoImage(fname_out,img,gippy.GDT_Int16,3)
         imgout.SetNoData(-32768)
+        imgout.SetGain(0.01)
         band = img["LWIR"]
         band.ClearAtmosphere()
         gippy.Copy(band,imgout[0],gippy.REFLECTIVITY)
