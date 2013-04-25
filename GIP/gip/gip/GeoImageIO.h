@@ -146,9 +146,9 @@ namespace gip {
 
 		//! Return a mask of snow
 		CImg<bool> SnowMask(bbox chunk) const {
-            CImg<float> nir( *this["NIR"].Read(chunk, RADIANCE) );
-            CImg<float> green( *this["Green"].Read(chunk, RADIANCE) );
-            CImg<float> temp( *this["LWIR"].Read(chunk, RADIANCE) );
+            CImg<float> nir( *this["NIR"].Read(chunk, REFLECTIVITY) );
+            CImg<float> green( *this["Green"].Read(chunk, REFLECTIVITY) );
+            CImg<float> temp( *this["LWIR"].Read(chunk, REFLECTIVITY) );
 
             float th_nir = 0.11;
             float th_green = 0.1;
@@ -161,48 +161,22 @@ namespace gip {
             return mask;
 		}
 
-        //! Return a mask of water
+        //! Return a mask of water (and possibley clear-sky pixels)
 		CImg<bool> WaterMask(bbox chunk) const {
-            CImg<float> red( *this["Red"].Read(chunk, RADIANCE) );
-            CImg<float> nir( *this["NIR"].Read(chunk, RADIANCE) );
-            CImg<float> ndvi( NDVI(chunk) );
-
-            CImg<bool> mask(red);
+            CImg<float> red( (*this)["Red"].Read(chunk, REFLECTIVITY) );
+            CImg<float> nir( (*this)["NIR"].Read(chunk, REFLECTIVITY) );
+            CImg<float> ndvi = (nir-red).get_div(nir+red);
+            CImg<bool> mask(red.width(),red.height(),1,1,false);
             cimg_forXY(mask,x,y) {
-                if ((ndvi(x,y) < 0.01 && nir < 0.11) || (ndvi < 0.1 && nir < 0.05)) mask(x,y) = true;
+                if ( ((ndvi(x,y) < 0.01) && (nir(x,y) < 0.11)) || ((ndvi(x,y) < 0.1) && (nir(x,y) < 0.05)) ) mask(x,y) = true;
             }
             return mask;
 		}
 
-		//! Return array of potential cloud pixels
-        CImg<bool> PCP(bbox chunk) const {
-            CImg<float> nir = (*this)["NIR"].Read(chunk, RADIANCE);
-            CImg<float> swir1 = (*this)["SWIR1"].Read(chunk, RADIANCE);
-            CImg<float> swir2 = (*this)["SWIR2"].Read(chunk, RADIANCE);
-
-            CImg<float> temp = (*this)["LWIR"].Read(chunk, REFLECTIVITY);
-
-            CImg<float> ndvi = NDVI(chunk);
-            CImg<float> ndsi = NDSI(chunk);
-
-            float th_swir2( 0.03 );
-            float th_temp( 27 );
-            float th_ndsi( 0.8 );
-            float th_ndvi( 0.8 );
-
-            CImg<bool> mask =
-                swir2.threshold(th_swir2) & temp.threshold(th_temp,false,true)^=1
-                & ndsi.threshold(th_ndsi,false,true)^=1 & ndvi.threshold(th_ndvi,false,true)^=1
-                & HazeMask(chunk)
-                & Whiteness(chunk).get_threshold(0.7,false,true)^=1
-                & nir.div(swir1).threshold(0.75);
-            return mask;
-        }
-
         //! Return haze mask
         CImg<bool> HazeMask(bbox chunk) const {
-            CImg<float> red( (*this)["Red"].Read(chunk, RADIANCE) );
-            CImg<float> blue( (*this)["Blue"].Read(chunk, RADIANCE) );
+            CImg<float> red( (*this)["Red"].Read(chunk, REFLECTIVITY) );
+            CImg<float> blue( (*this)["Blue"].Read(chunk, REFLECTIVITY) );
             CImg<bool> mask( (blue - 0.5*red - 0.08).threshold(0.0) );
             return mask;
         }

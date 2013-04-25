@@ -352,10 +352,6 @@ GeoImage_swigregister = _gippylib.GeoImage_swigregister
 GeoImage_swigregister(GeoImage)
 
 
-def Fmask(*args):
-  return _gippylib.Fmask(*args)
-Fmask = _gippylib.Fmask
-
 def InfReplace(*args):
   return _gippylib.InfReplace(*args)
 InfReplace = _gippylib.InfReplace
@@ -412,6 +408,10 @@ Indices = _gippylib.Indices
 def AutoCloud(*args):
   return _gippylib.AutoCloud(*args)
 AutoCloud = _gippylib.AutoCloud
+
+def Fmask(*args):
+  return _gippylib.Fmask(*args)
+Fmask = _gippylib.Fmask
 
 def Options_DefaultFormat():
   return _gippylib.Options_DefaultFormat()

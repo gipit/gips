@@ -25,7 +25,7 @@ namespace gip {
 
 		//! \name File I/O
 		//! Retrieve a piece of the image as a CImg
-		CImg<T> Read(bbox chunk, UNITS units=RADIANCE) const {
+		CImg<T> Read(bbox chunk, UNITS units=RAW) const {
 			point p1 = chunk.min_corner();
 			point p2 = chunk.max_corner();
 			int width = p2.x()-p1.x()+1;
