@@ -191,7 +191,7 @@ def read(filename, bandnums=[],verbose=False):
     for b in bandnums:
         fname = meta['filenames'][b-1]
         if not os.path.exists(fname):
-            if verbose > 1: print '\tExtracting ',fname
+            #if verbose > 1: print '\tExtracting ',fname
             tfile.extract(fname,dirname)
         filenames.append(os.path.join(dirname,fname))
 
