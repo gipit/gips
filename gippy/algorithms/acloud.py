@@ -69,7 +69,7 @@ def AddShadowMask(inputname, se_degrees, sa_degrees, cloudheight, bandnum=1):
     #open full cloudmask
     
     fo_in=gdal.Open(inputname, gdal.GA_Update)
-    tband = fo_in.GetRasterBand(bandnum)
+    tband = fo_in.GetRasterBand(1)
     inmask=tband.ReadAsArray()
     proj = fo_in.GetProjection()
     gt = fo_in.GetGeoTransform()
