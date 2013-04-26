@@ -235,13 +235,10 @@ def read(filename, bandnums=[],verbose=False):
 
     return image
 
-def link(pathrow,dates=None,hard=False,filt='',mnt=False):
+def link(pathrow,dates=None,hard=False,filt=''):
     """ Create links to matched products in current directory """
     fnames = inventory(pathrow,dates,products=True)
     fnames = [f for f in fnames if filt in f]
-    if mnt and topdir[:4] != '/mnt':
-        prefix = '/mnt'
-    else: prefix = ''
     for f in fnames:
         if hard:
             try:
@@ -250,7 +247,7 @@ def link(pathrow,dates=None,hard=False,filt='',mnt=False):
                 pass
         else: 
             try:
-                os.symlink(os.path.join(prefix,f),os.path.basename(f))
+                os.symlink(f,os.path.basename(f))
             except:
                 pass
 

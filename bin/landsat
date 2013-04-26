@@ -32,7 +32,7 @@ if __name__ == "__main__":
     parser.add_argument('-f','--filter',help='Filter of files to include (e.g., toaref',default="")
     parser.add_argument('--hard',help='Create hard links instead of symbolic links (can only be used on titan)',
         default=False,action='store_true')
-    parser.add_argument('--mnt',help='Create links through /mnt (soft links only)',default=False,action='store_true')
+    #parser.add_argument('--mnt',help='Create links through /mnt (soft links only)',default=False,action='store_true')
 
     # Misc
     #parser_info = subparser.add_parser('info',help='Print summary metadata', parents=[gparser])
@@ -44,6 +44,7 @@ if __name__ == "__main__":
     # General processing options
     pparser = argparse.ArgumentParser(add_help=False,formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     pparser.add_argument('-v','--verbose', help='Verbosity level', default=0, type=int)
+    #pparser.add_argument('--link', help='Create links in current directory to output', default=False, action='store_true')
     
     #pparser.add_argument('--multi', help='Use multiple processors', default=False, action='store_true')
     pparser.add_argument('--overwrite', help='Overwrite output files if they exist', default=False, action='store_true')
@@ -140,7 +141,7 @@ if __name__ == "__main__":
 
     elif args.command == 'link':
         for pr in args.pathrow:
-            landsat.link(pr,args.dates,hard=args.hard,filt=args.filter,mnt=args.mnt)
+            landsat.link(pr,args.dates,hard=args.hard,filt=args.filter)
 
     elif args.command == 'process':
         for pr in args.pathrow:
