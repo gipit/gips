@@ -11,11 +11,12 @@ def add_options(subparser,parents=[]):
 	#group.add_argument('--shadow', help='Shadow threshold', default=0.02, type=float)
 
 def process(image, outfile, tolerance=3, verbose=0, **kwargs):
+	gippy.Options.SetVerbose(verbose)
 	img = gippy.Fmask(image, outfile, tolerance)
 	filename = img.Filename()
 	del img
 	from agspy.data.landsatlib import readmtl
 	meta = readmtl(image.Filename())
 	from gippy.algorithms.acloud import AddShadowMask
-	#AddShadowMask(filename, 90.0 - meta['solarzenith'], meta['solarazimuth'], 4000, 3)
+	AddShadowMask(filename, 90.0 - meta['solarzenith'], meta['solarazimuth'], 4000, 2)
 	return gippy.GeoImage(filename)
