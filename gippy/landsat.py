@@ -456,9 +456,9 @@ def batchprocess(fnames, products=['radi'], atmcorr=False,
 
 def archive(dir=''):
     if (dir == ''):
-        fnames = glob.glob('*')
+        fnames = glob.glob('L*.tar.gz')
     else:
-        fnames = glob.glob(os.path.join('*'))
+        fnames = glob.glob(os.path.join('L*.tar.gz'))
     numadded = 0
     for f in fnames:
         pathrow = f[3:9]
@@ -478,7 +478,6 @@ def archive(dir=''):
                 print '%s: already in archive' % f
                 os.remove(f)
             else:
-                print f, newf
                 shutil.move(f,newf)
                 print f, ' -> ',path
                 numadded = numadded + 1

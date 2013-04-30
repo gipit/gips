@@ -130,7 +130,7 @@ def AddShadowMask(inputname, se_degrees, sa_degrees, cloudheight, bandnum=1):
     #tfh.SetProjection(proj)
     #tfh.SetGeoTransform(gt)
 
-    #tband = fo_in.GetRasterBand(bandnum)
+    tband = fo_in.GetRasterBand(bandnum)
     tband.WriteArray(outmask)
  
     fo_in = None
