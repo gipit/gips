@@ -177,7 +177,7 @@ namespace gip {
         return imgout;
 	}
 
-    //! Basic cloud mask
+    //! Fmask cloud mask
     GeoImage Fmask(const GeoImage& image, string filename, int tolerance) {
         GeoImageIO<float> imgin(image);
 
@@ -190,8 +190,9 @@ namespace gip {
         float nodata = -32768;
         probout.SetNoData(nodata);
 
-        CImg<unsigned char> mask, wmask, lmask, nodatamask;
-        CImg<float> red, nir, green, swir1, swir2, BT;
+        CImg<unsigned char> mask, wmask, lmask, nodatamask, redsatmask, greensatmask;
+        CImg<float> red, nir, green, swir1, swir2, BT, ndvi, ndsi, white, vprob;
+        float _ndvi, _ndsi;
         //int cloudpixels(0);
         CImg<double> wstats(image.Size()), lstats(image.Size());
         int wloc(0), lloc(0);
@@ -208,15 +209,29 @@ namespace gip {
             nodatamask = imgin.NoDataMask(*iChunk)^=1;
             // floodfill....seems bad way
             //shadowmask = nir.draw_fill(nir.width()/2,nir.height()/2,)
+            ndvi = (nir-red).div(nir+red);
+            ndsi = (green-swir1).div(green+swir1);
+            redsatmask = imgin["Red"].SaturationMask(*iChunk);
+            greensatmask = imgin["Green"].SaturationMask(*iChunk);
+            white = imgin.Whiteness(*iChunk);
+            vprob = red;
+
+            // Calculate "variability probability"
+            cimg_forXY(vprob,x,y) {
+                _ndvi = (redsatmask(x,y) && nir(x,y) > red(x,y)) ? 0 : abs(ndvi(x,y));
+                _ndsi = (greensatmask(x,y) && swir1(x,y) > green(x,y)) ? 0 : abs(ndsi(x,y));
+                vprob(x,y) = 1 - std::max(white(x,y), std::max(_ndsi, _ndvi));
+            }
+            probout[0].Write(vprob, *iChunk);
 
             // Potential cloud layer
             mask =
                 swir2.threshold(0.03)
                 & BT.get_threshold(27,false,true)^=1
                 // NDVI
-                & (nir-red).div(nir+red).threshold(0.8,false,true)^=1
+                & ndvi.threshold(0.8,false,true)^=1
                 // NDSI
-                & (green-swir1).div(green+swir1).threshold(0.8,false,true)^=1
+                & ndsi.threshold(0.8,false,true)^=1
                 & imgin.HazeMask(*iChunk)
                 & imgin.Whiteness(*iChunk).threshold(0.7,false,true)^=1
                 & nir.div(swir1).threshold(0.75);
@@ -277,9 +292,11 @@ namespace gip {
             BT = imgin["LWIR"].Read(*iChunk,REFLECTIVITY);
             nodatamask = imgin.NoDataMask(*iChunk);
 
+            vprob = probout[0].Read(*iChunk);
+
             // temp probability x variability probability
-            lprob = ((Thi + 4-BT)/=(Thi+4-(Tlo-4))).mul(
-                1 - imgin.NDVI(*iChunk).abs().max(imgin.NDSI(*iChunk).abs()).max(imgin.Whiteness(*iChunk).abs()) );
+            lprob = ((Thi + 4-BT)/=(Thi+4-(Tlo-4))).mul( vprob );
+            //1 - imgin.NDVI(*iChunk).abs().max(imgin.NDSI(*iChunk).abs()).max(imgin.Whiteness(*iChunk).abs()) );
 
             cimg_forXY(nodatamask,x,y) if (nodatamask(x,y) == 1) lprob(x,y) = nodata;
 
@@ -329,7 +346,8 @@ namespace gip {
             mask.convolve(filter).threshold(5);
 
             // Erode, then dilate twice
-            mask.erode(erode_elem).dilate(dilate_elem);
+            //mask.erode(erode_elem).dilate(dilate_elem);
+            mask.dilate(dilate_elem);
 
             cimg_forXY(nodatamask,x,y) if (nodatamask(x,y) == 1) mask(x,y) = 0;
             imgout[0].Write(mask, *iChunk);

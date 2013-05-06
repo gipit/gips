@@ -168,6 +168,13 @@ namespace gip {
             CopyCoordinateSystem(src);
             return *this;
 		}
+
+        //! Get Saturation mask
+		CImg<bool> SaturationMask(bbox chunk) const {
+		    CImg<float> band(Read(chunk, RAW));
+		    return band.threshold(_Sensor.maxDC());
+		}
+
 		//! Creates map of indices for each value in image (used for rasterized vector images)
 		/*map<T,POI> MapPOIs(GeoMask<T> Mask) const {
 			map<T,POI> POIs;

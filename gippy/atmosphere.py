@@ -12,7 +12,7 @@ import gippy
     #print 'el = ', el, 90 - meta['solarzenith']
     #print 'az = ', -180-az, meta['solarazimuth']
 
-_merraroot = '/mnt/raid10/data/merra/'
+_merraroot = '/titan/data/merra/'
 _moddatadir = '/usr/local/modtran/DATA'
 _workdir = '/tmp'
 
@@ -48,7 +48,7 @@ def fetchmerra(date):
             except:
                 pass
             import urllib
-            start = datetime.datetime.now()
+            #start = datetime.datetime.now()
             try:
                 urllib.urlretrieve(wfname, fname)
                 break
