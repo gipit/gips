@@ -88,6 +88,13 @@ namespace gip {
 		//! Break up image into chunks
 		std::vector< boost::geometry::model::box<point> > Chunk(int overlap=0, unsigned int bytes=2) const;
 
+		//! Add overviews
+		GeoData& AddOverviews() {
+            int anOverviewList[3] = { 2, 4, 8 };
+            _GDALDataset->BuildOverviews( "NEAREST", 3, anOverviewList, 0, NULL, GDALDummyProgress, NULL );
+            return *this;
+		}
+
 		//! Flush cache
 		void Flush() { _GDALDataset->FlushCache(); }
 

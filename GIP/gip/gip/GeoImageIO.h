@@ -132,10 +132,10 @@ namespace gip {
 		// MASKS
 
 		//! NoData mask (all bands)
-		CImg<bool> NoDataMask(bbox chunk) const {
+		CImg<unsigned char> NoDataMask(bbox chunk) const {
 		    unsigned int c;
 		    CImg<T> cube = ReadCube(chunk);
-		    CImg<bool> mask(cube.width(),cube.height(),1,1,0);
+		    CImg<unsigned char> mask(cube.width(),cube.height(),1,1,0);
             cimg_forXY(cube,x,y) {
                 for (c=0; c<NumBands(); c++) {
                     if ( (*this)[c].NoData() && (cube(x,y,c) == (*this)[c].NoDataValue())) mask(x,y) = 1;

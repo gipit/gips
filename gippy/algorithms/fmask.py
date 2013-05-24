@@ -8,15 +8,15 @@ def add_options(subparser,parents=[]):
 		formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 	group = parser.add_argument_group('algorithm arguments')
 	group.add_argument('--tolerance', help='Tolerance (1-5). Higher tolerance means fewer clouds', default=3, type=int)
+	group.add_argument('--dilate', help='Size of dilation filter', default=10, type=int)
 	#group.add_argument('--shadow', help='Shadow threshold', default=0.02, type=float)
 
-def process(image, outfile, tolerance=3, verbose=0, **kwargs):
+def process(image, outfile, tolerance=3, dilate=10, verbose=0, **kwargs):
 	gippy.Options.SetVerbose(verbose)
-	img = gippy.Fmask(image, outfile, tolerance)
+	img = gippy.Fmask(image, outfile, tolerance, dilate)
 	filename = img.Filename()
 	del img
-	from agspy.data.landsatlib import readmtl
-	meta = readmtl(image.Filename())
+	meta = gippy.landsat.readmtl(image.Filename())
 	from gippy.algorithms.acloud import AddShadowMask
 	AddShadowMask(filename, 90.0 - meta['solarzenith'], meta['solarazimuth'], 4000, 2)
 	return gippy.GeoImage(filename)

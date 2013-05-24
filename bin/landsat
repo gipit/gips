@@ -43,9 +43,9 @@ if __name__ == "__main__":
 
     # General processing options
     pparser = argparse.ArgumentParser(add_help=False,formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    pparser.add_argument('--overviews', help='Add Overviews to output', default=False, action='store_true')
     pparser.add_argument('-v','--verbose', help='Verbosity level', default=0, type=int)
     #pparser.add_argument('--link', help='Create links in current directory to output', default=False, action='store_true')
-    
     #pparser.add_argument('--multi', help='Use multiple processors', default=False, action='store_true')
     pparser.add_argument('--overwrite', help='Overwrite output files if they exist', default=False, action='store_true')
     pparser.add_argument('--suffix', help='Append string to end of filename (before extension)',default='')
@@ -148,7 +148,7 @@ if __name__ == "__main__":
             fnames = landsat.inventory(pr,args.dates)
             print 'Processing %s products for %s files' % (len(args.product), len(fnames))
             landsat.batchprocess(fnames, products=args.product,  atmcorr=args.atmcorr, 
-                datatype=args.type, verbose=args.verbose, overwrite=args.overwrite, suffix=args.suffix)
+                datatype=args.type, verbose=args.verbose, overwrite=args.overwrite, suffix=args.suffix, overviews=args.overviews)
 
     elif args.command == 'alg':
         for pr in args.pathrow:
@@ -161,6 +161,7 @@ if __name__ == "__main__":
                     fout = landsat.outfile(f, product=args.alg, # atmcorr=args.atmcorr)
                         overwrite=args.overwrite, suffix=args.suffix) 
                     img = landsat.read(f,verbose=args.verbose)
+                    if args.overviews: img.AddOverviews()
                     eval('%s.process(img,fout,**args.__dict__)' % (args.alg) )
                     print '%s -> %s: processed in %s' % \
                         (os.path.basename(f)[:-12],os.path.basename(fout),datetime.datetime.now() - start)

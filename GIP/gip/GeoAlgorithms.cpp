@@ -66,6 +66,31 @@ namespace gip {
         return Copy(image,ImageOut,units);
 	}
 
+	//! Apply a mask to existing file (where mask>0 change to NoDataValue)
+	GeoImage ApplyMask(const GeoImage& image, GeoRaster& mask) {
+        for (unsigned int i=0; i<image.NumBands(); i++) {
+            switch (image.DataType()) {
+                case GDT_Byte: GeoRasterIO<unsigned char>(image[i]).ApplyMask(mask);
+                    break;
+                case GDT_UInt16: GeoRasterIO<unsigned short>(image[i]).ApplyMask(mask);
+                    break;
+                case GDT_Int16: GeoRasterIO<short>(image[i]).ApplyMask(mask);
+                    break;
+                case GDT_UInt32: GeoRasterIO<unsigned int>(image[i]).ApplyMask(mask);
+                    break;
+                case GDT_Int32: GeoRasterIO<int>(image[i]).ApplyMask(mask);
+                    break;
+                case GDT_Float32: GeoRasterIO<float>(image[i]).ApplyMask(mask);
+                    break;
+                case GDT_Float64: GeoRasterIO<double>(image[i]).ApplyMask(mask);
+                    break;
+                default: GeoRasterIO<unsigned char>(image[i]).ApplyMask(mask);
+            }
+        }
+        return image;
+	}
+
+
 	//! Create multi-band image of various indices calculated from input
 	GeoImage Indices(const GeoImage& ImageIn, string filename, bool ndvi, bool evi, bool lswi, bool ndsi, bool bi) {
 		int numbands(0);
@@ -178,7 +203,7 @@ namespace gip {
 	}
 
     //! Fmask cloud mask
-    GeoImage Fmask(const GeoImage& image, string filename, int tolerance) {
+    GeoImage Fmask(const GeoImage& image, string filename, int tolerance, int dilate) {
         GeoImageIO<float> imgin(image);
 
         // Output masks
@@ -319,9 +344,8 @@ namespace gip {
         // 3x3 filter of 1's for majority filter
         CImg<int> filter(3,3,1,1, 1);
         int esize = 5;
-        int dsize = 4;
         CImg<int> erode_elem(esize,esize,1,1,1);
-        CImg<int> dilate_elem(esize+dsize,esize+dsize,1,1,1);
+        CImg<int> dilate_elem(esize+dilate,esize+dilate,1,1,1);
 
         for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
             mask = imgout[0].Read(*iChunk);
@@ -346,7 +370,7 @@ namespace gip {
             mask.convolve(filter).threshold(5);
 
             // Erode, then dilate twice
-            //mask.erode(erode_elem).dilate(dilate_elem);
+            mask.erode(erode_elem).dilate(dilate_elem);
             mask.dilate(dilate_elem);
 
             cimg_forXY(nodatamask,x,y) if (nodatamask(x,y) == 1) mask(x,y) = 0;
@@ -460,35 +484,35 @@ namespace gip {
 		return Correlation;
 	}*/
 
-	/*GeoRaster NoDataMask(const GeoImage& image, string filename) {
-		typedef double T;
-		if (filename == "") filename = image.Filename() + "_NoDataMask";
+    //! Create mask based on NoData values for all bands
+	GeoRaster CreateMask(const GeoImage& image, string filename) {
+		typedef float T;
+
+		GeoImageIO<T> imageIO(image);
+		CImg<T> imgchunk;
+
+		if (filename == "") filename = image.Basename() + "_mask";
 		GeoImage mask(filename, image, GDT_Byte, 1);
 		GeoRasterIO<unsigned char> mask0(mask[0]);
+		CImg<unsigned char> imgout;
+		mask.SetNoData(0);
+		//unsigned int validpixels(0);
 
-		vector<GeoRasterIO<T> > Pbands;
-		for (unsigned int b=0;b<image.NumBands();b++)
-			Pbands.push_back( GeoRasterIO<T>(image[b]) );
-
-		// Iterate through chunks
 		vector<bbox> Chunks = image.Chunk();
 		vector<bbox>::const_iterator iChunk;
-		CImg<T> imgchunk;
-		CImg<unsigned char> imgout;
-		unsigned int validpixels(0);
 		for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
-			// Read in all bands and make mask
-			imgchunk = Pbands[0].Read(*iChunk);
-			imgout = Pbands[0].NoDataMask(imgchunk);
-			for (unsigned int b=1;b<image.NumBands();b++) {
-				imgout &= Pbands[b].NoDataMask( Pbands[b].Read(*iChunk) );
-			}
-			validpixels += imgout.sum();
-			mask0.Write(imgout, *iChunk);
+			//imgchunk = imageIO[0].Read(*iChunk);
+			//imgout = Pbands[0].NoDataMask(imgchunk);
+			//for (unsigned int b=1;b<image.NumBands();b++) {
+            //        imgout &= Pbands[b].NoDataMask( Pbands[b].Read(*iChunk) );
+			//}
+			//validpixels += imgout.sum();
+			imgout = imageIO.NoDataMask(*iChunk)^=1;
+			mask0.Write(imgout,*iChunk);
 		}
-		mask[0].SetValidSize(validpixels);
+		//mask[0].SetValidSize(validpixels);
 		return mask[0];
-	}*/
+	}
 
 	//CImg<double> SpectralCorrelation(const GeoImage& image) {
 	//}

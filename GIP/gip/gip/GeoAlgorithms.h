@@ -22,6 +22,9 @@ namespace gip {
 	//! Copy input file into new output file
 	GeoImage Copy(const GeoImage&, std::string, UNITS units=RAW, GDALDataType=GDT_Unknown);
 
+	//! Apply a mask to existing file (where mask>0 change to NoDataValue)
+	GeoImage ApplyMask(const GeoImage&, GeoRaster&);
+
 	//! Create new file of standard indices: NDVI, EVI, LSWI, NDSI, BI
 	GeoImage Indices(const GeoImage&, std::string, bool=true, bool=true, bool=true, bool=true, bool=true);
 
@@ -29,13 +32,13 @@ namespace gip {
 	GeoImage AutoCloud(const GeoImage&, std::string, int=4000, float=0.2, float=14, float=0.2, int=20);
 
 	//! Create new file with a basic cloud mask
-	GeoImage Fmask(const GeoImage&, std::string, int=3);
+	GeoImage Fmask(const GeoImage&, std::string, int=3, int=5);
 
 	//! Spectral Matched Filter
 	//GeoImage SMF(const GeoImage& image, std::string, CImg<double>);
 
     //! Create a mask of NoData values
-	//GeoRaster NoDataMask(const GeoImage& image, std::string filename="");
+	GeoRaster CreateMask(const GeoImage&, std::string="");
 
 	//! Replace all 'Inf' results with the bands NoData value
 	GeoImage InfReplace(GeoImage&);

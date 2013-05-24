@@ -243,6 +243,7 @@ class GeoData(_object):
     def CopyMeta(self, *args): return _gippylib.GeoData_CopyMeta(self, *args)
     def CopyCoordinateSystem(self, *args): return _gippylib.GeoData_CopyCoordinateSystem(self, *args)
     def Chunk(self, overlap = 0, bytes = 2): return _gippylib.GeoData_Chunk(self, overlap, bytes)
+    def AddOverviews(self): return _gippylib.GeoData_AddOverviews(self)
     def Flush(self): return _gippylib.GeoData_Flush(self)
 GeoData_swigregister = _gippylib.GeoData_swigregister
 GeoData_swigregister(GeoData)
@@ -352,6 +353,10 @@ GeoImage_swigregister = _gippylib.GeoImage_swigregister
 GeoImage_swigregister(GeoImage)
 
 
+def ApplyMask(*args):
+  return _gippylib.ApplyMask(*args)
+ApplyMask = _gippylib.ApplyMask
+
 def InfReplace(*args):
   return _gippylib.InfReplace(*args)
 InfReplace = _gippylib.InfReplace
@@ -412,6 +417,10 @@ AutoCloud = _gippylib.AutoCloud
 def Fmask(*args):
   return _gippylib.Fmask(*args)
 Fmask = _gippylib.Fmask
+
+def CreateMask(*args):
+  return _gippylib.CreateMask(*args)
+CreateMask = _gippylib.CreateMask
 
 def Options_DefaultFormat():
   return _gippylib.Options_DefaultFormat()

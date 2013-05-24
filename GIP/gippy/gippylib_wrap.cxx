@@ -10110,6 +10110,34 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_GeoData_AddOverviews(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  gip::GeoData *arg1 = (gip::GeoData *) 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject * obj0 = 0 ;
+  gip::GeoData *result = 0 ;
+  
+  if (!PyArg_ParseTuple(args,(char *)"O:GeoData_AddOverviews",&obj0)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__GeoData, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoData_AddOverviews" "', argument " "1"" of type '" "gip::GeoData *""'"); 
+  }
+  arg1 = reinterpret_cast< gip::GeoData * >(argp1);
+  {
+    try {
+      result = (gip::GeoData *) &(arg1)->AddOverviews();
+    } catch (const std::exception& e) {
+      SWIG_exception(SWIG_RuntimeError, e.what());
+    }
+  }
+  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_gip__GeoData, 0 |  0 );
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_GeoData_Flush(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   gip::GeoData *arg1 = (gip::GeoData *) 0 ;
@@ -13900,6 +13928,49 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_ApplyMask(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  gip::GeoImage *arg1 = 0 ;
+  gip::GeoRaster *arg2 = 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  void *argp2 = 0 ;
+  int res2 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  SwigValueWrapper< gip::GeoImage > result;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OO:ApplyMask",&obj0,&obj1)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1, SWIGTYPE_p_gip__GeoImage,  0  | 0);
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ApplyMask" "', argument " "1"" of type '" "gip::GeoImage const &""'"); 
+  }
+  if (!argp1) {
+    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "ApplyMask" "', argument " "1"" of type '" "gip::GeoImage const &""'"); 
+  }
+  arg1 = reinterpret_cast< gip::GeoImage * >(argp1);
+  res2 = SWIG_ConvertPtr(obj1, &argp2, SWIGTYPE_p_gip__GeoRaster,  0 );
+  if (!SWIG_IsOK(res2)) {
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "ApplyMask" "', argument " "2"" of type '" "gip::GeoRaster &""'"); 
+  }
+  if (!argp2) {
+    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "ApplyMask" "', argument " "2"" of type '" "gip::GeoRaster &""'"); 
+  }
+  arg2 = reinterpret_cast< gip::GeoRaster * >(argp2);
+  {
+    try {
+      result = gip::ApplyMask((gip::GeoImage const &)*arg1,*arg2);
+    } catch (const std::exception& e) {
+      SWIG_exception(SWIG_RuntimeError, e.what());
+    }
+  }
+  resultobj = SWIG_NewPointerObj((new gip::GeoImage(static_cast< const gip::GeoImage& >(result))), SWIGTYPE_p_gip__GeoImage, SWIG_POINTER_OWN |  0 );
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_Indices__SWIG_0(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   gip::GeoImage *arg1 = 0 ;
@@ -15051,6 +15122,66 @@ SWIGINTERN PyObject *_wrap_Fmask__SWIG_0(PyObject *SWIGUNUSEDPARM(self), PyObjec
   gip::GeoImage *arg1 = 0 ;
   std::string arg2 ;
   int arg3 ;
+  int arg4 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  int val3 ;
+  int ecode3 = 0 ;
+  int val4 ;
+  int ecode4 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
+  PyObject * obj3 = 0 ;
+  SwigValueWrapper< gip::GeoImage > result;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OOOO:Fmask",&obj0,&obj1,&obj2,&obj3)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1, SWIGTYPE_p_gip__GeoImage,  0  | 0);
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Fmask" "', argument " "1"" of type '" "gip::GeoImage const &""'"); 
+  }
+  if (!argp1) {
+    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "Fmask" "', argument " "1"" of type '" "gip::GeoImage const &""'"); 
+  }
+  arg1 = reinterpret_cast< gip::GeoImage * >(argp1);
+  {
+    std::string *ptr = (std::string *)0;
+    int res = SWIG_AsPtr_std_string(obj1, &ptr);
+    if (!SWIG_IsOK(res) || !ptr) {
+      SWIG_exception_fail(SWIG_ArgError((ptr ? res : SWIG_TypeError)), "in method '" "Fmask" "', argument " "2"" of type '" "std::string""'"); 
+    }
+    arg2 = *ptr;
+    if (SWIG_IsNewObj(res)) delete ptr;
+  }
+  ecode3 = SWIG_AsVal_int(obj2, &val3);
+  if (!SWIG_IsOK(ecode3)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "Fmask" "', argument " "3"" of type '" "int""'");
+  } 
+  arg3 = static_cast< int >(val3);
+  ecode4 = SWIG_AsVal_int(obj3, &val4);
+  if (!SWIG_IsOK(ecode4)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "Fmask" "', argument " "4"" of type '" "int""'");
+  } 
+  arg4 = static_cast< int >(val4);
+  {
+    try {
+      result = gip::Fmask((gip::GeoImage const &)*arg1,arg2,arg3,arg4);
+    } catch (const std::exception& e) {
+      SWIG_exception(SWIG_RuntimeError, e.what());
+    }
+  }
+  resultobj = SWIG_NewPointerObj((new gip::GeoImage(static_cast< const gip::GeoImage& >(result))), SWIGTYPE_p_gip__GeoImage, SWIG_POINTER_OWN |  0 );
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_Fmask__SWIG_1(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  gip::GeoImage *arg1 = 0 ;
+  std::string arg2 ;
+  int arg3 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   int val3 ;
@@ -15097,7 +15228,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_Fmask__SWIG_1(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_Fmask__SWIG_2(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   gip::GeoImage *arg1 = 0 ;
   std::string arg2 ;
@@ -15141,12 +15272,12 @@ fail:
 
 SWIGINTERN PyObject *_wrap_Fmask(PyObject *self, PyObject *args) {
   int argc;
-  PyObject *argv[4];
+  PyObject *argv[5];
   int ii;
   
   if (!PyTuple_Check(args)) SWIG_fail;
   argc = args ? (int)PyObject_Length(args) : 0;
-  for (ii = 0; (ii < 3) && (ii < argc); ii++) {
+  for (ii = 0; (ii < 4) && (ii < argc); ii++) {
     argv[ii] = PyTuple_GET_ITEM(args,ii);
   }
   if (argc == 2) {
@@ -15157,7 +15288,7 @@ SWIGINTERN PyObject *_wrap_Fmask(PyObject *self, PyObject *args) {
       int res = SWIG_AsPtr_std_string(argv[1], (std::string**)(0));
       _v = SWIG_CheckState(res);
       if (_v) {
-        return _wrap_Fmask__SWIG_1(self, args);
+        return _wrap_Fmask__SWIG_2(self, args);
       }
     }
   }
@@ -15174,7 +15305,31 @@ SWIGINTERN PyObject *_wrap_Fmask(PyObject *self, PyObject *args) {
           _v = SWIG_CheckState(res);
         }
         if (_v) {
-          return _wrap_Fmask__SWIG_0(self, args);
+          return _wrap_Fmask__SWIG_1(self, args);
+        }
+      }
+    }
+  }
+  if (argc == 4) {
+    int _v;
+    int res = SWIG_ConvertPtr(argv[0], 0, SWIGTYPE_p_gip__GeoImage, 0);
+    _v = SWIG_CheckState(res);
+    if (_v) {
+      int res = SWIG_AsPtr_std_string(argv[1], (std::string**)(0));
+      _v = SWIG_CheckState(res);
+      if (_v) {
+        {
+          int res = SWIG_AsVal_int(argv[2], NULL);
+          _v = SWIG_CheckState(res);
+        }
+        if (_v) {
+          {
+            int res = SWIG_AsVal_int(argv[3], NULL);
+            _v = SWIG_CheckState(res);
+          }
+          if (_v) {
+            return _wrap_Fmask__SWIG_0(self, args);
+          }
         }
       }
     }
@@ -15183,8 +15338,122 @@ SWIGINTERN PyObject *_wrap_Fmask(PyObject *self, PyObject *args) {
 fail:
   SWIG_SetErrorMsg(PyExc_NotImplementedError,"Wrong number or type of arguments for overloaded function 'Fmask'.\n"
     "  Possible C/C++ prototypes are:\n"
+    "    gip::Fmask(gip::GeoImage const &,std::string,int,int)\n"
     "    gip::Fmask(gip::GeoImage const &,std::string,int)\n"
     "    gip::Fmask(gip::GeoImage const &,std::string)\n");
+  return 0;
+}
+
+
+SWIGINTERN PyObject *_wrap_CreateMask__SWIG_0(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  gip::GeoImage *arg1 = 0 ;
+  std::string arg2 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  SwigValueWrapper< gip::GeoRaster > result;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OO:CreateMask",&obj0,&obj1)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1, SWIGTYPE_p_gip__GeoImage,  0  | 0);
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "CreateMask" "', argument " "1"" of type '" "gip::GeoImage const &""'"); 
+  }
+  if (!argp1) {
+    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "CreateMask" "', argument " "1"" of type '" "gip::GeoImage const &""'"); 
+  }
+  arg1 = reinterpret_cast< gip::GeoImage * >(argp1);
+  {
+    std::string *ptr = (std::string *)0;
+    int res = SWIG_AsPtr_std_string(obj1, &ptr);
+    if (!SWIG_IsOK(res) || !ptr) {
+      SWIG_exception_fail(SWIG_ArgError((ptr ? res : SWIG_TypeError)), "in method '" "CreateMask" "', argument " "2"" of type '" "std::string""'"); 
+    }
+    arg2 = *ptr;
+    if (SWIG_IsNewObj(res)) delete ptr;
+  }
+  {
+    try {
+      result = gip::CreateMask((gip::GeoImage const &)*arg1,arg2);
+    } catch (const std::exception& e) {
+      SWIG_exception(SWIG_RuntimeError, e.what());
+    }
+  }
+  resultobj = SWIG_NewPointerObj((new gip::GeoRaster(static_cast< const gip::GeoRaster& >(result))), SWIGTYPE_p_gip__GeoRaster, SWIG_POINTER_OWN |  0 );
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_CreateMask__SWIG_1(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  gip::GeoImage *arg1 = 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject * obj0 = 0 ;
+  SwigValueWrapper< gip::GeoRaster > result;
+  
+  if (!PyArg_ParseTuple(args,(char *)"O:CreateMask",&obj0)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1, SWIGTYPE_p_gip__GeoImage,  0  | 0);
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "CreateMask" "', argument " "1"" of type '" "gip::GeoImage const &""'"); 
+  }
+  if (!argp1) {
+    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "CreateMask" "', argument " "1"" of type '" "gip::GeoImage const &""'"); 
+  }
+  arg1 = reinterpret_cast< gip::GeoImage * >(argp1);
+  {
+    try {
+      result = gip::CreateMask((gip::GeoImage const &)*arg1);
+    } catch (const std::exception& e) {
+      SWIG_exception(SWIG_RuntimeError, e.what());
+    }
+  }
+  resultobj = SWIG_NewPointerObj((new gip::GeoRaster(static_cast< const gip::GeoRaster& >(result))), SWIGTYPE_p_gip__GeoRaster, SWIG_POINTER_OWN |  0 );
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_CreateMask(PyObject *self, PyObject *args) {
+  int argc;
+  PyObject *argv[3];
+  int ii;
+  
+  if (!PyTuple_Check(args)) SWIG_fail;
+  argc = args ? (int)PyObject_Length(args) : 0;
+  for (ii = 0; (ii < 2) && (ii < argc); ii++) {
+    argv[ii] = PyTuple_GET_ITEM(args,ii);
+  }
+  if (argc == 1) {
+    int _v;
+    int res = SWIG_ConvertPtr(argv[0], 0, SWIGTYPE_p_gip__GeoImage, 0);
+    _v = SWIG_CheckState(res);
+    if (_v) {
+      return _wrap_CreateMask__SWIG_1(self, args);
+    }
+  }
+  if (argc == 2) {
+    int _v;
+    int res = SWIG_ConvertPtr(argv[0], 0, SWIGTYPE_p_gip__GeoImage, 0);
+    _v = SWIG_CheckState(res);
+    if (_v) {
+      int res = SWIG_AsPtr_std_string(argv[1], (std::string**)(0));
+      _v = SWIG_CheckState(res);
+      if (_v) {
+        return _wrap_CreateMask__SWIG_0(self, args);
+      }
+    }
+  }
+  
+fail:
+  SWIG_SetErrorMsg(PyExc_NotImplementedError,"Wrong number or type of arguments for overloaded function 'CreateMask'.\n"
+    "  Possible C/C++ prototypes are:\n"
+    "    gip::CreateMask(gip::GeoImage const &,std::string)\n"
+    "    gip::CreateMask(gip::GeoImage const &)\n");
   return 0;
 }
 
@@ -15536,6 +15805,7 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"GeoData_CopyMeta", _wrap_GeoData_CopyMeta, METH_VARARGS, NULL},
 	 { (char *)"GeoData_CopyCoordinateSystem", _wrap_GeoData_CopyCoordinateSystem, METH_VARARGS, NULL},
 	 { (char *)"GeoData_Chunk", _wrap_GeoData_Chunk, METH_VARARGS, NULL},
+	 { (char *)"GeoData_AddOverviews", _wrap_GeoData_AddOverviews, METH_VARARGS, NULL},
 	 { (char *)"GeoData_Flush", _wrap_GeoData_Flush, METH_VARARGS, NULL},
 	 { (char *)"GeoData_swigregister", GeoData_swigregister, METH_VARARGS, NULL},
 	 { (char *)"new_GeoFunction", _wrap_new_GeoFunction, METH_VARARGS, NULL},
@@ -15603,9 +15873,11 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"GeoImage___setitem__", _wrap_GeoImage___setitem__, METH_VARARGS, NULL},
 	 { (char *)"GeoImage_swigregister", GeoImage_swigregister, METH_VARARGS, NULL},
 	 { (char *)"Copy", _wrap_Copy, METH_VARARGS, NULL},
+	 { (char *)"ApplyMask", _wrap_ApplyMask, METH_VARARGS, NULL},
 	 { (char *)"Indices", _wrap_Indices, METH_VARARGS, NULL},
 	 { (char *)"AutoCloud", _wrap_AutoCloud, METH_VARARGS, NULL},
 	 { (char *)"Fmask", _wrap_Fmask, METH_VARARGS, NULL},
+	 { (char *)"CreateMask", _wrap_CreateMask, METH_VARARGS, NULL},
 	 { (char *)"InfReplace", _wrap_InfReplace, METH_VARARGS, NULL},
 	 { (char *)"reg", _wrap_reg, METH_VARARGS, NULL},
 	 { (char *)"Options_DefaultFormat", _wrap_Options_DefaultFormat, METH_VARARGS, NULL},

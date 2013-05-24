@@ -240,14 +240,16 @@ def link(pathrow,dates=None,hard=False,filt=''):
     fnames = inventory(pathrow,dates,products=True)
     fnames = [f for f in fnames if filt in f]
     for f in fnames:
+        faux = f + '.aux.xml'
         if hard:
             try:
                 os.link(f,os.path.basename(f))
+                os.link(faux,os.path.basename(faux))
             except:
                 pass
         else: 
             try:
-                os.symlink(f,os.path.basename(f))
+                os.symlink(faux,os.path.basename(faux))
             except:
                 pass
 
@@ -307,7 +309,7 @@ def outfile(filename, product="radi", atmcorr=False, overwrite=False, suffix="")
             raise Exception('Unable to make product directory')
     return ofile
 
-def process(img, fname_out, product='radi', datatype='Int16', verbose=1):
+def process(img, fname_out, product='radi', datatype='Int16', verbose=1, overviews=False):
 
     # Atmospheric correct
     #if atmcorr:
@@ -375,6 +377,7 @@ def process(img, fname_out, product='radi', datatype='Int16', verbose=1):
     else:
         raise Exception("Unknown product name %s" % product)
 
+    if overviews: imgout.AddOverviews()
     # Clean up extracted tif files in original dir
     # this should be part of the destructor - add python class destructor for GeoImage
     fname = imgout.Filename()
@@ -382,7 +385,7 @@ def process(img, fname_out, product='radi', datatype='Int16', verbose=1):
     return fname
 
 def batchprocess(fnames, products=['radi'], atmcorr=False, 
-    datatype='Int16', verbose=1, overwrite=False, suffix=''):
+    datatype='Int16', verbose=1, overwrite=False, suffix='', overviews=False):
 
     #if len(fnames) == 1: fnames = array(fnames)
     #cpus = 6 #multiprocessing.cpu_count() - save_cpus
@@ -425,7 +428,7 @@ def batchprocess(fnames, products=['radi'], atmcorr=False,
             for fout in fouts:
                 try:
                     start = datetime.datetime.now()
-                    process(img, fout[1], fout[0], datatype=datatype)
+                    process(img, fout[1], fout[0], datatype=datatype, overviews=overviews)
                     dur = datetime.datetime.now() - start
                     print '  -> %s: processed in %s' % (os.path.basename(fout[1]),dur)
                 except Exception,e:

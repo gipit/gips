@@ -4,19 +4,19 @@
 	<File name="CImg.h" open="0" top="0" tabpos="0">
 		<Cursor position="1629419" topLine="32158" />
 	</File>
-	<File name="GeoAlgorithms.cpp" open="1" top="1" tabpos="15">
-		<Cursor position="7478" topLine="139" />
+	<File name="GeoAlgorithms.cpp" open="1" top="0" tabpos="9">
+		<Cursor position="18816" topLine="448" />
 	</File>
-	<File name="GeoData.cpp" open="1" top="0" tabpos="8">
-		<Cursor position="4303" topLine="90" />
+	<File name="GeoData.cpp" open="1" top="0" tabpos="13">
+		<Cursor position="4303" topLine="88" />
 	</File>
-	<File name="GeoImage.cpp" open="1" top="0" tabpos="13">
-		<Cursor position="861" topLine="0" />
+	<File name="GeoImage.cpp" open="1" top="0" tabpos="11">
+		<Cursor position="1540" topLine="0" />
 	</File>
 	<File name="GeoRaster.cpp" open="1" top="0" tabpos="12">
 		<Cursor position="1740" topLine="0" />
 	</File>
-	<File name="Options.cpp" open="1" top="0" tabpos="14">
+	<File name="Options.cpp" open="1" top="0" tabpos="10">
 		<Cursor position="1334" topLine="3" />
 	</File>
 	<File name="gip/Atmosphere.h" open="1" top="0" tabpos="1">
@@ -26,22 +26,22 @@
 		<Cursor position="577" topLine="0" />
 	</File>
 	<File name="gip/GeoAlgorithms.h" open="1" top="0" tabpos="2">
-		<Cursor position="85" topLine="0" />
+		<Cursor position="1377" topLine="0" />
 	</File>
 	<File name="gip/GeoData.h" open="1" top="0" tabpos="4">
 		<Cursor position="2239" topLine="15" />
 	</File>
 	<File name="gip/GeoImage.h" open="1" top="0" tabpos="6">
-		<Cursor position="2347" topLine="30" />
+		<Cursor position="4493" topLine="64" />
 	</File>
-	<File name="gip/GeoImageIO.h" open="1" top="0" tabpos="3">
-		<Cursor position="5890" topLine="149" />
+	<File name="gip/GeoImageIO.h" open="1" top="1" tabpos="3">
+		<Cursor position="4739" topLine="108" />
 	</File>
-	<File name="gip/GeoRaster.h" open="1" top="0" tabpos="7">
-		<Cursor position="7726" topLine="190" />
+	<File name="gip/GeoRaster.h" open="1" top="0" tabpos="8">
+		<Cursor position="6789" topLine="156" />
 	</File>
 	<File name="gip/GeoRasterIO.h" open="1" top="0" tabpos="5">
-		<Cursor position="1747" topLine="182" />
+		<Cursor position="8108" topLine="63" />
 	</File>
 	<File name="gip/Options.h" open="0" top="0" tabpos="14">
 		<Cursor position="5570" topLine="93" />

@@ -169,6 +169,22 @@ namespace gip {
             return *this;
 		}
 
+        //! Apply mask to (where mask>0 make NoDataValue)
+		GeoRasterIO& ApplyMask(const GeoRaster& mask) {
+            GeoRasterIO<unsigned char> maskio(mask);
+            CImg<unsigned char> maskimg;
+            CImg<T> img;
+            std::vector<bbox> Chunks = Chunk();
+            std::vector<bbox>::const_iterator iChunk;
+            for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
+                img = Read(*iChunk);
+                maskimg = maskio.Read(*iChunk);
+                cimg_forXY(img,x,y) if (maskimg(x,y) > 0) img(x,y) = NoDataValue();
+                Write(img,*iChunk);
+            }
+            return *this;
+		}
+
         //! Get Saturation mask
 		CImg<bool> SaturationMask(bbox chunk) const {
 		    CImg<float> band(Read(chunk, RAW));
