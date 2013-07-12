@@ -74,6 +74,8 @@ namespace gip {
 		//! Get vector of band names
 		std::vector<std::string> BandNames() const;
 
+		//! Get date/time stamp for this scene
+
 		//! Retrieve colors class
 		Colors GetColors() const { return _Colors; }
 		//! Set a color

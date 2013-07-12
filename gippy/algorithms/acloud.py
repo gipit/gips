@@ -155,7 +155,7 @@ def process(image, outfile, cloud=_cloud, minred=_minred, maxtemp=_maxtemp, maxn
     # also assuming landsat here
     filename = img.Filename()
     del img
-    from agspy.data.landsatlib import readmtl
+    from gippy.landsat import readmtl
     meta = readmtl(image.Filename())
     AddShadowMask(filename, 90.0 - meta['solarzenith'], meta['solarazimuth'], _cloud)
 

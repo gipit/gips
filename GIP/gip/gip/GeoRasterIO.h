@@ -179,7 +179,7 @@ namespace gip {
             for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
                 img = Read(*iChunk);
                 maskimg = maskio.Read(*iChunk);
-                cimg_forXY(img,x,y) if (maskimg(x,y) > 0) img(x,y) = NoDataValue();
+                cimg_forXY(img,x,y) if (maskimg(x,y) == 0) img(x,y) = NoDataValue();
                 Write(img,*iChunk);
             }
             return *this;

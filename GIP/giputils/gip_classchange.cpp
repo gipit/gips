@@ -56,7 +56,7 @@ int main (int ac, char* av[]) {
 		cout << "Class Change" << endl;
         cout << "\tChanging class " << classes[0] << " to " << classes[1] << " in " << Opts.InputFile(0) << endl;
 		cout << "\tCriteria: " << Opts.InputFile(1) << " " << op << " " << threshold << endl;
-		cout << "\tOutputting to " << Opts.OutputFile(1) << endl;
+		cout << "\tOutputting to " << Opts.OutputFile(0) << endl;
 	}
 
     GeoImage gimg(Opts.InputFile(0));
@@ -73,20 +73,20 @@ int main (int ac, char* av[]) {
 	for (vector< bbox >::const_iterator iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
 	    if (Opts.Verbose()) cout << " " << (chunknum++)+1 << std::flush;
         cimg = img.Read(*iChunk);
-        cimgout = imgout.Read(*iChunk);
+        cimgout = cimg;
         copimg = opimg.Read(*iChunk);
         if (op == "gt") {
             copimg.threshold(threshold,false,true);
         } else if (op == "lt") {
             copimg.threshold(threshold)^=1;
         } else { // equal to
-            copimg = (copimg.get_threshold(threshold,false,true) & (copimg.get_threshold(threshold)^1)^=1);
+            copimg = (copimg.get_threshold(threshold,false,true) | (copimg.get_threshold(threshold)^=1))^=1;
         }
 
 	    cimg_forXY(copimg,x,y) {
             if (copimg(x,y) == 1 && cimg(x,y) == classes[0]) {
                 cimgout(x,y) = classes[1];
-            } else cimgout(x,y) = classes[0];
+            }
         }
 
         imgout.Write(cimgout,*iChunk);

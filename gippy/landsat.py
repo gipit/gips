@@ -27,6 +27,7 @@ proddir = 'products/gippy-beta'
 
 rawdir = os.path.join(topdir,origdir)
 outdir = os.path.join(topdir,proddir)
+qdir = os.path.join(topdir,'quarantine')
 
 def readmtl(filename):
     """ Read in Landsat MTL (metadata) file """
@@ -249,6 +250,7 @@ def link(pathrow,dates=None,hard=False,filt=''):
                 pass
         else: 
             try:
+                os.symlink(f,os.path.basename(f))
                 os.symlink(faux,os.path.basename(faux))
             except:
                 pass
@@ -415,8 +417,13 @@ def batchprocess(fnames, products=['radi'], atmcorr=False,
 
         if len(fouts) > 0:
             start = datetime.datetime.now()
-            img = read(fin, bandnums=bandnums, verbose=verbose)
-            meta = readmtl(fin)
+            try:
+                img = read(fin, bandnums=bandnums, verbose=verbose)
+                meta = readmtl(fin)
+            except Exception,e:
+                print '%s %s' % (os.path.basename(fin)[:16],e)
+                if verbose > 1: print traceback.format_exc()
+                continue
 
             if atmcorr:
                 for i,b in enumerate(bandnums):
@@ -455,7 +462,7 @@ def batchprocess(fnames, products=['radi'], atmcorr=False,
 #    else:
 #        print 'Not a valid landsat tar file'
 #        return
-#    tfile.extractall(path=os.path.dirname(filename))
+#    tfile.extractall(path=os.path.dirname(filename))   
 
 def archive(dir=''):
     if (dir == ''):
@@ -482,8 +489,13 @@ def archive(dir=''):
                 os.remove(f)
             else:
                 shutil.move(f,newf)
-                print f, ' -> ',path
-                numadded = numadded + 1
+                try:
+                    #mtl = readmtl(newf)
+                    print f, ' -> ',path
+                    numadded = numadded + 1
+                except Exception,e:
+                    print f, ' -> problem with file'
+                    unarchive(os.path.dirname(newf))
         except shutil.Error as err:
             print err
             #raise Exception('shutils error %s' % err)
@@ -495,10 +507,28 @@ def archive(dir=''):
     if numadded != len(fnames):
         print '%s files not added to archive' % (len(fnames)-numadded)
 
+def unarchive(path):
+    try:
+        datafile = glob.glob(os.path.join(path,'*tar.gz'))[0]
+        bname = os.path.basename(datafile)
+        newf = os.path.join(qdir,bname)
+        shutil.move(datafile,newf)
+        print '%s: removed from archive' % os.path.basename(bname)
+    except Exception,e: pass
+    shutil.rmtree(path)
+
 def _cleandir(dir):
     try:
         shutil.rmtree(os.path.join(dir,'modtran'))
     except: pass
+
+    # Check validity
+    try:
+        mtl = readmtl(os.path.join(dir,'dummy'))
+    except Exception,e:
+        unarchive(dir)
+
+    # Remove extraneous files
     fnames = glob.glob(os.path.join(dir,'*'))
     for f in fnames:
         extension = os.path.splitext(f)[1][1:].strip()
@@ -507,9 +537,10 @@ def _cleandir(dir):
 
 def clean():
     """ Clean out archive directories, keeping tar.gz and mtl files """
-    import shutil
     prdirs = os.listdir(rawdir)
+    print 'Cleaning Landsat archive: %s pathrows' % len(prdirs)
     for pr in prdirs:
+        print 'Cleaning pathrow %s' % pr
         datedirs = os.listdir(os.path.join(rawdir,pr))
         for dd in datedirs:
             _cleandir(os.path.join(rawdir,pr,dd))

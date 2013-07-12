@@ -97,6 +97,14 @@ namespace gip {
             else gdalcol = GCI_GrayIndex;
 			_GDALRasterBand->SetColorInterpretation(gdalcol);
 		}
+		//! Copy color table from another band
+		void CopyColorTable(const GeoRaster& raster) {
+            _GDALRasterBand->SetColorTable(raster.GetGDALRasterBand()->GetColorTable());
+		}
+        //! Copy category names from another band
+		void CopyCategoryNames(const GeoRaster& raster) {
+            _GDALRasterBand->SetCategoryNames(raster.GetGDALRasterBand()->GetCategoryNames());
+		}
 		//! Get GDAL Unit type
 		//std::string Units() const { return _GDALRasterBand->GetUnitType(); }
 		//! Set Unit type

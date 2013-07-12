@@ -129,6 +129,64 @@ namespace gip {
             return ndsi;
 		}
 
+        //! Get a number of random pixel vectors (spectral vectors)
+        /*CImg<T> GetRandomPixels(int NumPixels) const {
+            CImg<T> Pixels(NumBands(), NumPixels);
+            srand( time(NULL) );
+            for (int i=0; i<NumPixels; i++) {
+                int col = (int)( (double)rand() / (double)RAND_MAX) * (XSize()-1);
+                int row = (int)( (double)rand() / (double)RAND_MAX) * (YSize()-1);
+                T pix[1];
+                for (int j=0; j<NumBands(); j++) {
+                    //CPLErr err = _RasterIOBands[j]->GetGDALRasterBand()->RasterIO(GF_Read, m_ROI.x0()+col, m_ROI.y0()+row, 1, 1, &pix, 1, 1, GDALType(&typeid(T)), 0, 0);
+                    CPLErr err = _RasterIOBands[j]->GetGDALRasterBand()->RasterIO(GF_Read, col, row, 1, 1, &pix, 1, 1, GDALType(&typeid(T)), 0, 0);
+                    Pixels(j,i) = pix[0];
+                }
+            }
+            return Pixels;
+        }*/
+
+        //! Get a number of pixel vectors that are spectrally distant from each other
+        /*CImg<T> GetPixelClasses(int NumClasses) const {
+            int RandPixelsPerClass = 500;
+            CImg<T> stats;
+            CImg<T> ClassMeans(NumBands(), NumClasses);
+            // Get Random Pixels
+            CImg<T> RandomPixels = GetRandomPixels(NumClasses * RandPixelsPerClass);
+            // First pixel becomes first class
+            cimg_forX(ClassMeans,x) ClassMeans(x,0) = RandomPixels(x,0);
+            for (int i=1; i<NumClasses; i++) {
+                CImg<T> ThisClass = ClassMeans.get_line(i-1);
+                long validpixels = 0;
+                CImg<T> Dist(RandomPixels.height());
+                for (long j=0; j<RandomPixels.height(); j++) {
+                    // Get current pixel vector
+                    CImg<T> ThisPixel = RandomPixels.get_line(j);
+                    // Find distance to last class
+                    Dist(j) = ThisPixel.sum() ? (ThisPixel-ThisClass).dot( (ThisPixel-ThisClass).transpose() ) : 0;
+                    if (Dist(j) != 0) validpixels++;
+                }
+                stats = Dist.get_stats();
+                // The pixel farthest away from last class make the new class
+                cimg_forX(ClassMeans,x) ClassMeans(x,i) = RandomPixels(x,stats(8));
+                // Toss a bunch of pixels away (make zero)
+                CImg<T> DistSort = Dist.get_sort();
+                T cutoff = DistSort[RandPixelsPerClass*i]; //(stats.max-stats.min)/10 + stats.min;
+                cimg_forX(Dist,x) if (Dist(x) < cutoff) cimg_forX(RandomPixels,x1) RandomPixels(x1,x) = 0;
+
+            }
+            // Output Class Vectors
+            if (m_Options.verbose) {
+                for (int i=0; i<NumClasses; i++) {
+                    cout << "Class " << i+1 << " vector: ";
+                    cimg_forX(ClassMeans,x) cout << ClassMeans(x,i) << "  ";
+                    cout << endl;
+                }
+            }
+            return ClassMeans;
+        }*/
+
+
 		// MASKS
 
 		//! NoData mask (all bands)

@@ -40,6 +40,7 @@ if __name__ == "__main__":
     parser_archive = subparser.add_parser('archive',help='Move files from this directory to Landsat archive')
     parser_clean = subparser.add_parser('clean',help='Clean archive of all temporary files')
     parser_getmerra = subparser.add_parser('getmerra',help='Get MERRA profile for matching files', parents=[gparser])
+    #parser_check = subparser.add_parser('diagnostic',help='Check validity of Landsat tar files', parents=[gparser])
 
     # General processing options
     pparser = argparse.ArgumentParser(add_help=False,formatter_class=argparse.ArgumentDefaultsHelpFormatter)

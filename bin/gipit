@@ -1,26 +1,79 @@
 #!/usr/bin/env python
 
 import os, argparse
+import datetime
 import gippy
 
+# needed by threshold function, for now
+import numpy, gdal
+
+
+#def ApplyMask(*args, **kwargs):
+
 if __name__ == "__main__":
-	prog = os.path.split(__file__)[1]
-	hformat = argparse.ArgumentDefaultsHelpFormatter
-	parser0 = argparse.ArgumentParser(prog=prog, formatter_class=hformat, description='Geospatial Image Process IT!')
-	subparser = parser0.add_subparsers(dest='command')
+    prog = os.path.split(__file__)[1]
+    hformat = argparse.ArgumentDefaultsHelpFormatter
+    parser0 = argparse.ArgumentParser(prog=prog, formatter_class=hformat, description='Geospatial Image Process IT!')
+    subparser = parser0.add_subparsers(help='Operations', dest='command')
 
-	# Global options
-	gparser = argparse.ArgumentParser(add_help=False, formatter_class=hformat)
-	gparser.add_argument('--out', help='Output filename', default='')
-	gparser.add_argument('--format', help='Output format', default='GTiff')
+    # Global options
+    gparser = argparse.ArgumentParser(add_help=False, formatter_class=hformat)
+    gparser.add_argument('files', nargs='*', help='Image files to process')
 
+    # Inplace Operations
+    iparser = argparse.ArgumentParser(add_help=False)
+    group = iparser.add_argument_group('In-place options')
+    group.add_argument('-i','--inplace', help='Perform operation in original file', action='store_true', default=False)
 
+    # Output file options
+    oparser = argparse.ArgumentParser(add_help=False)
+    group = oparser.add_argument_group('Output file options (not used with inplace operations)')
+    group.add_argument('-s','--suffix', help='Append suffix to filename for output', default=None)
+    group.add_argument('--format', help='Output format', default='GTiff')
+    #gparser.add_argument('-m','--mask', help='Only reclass underneath supplied mask (where == 1)', default=None)
 
+    parser = subparser.add_parser('CreateMask',help='Create valid pixel mask based on all bands', parents=[gparser,oparser], formatter_class=hformat)
+    parser = subparser.add_parser('InfReplace',help='Replace Inf results in image with the NoData value', parents=[gparser], formatter_class=hformat)
+    parser = subparser.add_parser('thresh', help='Threshold image', parents=[gparser,oparser], formatter_class=hformat)
+    parser.add_argument('-t','--threshold', help='Threshold value (> threshold is true)', default=0.5, type=float)
+    parser.add_argument('-b', '--band', help='Band to threshold', default=1, type=int)
+    #parser = subparser.add_parser('ApplyMask', help='Apply Mask to existing image', parents=gparser, formatter_class=hformat)
+    #parser.add_argument('-m','--mask', help='Mask to apply', required=True)
 
-	args = parser0.parse_args()
+    args = parser0.parse_args()
 
-	#eval('%s.process(args.command)' % args.command)
+    if args.suffix == None: 
+        if args.command == 'CreateMask':
+            args.suffix = '_mask'
+        else:
+            args.suffix = '_' + args.command
 
-	if args.command == 'classmod':
+    for f in args.files:
+        start = datetime.datetime.now()
+        fbase,ext = os.path.splitext(os.path.basename(f))
+        fout = fbase+args.suffix+ext
 
+        if args.command == 'thresh':
+            # Create output file
+            imgout = gippy.GeoImage(fout, gippy.GeoImage(f), gippy.GDT_Byte, 1)
+            imgarr = numpy.zeros((imgout.YSize(), imgout.XSize()))
+            fout = imgout.Filename()
+            imgout = None
+            # Open input and threshold
+            fh = gdal.Open(f)
+            img = fh.GetRasterBand(args.band).ReadAsArray()
+            #img2 = fh.GetRasterBand(3).ReadAsArray()
+            #img = img1 - img2
+            (i,j) = numpy.where(img > args.threshold)
+            imgarr[i,j] = 1
+            (i,j) = numpy.where(img == fh.GetRasterBand(args.band).GetNoDataValue())
+            imgarr[i,j] = 0
+            # Write output
+            fhout = gdal.Open(fout,gdal.GA_Update)
+            fhout.GetRasterBand(1).WriteArray(imgarr)
+            fhout.GetRasterBand(1).SetNoDataValue(0)
+        else:
+            cmd = "gippy.%s(gippy.GeoImage('%s'))" % (args.command, f)
+            exec(cmd)
 
+        print "%s -> %s: %s" % (fbase, fout, datetime.datetime.now()-start)

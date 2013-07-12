@@ -290,6 +290,8 @@ class GeoRaster(GeoData):
     def Description(self): return _gippylib.GeoRaster_Description(self)
     def SetDescription(self, *args): return _gippylib.GeoRaster_SetDescription(self, *args)
     def SetColor(self, *args): return _gippylib.GeoRaster_SetColor(self, *args)
+    def CopyColorTable(self, *args): return _gippylib.GeoRaster_CopyColorTable(self, *args)
+    def CopyCategoryNames(self, *args): return _gippylib.GeoRaster_CopyCategoryNames(self, *args)
     def Gain(self): return _gippylib.GeoRaster_Gain(self)
     def Offset(self): return _gippylib.GeoRaster_Offset(self)
     def SetGain(self, *args): return _gippylib.GeoRaster_SetGain(self, *args)
@@ -360,6 +362,10 @@ ApplyMask = _gippylib.ApplyMask
 def InfReplace(*args):
   return _gippylib.InfReplace(*args)
 InfReplace = _gippylib.InfReplace
+
+def SpectralCovariance(*args):
+  return _gippylib.SpectralCovariance(*args)
+SpectralCovariance = _gippylib.SpectralCovariance
 GDT_Unknown = _gippylib.GDT_Unknown
 GDT_Byte = _gippylib.GDT_Byte
 GDT_UInt16 = _gippylib.GDT_UInt16
