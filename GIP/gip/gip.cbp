@@ -39,12 +39,6 @@
 			<Add directory="./" />
 		</Compiler>
 		<Unit filename="CImg.h" />
-		<Unit filename="CImg_144.h">
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="CImg_150.h">
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
 		<Unit filename="CImg_152.h">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
