@@ -256,7 +256,7 @@
 	<gip/GeoRasterIO.h>
 	<gip/Options.h>
 
-1370615445 /home/mhanson/work/gippy/GIP/gip/gip/GeoImage.h
+1374258442 /home/mhanson/work/gippy/GIP/gip/gip/GeoImage.h
 	<gip/Colors.h>
 	<gip/GeoData.h>
 	<gip/GeoRaster.h>
@@ -281,13 +281,12 @@
 	<sstream>
 	<string>
 
-1369945158 /home/mhanson/work/gippy/GIP/gip/gip/GeoRaster.h
+1374601139 /home/mhanson/work/gippy/GIP/gip/gip/GeoRaster.h
 	<boost/filesystem.hpp>
 	<boost/geometry/geometry.hpp>
 	<boost/geometry/geometries/point_xy.hpp>
 	<gip/GeoData.h>
 	<gip/gip_CImg.h>
-	<gip/Sensor.h>
 	<gip/Atmosphere.h>
 	<iostream>
 	<iomanip>
@@ -348,12 +347,12 @@
 
 1363798396 /home/mhanson/work/gippy/GIP/gip/gip/Atmosphere.h
 
-1370885359 /home/mhanson/work/gippy/GIP/gip/gip/GeoRasterIO.h
+1374600147 /home/mhanson/work/gippy/GIP/gip/gip/GeoRasterIO.h
 	<exception>
 	<gip/GeoRaster.h>
 	<cmath>
 
-1370902782 /home/mhanson/work/gippy/GIP/gip/gip/GeoAlgorithms.h
+1374601715 /home/mhanson/work/gippy/GIP/gip/gip/GeoAlgorithms.h
 	<gip/GeoImage.h>
 	<gip/GeoRaster.h>
 
@@ -370,7 +369,7 @@
 	<gip/GeoRasterIO.h>
 	<gip/Options.h>
 
-1365000869 source:/home/mhanson/work/gippy/GIP/giputils/gip_classchange.cpp
+1370981837 source:/home/mhanson/work/gippy/GIP/giputils/gip_classchange.cpp
 	<iostream>
 	<gip/GeoImage.h>
 	<gip/GeoAlgorithms.h>

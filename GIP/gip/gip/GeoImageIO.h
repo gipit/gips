@@ -68,7 +68,7 @@ namespace gip {
 		}
 
 		//! Read Cube
-		CImg<T> ReadCube(bbox chunk) const {
+		CImg<T> Read(bbox chunk) const {
 			CImgList<T> images;
 			typename std::vector< GeoRasterIO<T> >::const_iterator iBand;
 			for (iBand=_RasterIOBands.begin();iBand!=_RasterIOBands.end();iBand++) {
@@ -79,7 +79,7 @@ namespace gip {
 		}
 
 		//! Read Cube as list
-		CImgList<T> ReadCubeAsList(bbox chunk) const {
+		CImgList<T> ReadAsList(bbox chunk) const {
 			CImgList<T> images;
 			typename std::vector< GeoRasterIO<T> >::const_iterator iBand;
 			for (iBand=_RasterIOBands.begin();iBand!=_RasterIOBands.end();iBand++) {
@@ -89,7 +89,7 @@ namespace gip {
 		}
 
 		//! Write Cube of data (for all bands)
-		GeoImageIO& WriteCube(const CImg<T> &img, bbox chunk, bool BadValCheck=false) {
+		GeoImageIO& Write(const CImg<T> &img, bbox chunk, bool BadValCheck=false) {
 			typename std::vector< GeoRasterIO<T> >::iterator iBand;
 			int i(0);
 			for (iBand=_RasterIOBands.begin();iBand!=_RasterIOBands.end();iBand++) {
@@ -130,24 +130,23 @@ namespace gip {
 		}
 
         //! Get a number of random pixel vectors (spectral vectors)
-        /*CImg<T> GetRandomPixels(int NumPixels) const {
+        CImg<T> GetRandomPixels(int NumPixels) const {
             CImg<T> Pixels(NumBands(), NumPixels);
             srand( time(NULL) );
             for (int i=0; i<NumPixels; i++) {
-                int col = (int)( (double)rand() / (double)RAND_MAX) * (XSize()-1);
-                int row = (int)( (double)rand() / (double)RAND_MAX) * (YSize()-1);
+                int col = (double)rand()/RAND_MAX * (XSize()-1);
+                int row = (double)rand()/RAND_MAX * (YSize()-1);
                 T pix[1];
-                for (int j=0; j<NumBands(); j++) {
-                    //CPLErr err = _RasterIOBands[j]->GetGDALRasterBand()->RasterIO(GF_Read, m_ROI.x0()+col, m_ROI.y0()+row, 1, 1, &pix, 1, 1, GDALType(&typeid(T)), 0, 0);
-                    CPLErr err = _RasterIOBands[j]->GetGDALRasterBand()->RasterIO(GF_Read, col, row, 1, 1, &pix, 1, 1, GDALType(&typeid(T)), 0, 0);
+                for (unsigned int j=0; j<NumBands(); j++) {
+                    _RasterIOBands[j].GetGDALRasterBand()->RasterIO(GF_Read, col, row, 1, 1, &pix, 1, 1, GDALType(), 0, 0);
                     Pixels(j,i) = pix[0];
                 }
             }
             return Pixels;
-        }*/
+        }
 
         //! Get a number of pixel vectors that are spectrally distant from each other
-        /*CImg<T> GetPixelClasses(int NumClasses) const {
+        CImg<T> GetPixelClasses(int NumClasses) const {
             int RandPixelsPerClass = 500;
             CImg<T> stats;
             CImg<T> ClassMeans(NumBands(), NumClasses);
@@ -156,12 +155,12 @@ namespace gip {
             // First pixel becomes first class
             cimg_forX(ClassMeans,x) ClassMeans(x,0) = RandomPixels(x,0);
             for (int i=1; i<NumClasses; i++) {
-                CImg<T> ThisClass = ClassMeans.get_line(i-1);
+                CImg<T> ThisClass = ClassMeans.get_row(i-1);
                 long validpixels = 0;
                 CImg<T> Dist(RandomPixels.height());
                 for (long j=0; j<RandomPixels.height(); j++) {
                     // Get current pixel vector
-                    CImg<T> ThisPixel = RandomPixels.get_line(j);
+                    CImg<T> ThisPixel = RandomPixels.get_row(j);
                     // Find distance to last class
                     Dist(j) = ThisPixel.sum() ? (ThisPixel-ThisClass).dot( (ThisPixel-ThisClass).transpose() ) : 0;
                     if (Dist(j) != 0) validpixels++;
@@ -176,23 +175,15 @@ namespace gip {
 
             }
             // Output Class Vectors
-            if (m_Options.verbose) {
-                for (int i=0; i<NumClasses; i++) {
-                    cout << "Class " << i+1 << " vector: ";
-                    cimg_forX(ClassMeans,x) cout << ClassMeans(x,i) << "  ";
-                    cout << endl;
-                }
-            }
+            if (Options::Verbose()) cimg_printclasses(ClassMeans);
             return ClassMeans;
-        }*/
-
+        }
 
 		// MASKS
-
 		//! NoData mask (all bands)
 		CImg<unsigned char> NoDataMask(bbox chunk) const {
 		    unsigned int c;
-		    CImg<T> cube = ReadCube(chunk);
+		    CImg<T> cube = Read(chunk);
 		    CImg<unsigned char> mask(cube.width(),cube.height(),1,1,0);
             cimg_forXY(cube,x,y) {
                 for (c=0; c<NumBands(); c++) {
@@ -254,15 +245,6 @@ namespace gip {
             return white;
         }
 
-        //! Copy from input band using specified units
-		/*GeoImage& Process(const GeoImage& image) {
-		    if (image.NumBands() != NumBands()) throw std::exception();
-            for (unsigned int b=0;b<NumBands();b++) {
-                _RasterIOBands[b].Process(GeoRasterIO<float>(image[b]));
-            }
-            return *this;
-		}*/
-
 	protected:
 		//! Vector of raster bands
 		std::vector< GeoRasterIO<T> > _RasterIOBands;
@@ -270,6 +252,22 @@ namespace gip {
 	private:
 		// Private default constructor prevents direct creation
 		GeoImageIO() {}
+
+		//! Returns GDAL Type corresponding to template type T
+		GDALDataType GDALType() const {
+		    // TODO - this is repeated in GeoRaster
+			if (typeid(T) == typeid(unsigned char)) return GDT_Byte;
+			else if (typeid(T) == typeid(unsigned short)) return GDT_UInt16;
+			else if (typeid(T) == typeid(short)) return GDT_Int16;
+			else if (typeid(T) == typeid(unsigned int)) return GDT_UInt32;
+			else if (typeid(T) == typeid(int)) return GDT_Int32;
+			else if (typeid(T) == typeid(float)) return GDT_Float32;
+			else if (typeid(T) == typeid(double)) return GDT_Float64;
+			else {
+				std::cout << "Data Type " << typeid(T).name() << " not supported" << std::endl;
+				throw(std::exception());
+			}
+		}
 
 	}; // class GeoImageIO
 } // namespace gip

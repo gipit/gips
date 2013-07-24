@@ -2942,32 +2942,30 @@ SWIG_Python_NonDynamicSetAttr(PyObject *obj, PyObject *name, PyObject *value) {
 
 /* -------- TYPES TABLE (BEGIN) -------- */
 
-#define SWIGTYPE_p_CImgT_double_t swig_types[0]
-#define SWIGTYPE_p_GDALRasterBand swig_types[1]
-#define SWIGTYPE_p_allocator_type swig_types[2]
-#define SWIGTYPE_p_boost__geometry__model__d2__point_xyT_float_t swig_types[3]
-#define SWIGTYPE_p_char swig_types[4]
-#define SWIGTYPE_p_cimg_library__CImgT_double_t swig_types[5]
-#define SWIGTYPE_p_difference_type swig_types[6]
-#define SWIGTYPE_p_gip__Atmosphere swig_types[7]
-#define SWIGTYPE_p_gip__Colors swig_types[8]
-#define SWIGTYPE_p_gip__GeoData swig_types[9]
-#define SWIGTYPE_p_gip__GeoFunction swig_types[10]
-#define SWIGTYPE_p_gip__GeoImage swig_types[11]
-#define SWIGTYPE_p_gip__GeoRaster swig_types[12]
-#define SWIGTYPE_p_gip__Options swig_types[13]
-#define SWIGTYPE_p_gip__Sensor swig_types[14]
-#define SWIGTYPE_p_p_PyObject swig_types[15]
-#define SWIGTYPE_p_size_type swig_types[16]
-#define SWIGTYPE_p_std__allocatorT_std__string_t swig_types[17]
-#define SWIGTYPE_p_std__invalid_argument swig_types[18]
-#define SWIGTYPE_p_std__vectorT__Tp__Alloc_t swig_types[19]
-#define SWIGTYPE_p_std__vectorT_boost__geometry__model__boxT_gip__point_t_std__allocatorT_boost__geometry__model__boxT_gip__point_t_t_t swig_types[20]
-#define SWIGTYPE_p_std__vectorT_std__string_std__allocatorT_std__string_t_t swig_types[21]
-#define SWIGTYPE_p_swig__SwigPyIterator swig_types[22]
-#define SWIGTYPE_p_value_type swig_types[23]
-static swig_type_info *swig_types[25];
-static swig_module_info swig_module = {swig_types, 24, 0, 0, 0, 0};
+#define SWIGTYPE_p_GDALRasterBand swig_types[0]
+#define SWIGTYPE_p_allocator_type swig_types[1]
+#define SWIGTYPE_p_boost__geometry__model__d2__point_xyT_float_t swig_types[2]
+#define SWIGTYPE_p_char swig_types[3]
+#define SWIGTYPE_p_cimg_library__CImgT_double_t swig_types[4]
+#define SWIGTYPE_p_difference_type swig_types[5]
+#define SWIGTYPE_p_gip__Atmosphere swig_types[6]
+#define SWIGTYPE_p_gip__Colors swig_types[7]
+#define SWIGTYPE_p_gip__GeoData swig_types[8]
+#define SWIGTYPE_p_gip__GeoFunction swig_types[9]
+#define SWIGTYPE_p_gip__GeoImage swig_types[10]
+#define SWIGTYPE_p_gip__GeoRaster swig_types[11]
+#define SWIGTYPE_p_gip__Options swig_types[12]
+#define SWIGTYPE_p_p_PyObject swig_types[13]
+#define SWIGTYPE_p_size_type swig_types[14]
+#define SWIGTYPE_p_std__allocatorT_std__string_t swig_types[15]
+#define SWIGTYPE_p_std__invalid_argument swig_types[16]
+#define SWIGTYPE_p_std__vectorT__Tp__Alloc_t swig_types[17]
+#define SWIGTYPE_p_std__vectorT_boost__geometry__model__boxT_gip__point_t_std__allocatorT_boost__geometry__model__boxT_gip__point_t_t_t swig_types[18]
+#define SWIGTYPE_p_std__vectorT_std__string_std__allocatorT_std__string_t_t swig_types[19]
+#define SWIGTYPE_p_swig__SwigPyIterator swig_types[20]
+#define SWIGTYPE_p_value_type swig_types[21]
+static swig_type_info *swig_types[23];
+static swig_module_info swig_module = {swig_types, 22, 0, 0, 0, 0};
 #define SWIG_TypeQuery(name) SWIG_TypeQueryModule(&swig_module, &swig_module, name)
 #define SWIG_MangledTypeQuery(name) SWIG_MangledTypeQueryModule(&swig_module, &swig_module, name)
 
@@ -4762,22 +4760,6 @@ SWIGINTERN std::string gip_Colors___getitem____SWIG_1(gip::Colors *self,int col)
 
 
 SWIGINTERN int
-SWIG_AsVal_float (PyObject * obj, float *val)
-{
-  double v;
-  int res = SWIG_AsVal_double (obj, &v);
-  if (SWIG_IsOK(res)) {
-    if ((v < -FLT_MAX || v > FLT_MAX)) {
-      return SWIG_OverflowError;
-    } else {
-      if (val) *val = static_cast< float >(v);
-    }
-  }  
-  return res;
-}
-
-
-SWIGINTERN int
 SWIG_AsVal_bool (PyObject *obj, bool *val)
 {
   int r = PyObject_IsTrue(obj);
@@ -4792,6 +4774,22 @@ SWIGINTERNINLINE PyObject *
 SWIG_From_unsigned_SS_int  (unsigned int value)
 {    
   return SWIG_From_unsigned_SS_long  (value);
+}
+
+
+SWIGINTERN int
+SWIG_AsVal_float (PyObject * obj, float *val)
+{
+  double v;
+  int res = SWIG_AsVal_double (obj, &v);
+  if (SWIG_IsOK(res)) {
+    if ((v < -FLT_MAX || v > FLT_MAX)) {
+      return SWIG_OverflowError;
+    } else {
+      if (val) *val = static_cast< float >(v);
+    }
+  }  
+  return res;
 }
 
 
@@ -7928,626 +7926,6 @@ SWIGINTERN PyObject *Colors_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObjec
   return SWIG_Py_Void();
 }
 
-SWIGINTERN PyObject *_wrap_new_Sensor__SWIG_0(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  gip::Sensor *result = 0 ;
-  
-  if (!PyArg_ParseTuple(args,(char *)":new_Sensor")) SWIG_fail;
-  {
-    try {
-      result = (gip::Sensor *)new gip::Sensor();
-    } catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
-  }
-  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_gip__Sensor, SWIG_POINTER_NEW |  0 );
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_new_Sensor__SWIG_1(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  gip::Sensor *arg1 = 0 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  PyObject * obj0 = 0 ;
-  gip::Sensor *result = 0 ;
-  
-  if (!PyArg_ParseTuple(args,(char *)"O:new_Sensor",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1, SWIGTYPE_p_gip__Sensor,  0  | 0);
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "new_Sensor" "', argument " "1"" of type '" "gip::Sensor const &""'"); 
-  }
-  if (!argp1) {
-    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "new_Sensor" "', argument " "1"" of type '" "gip::Sensor const &""'"); 
-  }
-  arg1 = reinterpret_cast< gip::Sensor * >(argp1);
-  {
-    try {
-      result = (gip::Sensor *)new gip::Sensor((gip::Sensor const &)*arg1);
-    } catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
-  }
-  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_gip__Sensor, SWIG_POINTER_NEW |  0 );
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_new_Sensor(PyObject *self, PyObject *args) {
-  int argc;
-  PyObject *argv[2];
-  int ii;
-  
-  if (!PyTuple_Check(args)) SWIG_fail;
-  argc = args ? (int)PyObject_Length(args) : 0;
-  for (ii = 0; (ii < 1) && (ii < argc); ii++) {
-    argv[ii] = PyTuple_GET_ITEM(args,ii);
-  }
-  if (argc == 0) {
-    return _wrap_new_Sensor__SWIG_0(self, args);
-  }
-  if (argc == 1) {
-    int _v;
-    int res = SWIG_ConvertPtr(argv[0], 0, SWIGTYPE_p_gip__Sensor, 0);
-    _v = SWIG_CheckState(res);
-    if (_v) {
-      return _wrap_new_Sensor__SWIG_1(self, args);
-    }
-  }
-  
-fail:
-  SWIG_SetErrorMsg(PyExc_NotImplementedError,"Wrong number or type of arguments for overloaded function 'new_Sensor'.\n"
-    "  Possible C/C++ prototypes are:\n"
-    "    gip::Sensor::Sensor()\n"
-    "    gip::Sensor::Sensor(gip::Sensor const &)\n");
-  return 0;
-}
-
-
-SWIGINTERN PyObject *_wrap_delete_Sensor(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  gip::Sensor *arg1 = (gip::Sensor *) 0 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  PyObject * obj0 = 0 ;
-  
-  if (!PyArg_ParseTuple(args,(char *)"O:delete_Sensor",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__Sensor, SWIG_POINTER_DISOWN |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "delete_Sensor" "', argument " "1"" of type '" "gip::Sensor *""'"); 
-  }
-  arg1 = reinterpret_cast< gip::Sensor * >(argp1);
-  {
-    try {
-      delete arg1;
-    } catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
-  }
-  resultobj = SWIG_Py_Void();
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_Sensor_minDC(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  gip::Sensor *arg1 = (gip::Sensor *) 0 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  PyObject * obj0 = 0 ;
-  int result;
-  
-  if (!PyArg_ParseTuple(args,(char *)"O:Sensor_minDC",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__Sensor, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Sensor_minDC" "', argument " "1"" of type '" "gip::Sensor const *""'"); 
-  }
-  arg1 = reinterpret_cast< gip::Sensor * >(argp1);
-  {
-    try {
-      result = (int)((gip::Sensor const *)arg1)->minDC();
-    } catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
-  }
-  resultobj = SWIG_From_int(static_cast< int >(result));
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_Sensor_maxDC(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  gip::Sensor *arg1 = (gip::Sensor *) 0 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  PyObject * obj0 = 0 ;
-  int result;
-  
-  if (!PyArg_ParseTuple(args,(char *)"O:Sensor_maxDC",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__Sensor, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Sensor_maxDC" "', argument " "1"" of type '" "gip::Sensor const *""'"); 
-  }
-  arg1 = reinterpret_cast< gip::Sensor * >(argp1);
-  {
-    try {
-      result = (int)((gip::Sensor const *)arg1)->maxDC();
-    } catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
-  }
-  resultobj = SWIG_From_int(static_cast< int >(result));
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_Sensor_K1(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  gip::Sensor *arg1 = (gip::Sensor *) 0 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  PyObject * obj0 = 0 ;
-  double result;
-  
-  if (!PyArg_ParseTuple(args,(char *)"O:Sensor_K1",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__Sensor, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Sensor_K1" "', argument " "1"" of type '" "gip::Sensor const *""'"); 
-  }
-  arg1 = reinterpret_cast< gip::Sensor * >(argp1);
-  {
-    try {
-      result = (double)((gip::Sensor const *)arg1)->K1();
-    } catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
-  }
-  resultobj = SWIG_From_double(static_cast< double >(result));
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_Sensor_K2(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  gip::Sensor *arg1 = (gip::Sensor *) 0 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  PyObject * obj0 = 0 ;
-  double result;
-  
-  if (!PyArg_ParseTuple(args,(char *)"O:Sensor_K2",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__Sensor, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Sensor_K2" "', argument " "1"" of type '" "gip::Sensor const *""'"); 
-  }
-  arg1 = reinterpret_cast< gip::Sensor * >(argp1);
-  {
-    try {
-      result = (double)((gip::Sensor const *)arg1)->K2();
-    } catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
-  }
-  resultobj = SWIG_From_double(static_cast< double >(result));
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_Sensor_RefCoef(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  gip::Sensor *arg1 = (gip::Sensor *) 0 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  PyObject * obj0 = 0 ;
-  double result;
-  
-  if (!PyArg_ParseTuple(args,(char *)"O:Sensor_RefCoef",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__Sensor, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Sensor_RefCoef" "', argument " "1"" of type '" "gip::Sensor const *""'"); 
-  }
-  arg1 = reinterpret_cast< gip::Sensor * >(argp1);
-  {
-    try {
-      result = (double)((gip::Sensor const *)arg1)->RefCoef();
-    } catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
-  }
-  resultobj = SWIG_From_double(static_cast< double >(result));
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_Sensor_Radiance(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  gip::Sensor *arg1 = (gip::Sensor *) 0 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  PyObject * obj0 = 0 ;
-  double result;
-  
-  if (!PyArg_ParseTuple(args,(char *)"O:Sensor_Radiance",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__Sensor, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Sensor_Radiance" "', argument " "1"" of type '" "gip::Sensor const *""'"); 
-  }
-  arg1 = reinterpret_cast< gip::Sensor * >(argp1);
-  {
-    try {
-      result = (double)((gip::Sensor const *)arg1)->Radiance();
-    } catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
-  }
-  resultobj = SWIG_From_double(static_cast< double >(result));
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_Sensor_SetDynamicRange(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  gip::Sensor *arg1 = (gip::Sensor *) 0 ;
-  int arg2 ;
-  int arg3 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  int val2 ;
-  int ecode2 = 0 ;
-  int val3 ;
-  int ecode3 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
-  PyObject * obj2 = 0 ;
-  
-  if (!PyArg_ParseTuple(args,(char *)"OOO:Sensor_SetDynamicRange",&obj0,&obj1,&obj2)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__Sensor, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Sensor_SetDynamicRange" "', argument " "1"" of type '" "gip::Sensor *""'"); 
-  }
-  arg1 = reinterpret_cast< gip::Sensor * >(argp1);
-  ecode2 = SWIG_AsVal_int(obj1, &val2);
-  if (!SWIG_IsOK(ecode2)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "Sensor_SetDynamicRange" "', argument " "2"" of type '" "int""'");
-  } 
-  arg2 = static_cast< int >(val2);
-  ecode3 = SWIG_AsVal_int(obj2, &val3);
-  if (!SWIG_IsOK(ecode3)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "Sensor_SetDynamicRange" "', argument " "3"" of type '" "int""'");
-  } 
-  arg3 = static_cast< int >(val3);
-  {
-    try {
-      (arg1)->SetDynamicRange(arg2,arg3);
-    } catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
-  }
-  resultobj = SWIG_Py_Void();
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_Sensor_SetTotalRadiance(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  gip::Sensor *arg1 = (gip::Sensor *) 0 ;
-  float arg2 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  float val2 ;
-  int ecode2 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
-  
-  if (!PyArg_ParseTuple(args,(char *)"OO:Sensor_SetTotalRadiance",&obj0,&obj1)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__Sensor, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Sensor_SetTotalRadiance" "', argument " "1"" of type '" "gip::Sensor *""'"); 
-  }
-  arg1 = reinterpret_cast< gip::Sensor * >(argp1);
-  ecode2 = SWIG_AsVal_float(obj1, &val2);
-  if (!SWIG_IsOK(ecode2)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "Sensor_SetTotalRadiance" "', argument " "2"" of type '" "float""'");
-  } 
-  arg2 = static_cast< float >(val2);
-  {
-    try {
-      (arg1)->SetTotalRadiance(arg2);
-    } catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
-  }
-  resultobj = SWIG_Py_Void();
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_Sensor_SetRefCoef(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  gip::Sensor *arg1 = (gip::Sensor *) 0 ;
-  int arg2 ;
-  float arg3 ;
-  float arg4 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  int val2 ;
-  int ecode2 = 0 ;
-  float val3 ;
-  int ecode3 = 0 ;
-  float val4 ;
-  int ecode4 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
-  PyObject * obj2 = 0 ;
-  PyObject * obj3 = 0 ;
-  
-  if (!PyArg_ParseTuple(args,(char *)"OOOO:Sensor_SetRefCoef",&obj0,&obj1,&obj2,&obj3)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__Sensor, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Sensor_SetRefCoef" "', argument " "1"" of type '" "gip::Sensor *""'"); 
-  }
-  arg1 = reinterpret_cast< gip::Sensor * >(argp1);
-  ecode2 = SWIG_AsVal_int(obj1, &val2);
-  if (!SWIG_IsOK(ecode2)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "Sensor_SetRefCoef" "', argument " "2"" of type '" "int""'");
-  } 
-  arg2 = static_cast< int >(val2);
-  ecode3 = SWIG_AsVal_float(obj2, &val3);
-  if (!SWIG_IsOK(ecode3)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "Sensor_SetRefCoef" "', argument " "3"" of type '" "float""'");
-  } 
-  arg3 = static_cast< float >(val3);
-  ecode4 = SWIG_AsVal_float(obj3, &val4);
-  if (!SWIG_IsOK(ecode4)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "Sensor_SetRefCoef" "', argument " "4"" of type '" "float""'");
-  } 
-  arg4 = static_cast< float >(val4);
-  {
-    try {
-      (arg1)->SetRefCoef(arg2,arg3,arg4);
-    } catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
-  }
-  resultobj = SWIG_Py_Void();
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_Sensor_Thermal(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  gip::Sensor *arg1 = (gip::Sensor *) 0 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  PyObject * obj0 = 0 ;
-  bool result;
-  
-  if (!PyArg_ParseTuple(args,(char *)"O:Sensor_Thermal",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__Sensor, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Sensor_Thermal" "', argument " "1"" of type '" "gip::Sensor const *""'"); 
-  }
-  arg1 = reinterpret_cast< gip::Sensor * >(argp1);
-  {
-    try {
-      result = (bool)((gip::Sensor const *)arg1)->Thermal();
-    } catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
-  }
-  resultobj = SWIG_From_bool(static_cast< bool >(result));
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_Sensor_SetThermal__SWIG_0(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  gip::Sensor *arg1 = (gip::Sensor *) 0 ;
-  float arg2 ;
-  float arg3 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  float val2 ;
-  int ecode2 = 0 ;
-  float val3 ;
-  int ecode3 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
-  PyObject * obj2 = 0 ;
-  
-  if (!PyArg_ParseTuple(args,(char *)"OOO:Sensor_SetThermal",&obj0,&obj1,&obj2)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__Sensor, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Sensor_SetThermal" "', argument " "1"" of type '" "gip::Sensor *""'"); 
-  }
-  arg1 = reinterpret_cast< gip::Sensor * >(argp1);
-  ecode2 = SWIG_AsVal_float(obj1, &val2);
-  if (!SWIG_IsOK(ecode2)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "Sensor_SetThermal" "', argument " "2"" of type '" "float""'");
-  } 
-  arg2 = static_cast< float >(val2);
-  ecode3 = SWIG_AsVal_float(obj2, &val3);
-  if (!SWIG_IsOK(ecode3)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "Sensor_SetThermal" "', argument " "3"" of type '" "float""'");
-  } 
-  arg3 = static_cast< float >(val3);
-  {
-    try {
-      (arg1)->SetThermal(arg2,arg3);
-    } catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
-  }
-  resultobj = SWIG_Py_Void();
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_Sensor_SetThermal__SWIG_1(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  gip::Sensor *arg1 = (gip::Sensor *) 0 ;
-  float arg2 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  float val2 ;
-  int ecode2 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
-  
-  if (!PyArg_ParseTuple(args,(char *)"OO:Sensor_SetThermal",&obj0,&obj1)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__Sensor, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Sensor_SetThermal" "', argument " "1"" of type '" "gip::Sensor *""'"); 
-  }
-  arg1 = reinterpret_cast< gip::Sensor * >(argp1);
-  ecode2 = SWIG_AsVal_float(obj1, &val2);
-  if (!SWIG_IsOK(ecode2)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "Sensor_SetThermal" "', argument " "2"" of type '" "float""'");
-  } 
-  arg2 = static_cast< float >(val2);
-  {
-    try {
-      (arg1)->SetThermal(arg2);
-    } catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
-  }
-  resultobj = SWIG_Py_Void();
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_Sensor_SetThermal__SWIG_2(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  gip::Sensor *arg1 = (gip::Sensor *) 0 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  PyObject * obj0 = 0 ;
-  
-  if (!PyArg_ParseTuple(args,(char *)"O:Sensor_SetThermal",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__Sensor, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Sensor_SetThermal" "', argument " "1"" of type '" "gip::Sensor *""'"); 
-  }
-  arg1 = reinterpret_cast< gip::Sensor * >(argp1);
-  {
-    try {
-      (arg1)->SetThermal();
-    } catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
-  }
-  resultobj = SWIG_Py_Void();
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_Sensor_SetThermal(PyObject *self, PyObject *args) {
-  int argc;
-  PyObject *argv[4];
-  int ii;
-  
-  if (!PyTuple_Check(args)) SWIG_fail;
-  argc = args ? (int)PyObject_Length(args) : 0;
-  for (ii = 0; (ii < 3) && (ii < argc); ii++) {
-    argv[ii] = PyTuple_GET_ITEM(args,ii);
-  }
-  if (argc == 1) {
-    int _v;
-    void *vptr = 0;
-    int res = SWIG_ConvertPtr(argv[0], &vptr, SWIGTYPE_p_gip__Sensor, 0);
-    _v = SWIG_CheckState(res);
-    if (_v) {
-      return _wrap_Sensor_SetThermal__SWIG_2(self, args);
-    }
-  }
-  if (argc == 2) {
-    int _v;
-    void *vptr = 0;
-    int res = SWIG_ConvertPtr(argv[0], &vptr, SWIGTYPE_p_gip__Sensor, 0);
-    _v = SWIG_CheckState(res);
-    if (_v) {
-      {
-        int res = SWIG_AsVal_float(argv[1], NULL);
-        _v = SWIG_CheckState(res);
-      }
-      if (_v) {
-        return _wrap_Sensor_SetThermal__SWIG_1(self, args);
-      }
-    }
-  }
-  if (argc == 3) {
-    int _v;
-    void *vptr = 0;
-    int res = SWIG_ConvertPtr(argv[0], &vptr, SWIGTYPE_p_gip__Sensor, 0);
-    _v = SWIG_CheckState(res);
-    if (_v) {
-      {
-        int res = SWIG_AsVal_float(argv[1], NULL);
-        _v = SWIG_CheckState(res);
-      }
-      if (_v) {
-        {
-          int res = SWIG_AsVal_float(argv[2], NULL);
-          _v = SWIG_CheckState(res);
-        }
-        if (_v) {
-          return _wrap_Sensor_SetThermal__SWIG_0(self, args);
-        }
-      }
-    }
-  }
-  
-fail:
-  SWIG_SetErrorMsg(PyExc_NotImplementedError,"Wrong number or type of arguments for overloaded function 'Sensor_SetThermal'.\n"
-    "  Possible C/C++ prototypes are:\n"
-    "    gip::Sensor::SetThermal(float,float)\n"
-    "    gip::Sensor::SetThermal(float)\n"
-    "    gip::Sensor::SetThermal()\n");
-  return 0;
-}
-
-
-SWIGINTERN PyObject *Sensor_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *obj;
-  if (!PyArg_ParseTuple(args,(char*)"O:swigregister", &obj)) return NULL;
-  SWIG_TypeNewClientData(SWIGTYPE_p_gip__Sensor, SWIG_NewClientData(obj));
-  return SWIG_Py_Void();
-}
-
 SWIGINTERN PyObject *_wrap_new_Atmosphere__SWIG_0(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   gip::Atmosphere *result = 0 ;
@@ -10543,6 +9921,55 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_GeoRaster_Copy(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  gip::GeoRaster *arg1 = (gip::GeoRaster *) 0 ;
+  gip::GeoRaster *arg2 = 0 ;
+  gip::UNITS arg3 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  void *argp2 = 0 ;
+  int res2 = 0 ;
+  int val3 ;
+  int ecode3 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
+  gip::GeoRaster *result = 0 ;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OOO:GeoRaster_Copy",&obj0,&obj1,&obj2)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__GeoRaster, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoRaster_Copy" "', argument " "1"" of type '" "gip::GeoRaster *""'"); 
+  }
+  arg1 = reinterpret_cast< gip::GeoRaster * >(argp1);
+  res2 = SWIG_ConvertPtr(obj1, &argp2, SWIGTYPE_p_gip__GeoRaster,  0  | 0);
+  if (!SWIG_IsOK(res2)) {
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "GeoRaster_Copy" "', argument " "2"" of type '" "gip::GeoRaster const &""'"); 
+  }
+  if (!argp2) {
+    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "GeoRaster_Copy" "', argument " "2"" of type '" "gip::GeoRaster const &""'"); 
+  }
+  arg2 = reinterpret_cast< gip::GeoRaster * >(argp2);
+  ecode3 = SWIG_AsVal_int(obj2, &val3);
+  if (!SWIG_IsOK(ecode3)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "GeoRaster_Copy" "', argument " "3"" of type '" "gip::UNITS""'");
+  } 
+  arg3 = static_cast< gip::UNITS >(val3);
+  {
+    try {
+      result = (gip::GeoRaster *) &(arg1)->Copy((gip::GeoRaster const &)*arg2,arg3);
+    } catch (const std::exception& e) {
+      SWIG_exception(SWIG_RuntimeError, e.what());
+    }
+  }
+  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_gip__GeoRaster, 0 |  0 );
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_GeoRaster_XSize(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   gip::GeoRaster *arg1 = (gip::GeoRaster *) 0 ;
@@ -10960,45 +10387,6 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_GeoRaster_CopyColorTable(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  gip::GeoRaster *arg1 = (gip::GeoRaster *) 0 ;
-  gip::GeoRaster *arg2 = 0 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  void *argp2 = 0 ;
-  int res2 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
-  
-  if (!PyArg_ParseTuple(args,(char *)"OO:GeoRaster_CopyColorTable",&obj0,&obj1)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__GeoRaster, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoRaster_CopyColorTable" "', argument " "1"" of type '" "gip::GeoRaster *""'"); 
-  }
-  arg1 = reinterpret_cast< gip::GeoRaster * >(argp1);
-  res2 = SWIG_ConvertPtr(obj1, &argp2, SWIGTYPE_p_gip__GeoRaster,  0  | 0);
-  if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "GeoRaster_CopyColorTable" "', argument " "2"" of type '" "gip::GeoRaster const &""'"); 
-  }
-  if (!argp2) {
-    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "GeoRaster_CopyColorTable" "', argument " "2"" of type '" "gip::GeoRaster const &""'"); 
-  }
-  arg2 = reinterpret_cast< gip::GeoRaster * >(argp2);
-  {
-    try {
-      (arg1)->CopyColorTable((gip::GeoRaster const &)*arg2);
-    } catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
-  }
-  resultobj = SWIG_Py_Void();
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
 SWIGINTERN PyObject *_wrap_GeoRaster_CopyCategoryNames(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   gip::GeoRaster *arg1 = (gip::GeoRaster *) 0 ;
@@ -11166,62 +10554,278 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_GeoRaster_Sensor(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_GeoRaster_Thermal(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   gip::GeoRaster *arg1 = (gip::GeoRaster *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   PyObject * obj0 = 0 ;
-  gip::Sensor result;
+  bool result;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:GeoRaster_Sensor",&obj0)) SWIG_fail;
+  if (!PyArg_ParseTuple(args,(char *)"O:GeoRaster_Thermal",&obj0)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__GeoRaster, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoRaster_Sensor" "', argument " "1"" of type '" "gip::GeoRaster const *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoRaster_Thermal" "', argument " "1"" of type '" "gip::GeoRaster const *""'"); 
   }
   arg1 = reinterpret_cast< gip::GeoRaster * >(argp1);
   {
     try {
-      result = ((gip::GeoRaster const *)arg1)->Sensor();
+      result = (bool)((gip::GeoRaster const *)arg1)->Thermal();
     } catch (const std::exception& e) {
       SWIG_exception(SWIG_RuntimeError, e.what());
     }
   }
-  resultobj = SWIG_NewPointerObj((new gip::Sensor(static_cast< const gip::Sensor& >(result))), SWIGTYPE_p_gip__Sensor, SWIG_POINTER_OWN |  0 );
+  resultobj = SWIG_From_bool(static_cast< bool >(result));
   return resultobj;
 fail:
   return NULL;
 }
 
 
-SWIGINTERN PyObject *_wrap_GeoRaster_SetSensor(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_GeoRaster_SetThermal__SWIG_0(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   gip::GeoRaster *arg1 = (gip::GeoRaster *) 0 ;
-  gip::Sensor *arg2 = 0 ;
+  float arg2 ;
+  float arg3 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  void *argp2 = 0 ;
-  int res2 = 0 ;
+  float val2 ;
+  int ecode2 = 0 ;
+  float val3 ;
+  int ecode3 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OOO:GeoRaster_SetThermal",&obj0,&obj1,&obj2)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__GeoRaster, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoRaster_SetThermal" "', argument " "1"" of type '" "gip::GeoRaster *""'"); 
+  }
+  arg1 = reinterpret_cast< gip::GeoRaster * >(argp1);
+  ecode2 = SWIG_AsVal_float(obj1, &val2);
+  if (!SWIG_IsOK(ecode2)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "GeoRaster_SetThermal" "', argument " "2"" of type '" "float""'");
+  } 
+  arg2 = static_cast< float >(val2);
+  ecode3 = SWIG_AsVal_float(obj2, &val3);
+  if (!SWIG_IsOK(ecode3)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "GeoRaster_SetThermal" "', argument " "3"" of type '" "float""'");
+  } 
+  arg3 = static_cast< float >(val3);
+  {
+    try {
+      (arg1)->SetThermal(arg2,arg3);
+    } catch (const std::exception& e) {
+      SWIG_exception(SWIG_RuntimeError, e.what());
+    }
+  }
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_GeoRaster_SetThermal__SWIG_1(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  gip::GeoRaster *arg1 = (gip::GeoRaster *) 0 ;
+  float arg2 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  float val2 ;
+  int ecode2 = 0 ;
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
   
-  if (!PyArg_ParseTuple(args,(char *)"OO:GeoRaster_SetSensor",&obj0,&obj1)) SWIG_fail;
+  if (!PyArg_ParseTuple(args,(char *)"OO:GeoRaster_SetThermal",&obj0,&obj1)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__GeoRaster, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoRaster_SetSensor" "', argument " "1"" of type '" "gip::GeoRaster *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoRaster_SetThermal" "', argument " "1"" of type '" "gip::GeoRaster *""'"); 
   }
   arg1 = reinterpret_cast< gip::GeoRaster * >(argp1);
-  res2 = SWIG_ConvertPtr(obj1, &argp2, SWIGTYPE_p_gip__Sensor,  0  | 0);
-  if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "GeoRaster_SetSensor" "', argument " "2"" of type '" "gip::Sensor const &""'"); 
-  }
-  if (!argp2) {
-    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "GeoRaster_SetSensor" "', argument " "2"" of type '" "gip::Sensor const &""'"); 
-  }
-  arg2 = reinterpret_cast< gip::Sensor * >(argp2);
+  ecode2 = SWIG_AsVal_float(obj1, &val2);
+  if (!SWIG_IsOK(ecode2)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "GeoRaster_SetThermal" "', argument " "2"" of type '" "float""'");
+  } 
+  arg2 = static_cast< float >(val2);
   {
     try {
-      (arg1)->SetSensor((gip::Sensor const &)*arg2);
+      (arg1)->SetThermal(arg2);
+    } catch (const std::exception& e) {
+      SWIG_exception(SWIG_RuntimeError, e.what());
+    }
+  }
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_GeoRaster_SetThermal__SWIG_2(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  gip::GeoRaster *arg1 = (gip::GeoRaster *) 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject * obj0 = 0 ;
+  
+  if (!PyArg_ParseTuple(args,(char *)"O:GeoRaster_SetThermal",&obj0)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__GeoRaster, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoRaster_SetThermal" "', argument " "1"" of type '" "gip::GeoRaster *""'"); 
+  }
+  arg1 = reinterpret_cast< gip::GeoRaster * >(argp1);
+  {
+    try {
+      (arg1)->SetThermal();
+    } catch (const std::exception& e) {
+      SWIG_exception(SWIG_RuntimeError, e.what());
+    }
+  }
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_GeoRaster_SetThermal(PyObject *self, PyObject *args) {
+  int argc;
+  PyObject *argv[4];
+  int ii;
+  
+  if (!PyTuple_Check(args)) SWIG_fail;
+  argc = args ? (int)PyObject_Length(args) : 0;
+  for (ii = 0; (ii < 3) && (ii < argc); ii++) {
+    argv[ii] = PyTuple_GET_ITEM(args,ii);
+  }
+  if (argc == 1) {
+    int _v;
+    void *vptr = 0;
+    int res = SWIG_ConvertPtr(argv[0], &vptr, SWIGTYPE_p_gip__GeoRaster, 0);
+    _v = SWIG_CheckState(res);
+    if (_v) {
+      return _wrap_GeoRaster_SetThermal__SWIG_2(self, args);
+    }
+  }
+  if (argc == 2) {
+    int _v;
+    void *vptr = 0;
+    int res = SWIG_ConvertPtr(argv[0], &vptr, SWIGTYPE_p_gip__GeoRaster, 0);
+    _v = SWIG_CheckState(res);
+    if (_v) {
+      {
+        int res = SWIG_AsVal_float(argv[1], NULL);
+        _v = SWIG_CheckState(res);
+      }
+      if (_v) {
+        return _wrap_GeoRaster_SetThermal__SWIG_1(self, args);
+      }
+    }
+  }
+  if (argc == 3) {
+    int _v;
+    void *vptr = 0;
+    int res = SWIG_ConvertPtr(argv[0], &vptr, SWIGTYPE_p_gip__GeoRaster, 0);
+    _v = SWIG_CheckState(res);
+    if (_v) {
+      {
+        int res = SWIG_AsVal_float(argv[1], NULL);
+        _v = SWIG_CheckState(res);
+      }
+      if (_v) {
+        {
+          int res = SWIG_AsVal_float(argv[2], NULL);
+          _v = SWIG_CheckState(res);
+        }
+        if (_v) {
+          return _wrap_GeoRaster_SetThermal__SWIG_0(self, args);
+        }
+      }
+    }
+  }
+  
+fail:
+  SWIG_SetErrorMsg(PyExc_NotImplementedError,"Wrong number or type of arguments for overloaded function 'GeoRaster_SetThermal'.\n"
+    "  Possible C/C++ prototypes are:\n"
+    "    gip::GeoRaster::SetThermal(float,float)\n"
+    "    gip::GeoRaster::SetThermal(float)\n"
+    "    gip::GeoRaster::SetThermal()\n");
+  return 0;
+}
+
+
+SWIGINTERN PyObject *_wrap_GeoRaster_SetDynamicRange(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  gip::GeoRaster *arg1 = (gip::GeoRaster *) 0 ;
+  int arg2 ;
+  int arg3 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  int val2 ;
+  int ecode2 = 0 ;
+  int val3 ;
+  int ecode3 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OOO:GeoRaster_SetDynamicRange",&obj0,&obj1,&obj2)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__GeoRaster, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoRaster_SetDynamicRange" "', argument " "1"" of type '" "gip::GeoRaster *""'"); 
+  }
+  arg1 = reinterpret_cast< gip::GeoRaster * >(argp1);
+  ecode2 = SWIG_AsVal_int(obj1, &val2);
+  if (!SWIG_IsOK(ecode2)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "GeoRaster_SetDynamicRange" "', argument " "2"" of type '" "int""'");
+  } 
+  arg2 = static_cast< int >(val2);
+  ecode3 = SWIG_AsVal_int(obj2, &val3);
+  if (!SWIG_IsOK(ecode3)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "GeoRaster_SetDynamicRange" "', argument " "3"" of type '" "int""'");
+  } 
+  arg3 = static_cast< int >(val3);
+  {
+    try {
+      (arg1)->SetDynamicRange(arg2,arg3);
+    } catch (const std::exception& e) {
+      SWIG_exception(SWIG_RuntimeError, e.what());
+    }
+  }
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_GeoRaster_SetEsun(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  gip::GeoRaster *arg1 = (gip::GeoRaster *) 0 ;
+  float arg2 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  float val2 ;
+  int ecode2 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OO:GeoRaster_SetEsun",&obj0,&obj1)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__GeoRaster, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoRaster_SetEsun" "', argument " "1"" of type '" "gip::GeoRaster *""'"); 
+  }
+  arg1 = reinterpret_cast< gip::GeoRaster * >(argp1);
+  ecode2 = SWIG_AsVal_float(obj1, &val2);
+  if (!SWIG_IsOK(ecode2)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "GeoRaster_SetEsun" "', argument " "2"" of type '" "float""'");
+  } 
+  arg2 = static_cast< float >(val2);
+  {
+    try {
+      (arg1)->SetEsun(arg2);
     } catch (const std::exception& e) {
       SWIG_exception(SWIG_RuntimeError, e.what());
     }
@@ -13051,6 +12655,45 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_GeoImage_CopyColorTable(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  gip::GeoImage *arg1 = (gip::GeoImage *) 0 ;
+  gip::GeoImage *arg2 = 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  void *argp2 = 0 ;
+  int res2 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OO:GeoImage_CopyColorTable",&obj0,&obj1)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__GeoImage, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoImage_CopyColorTable" "', argument " "1"" of type '" "gip::GeoImage *""'"); 
+  }
+  arg1 = reinterpret_cast< gip::GeoImage * >(argp1);
+  res2 = SWIG_ConvertPtr(obj1, &argp2, SWIGTYPE_p_gip__GeoImage,  0  | 0);
+  if (!SWIG_IsOK(res2)) {
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "GeoImage_CopyColorTable" "', argument " "2"" of type '" "gip::GeoImage const &""'"); 
+  }
+  if (!argp2) {
+    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "GeoImage_CopyColorTable" "', argument " "2"" of type '" "gip::GeoImage const &""'"); 
+  }
+  arg2 = reinterpret_cast< gip::GeoImage * >(argp2);
+  {
+    try {
+      (arg1)->CopyColorTable((gip::GeoImage const &)*arg2);
+    } catch (const std::exception& e) {
+      SWIG_exception(SWIG_RuntimeError, e.what());
+    }
+  }
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_GeoImage_AddBand(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   gip::GeoImage *arg1 = (gip::GeoImage *) 0 ;
@@ -13580,104 +13223,9 @@ SWIGINTERN PyObject *GeoImage_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObj
 
 SWIGINTERN PyObject *_wrap_Copy__SWIG_0(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
-  gip::GeoRaster *arg1 = 0 ;
-  gip::GeoRaster *arg2 = 0 ;
-  UNITS arg3 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  void *argp2 = 0 ;
-  int res2 = 0 ;
-  int val3 ;
-  int ecode3 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
-  PyObject * obj2 = 0 ;
-  SwigValueWrapper< gip::GeoRaster > result;
-  
-  if (!PyArg_ParseTuple(args,(char *)"OOO:Copy",&obj0,&obj1,&obj2)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1, SWIGTYPE_p_gip__GeoRaster,  0  | 0);
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Copy" "', argument " "1"" of type '" "gip::GeoRaster const &""'"); 
-  }
-  if (!argp1) {
-    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "Copy" "', argument " "1"" of type '" "gip::GeoRaster const &""'"); 
-  }
-  arg1 = reinterpret_cast< gip::GeoRaster * >(argp1);
-  res2 = SWIG_ConvertPtr(obj1, &argp2, SWIGTYPE_p_gip__GeoRaster,  0 );
-  if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "Copy" "', argument " "2"" of type '" "gip::GeoRaster &""'"); 
-  }
-  if (!argp2) {
-    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "Copy" "', argument " "2"" of type '" "gip::GeoRaster &""'"); 
-  }
-  arg2 = reinterpret_cast< gip::GeoRaster * >(argp2);
-  ecode3 = SWIG_AsVal_int(obj2, &val3);
-  if (!SWIG_IsOK(ecode3)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "Copy" "', argument " "3"" of type '" "UNITS""'");
-  } 
-  arg3 = static_cast< UNITS >(val3);
-  {
-    try {
-      result = gip::Copy((gip::GeoRaster const &)*arg1,*arg2,arg3);
-    } catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
-  }
-  resultobj = SWIG_NewPointerObj((new gip::GeoRaster(static_cast< const gip::GeoRaster& >(result))), SWIGTYPE_p_gip__GeoRaster, SWIG_POINTER_OWN |  0 );
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_Copy__SWIG_1(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  gip::GeoRaster *arg1 = 0 ;
-  gip::GeoRaster *arg2 = 0 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  void *argp2 = 0 ;
-  int res2 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
-  SwigValueWrapper< gip::GeoRaster > result;
-  
-  if (!PyArg_ParseTuple(args,(char *)"OO:Copy",&obj0,&obj1)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1, SWIGTYPE_p_gip__GeoRaster,  0  | 0);
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Copy" "', argument " "1"" of type '" "gip::GeoRaster const &""'"); 
-  }
-  if (!argp1) {
-    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "Copy" "', argument " "1"" of type '" "gip::GeoRaster const &""'"); 
-  }
-  arg1 = reinterpret_cast< gip::GeoRaster * >(argp1);
-  res2 = SWIG_ConvertPtr(obj1, &argp2, SWIGTYPE_p_gip__GeoRaster,  0 );
-  if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "Copy" "', argument " "2"" of type '" "gip::GeoRaster &""'"); 
-  }
-  if (!argp2) {
-    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "Copy" "', argument " "2"" of type '" "gip::GeoRaster &""'"); 
-  }
-  arg2 = reinterpret_cast< gip::GeoRaster * >(argp2);
-  {
-    try {
-      result = gip::Copy((gip::GeoRaster const &)*arg1,*arg2);
-    } catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
-  }
-  resultobj = SWIG_NewPointerObj((new gip::GeoRaster(static_cast< const gip::GeoRaster& >(result))), SWIGTYPE_p_gip__GeoRaster, SWIG_POINTER_OWN |  0 );
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_Copy__SWIG_2(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
   gip::GeoImage *arg1 = 0 ;
   gip::GeoImage *arg2 = 0 ;
-  UNITS arg3 ;
+  gip::UNITS arg3 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   void *argp2 = 0 ;
@@ -13708,9 +13256,9 @@ SWIGINTERN PyObject *_wrap_Copy__SWIG_2(PyObject *SWIGUNUSEDPARM(self), PyObject
   arg2 = reinterpret_cast< gip::GeoImage * >(argp2);
   ecode3 = SWIG_AsVal_int(obj2, &val3);
   if (!SWIG_IsOK(ecode3)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "Copy" "', argument " "3"" of type '" "UNITS""'");
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "Copy" "', argument " "3"" of type '" "gip::UNITS""'");
   } 
-  arg3 = static_cast< UNITS >(val3);
+  arg3 = static_cast< gip::UNITS >(val3);
   {
     try {
       result = gip::Copy((gip::GeoImage const &)*arg1,*arg2,arg3);
@@ -13725,7 +13273,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_Copy__SWIG_3(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_Copy__SWIG_1(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   gip::GeoImage *arg1 = 0 ;
   gip::GeoImage *arg2 = 0 ;
@@ -13768,11 +13316,11 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_Copy__SWIG_4(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_Copy__SWIG_2(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   gip::GeoImage *arg1 = 0 ;
   std::string arg2 ;
-  UNITS arg3 ;
+  gip::UNITS arg3 ;
   GDALDataType arg4 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -13806,9 +13354,9 @@ SWIGINTERN PyObject *_wrap_Copy__SWIG_4(PyObject *SWIGUNUSEDPARM(self), PyObject
   }
   ecode3 = SWIG_AsVal_int(obj2, &val3);
   if (!SWIG_IsOK(ecode3)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "Copy" "', argument " "3"" of type '" "UNITS""'");
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "Copy" "', argument " "3"" of type '" "gip::UNITS""'");
   } 
-  arg3 = static_cast< UNITS >(val3);
+  arg3 = static_cast< gip::UNITS >(val3);
   ecode4 = SWIG_AsVal_int(obj3, &val4);
   if (!SWIG_IsOK(ecode4)) {
     SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "Copy" "', argument " "4"" of type '" "GDALDataType""'");
@@ -13828,11 +13376,11 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_Copy__SWIG_5(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_Copy__SWIG_3(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   gip::GeoImage *arg1 = 0 ;
   std::string arg2 ;
-  UNITS arg3 ;
+  gip::UNITS arg3 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   int val3 ;
@@ -13862,9 +13410,9 @@ SWIGINTERN PyObject *_wrap_Copy__SWIG_5(PyObject *SWIGUNUSEDPARM(self), PyObject
   }
   ecode3 = SWIG_AsVal_int(obj2, &val3);
   if (!SWIG_IsOK(ecode3)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "Copy" "', argument " "3"" of type '" "UNITS""'");
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "Copy" "', argument " "3"" of type '" "gip::UNITS""'");
   } 
-  arg3 = static_cast< UNITS >(val3);
+  arg3 = static_cast< gip::UNITS >(val3);
   {
     try {
       result = gip::Copy((gip::GeoImage const &)*arg1,arg2,arg3);
@@ -13879,7 +13427,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_Copy__SWIG_6(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_Copy__SWIG_4(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   gip::GeoImage *arg1 = 0 ;
   std::string arg2 ;
@@ -13933,11 +13481,11 @@ SWIGINTERN PyObject *_wrap_Copy(PyObject *self, PyObject *args) {
   }
   if (argc == 2) {
     int _v;
-    int res = SWIG_ConvertPtr(argv[0], 0, SWIGTYPE_p_gip__GeoRaster, 0);
+    int res = SWIG_ConvertPtr(argv[0], 0, SWIGTYPE_p_gip__GeoImage, 0);
     _v = SWIG_CheckState(res);
     if (_v) {
       void *vptr = 0;
-      int res = SWIG_ConvertPtr(argv[1], &vptr, SWIGTYPE_p_gip__GeoRaster, 0);
+      int res = SWIG_ConvertPtr(argv[1], &vptr, SWIGTYPE_p_gip__GeoImage, 0);
       _v = SWIG_CheckState(res);
       if (_v) {
         return _wrap_Copy__SWIG_1(self, args);
@@ -13949,33 +13497,20 @@ SWIGINTERN PyObject *_wrap_Copy(PyObject *self, PyObject *args) {
     int res = SWIG_ConvertPtr(argv[0], 0, SWIGTYPE_p_gip__GeoImage, 0);
     _v = SWIG_CheckState(res);
     if (_v) {
-      void *vptr = 0;
-      int res = SWIG_ConvertPtr(argv[1], &vptr, SWIGTYPE_p_gip__GeoImage, 0);
-      _v = SWIG_CheckState(res);
-      if (_v) {
-        return _wrap_Copy__SWIG_3(self, args);
-      }
-    }
-  }
-  if (argc == 2) {
-    int _v;
-    int res = SWIG_ConvertPtr(argv[0], 0, SWIGTYPE_p_gip__GeoImage, 0);
-    _v = SWIG_CheckState(res);
-    if (_v) {
       int res = SWIG_AsPtr_std_string(argv[1], (std::string**)(0));
       _v = SWIG_CheckState(res);
       if (_v) {
-        return _wrap_Copy__SWIG_6(self, args);
+        return _wrap_Copy__SWIG_4(self, args);
       }
     }
   }
   if (argc == 3) {
     int _v;
-    int res = SWIG_ConvertPtr(argv[0], 0, SWIGTYPE_p_gip__GeoRaster, 0);
+    int res = SWIG_ConvertPtr(argv[0], 0, SWIGTYPE_p_gip__GeoImage, 0);
     _v = SWIG_CheckState(res);
     if (_v) {
       void *vptr = 0;
-      int res = SWIG_ConvertPtr(argv[1], &vptr, SWIGTYPE_p_gip__GeoRaster, 0);
+      int res = SWIG_ConvertPtr(argv[1], &vptr, SWIGTYPE_p_gip__GeoImage, 0);
       _v = SWIG_CheckState(res);
       if (_v) {
         {
@@ -13993,25 +13528,6 @@ SWIGINTERN PyObject *_wrap_Copy(PyObject *self, PyObject *args) {
     int res = SWIG_ConvertPtr(argv[0], 0, SWIGTYPE_p_gip__GeoImage, 0);
     _v = SWIG_CheckState(res);
     if (_v) {
-      void *vptr = 0;
-      int res = SWIG_ConvertPtr(argv[1], &vptr, SWIGTYPE_p_gip__GeoImage, 0);
-      _v = SWIG_CheckState(res);
-      if (_v) {
-        {
-          int res = SWIG_AsVal_int(argv[2], NULL);
-          _v = SWIG_CheckState(res);
-        }
-        if (_v) {
-          return _wrap_Copy__SWIG_2(self, args);
-        }
-      }
-    }
-  }
-  if (argc == 3) {
-    int _v;
-    int res = SWIG_ConvertPtr(argv[0], 0, SWIGTYPE_p_gip__GeoImage, 0);
-    _v = SWIG_CheckState(res);
-    if (_v) {
       int res = SWIG_AsPtr_std_string(argv[1], (std::string**)(0));
       _v = SWIG_CheckState(res);
       if (_v) {
@@ -14020,7 +13536,7 @@ SWIGINTERN PyObject *_wrap_Copy(PyObject *self, PyObject *args) {
           _v = SWIG_CheckState(res);
         }
         if (_v) {
-          return _wrap_Copy__SWIG_5(self, args);
+          return _wrap_Copy__SWIG_3(self, args);
         }
       }
     }
@@ -14043,7 +13559,7 @@ SWIGINTERN PyObject *_wrap_Copy(PyObject *self, PyObject *args) {
             _v = SWIG_CheckState(res);
           }
           if (_v) {
-            return _wrap_Copy__SWIG_4(self, args);
+            return _wrap_Copy__SWIG_2(self, args);
           }
         }
       }
@@ -14053,12 +13569,10 @@ SWIGINTERN PyObject *_wrap_Copy(PyObject *self, PyObject *args) {
 fail:
   SWIG_SetErrorMsg(PyExc_NotImplementedError,"Wrong number or type of arguments for overloaded function 'Copy'.\n"
     "  Possible C/C++ prototypes are:\n"
-    "    gip::Copy(gip::GeoRaster const &,gip::GeoRaster &,UNITS)\n"
-    "    gip::Copy(gip::GeoRaster const &,gip::GeoRaster &)\n"
-    "    gip::Copy(gip::GeoImage const &,gip::GeoImage &,UNITS)\n"
+    "    gip::Copy(gip::GeoImage const &,gip::GeoImage &,gip::UNITS)\n"
     "    gip::Copy(gip::GeoImage const &,gip::GeoImage &)\n"
-    "    gip::Copy(gip::GeoImage const &,std::string,UNITS,GDALDataType)\n"
-    "    gip::Copy(gip::GeoImage const &,std::string,UNITS)\n"
+    "    gip::Copy(gip::GeoImage const &,std::string,gip::UNITS,GDALDataType)\n"
+    "    gip::Copy(gip::GeoImage const &,std::string,gip::UNITS)\n"
     "    gip::Copy(gip::GeoImage const &,std::string)\n");
   return 0;
 }
@@ -15594,7 +15108,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_InfReplace(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_FixBadPixels(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   gip::GeoImage *arg1 = 0 ;
   void *argp1 = 0 ;
@@ -15602,18 +15116,18 @@ SWIGINTERN PyObject *_wrap_InfReplace(PyObject *SWIGUNUSEDPARM(self), PyObject *
   PyObject * obj0 = 0 ;
   SwigValueWrapper< gip::GeoImage > result;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:InfReplace",&obj0)) SWIG_fail;
+  if (!PyArg_ParseTuple(args,(char *)"O:FixBadPixels",&obj0)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1, SWIGTYPE_p_gip__GeoImage,  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "InfReplace" "', argument " "1"" of type '" "gip::GeoImage &""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "FixBadPixels" "', argument " "1"" of type '" "gip::GeoImage &""'"); 
   }
   if (!argp1) {
-    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "InfReplace" "', argument " "1"" of type '" "gip::GeoImage &""'"); 
+    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "FixBadPixels" "', argument " "1"" of type '" "gip::GeoImage &""'"); 
   }
   arg1 = reinterpret_cast< gip::GeoImage * >(argp1);
   {
     try {
-      result = gip::InfReplace(*arg1);
+      result = gip::FixBadPixels(*arg1);
     } catch (const std::exception& e) {
       SWIG_exception(SWIG_RuntimeError, e.what());
     }
@@ -15625,34 +15139,331 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_SpectralCovariance(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_kmeans__SWIG_0(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   gip::GeoImage *arg1 = 0 ;
+  std::string arg2 ;
+  int arg3 ;
+  int arg4 ;
+  float arg5 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
+  int val3 ;
+  int ecode3 = 0 ;
+  int val4 ;
+  int ecode4 = 0 ;
+  float val5 ;
+  int ecode5 = 0 ;
   PyObject * obj0 = 0 ;
-  CImg< double > result;
+  PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
+  PyObject * obj3 = 0 ;
+  PyObject * obj4 = 0 ;
+  SwigValueWrapper< gip::GeoImage > result;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:SpectralCovariance",&obj0)) SWIG_fail;
+  if (!PyArg_ParseTuple(args,(char *)"OOOOO:kmeans",&obj0,&obj1,&obj2,&obj3,&obj4)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1, SWIGTYPE_p_gip__GeoImage,  0  | 0);
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "SpectralCovariance" "', argument " "1"" of type '" "gip::GeoImage const &""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "kmeans" "', argument " "1"" of type '" "gip::GeoImage const &""'"); 
   }
   if (!argp1) {
-    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "SpectralCovariance" "', argument " "1"" of type '" "gip::GeoImage const &""'"); 
+    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "kmeans" "', argument " "1"" of type '" "gip::GeoImage const &""'"); 
   }
   arg1 = reinterpret_cast< gip::GeoImage * >(argp1);
   {
+    std::string *ptr = (std::string *)0;
+    int res = SWIG_AsPtr_std_string(obj1, &ptr);
+    if (!SWIG_IsOK(res) || !ptr) {
+      SWIG_exception_fail(SWIG_ArgError((ptr ? res : SWIG_TypeError)), "in method '" "kmeans" "', argument " "2"" of type '" "std::string""'"); 
+    }
+    arg2 = *ptr;
+    if (SWIG_IsNewObj(res)) delete ptr;
+  }
+  ecode3 = SWIG_AsVal_int(obj2, &val3);
+  if (!SWIG_IsOK(ecode3)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "kmeans" "', argument " "3"" of type '" "int""'");
+  } 
+  arg3 = static_cast< int >(val3);
+  ecode4 = SWIG_AsVal_int(obj3, &val4);
+  if (!SWIG_IsOK(ecode4)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "kmeans" "', argument " "4"" of type '" "int""'");
+  } 
+  arg4 = static_cast< int >(val4);
+  ecode5 = SWIG_AsVal_float(obj4, &val5);
+  if (!SWIG_IsOK(ecode5)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode5), "in method '" "kmeans" "', argument " "5"" of type '" "float""'");
+  } 
+  arg5 = static_cast< float >(val5);
+  {
     try {
-      result = gip::SpectralCovariance((gip::GeoImage const &)*arg1);
+      result = gip::kmeans((gip::GeoImage const &)*arg1,arg2,arg3,arg4,arg5);
     } catch (const std::exception& e) {
       SWIG_exception(SWIG_RuntimeError, e.what());
     }
   }
-  resultobj = SWIG_NewPointerObj((new CImg< double >(static_cast< const CImg< double >& >(result))), SWIGTYPE_p_CImgT_double_t, SWIG_POINTER_OWN |  0 );
+  resultobj = SWIG_NewPointerObj((new gip::GeoImage(static_cast< const gip::GeoImage& >(result))), SWIGTYPE_p_gip__GeoImage, SWIG_POINTER_OWN |  0 );
   return resultobj;
 fail:
   return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_kmeans__SWIG_1(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  gip::GeoImage *arg1 = 0 ;
+  std::string arg2 ;
+  int arg3 ;
+  int arg4 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  int val3 ;
+  int ecode3 = 0 ;
+  int val4 ;
+  int ecode4 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
+  PyObject * obj3 = 0 ;
+  SwigValueWrapper< gip::GeoImage > result;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OOOO:kmeans",&obj0,&obj1,&obj2,&obj3)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1, SWIGTYPE_p_gip__GeoImage,  0  | 0);
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "kmeans" "', argument " "1"" of type '" "gip::GeoImage const &""'"); 
+  }
+  if (!argp1) {
+    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "kmeans" "', argument " "1"" of type '" "gip::GeoImage const &""'"); 
+  }
+  arg1 = reinterpret_cast< gip::GeoImage * >(argp1);
+  {
+    std::string *ptr = (std::string *)0;
+    int res = SWIG_AsPtr_std_string(obj1, &ptr);
+    if (!SWIG_IsOK(res) || !ptr) {
+      SWIG_exception_fail(SWIG_ArgError((ptr ? res : SWIG_TypeError)), "in method '" "kmeans" "', argument " "2"" of type '" "std::string""'"); 
+    }
+    arg2 = *ptr;
+    if (SWIG_IsNewObj(res)) delete ptr;
+  }
+  ecode3 = SWIG_AsVal_int(obj2, &val3);
+  if (!SWIG_IsOK(ecode3)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "kmeans" "', argument " "3"" of type '" "int""'");
+  } 
+  arg3 = static_cast< int >(val3);
+  ecode4 = SWIG_AsVal_int(obj3, &val4);
+  if (!SWIG_IsOK(ecode4)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "kmeans" "', argument " "4"" of type '" "int""'");
+  } 
+  arg4 = static_cast< int >(val4);
+  {
+    try {
+      result = gip::kmeans((gip::GeoImage const &)*arg1,arg2,arg3,arg4);
+    } catch (const std::exception& e) {
+      SWIG_exception(SWIG_RuntimeError, e.what());
+    }
+  }
+  resultobj = SWIG_NewPointerObj((new gip::GeoImage(static_cast< const gip::GeoImage& >(result))), SWIGTYPE_p_gip__GeoImage, SWIG_POINTER_OWN |  0 );
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_kmeans__SWIG_2(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  gip::GeoImage *arg1 = 0 ;
+  std::string arg2 ;
+  int arg3 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  int val3 ;
+  int ecode3 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
+  SwigValueWrapper< gip::GeoImage > result;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OOO:kmeans",&obj0,&obj1,&obj2)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1, SWIGTYPE_p_gip__GeoImage,  0  | 0);
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "kmeans" "', argument " "1"" of type '" "gip::GeoImage const &""'"); 
+  }
+  if (!argp1) {
+    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "kmeans" "', argument " "1"" of type '" "gip::GeoImage const &""'"); 
+  }
+  arg1 = reinterpret_cast< gip::GeoImage * >(argp1);
+  {
+    std::string *ptr = (std::string *)0;
+    int res = SWIG_AsPtr_std_string(obj1, &ptr);
+    if (!SWIG_IsOK(res) || !ptr) {
+      SWIG_exception_fail(SWIG_ArgError((ptr ? res : SWIG_TypeError)), "in method '" "kmeans" "', argument " "2"" of type '" "std::string""'"); 
+    }
+    arg2 = *ptr;
+    if (SWIG_IsNewObj(res)) delete ptr;
+  }
+  ecode3 = SWIG_AsVal_int(obj2, &val3);
+  if (!SWIG_IsOK(ecode3)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "kmeans" "', argument " "3"" of type '" "int""'");
+  } 
+  arg3 = static_cast< int >(val3);
+  {
+    try {
+      result = gip::kmeans((gip::GeoImage const &)*arg1,arg2,arg3);
+    } catch (const std::exception& e) {
+      SWIG_exception(SWIG_RuntimeError, e.what());
+    }
+  }
+  resultobj = SWIG_NewPointerObj((new gip::GeoImage(static_cast< const gip::GeoImage& >(result))), SWIGTYPE_p_gip__GeoImage, SWIG_POINTER_OWN |  0 );
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_kmeans__SWIG_3(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  gip::GeoImage *arg1 = 0 ;
+  std::string arg2 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  SwigValueWrapper< gip::GeoImage > result;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OO:kmeans",&obj0,&obj1)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1, SWIGTYPE_p_gip__GeoImage,  0  | 0);
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "kmeans" "', argument " "1"" of type '" "gip::GeoImage const &""'"); 
+  }
+  if (!argp1) {
+    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "kmeans" "', argument " "1"" of type '" "gip::GeoImage const &""'"); 
+  }
+  arg1 = reinterpret_cast< gip::GeoImage * >(argp1);
+  {
+    std::string *ptr = (std::string *)0;
+    int res = SWIG_AsPtr_std_string(obj1, &ptr);
+    if (!SWIG_IsOK(res) || !ptr) {
+      SWIG_exception_fail(SWIG_ArgError((ptr ? res : SWIG_TypeError)), "in method '" "kmeans" "', argument " "2"" of type '" "std::string""'"); 
+    }
+    arg2 = *ptr;
+    if (SWIG_IsNewObj(res)) delete ptr;
+  }
+  {
+    try {
+      result = gip::kmeans((gip::GeoImage const &)*arg1,arg2);
+    } catch (const std::exception& e) {
+      SWIG_exception(SWIG_RuntimeError, e.what());
+    }
+  }
+  resultobj = SWIG_NewPointerObj((new gip::GeoImage(static_cast< const gip::GeoImage& >(result))), SWIGTYPE_p_gip__GeoImage, SWIG_POINTER_OWN |  0 );
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_kmeans(PyObject *self, PyObject *args) {
+  int argc;
+  PyObject *argv[6];
+  int ii;
+  
+  if (!PyTuple_Check(args)) SWIG_fail;
+  argc = args ? (int)PyObject_Length(args) : 0;
+  for (ii = 0; (ii < 5) && (ii < argc); ii++) {
+    argv[ii] = PyTuple_GET_ITEM(args,ii);
+  }
+  if (argc == 2) {
+    int _v;
+    int res = SWIG_ConvertPtr(argv[0], 0, SWIGTYPE_p_gip__GeoImage, 0);
+    _v = SWIG_CheckState(res);
+    if (_v) {
+      int res = SWIG_AsPtr_std_string(argv[1], (std::string**)(0));
+      _v = SWIG_CheckState(res);
+      if (_v) {
+        return _wrap_kmeans__SWIG_3(self, args);
+      }
+    }
+  }
+  if (argc == 3) {
+    int _v;
+    int res = SWIG_ConvertPtr(argv[0], 0, SWIGTYPE_p_gip__GeoImage, 0);
+    _v = SWIG_CheckState(res);
+    if (_v) {
+      int res = SWIG_AsPtr_std_string(argv[1], (std::string**)(0));
+      _v = SWIG_CheckState(res);
+      if (_v) {
+        {
+          int res = SWIG_AsVal_int(argv[2], NULL);
+          _v = SWIG_CheckState(res);
+        }
+        if (_v) {
+          return _wrap_kmeans__SWIG_2(self, args);
+        }
+      }
+    }
+  }
+  if (argc == 4) {
+    int _v;
+    int res = SWIG_ConvertPtr(argv[0], 0, SWIGTYPE_p_gip__GeoImage, 0);
+    _v = SWIG_CheckState(res);
+    if (_v) {
+      int res = SWIG_AsPtr_std_string(argv[1], (std::string**)(0));
+      _v = SWIG_CheckState(res);
+      if (_v) {
+        {
+          int res = SWIG_AsVal_int(argv[2], NULL);
+          _v = SWIG_CheckState(res);
+        }
+        if (_v) {
+          {
+            int res = SWIG_AsVal_int(argv[3], NULL);
+            _v = SWIG_CheckState(res);
+          }
+          if (_v) {
+            return _wrap_kmeans__SWIG_1(self, args);
+          }
+        }
+      }
+    }
+  }
+  if (argc == 5) {
+    int _v;
+    int res = SWIG_ConvertPtr(argv[0], 0, SWIGTYPE_p_gip__GeoImage, 0);
+    _v = SWIG_CheckState(res);
+    if (_v) {
+      int res = SWIG_AsPtr_std_string(argv[1], (std::string**)(0));
+      _v = SWIG_CheckState(res);
+      if (_v) {
+        {
+          int res = SWIG_AsVal_int(argv[2], NULL);
+          _v = SWIG_CheckState(res);
+        }
+        if (_v) {
+          {
+            int res = SWIG_AsVal_int(argv[3], NULL);
+            _v = SWIG_CheckState(res);
+          }
+          if (_v) {
+            {
+              int res = SWIG_AsVal_float(argv[4], NULL);
+              _v = SWIG_CheckState(res);
+            }
+            if (_v) {
+              return _wrap_kmeans__SWIG_0(self, args);
+            }
+          }
+        }
+      }
+    }
+  }
+  
+fail:
+  SWIG_SetErrorMsg(PyExc_NotImplementedError,"Wrong number or type of arguments for overloaded function 'kmeans'.\n"
+    "  Possible C/C++ prototypes are:\n"
+    "    gip::kmeans(gip::GeoImage const &,std::string,int,int,float)\n"
+    "    gip::kmeans(gip::GeoImage const &,std::string,int,int)\n"
+    "    gip::kmeans(gip::GeoImage const &,std::string,int)\n"
+    "    gip::kmeans(gip::GeoImage const &,std::string)\n");
+  return 0;
 }
 
 
@@ -15926,20 +15737,6 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"Colors_SetColor", _wrap_Colors_SetColor, METH_VARARGS, NULL},
 	 { (char *)"Colors___getitem__", _wrap_Colors___getitem__, METH_VARARGS, NULL},
 	 { (char *)"Colors_swigregister", Colors_swigregister, METH_VARARGS, NULL},
-	 { (char *)"new_Sensor", _wrap_new_Sensor, METH_VARARGS, NULL},
-	 { (char *)"delete_Sensor", _wrap_delete_Sensor, METH_VARARGS, NULL},
-	 { (char *)"Sensor_minDC", _wrap_Sensor_minDC, METH_VARARGS, NULL},
-	 { (char *)"Sensor_maxDC", _wrap_Sensor_maxDC, METH_VARARGS, NULL},
-	 { (char *)"Sensor_K1", _wrap_Sensor_K1, METH_VARARGS, NULL},
-	 { (char *)"Sensor_K2", _wrap_Sensor_K2, METH_VARARGS, NULL},
-	 { (char *)"Sensor_RefCoef", _wrap_Sensor_RefCoef, METH_VARARGS, NULL},
-	 { (char *)"Sensor_Radiance", _wrap_Sensor_Radiance, METH_VARARGS, NULL},
-	 { (char *)"Sensor_SetDynamicRange", _wrap_Sensor_SetDynamicRange, METH_VARARGS, NULL},
-	 { (char *)"Sensor_SetTotalRadiance", _wrap_Sensor_SetTotalRadiance, METH_VARARGS, NULL},
-	 { (char *)"Sensor_SetRefCoef", _wrap_Sensor_SetRefCoef, METH_VARARGS, NULL},
-	 { (char *)"Sensor_Thermal", _wrap_Sensor_Thermal, METH_VARARGS, NULL},
-	 { (char *)"Sensor_SetThermal", _wrap_Sensor_SetThermal, METH_VARARGS, NULL},
-	 { (char *)"Sensor_swigregister", Sensor_swigregister, METH_VARARGS, NULL},
 	 { (char *)"new_Atmosphere", _wrap_new_Atmosphere, METH_VARARGS, NULL},
 	 { (char *)"delete_Atmosphere", _wrap_delete_Atmosphere, METH_VARARGS, NULL},
 	 { (char *)"Atmosphere_Valid", _wrap_Atmosphere_Valid, METH_VARARGS, NULL},
@@ -15982,6 +15779,7 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"GeoFunction_swigregister", GeoFunction_swigregister, METH_VARARGS, NULL},
 	 { (char *)"new_GeoRaster", _wrap_new_GeoRaster, METH_VARARGS, NULL},
 	 { (char *)"delete_GeoRaster", _wrap_delete_GeoRaster, METH_VARARGS, NULL},
+	 { (char *)"GeoRaster_Copy", _wrap_GeoRaster_Copy, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_XSize", _wrap_GeoRaster_XSize, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_YSize", _wrap_GeoRaster_YSize, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_ValidSize", _wrap_GeoRaster_ValidSize, METH_VARARGS, NULL},
@@ -15993,14 +15791,15 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"GeoRaster_Description", _wrap_GeoRaster_Description, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_SetDescription", _wrap_GeoRaster_SetDescription, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_SetColor", _wrap_GeoRaster_SetColor, METH_VARARGS, NULL},
-	 { (char *)"GeoRaster_CopyColorTable", _wrap_GeoRaster_CopyColorTable, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_CopyCategoryNames", _wrap_GeoRaster_CopyCategoryNames, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_Gain", _wrap_GeoRaster_Gain, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_Offset", _wrap_GeoRaster_Offset, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_SetGain", _wrap_GeoRaster_SetGain, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_SetOffset", _wrap_GeoRaster_SetOffset, METH_VARARGS, NULL},
-	 { (char *)"GeoRaster_Sensor", _wrap_GeoRaster_Sensor, METH_VARARGS, NULL},
-	 { (char *)"GeoRaster_SetSensor", _wrap_GeoRaster_SetSensor, METH_VARARGS, NULL},
+	 { (char *)"GeoRaster_Thermal", _wrap_GeoRaster_Thermal, METH_VARARGS, NULL},
+	 { (char *)"GeoRaster_SetThermal", _wrap_GeoRaster_SetThermal, METH_VARARGS, NULL},
+	 { (char *)"GeoRaster_SetDynamicRange", _wrap_GeoRaster_SetDynamicRange, METH_VARARGS, NULL},
+	 { (char *)"GeoRaster_SetEsun", _wrap_GeoRaster_SetEsun, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_Atmosphere", _wrap_GeoRaster_Atmosphere, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_SetAtmosphere", _wrap_GeoRaster_SetAtmosphere, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_ClearAtmosphere", _wrap_GeoRaster_ClearAtmosphere, METH_VARARGS, NULL},
@@ -16031,6 +15830,7 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"GeoImage_GetColors", _wrap_GeoImage_GetColors, METH_VARARGS, NULL},
 	 { (char *)"GeoImage_SetColor", _wrap_GeoImage_SetColor, METH_VARARGS, NULL},
 	 { (char *)"GeoImage_SetColors", _wrap_GeoImage_SetColors, METH_VARARGS, NULL},
+	 { (char *)"GeoImage_CopyColorTable", _wrap_GeoImage_CopyColorTable, METH_VARARGS, NULL},
 	 { (char *)"GeoImage_AddBand", _wrap_GeoImage_AddBand, METH_VARARGS, NULL},
 	 { (char *)"GeoImage_RemoveBand", _wrap_GeoImage_RemoveBand, METH_VARARGS, NULL},
 	 { (char *)"GeoImage_ComputeStats", _wrap_GeoImage_ComputeStats, METH_VARARGS, NULL},
@@ -16047,8 +15847,8 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"Fmask", _wrap_Fmask, METH_VARARGS, NULL},
 	 { (char *)"ApplyMask", _wrap_ApplyMask, METH_VARARGS, NULL},
 	 { (char *)"CreateMask", _wrap_CreateMask, METH_VARARGS, NULL},
-	 { (char *)"InfReplace", _wrap_InfReplace, METH_VARARGS, NULL},
-	 { (char *)"SpectralCovariance", _wrap_SpectralCovariance, METH_VARARGS, NULL},
+	 { (char *)"FixBadPixels", _wrap_FixBadPixels, METH_VARARGS, NULL},
+	 { (char *)"kmeans", _wrap_kmeans, METH_VARARGS, NULL},
 	 { (char *)"reg", _wrap_reg, METH_VARARGS, NULL},
 	 { (char *)"Options_DefaultFormat", _wrap_Options_DefaultFormat, METH_VARARGS, NULL},
 	 { (char *)"Options_SetDefaultFormat", _wrap_Options_SetDefaultFormat, METH_VARARGS, NULL},
@@ -16071,7 +15871,6 @@ static void *_p_gip__GeoRasterTo_p_gip__GeoData(void *x, int *SWIGUNUSEDPARM(new
 static void *_p_gip__GeoImageTo_p_gip__GeoData(void *x, int *SWIGUNUSEDPARM(newmemory)) {
     return (void *)((gip::GeoData *)  ((gip::GeoImage *) x));
 }
-static swig_type_info _swigt__p_CImgT_double_t = {"_p_CImgT_double_t", "CImg< double > *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_GDALRasterBand = {"_p_GDALRasterBand", "GDALRasterBand *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_allocator_type = {"_p_allocator_type", "allocator_type *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_boost__geometry__model__d2__point_xyT_float_t = {"_p_boost__geometry__model__d2__point_xyT_float_t", "boost::geometry::model::d2::point_xy< float > *|gip::point *", 0, 0, (void*)0, 0};
@@ -16085,7 +15884,6 @@ static swig_type_info _swigt__p_gip__GeoFunction = {"_p_gip__GeoFunction", "gip:
 static swig_type_info _swigt__p_gip__GeoImage = {"_p_gip__GeoImage", "gip::GeoImage *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_gip__GeoRaster = {"_p_gip__GeoRaster", "gip::GeoRaster *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_gip__Options = {"_p_gip__Options", "gip::Options *", 0, 0, (void*)0, 0};
-static swig_type_info _swigt__p_gip__Sensor = {"_p_gip__Sensor", "gip::Sensor *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_p_PyObject = {"_p_p_PyObject", "PyObject **", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_size_type = {"_p_size_type", "size_type *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_std__allocatorT_std__string_t = {"_p_std__allocatorT_std__string_t", "std::vector< std::string >::allocator_type *|std::allocator< std::string > *", 0, 0, (void*)0, 0};
@@ -16097,7 +15895,6 @@ static swig_type_info _swigt__p_swig__SwigPyIterator = {"_p_swig__SwigPyIterator
 static swig_type_info _swigt__p_value_type = {"_p_value_type", "value_type *", 0, 0, (void*)0, 0};
 
 static swig_type_info *swig_type_initial[] = {
-  &_swigt__p_CImgT_double_t,
   &_swigt__p_GDALRasterBand,
   &_swigt__p_allocator_type,
   &_swigt__p_boost__geometry__model__d2__point_xyT_float_t,
@@ -16111,7 +15908,6 @@ static swig_type_info *swig_type_initial[] = {
   &_swigt__p_gip__GeoImage,
   &_swigt__p_gip__GeoRaster,
   &_swigt__p_gip__Options,
-  &_swigt__p_gip__Sensor,
   &_swigt__p_p_PyObject,
   &_swigt__p_size_type,
   &_swigt__p_std__allocatorT_std__string_t,
@@ -16123,7 +15919,6 @@ static swig_type_info *swig_type_initial[] = {
   &_swigt__p_value_type,
 };
 
-static swig_cast_info _swigc__p_CImgT_double_t[] = {  {&_swigt__p_CImgT_double_t, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_GDALRasterBand[] = {  {&_swigt__p_GDALRasterBand, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_allocator_type[] = {  {&_swigt__p_allocator_type, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_boost__geometry__model__d2__point_xyT_float_t[] = {  {&_swigt__p_boost__geometry__model__d2__point_xyT_float_t, 0, 0, 0},{0, 0, 0, 0}};
@@ -16137,7 +15932,6 @@ static swig_cast_info _swigc__p_gip__GeoFunction[] = {  {&_swigt__p_gip__GeoFunc
 static swig_cast_info _swigc__p_gip__GeoImage[] = {  {&_swigt__p_gip__GeoImage, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_gip__GeoRaster[] = {  {&_swigt__p_gip__GeoRaster, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_gip__Options[] = {  {&_swigt__p_gip__Options, 0, 0, 0},{0, 0, 0, 0}};
-static swig_cast_info _swigc__p_gip__Sensor[] = {  {&_swigt__p_gip__Sensor, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_p_PyObject[] = {  {&_swigt__p_p_PyObject, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_size_type[] = {  {&_swigt__p_size_type, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_std__allocatorT_std__string_t[] = {  {&_swigt__p_std__allocatorT_std__string_t, 0, 0, 0},{0, 0, 0, 0}};
@@ -16149,7 +15943,6 @@ static swig_cast_info _swigc__p_swig__SwigPyIterator[] = {  {&_swigt__p_swig__Sw
 static swig_cast_info _swigc__p_value_type[] = {  {&_swigt__p_value_type, 0, 0, 0},{0, 0, 0, 0}};
 
 static swig_cast_info *swig_cast_initial[] = {
-  _swigc__p_CImgT_double_t,
   _swigc__p_GDALRasterBand,
   _swigc__p_allocator_type,
   _swigc__p_boost__geometry__model__d2__point_xyT_float_t,
@@ -16163,7 +15956,6 @@ static swig_cast_info *swig_cast_initial[] = {
   _swigc__p_gip__GeoImage,
   _swigc__p_gip__GeoRaster,
   _swigc__p_gip__Options,
-  _swigc__p_gip__Sensor,
   _swigc__p_p_PyObject,
   _swigc__p_size_type,
   _swigc__p_std__allocatorT_std__string_t,
@@ -16858,6 +16650,9 @@ SWIG_init(void) {
   
   SWIG_InstallConstants(d,swig_const_table);
   
+  SWIG_Python_SetConstant(d, "RAW",SWIG_From_int(static_cast< int >(gip::RAW)));
+  SWIG_Python_SetConstant(d, "RADIANCE",SWIG_From_int(static_cast< int >(gip::RADIANCE)));
+  SWIG_Python_SetConstant(d, "REFLECTIVITY",SWIG_From_int(static_cast< int >(gip::REFLECTIVITY)));
   SWIG_Python_SetConstant(d, "GDT_Unknown",SWIG_From_int(static_cast< int >(GDT_Unknown)));
   SWIG_Python_SetConstant(d, "GDT_Byte",SWIG_From_int(static_cast< int >(GDT_Byte)));
   SWIG_Python_SetConstant(d, "GDT_UInt16",SWIG_From_int(static_cast< int >(GDT_UInt16)));
@@ -16866,9 +16661,6 @@ SWIG_init(void) {
   SWIG_Python_SetConstant(d, "GDT_Int32",SWIG_From_int(static_cast< int >(GDT_Int32)));
   SWIG_Python_SetConstant(d, "GDT_Float32",SWIG_From_int(static_cast< int >(GDT_Float32)));
   SWIG_Python_SetConstant(d, "GDT_Float64",SWIG_From_int(static_cast< int >(GDT_Float64)));
-  SWIG_Python_SetConstant(d, "RAW",SWIG_From_int(static_cast< int >(RAW)));
-  SWIG_Python_SetConstant(d, "RADIANCE",SWIG_From_int(static_cast< int >(RADIANCE)));
-  SWIG_Python_SetConstant(d, "REFLECTIVITY",SWIG_From_int(static_cast< int >(REFLECTIVITY)));
 #if PY_VERSION_HEX >= 0x03000000
   return m;
 #else

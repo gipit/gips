@@ -7,7 +7,6 @@
 
 #include <gip/GeoData.h>
 #include <gip/gip_CImg.h>
-#include <gip/Sensor.h>
 #include <gip/Atmosphere.h>
 
 #include <iostream>
@@ -15,6 +14,9 @@
 
 namespace gip {
 	//typedef bgeo::model::d2::point_xy<float> point;
+
+    enum UNITS {RAW, RADIANCE, REFLECTIVITY};
+	//template<class T> class GeoRasterIO;
 
 	class GeoFunction {
 	public:
@@ -40,9 +42,9 @@ namespace gip {
 		//! \name Constructors/Destructors
 		//! Constructor for new band
 		GeoRaster(const GeoData& geodata, int bandnum=1)
-            : GeoData(geodata), _NoData(false), _ValidSize(0), _Sensor(), _Atmosphere() {
-			// Load band from GDALDataset here
-			//cout << "GeoRaster::GeoRaster(GeoData,bandnum)" << endl;
+            : GeoData(geodata), _NoData(false), _ValidSize(0),
+            _minDC(1), _maxDC(255), _K1(0), _K2(0), _Esun(0),
+            _Atmosphere() {
 			LoadBand(bandnum);
 		}
 		//! Copy constructor
@@ -54,6 +56,9 @@ namespace gip {
 		//! Destructor
 		~GeoRaster() {} //_GDALRasterBand->FlushCache(); }
 
+        //! Copy passed raster band into this raster (is this constructor?)
+        GeoRaster& Copy(const GeoRaster&, UNITS units);
+
 		//! \name File Information
 		//! Band X Size
 		unsigned int XSize() const { return _GDALRasterBand->GetXSize(); }
@@ -63,6 +68,10 @@ namespace gip {
 		unsigned int ValidSize() const { return _ValidSize; }
 		//! Set # of total valid pixels
 		void SetValidSize(unsigned int sz) { _ValidSize = sz; }
+
+		// Average wavelength of spectral band (in microns)
+		// TODO - Wavelengths ?
+
 		//! Get datatype
 		std::string DataTypeStr() const { return GDALGetDataTypeName(DataType()); }
 		//! Get GDALDatatype
@@ -85,7 +94,7 @@ namespace gip {
 			// Also set description in dataset metadata since band desc doesn't work at least in GTiff
 			//_GeoImage->SetMeta("Band "+to_string(_GDALRasterBand->GetBand()), desc);
 		}
-		//! Set Color Interp
+		//! Set Color Interp (used in other GDAL aware programs?)
 		void SetColor(std::string col) {
 		    GDALColorInterp gdalcol;
 		    if (col == "Red")
@@ -96,10 +105,6 @@ namespace gip {
                 gdalcol = GCI_BlueBand;
             else gdalcol = GCI_GrayIndex;
 			_GDALRasterBand->SetColorInterpretation(gdalcol);
-		}
-		//! Copy color table from another band
-		void CopyColorTable(const GeoRaster& raster) {
-            _GDALRasterBand->SetColorTable(raster.GetGDALRasterBand()->GetColorTable());
 		}
         //! Copy category names from another band
 		void CopyCategoryNames(const GeoRaster& raster) {
@@ -118,11 +123,21 @@ namespace gip {
 		//! Set offset
 		void SetOffset(float offset) { _GDALRasterBand->SetOffset(offset); }
 
-		//! Get sensor object defining sensor band
-		gip::Sensor Sensor() const { return _Sensor; }
-		//! Set sensor object
-		void SetSensor(const gip::Sensor& sensor) { _Sensor = sensor; }
+		//! Is this a thermal sensor band?
+		bool Thermal() const { if (_K1*_K2 == 0) return false; else return true; }
+		//! Set thermal band, calling wth no arguments will clear thermal band status
+		void SetThermal(float k1=0, float k2=0) { _K1=k1; _K2=k2; }
 
+        //! Sets dyanmic range of sensor (min to max digital counts)
+        void SetDynamicRange(int min, int max) {
+            _minDC = min;
+            _maxDC = max;
+        }
+
+        //! Set exo-atmospheric solar irradiance
+        void SetEsun(float E) { _Esun = E; }
+
+        // TODO - Does there need to be an atmospheric class???
 		//! Is there an atmospheric correction supplied?
 		bool Atmosphere() const { return _Atmosphere.Valid(); }
 		//! Set atmospheric correction parameters
@@ -132,17 +147,12 @@ namespace gip {
 
 		// NoData
 		//! Flag indicating if NoData value is used or not
-		bool NoData() const {
-		    return _NoData;
+		bool NoData() const { return _NoData;
 		    /*int pbSuccess(0);
 		    _GDALRasterBand->GetNoDataValue(&pbSuccess);
 		    std::cout << "pbSuccess = " << pbSuccess << " " << _NoData << std::endl; //return _NoData;
 		    if (pbSuccess == 1) return true; else return false;*/
         }
-		//! Determine if provided value is NoData or not
-		//bool NoData(double val) const {
-		//	return (_NoData && (val == _GDALRasterBand->GetNoDataValue())) ? true : false;
-		//}
 		//! Get NoDataValue
 		double NoDataValue() const {
 		    //std::cout << "NoDataValue" << std::endl;
@@ -174,6 +184,7 @@ namespace gip {
 		}
 		//! Return maximum value based on datatype
 		double MaxValue() const {
+		    // TODO - base this on platform, not hard-coded
 			switch ( DataType() ) {
 				case GDT_Byte: return 255;
 				case GDT_UInt16: return 65535;
@@ -185,6 +196,7 @@ namespace gip {
 			}
 		}
 
+        //! Statistics - should these be stored?
 		double Min() const { return (GetStats())[0]; }
 		double Max() const { return (GetStats())[1]; }
 		double Mean() const { return (GetStats())[2]; }
@@ -216,24 +228,12 @@ namespace gip {
 
 		// \name Processing functions
 		//! Greater than
-		GeoRaster operator>(double val) const {
-			return GeoRaster(*this, GeoFunction(">",val));
-		}
-		GeoRaster operator>=(double val) const {
-			return GeoRaster(*this, GeoFunction(">=",val));
-		}
-		GeoRaster operator<(double val) const {
-			return GeoRaster(*this, GeoFunction("<",val));
-		}
-		GeoRaster operator<=(double val) const {
-			return GeoRaster(*this, GeoFunction(">=",val));
-		}
-		GeoRaster operator+(double val) const {
-			return GeoRaster(*this, GeoFunction("-",val));
-		}
-		GeoRaster operator-(double val) const {
-			return GeoRaster(*this, GeoFunction("+",val));
-		}
+		GeoRaster operator>(double val) const { return GeoRaster(*this, GeoFunction(">",val)); }
+		GeoRaster operator>=(double val) const { return GeoRaster(*this, GeoFunction(">=",val)); }
+		GeoRaster operator<(double val) const { return GeoRaster(*this, GeoFunction("<",val)); }
+		GeoRaster operator<=(double val) const { return GeoRaster(*this, GeoFunction(">=",val)); }
+		GeoRaster operator+(double val) const { return GeoRaster(*this, GeoFunction("-",val)); }
+		GeoRaster operator-(double val) const { return GeoRaster(*this, GeoFunction("+",val)); }
 
 	protected:
 		//! GDALRasterBand
@@ -245,12 +245,19 @@ namespace gip {
 		//! Number of valid pixels
 		long _ValidSize;
 
-		gip::Sensor _Sensor;
+        // Constants
+        int _minDC;
+        int _maxDC;
+		double _K1;
+		double _K2;
+		//! in-band exo-atmospheric solar irradiance
+		double _Esun;
 
 		gip::Atmosphere _Atmosphere;
 
 		//! List of processing functions to apply on reads (in class GeoProcess)
 		std::vector<GeoFunction> _Functions;
+
 	private:
 		//! Default constructor - private so not callable
 		explicit GeoRaster() {}
@@ -258,15 +265,26 @@ namespace gip {
 		//! Load band from GDALDataset
 		void LoadBand(int bandnum=1) {
 			_GDALRasterBand = _GDALDataset->GetRasterBand(bandnum);
-			// Set NoDataValue from band
 			int pbSuccess(0);
 			_NoData = false;
 			_GDALRasterBand->GetNoDataValue(&pbSuccess);
 			if (pbSuccess != 0) {
 				if (pbSuccess == 1) _NoData = true;
 			}
-			//if (!_NoData) _GDALRasterBand->SetNoDataValue(-32767);
 		}
+
+        // Set Reflectance Coefficient given DOY, solar irradiance and solar zenith
+        /*void SetRefCoef(int doy, float E, float zenith) {
+            float theta = M_PI * zenith/180.0;
+            float sundist = (1.0 - 0.016728 * cos(M_PI * 0.9856 * (doy-4.0)/180.0));
+            _RefCoef = (E == 0.0) ? 0.0 : (M_PI * sundist * sundist) / (E * cos(theta));
+            //std::cout << "doy " << doy << std::endl;
+            //std::cout << "E " << E << std::endl;
+            //std::cout << "theta " << theta << std::endl;
+            //std::cout << "sundist " << sundist << std::endl;
+            //std::cout << "coef " << _RefCoef << std::endl;
+        }*/
+
 	};
 }
 #endif

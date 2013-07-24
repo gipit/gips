@@ -42,7 +42,6 @@ namespace std {
 
 // GIP headers and classes to be wrapped
 %include "gip/Colors.h"
-%include "gip/Sensor.h"
 %include "gip/Atmosphere.h"
 //%include "gip/Options.h"
 %include "gip/GeoData.h"
@@ -54,7 +53,7 @@ enum GDALDataType { GDT_Unknown, GDT_Byte, GDT_UInt16, GDT_Int16, GDT_UInt32, GD
     GDT_Float32, GDT_Float64 };
     #GDT_CInt16, GDT_CInt32, GDT_CFloat32, GDT_Float64
 // work-around, should support scoped enums for C++0x
-enum UNITS { RAW, RADIANCE, REFLECTIVITY };
+//enum UNITS { RAW, RADIANCE, REFLECTIVITY };
 
 namespace gip {
 

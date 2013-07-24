@@ -19,49 +19,25 @@ namespace gip {
 	typedef boost::geometry::model::box<point> bbox;
 	//using namespace boost::accumulators;
 
-    //! Copy input raster band into output raster band
-	GeoRaster Copy(const GeoRaster& Input, GeoRaster& Output, UNITS units) {
-        switch (Output.DataType()) {
-            case GDT_Byte: GeoRasterIO<unsigned char>(Output).Copy(Input, units);
-                break;
-            case GDT_UInt16: GeoRasterIO<unsigned short>(Output).Copy(Input, units);
-                break;
-            case GDT_Int16: GeoRasterIO<short>(Output).Copy(Input, units);
-                break;
-            case GDT_UInt32: GeoRasterIO<unsigned int>(Output).Copy(Input, units);
-                break;
-            case GDT_Int32: GeoRasterIO<int>(Output).Copy(Input, units);
-                break;
-            case GDT_Float32: GeoRasterIO<float>(Output).Copy(Input, units);
-                break;
-            case GDT_Float64: GeoRasterIO<double>(Output).Copy(Input, units);
-                break;
-            default: GeoRasterIO<unsigned char>(Output).Copy(Input, units);
-        }
-        return Output;
-	}
-
     //! Copy input file into output file
 	GeoImage Copy(const GeoImage& Input, GeoImage& Output, UNITS units) {
-	    if (Input.NumBands() != Output.NumBands()) {
-            throw;
-	    }
-	    for (unsigned int i=0; i<Output.NumBands(); i++) Copy(Input[i], Output[i], units);
+	    if (Input.NumBands() != Output.NumBands()) throw;
+        for (unsigned int i=0; i<Output.NumBands(); i++) Output[i].Copy(Input[i], units);
 	    // Set colors
 		Colors colors = Input.GetColors();
 		for (unsigned int i=0;i<Input.NumBands();i++) {
 			//std::cout << "Setting band " << i+1 << " to " << colors[i+1] << std::endl;
 			Output.SetColor(colors[i+1], i+1);
 		}
+		// Copies if only one band
+		Output.CopyColorTable(Input);
 		return Output;
 	}
 
 	//! Copy input file into new output file
 	GeoImage Copy(const GeoImage& image, string filename, UNITS units, GDALDataType datatype) {
 	    // TODO: if not supplied base output datatype on units (REFLECTIVITY should be float, etc)
-	    if (datatype == GDT_Unknown) {
-	        datatype = image.DataType();
-	    }
+	    if (datatype == GDT_Unknown) datatype = image.DataType();
 		GeoImage ImageOut(filename, image, datatype);
         return Copy(image,ImageOut,units);
 	}
@@ -370,7 +346,7 @@ namespace gip {
 		return output;
 	}*/
 
-	CImg<double> SpectralCovariance(const GeoImage& image) {
+	/*CImg<double> SpectralCovariance(const GeoImage& image) {
 		typedef double T;
 
 		GeoImageIO<T> img(image);
@@ -419,7 +395,7 @@ namespace gip {
 			}
 		}
 		return Covariance;
-	}
+	}*/
 /*
 	CImg<double> SpectralCorrelation(const GeoImage& image, CImg<double> covariance) {
 		// Correlation matrix
@@ -453,58 +429,65 @@ namespace gip {
 
 
     //! k-means unsupervised classifier
-    /*GeoImage kmeans( const GeoImage& image, string filename, int classes, int iterations, float threshold ) {
+    GeoImage kmeans( const GeoImage& image, string filename, int classes, int iterations, float threshold ) {
         //if (Image.NumBands() < 2) throw GIP::Gexceptions::errInvalidParams("At least two bands must be supplied");
         if (Options::Verbose()) {
-            cout << image.Basename() << ": " << "k-means Unsupervised Classifier:" << endl
-                << "\tClasses = " << classes << endl
-                << "\tIterations = " << iterations << endl
-                << "\tPixel Change Threshold = " << threshold << "%" << endl;
+            cout << image.Basename() << " - k-means unsupervised classifier:" << endl
+                << "  Classes = " << classes << endl
+                << "  Iterations = " << iterations << endl
+                << "  Pixel Change Threshold = " << threshold << "%" << endl;
         }
         // Calculate threshold in # of pixels
         threshold = threshold/100.0 * image.XSize() * image.YSize();
 
+        GeoImageIO<float> img(image);
+
         // Create new output image
-        GeoImage kimg(filename, image, GDT_Byte);
+        GeoImageIO<unsigned char> imgout(GeoImage(filename, image, GDT_Byte, 1));
 
         // Get initial class estimates (uses random pixels)
-        CImg<float> ClassMeans = Images.GetPixelClasses(classes);
+        CImg<float> ClassMeans = img.GetPixelClasses(classes);
 
-        CImg<float> Pixel, img, DistanceToClass(classes), NumSamples(classes,1,1,1,0);
-        CImg<int> imgout;
-        CImg<double> RunningTotal(classes+1,Images.NumBands(),1,1,0);
+        CImg<float> Pixel, C_img, DistanceToClass(classes), NumSamples(classes,1,1,1,0), ThisClass;
+        CImg<unsigned char> C_imgout;
+        CImg<double> RunningTotal(classes+1,image.NumBands(),1,1,0);
 
-        int NumPixelChange, iteration=0, PercentComplete=0;
-        if (Images.GetOptions().verbose) cout << "0% complete" << StatusNewLine;
+        vector<bbox> Chunks = image.Chunk();
+        vector<bbox>::const_iterator iChunk;
+
+        int NumPixelChange, iteration=0; //, PercentComplete=0;
+
         do {
+            if (Options::Verbose()) cout << "  Iteration " << iteration+1 << std::flush;
             NumPixelChange = 0;
-            vector<GIP::Rect<> > Chunks = NewImage.Chunk();
-            vector<GIP::Rect<> >::iterator iChunk;
-            int chunknum = 0;
+
+            //int chunknum = 0;
             for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
-                img = Images.GetRegion(*iChunk);
-                imgout = NewImage.GetRegion(*iChunk);
-                CImg<T> stats;
-                cimg_forXY(img,x,y) {
+                C_img = img.Read(*iChunk);
+                C_imgout = imgout[0].Read(*iChunk);
+                CImg<double> stats;
+                cimg_forXY(C_img,x,y) {
                     // Calculate distance between this pixel and all classes
-                    Pixel = img.get_crop(x,y,0,0,x,y,0,img.spectrum()-1).unroll('x');
-                    cimg_forY(ClassMeans,C) {
-                        CImg<T> ThisClass = ClassMeans.get_line(C);
-                        DistanceToClass(C) = (Pixel - ThisClass).dot(Pixel - ThisClass);
+                    Pixel = C_img.get_crop(x,y,0,0,x,y,0,C_img.spectrum()-1).unroll('x');
+                    cimg_forY(ClassMeans,Y) {
+                        ThisClass = ClassMeans.get_row(Y);
+                        DistanceToClass(Y) = (Pixel - ThisClass).dot(Pixel - ThisClass);
                     }
                     // Get closest distance
                     stats = DistanceToClass.get_stats();
                     // Check if new class is same as old class
-                    if (imgout(x,y) != (stats(4)+1)) NumPixelChange++;
-                    imgout(x,y) = stats(4)+1;
+                    if (C_imgout(x,y) != (stats(4)+1)) {
+                        NumPixelChange++;
+                        C_imgout(x,y) = stats(4)+1;
+                    }
                     NumSamples(stats(4))++;
                     cimg_forY(RunningTotal,yband) RunningTotal(stats(4)+1,yband) += Pixel(yband);
                 }
-                NewImage.WriteRegion(imgout,*iChunk);
-                PercentComplete += (100/Chunks.size())/iterations; //*(iteration+1)/iterations) + (++chunknum*100/Chunks.size());
-                if (Images.GetOptions().verbose) cout << "\r" << PercentComplete << "% complete" << StatusNewLine;
+                imgout[0].Write(C_imgout,*iChunk);
+                //PercentComplete += (100/Chunks.size())/iterations; //*(iteration+1)/iterations) + (++chunknum*100/Chunks.size());
+                if (Options::Verbose()) cout << "." << std::flush;
             }
-            //if (Images.GetOptions().verbose) cout << endl;
+
             // Calculate new Mean class vectors
             for (int i=0; i<classes; i++) {
                 if (NumSamples(i) > 0) {
@@ -514,26 +497,21 @@ namespace gip {
                     }
                     NumSamples(i) = 0;
                 }
-                // Output Class Vectors
-                //if (Images.GetOptions().verbose) {
-                 //   cout << "Class " << i << " vector: ";
-                  //  cimg_forX(ClassMeans,x) cout << ClassMeans(x,i) << "  ";
-                   // cout << endl;
-                //}
+
             }
-            PercentComplete = (100*(iteration+1)/iterations);
-            if (Images.GetOptions().verbose) {
-                cout << " Iteration " << iteration+1 << ": " << 100.0*NumPixelChange/Images.Size() << "% pixels changed classes" << endl;
-                cout << PercentComplete << "% complete" << StatusNewLine;
+            if (Options::Verbose()) {
+                //PercentComplete = (100*(iteration+1)/iterations);
+                cout << 100.0*((double)NumPixelChange/image.Size()) << "% pixels changed class" << endl;
+                cimg_printclasses(ClassMeans);
+                //cout << PercentComplete << "% complete" << std::endl;
             }
         } while ( (++iteration < iterations) && (NumPixelChange > threshold) );
 
-        NewImage.SetDescription("k-means");
-        NewImage.SetMetadata("color", "gray");
-        NewImage.GetGDALDataset()->FlushCache();
-        if (Images.GetOptions().verbose) cout << endl << Images.Basename() << ": k-means end" << endl;
-        return NewImage;
-    }*/
+        imgout[0].SetDescription("k-means");
+        //imgout.GetGDALDataset()->FlushCache();
+        if (Options::Verbose()) cout << endl << image.Basename() << ": k-means end" << endl;
+        return imgout;
+    }
 
 	//! Apply a mask to existing file (where mask>0 change to NoDataValue)
 	GeoImage ApplyMask(const GeoImage& image, GeoRaster& mask) {
@@ -590,7 +568,7 @@ namespace gip {
 	}
 
 	//! Replaces all Inf/-Inf pixels with NoDataValue
-	GeoImage InfReplace(GeoImage& image) {
+	GeoImage FixBadPixels(GeoImage& image) {
 		typedef float T;
 		vector<bbox> Chunks = image.Chunk();
 		vector<bbox>::const_iterator iChunk;
@@ -599,7 +577,7 @@ namespace gip {
 			for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
 				CImg<T> img = band.Read(*iChunk, RAW);
 				T nodata = band.NoDataValue();
-				cimg_forXY(img,x,y)	if (std::isinf(img(x,y))) img(x,y) = nodata;
+				cimg_forXY(img,x,y)	if ( std::isinf(img(x,y)) || std::isnan(img(x,y)) ) img(x,y) = nodata;
 				band.Write(img,*iChunk);
 			}
 		}

@@ -29,7 +29,7 @@ rawdir = os.path.join(topdir,origdir)
 outdir = os.path.join(topdir,proddir)
 qdir = os.path.join(topdir,'quarantine')
 
-def readmtl(filename):
+def readmeta(filename):
     """ Read in Landsat MTL (metadata) file """
     if filename[-7:] != 'MTL.txt':
         mtl = glob.glob(os.path.join(os.path.dirname(filename),'*MTL.txt'))
@@ -47,33 +47,55 @@ def readmtl(filename):
             filename = os.path.join(os.path.dirname(filename),mtl)
         else:
             filename = mtl[0]
-    
+
+    # Read MTL file
     try:
         text = open(filename,'r').read()
     except IOError as e:
         raise Exception('({})'.format(e))
-    
+
+    # Find out what Landsat this is
     try:
         id = int(os.path.basename(filename)[1:2])
     except:
         id = int(os.path.basename(filename)[2:3])
+
+    # Set sensor specific constants
     if id == 5:
         bands = ['1','2','3','4','5','6','7']
+        colors = ["Blue","Green","Red","NIR","SWIR1","LWIR","SWIR2"]
+        # TODO - update bands with actual L5 values (these are L7)
+        bandlocs = [0.4825, 0.565, 0.66, 0.825, 1.65, 11.45, 2.22]
+        bandwidths = [0.065, 0.08, 0.06, 0.15, 0.2, 2.1, 0.26]
+        E = [1983, 1796, 1536, 1031, 220.0, 0, 83.44]
+        K1 = [0, 0, 0, 0, 0, 607.76, 0]
+        K2 = [0, 0, 0, 0, 0, 1260.56, 0]
         oldbands = bands
     elif id == 7:
         #bands = ['1','2','3','4','5','6_VCID_1','6_VCID_2','7','8']
-        bands = ['1','2','3','4','5','6_VCID_1','7','8']
+        bands = ['1','2','3','4','5','6_VCID_1','7']
+        colors = ["Blue","Green","Red","NIR","SWIR1","LWIR","SWIR2"]
+        bandlocs = [0.4825, 0.565, 0.66, 0.825, 1.65, 11.45, 2.22]
+        bandwidths = [0.065, 0.08, 0.06, 0.15, 0.2, 2.1, 0.26]
+        E = [1997, 1812, 1533, 1039, 230.8, 0, 84.90]
+        K1 = [0, 0, 0, 0, 0, 666.09, 0]
+        K2 = [0, 0, 0, 0, 0, 1282.71, 0]
         oldbands = deepcopy(bands)
         oldbands[5] = '61'
         oldbands[6] = '62'
+    elif id == 8:
+        bands = ['1','2','3','4','5','6','7','9'] #,'10','11']
+        colors = ["Coastal","Blue","Green","Red","NIR","SWIR1","SWIR2","Cirrus"] #,"LWIR1","LWIR2"]
+        bandlocs = [0.443, 0.4825, 0.5625, 0.655, 0.865, 1.610, 2.2, 1.375] #, 10.8, 12.0]
+        bandwidths = [0.01, 0.0325, 0.0375, 0.025, 0.02, 0.05, 0.1, 0.015] #, 0.5, 0.5]
+        E = [2638.35, 2031.08, 1821.09, 2075.48, 1272.96, 246.94, 90.61, 369.36] #, 0, 0] 
+        K1 = [0, 0, 0, 0, 0, 0, 0, 0] #774.89, 480.89]
+        K2 = [0, 0, 0, 0, 0, 0, 0, 0] #1321.08, 1201.14]
+        oldbands = bands
     else:
         raise Exception('Landsat%s? not recognized' % id)
 
-    # TODO - update bands with differences between L5 and L7
-    bandlocs = [0.4825, 0.565, 0.66, 0.825, 1.65, 11.45, 2.22]
-    bandwidths = [0.065, 0.08, 0.06, 0.15, 0.2, 2.1, 0.26]
-
-    # Replace old metadata tags with new 
+    # Process MTL text - replace old metadata tags with new 
     # NOTE This is not comprehensive, there may be others
     text = text.replace('ACQUISITION_DATE','DATE_ACQUIRED')
     text = text.replace('SCENE_CENTER_SCAN_TIME','SCENE_CENTER_TIME')
@@ -87,7 +109,6 @@ def readmtl(filename):
         for c in ('UL','UR','LL','LR'):
             text = text.replace('PRODUCT_'+c+'_CORNER_'+l, 'CORNER_'+c+'_'+l+'_PRODUCT')
     text = text.replace('\x00','')
-
     # Remove junk
     lines = text.split('\n')
     mtl = dict()
@@ -103,90 +124,77 @@ def readmtl(filename):
             float(mtl['CORNER_LL_LAT_PRODUCT']), float(mtl['CORNER_LR_LAT_PRODUCT']))
     lons = ( float(mtl['CORNER_UL_LON_PRODUCT']), float(mtl['CORNER_UR_LON_PRODUCT']), 
         float(mtl['CORNER_LL_LON_PRODUCT']), float(mtl['CORNER_LR_LON_PRODUCT']))
+    lat = (min(lats) + max(lats))/2.0
+    lon = (min(lons) + max(lons))/2.0
     dt = datetime.datetime.strptime(mtl['DATE_ACQUIRED'] + ' ' + 
         mtl['SCENE_CENTER_TIME'][:-2],'%Y-%m-%d %H:%M:%S.%f')
     seconds = (dt.second + dt.microsecond/1000000.)/3600.
-    dectime = dt.hour + dt.minute/60.0 + seconds
+    dectime = dt.hour + dt.minute/60.0 + seconds  
 
-    minval = []
-    maxval = []
-    minrad = []
-    maxrad = []
+    # Band metadata
+    bandmeta = []
     filenames = []
-    for b in bands:
-        minval.append(float(mtl['QUANTIZE_CAL_MIN_BAND_'+b]))
-        maxval.append(float(mtl['QUANTIZE_CAL_MAX_BAND_'+b]))
-        minrad.append(float(mtl['RADIANCE_MINIMUM_BAND_'+b]))
-        maxrad.append(float(mtl['RADIANCE_MAXIMUM_BAND_'+b]))
+    for i,b in enumerate(bands):
+        band = {
+            'num': i+1,
+            'id': b,
+            'color': colors[i],
+            'E': E[i],
+            'wavelength': bandlocs[i],
+            'bandwidth': bandwidths[i],
+            'minval': int(float(mtl['QUANTIZE_CAL_MIN_BAND_'+b])),
+            'maxval': int(float(mtl['QUANTIZE_CAL_MAX_BAND_'+b])),
+            'minrad': float(mtl['RADIANCE_MINIMUM_BAND_'+b]),
+            'maxrad': float(mtl['RADIANCE_MAXIMUM_BAND_'+b]),
+            'k1': K1[i],
+            'k2': K2[i]
+        }
+        bandmeta.append(band)
         filenames.append(mtl['FILE_NAME_BAND_'+b].strip('\"'))
 
-    lat = (min(lats) + max(lats))/2.0
-    lon = (min(lons) + max(lons))/2.0
-
-    # testing out PySolar angles
-    #import Pysolar
-    #sun_el = Pysolar.GetAltitude(lat, lon, dt)
-    #sun_az = Pysolar.GetAzimuth(lat, lon, dt)
-    #print 'pysolar vs metadata'
-    #print sun_el, mtl['SUN_ELEVATION']
-    #print sun_az, float(mtl['SUN_AZIMUTH'])
-    #print 'rad direct',Pysolar.radiation.GetRadiationDirect(dt, sun_el)
-
-    return {
-        'sensor': 'Landsat'+str(id),
-        'id': id,
-        'metafilename': filename,
+    _geometry = {
         'solarzenith': (90.0 - float(mtl['SUN_ELEVATION'])),
         'solarazimuth': float(mtl['SUN_AZIMUTH']),
         'zenith': 0.0,
         'azimuth': 180.0,
         'lat': lat,
         'lon': lon,
+    }
+
+    _datetime = {
         'datetime': dt,
-        'minval': minval,
-        'maxval': maxval,
-        'minrad': minrad,
-        'maxrad': maxrad,
-        'filenames': filenames,
-        'bands': bandlocs,
-        'bandwidths': bandwidths,
         'JulianDay': (dt - datetime.datetime(dt.year,1,1)).days + 1, 
         'DecimalTime': dectime,
     }
 
+    return {
+        'sensor': 'Landsat'+str(id),
+        'metafilename': filename, 
+        'filenames': filenames,
+        'geometry': _geometry,
+        'datetime': _datetime,
+        'bands': bandmeta
+    }
+
 def read(filename, bandnums=[],verbose=False):
     """ Read in Landsat bands using original tar.gz file """
-    basename = os.path.basename(filename)
 
     dirname = os.path.dirname(filename)
+    
+    # Read in collection metadata
+    meta = readmeta(filename)
 
     if len(bandnums) != 0: 
         bandnums = numpy.array(bandnums)
     else:
-        bandnums = numpy.arange(0,7) + 1
-    
-    # Read in collection metadata
-    meta = readmtl(filename)
-
-    colors = ["Blue","Green","Red","NIR","SWIR1","LWIR","SWIR2"]
-
-    # Landsat 5
-    if meta['id'] == 5:
-        K1 = 607.76
-        K2 = 1260.56
-        E = [1983, 1796, 1536, 1031, 220.0, 0, 83.44]
-    # Landsat 7
-    elif meta['id'] == 7:
-        K1 = 666.09
-        K2 = 1282.71
-        E = [1997, 1812, 1533, 1039, 230.8, 0, 84.90]
+        bandnums = numpy.arange(0,len(meta['bands'])) + 1
 
     # Extract desired files from tarfile
     # TODO - Check to see if already extracted
     if tarfile.is_tarfile(filename):
         tfile = tarfile.open(filename)
     else:
-        raise Exception('%s not a valid landsat tar file' % basename)
+        raise Exception('%s not a valid landsat tar file' % os.path.basename(filename))
         return
     filenames = []
     for b in bandnums:
@@ -199,40 +207,31 @@ def read(filename, bandnums=[],verbose=False):
     # Read in files
     image = gippy.GeoImage(filenames[0])
     del filenames[0]
-    for f in filenames:
-        image.AddBand(gippy.GeoImage(f)[0])
+    for f in filenames: image.AddBand(gippy.GeoImage(f)[0])
 
+    # Geometry used for calculating incident irradiance
+    theta = numpy.pi * meta['geometry']['solarzenith']/180.0
+    sundist = (1.0 - 0.016728 * numpy.cos(numpy.pi * 0.9856 * (meta['datetime']['JulianDay']-4.0)/180.0))
+
+    # Set metadata
     image.SetNoData(0)
+    # TODO - set appropriate metadata
+    #for key,val in meta.iteritems():
+    #    image.SetMeta(key,str(val))
 
-    # thermal bands
-    thermalband = gippy.Sensor()
-    thermalband.SetDynamicRange(1,255)
-    thermalband.SetThermal(K1,K2)
-
-    theta = numpy.pi * meta['solarzenith']/180.0
-    sundist = (1.0 - 0.016728 * numpy.cos(numpy.pi * 0.9856 * (meta['JulianDay']-4.0)/180.0))
-    
-    # Set gain, offset and sensor band specs
-    for (i,b) in enumerate(bandnums):
-        gain = (meta['maxrad'][b-1]-meta['minrad'][b-1]) / \
-            (meta['maxval'][b-1]-meta['minval'][b-1])
-        offset = meta['minrad'][b-1]
+    for b in bandnums:
+        bandmeta = meta['bands'][b-1]
+        gain = (bandmeta['maxrad']-bandmeta['minrad']) / (bandmeta['maxval']-bandmeta['minval'])
+        offset = bandmeta['minrad']
+        i = bandmeta['num']-1
         band = image[i]
         band.SetGain(gain)
         band.SetOffset(offset)
-
-        sensor = gippy.Sensor()
-        sensor.SetDynamicRange(1,255)
-        sensor.SetRefCoef(meta['JulianDay'], E[b-1], meta['solarzenith'])
-        sensor.SetTotalRadiance( (E[b-1] * numpy.cos(theta)) / (numpy.pi * sundist * sundist) )
-        image.SetColor(colors[b-1],i+1)
-
-        if colors[b-1][:4] == "LWIR":
-            band.SetSensor(thermalband)
-        else:
-            band.SetSensor(sensor)
-
+        band.SetDynamicRange(bandmeta['minval'],bandmeta['maxval'])
+        band.SetEsun( (bandmeta['E'] * numpy.cos(theta)) / (numpy.pi * sundist * sundist) )
+        band.SetThermal(bandmeta['k1'],bandmeta['k2'])
         image[i] = band
+        image.SetColor(bandmeta['color'],i+1)
 
     return image
 
@@ -290,11 +289,6 @@ def outfile(filename, product="radi", atmcorr=False, overwrite=False, suffix="")
     ofile = basename.replace(rawdir,outdir) \
         + '_' + atmtag + '_' + product.lower() + suffix
 
-    # Verify valid landsat
-    landsatnum = int(os.path.basename(ofile)[2:3])
-    if landsatnum != 5 and landsatnum != 7:
-        raise Exception('Landsat%s not recognized' % landsatnum)
-
     # Check for existing matching file
     existing_ofiles = glob.glob(ofile+'.*')
     if len(existing_ofiles) > 0 and overwrite == False:
@@ -315,7 +309,7 @@ def process(img, fname_out, product='radi', datatype='Int16', verbose=1, overvie
 
     # Atmospheric correct
     #if atmcorr:
-        #meta = readmtl(img.Filename())
+        #meta = readmeta(img.Filename())
         #atm = atmosphere(meta=meta)
         #for b in range(0,len(bandnums)):
         #band.SetAtmosphere( atm[bandi+1] )
@@ -365,7 +359,7 @@ def process(img, fname_out, product='radi', datatype='Int16', verbose=1, overvie
     elif product == 'cind':
         imgout = gippy.Indices(img,fname_out)
     elif product == 'temptest':
-        meta = readmtl(img.Filename())
+        meta = readmeta(img.Filename())
         imgout = gippy.GeoImage(fname_out,img,gippy.GDT_Int16,3)
         imgout.SetNoData(-32768)
         imgout.SetGain(0.01)
@@ -388,47 +382,43 @@ def process(img, fname_out, product='radi', datatype='Int16', verbose=1, overvie
 
 def batchprocess(fnames, products=['radi'], atmcorr=False, 
     datatype='Int16', verbose=1, overwrite=False, suffix='', overviews=False):
-
-    #if len(fnames) == 1: fnames = array(fnames)
-    #cpus = 6 #multiprocessing.cpu_count() - save_cpus
-    bandnums = numpy.arange(0,7) + 1
-    # If only doing temp then don't waste time with other bands
-    if len(products) == 1 and products[0] == 'temp': bandnums = [6]
     
     for fin in fnames:
         # Generate all fout names
         fouts = []
         for product in products:
-            if product == 'temptest': atmcorr=True
             try:
                 fname = outfile(fin, product=product, atmcorr=atmcorr,overwrite=overwrite, suffix=suffix)
                 fouts.append((product,fname))
             except Exception,e:
                 print '%s %s' % (os.path.basename(fin)[:16],e)
-        # Copy MTL file
-        #mtlout = meta['metafilename'].replace(rawdir,outdir)
-        #mtl = glob.glob(os.path.join(os.path.dirname(fin),'*MTL.txt'))[0]
-        #mtlout = mtl.replace(rawdir,outdir)
-        #if not os.path.exists(os.path.dirname(mtlout)):
-        #    os.makedirs(os.path.dirname(mtlout))
-        #try:
-        #    shutil.copy(mtl,mtlout)
-        #except: pass
 
         if len(fouts) > 0:
+            # Copy MTL file
+            #mtlout = meta['metafilename'].replace(rawdir,outdir)
+            #mtl = glob.glob(os.path.join(os.path.dirname(fin),'*MTL.txt'))[0]
+            #mtlout = mtl.replace(rawdir,outdir)
+            #if not os.path.exists(os.path.dirname(mtlout)):
+            #    os.makedirs(os.path.dirname(mtlout))
+            #try:
+            #    shutil.copy(mtl,mtlout)
+            #except: pass
+
             start = datetime.datetime.now()
             try:
-                img = read(fin, bandnums=bandnums, verbose=verbose)
-                meta = readmtl(fin)
+                # TODO - If only doing temp then don't waste time with other bands
+                img = read(fin, verbose=verbose)
+                # TODO - shouldn't have to readmeta again
+                meta = readmeta(fin)
             except Exception,e:
                 print '%s %s' % (os.path.basename(fin)[:16],e)
                 if verbose > 1: print traceback.format_exc()
                 continue
 
             if atmcorr:
-                for i,b in enumerate(bandnums):
+                for i in range(0,img.NumBands()):
                     band = img[i]
-                    band.SetAtmosphere(atmosphere(b,meta))
+                    band.SetAtmosphere(atmosphere(i+1,meta))
                     img[i] = band
 
             print '%s: read in %s' % (os.path.basename(fin)[:-12],datetime.datetime.now() - start)
@@ -456,14 +446,6 @@ def batchprocess(fnames, products=['radi'], atmcorr=False,
         #p.start()
     #else:
 
-#def unzip(filename):
-#    if tarfile.is_tarfile(filename):
-#        tfile = tarfile.open(filename)
-#    else:
-#        print 'Not a valid landsat tar file'
-#        return
-#    tfile.extractall(path=os.path.dirname(filename))   
-
 def archive(dir=''):
     if (dir == ''):
         fnames = glob.glob('L*.tar.gz')
@@ -490,7 +472,7 @@ def archive(dir=''):
             else:
                 shutil.move(f,newf)
                 try:
-                    #mtl = readmtl(newf)
+                    #mtl = readmeta(newf)
                     print f, ' -> ',path
                     numadded = numadded + 1
                 except Exception,e:
@@ -523,10 +505,11 @@ def _cleandir(dir):
     except: pass
 
     # Check validity
-    try:
-        mtl = readmtl(os.path.join(dir,'dummy'))
-    except Exception,e:
-        unarchive(dir)
+    #try:
+    #    mtl = readmeta(os.path.join(dir,'dummy'))
+    #except Exception,e:
+    #    print 'bad file? - should unarchive it'
+        #unarchive(dir)
 
     # Remove extraneous files
     fnames = glob.glob(os.path.join(dir,'*'))

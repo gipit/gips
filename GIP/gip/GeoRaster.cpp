@@ -1,20 +1,24 @@
 #include <gip/GeoRaster.h>
 #include <gip/GeoImage.h>
 
+#include <gip/GeoRasterIO.h>
+
 using namespace std;
 
 namespace gip {
 	// Copy constructor
 	GeoRaster::GeoRaster(const GeoRaster& image)
 		: GeoData(image), _GDALRasterBand(image._GDALRasterBand), _NoData(image._NoData), _ValidSize(image._ValidSize),
-            _Sensor(image._Sensor), _Atmosphere(image._Atmosphere), _Functions(image._Functions) {
+            _minDC(image._minDC), _maxDC(image._maxDC), _K1(image._K1), _K2(image._K2), _Esun(image._Esun),
+            _Atmosphere(image._Atmosphere), _Functions(image._Functions) {
 		//std::cout << Basename() << ": GeoRaster copy (" << this << ")" << std::endl;
 	}
 
 	// Copy and add processing function
 	GeoRaster::GeoRaster(const GeoRaster& image, GeoFunction func)
 		: GeoData(image), _GDALRasterBand(image._GDALRasterBand), _NoData(image._NoData), _ValidSize(image._ValidSize),
-            _Sensor(image._Sensor), _Atmosphere(image._Atmosphere), _Functions(image._Functions) {
+            _minDC(image._minDC), _maxDC(image._maxDC), _K1(image._K1), _K2(image._K2), _Esun(image._Esun),
+            _Atmosphere(image._Atmosphere), _Functions(image._Functions) {
 		_Functions.push_back(func);
 	}
 
@@ -27,12 +31,39 @@ namespace gip {
 		_GDALRasterBand = image._GDALRasterBand;
 		_NoData = image._NoData;
 		_ValidSize = image._ValidSize;
+		_minDC = image._minDC;
+		_maxDC = image._maxDC;
+		_K1 = image._K1;
+		_K2 = image._K2;
+		_Esun = image._Esun;
 		_Functions = image._Functions;
-		_Sensor = image._Sensor;
 		_Atmosphere = image._Atmosphere;
 		//cout << _GeoImage->Basename() << ": " << ref << " references (GeoRaster Assignment)" << endl;
 		return *this;
 	}
+
+    //! Copy passed raster band into this raster band
+    GeoRaster& GeoRaster::Copy(const GeoRaster& img, UNITS units=RAW) {
+        switch (DataType()) {
+            case GDT_Byte: GeoRasterIO<unsigned char>(*this).Copy(img, units);
+                break;
+            case GDT_UInt16: GeoRasterIO<unsigned short>(*this).Copy(img, units);
+                break;
+            case GDT_Int16: GeoRasterIO<short>(*this).Copy(img, units);
+                break;
+            case GDT_UInt32: GeoRasterIO<unsigned int>(*this).Copy(img, units);
+                break;
+            case GDT_Int32: GeoRasterIO<int>(*this).Copy(img, units);
+                break;
+            case GDT_Float32: GeoRasterIO<float>(*this).Copy(img, units);
+                break;
+            case GDT_Float64: GeoRasterIO<double>(*this).Copy(img, units);
+                break;
+            default: GeoRasterIO<unsigned char>(*this).Copy(img, units);
+                break;
+        }
+        return *this;
+    }
 
 	string GeoRaster::Info(bool stats) const {
 		std::stringstream info;

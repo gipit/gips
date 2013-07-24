@@ -29,7 +29,7 @@ if __name__ == "__main__":
     # Links
     parser = subparser.add_parser('link',help='Link to Landsat Products', parents=[gparser],
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-f','--filter',help='Filter of files to include (e.g., toaref',default="")
+    parser.add_argument('-p','--product',help='Limit links to product (e.g., refl)',default="")
     parser.add_argument('--hard',help='Create hard links instead of symbolic links (can only be used on titan)',
         default=False,action='store_true')
     #parser.add_argument('--mnt',help='Create links through /mnt (soft links only)',default=False,action='store_true')
@@ -89,11 +89,13 @@ if __name__ == "__main__":
                 if year != oldyear:
                     sys.stdout.write('\n  %s:' % year)
                 if sensor == 4:
-                    col = 'bright blue'
+                    col = 'bright yellow'
                 elif sensor == 5:
                     col = 'bright red'
                 elif sensor == 7:
-                    col = 'bright yellow'
+                    col = 'bright green'
+                elif sensor == 8:
+                    col = 'bright blue'
                 else: 
                     col = 'white'
                 if args.md:
@@ -132,9 +134,10 @@ if __name__ == "__main__":
             sys.stdout.write('\n')
             totalfiles = totalfiles + len(fnames)
         if totalfiles > 0:
-            pretty.writec(' Landsat4 ', 'bright blue')
+            pretty.writec(' Landsat4 ', 'bright yellow')
             pretty.writec(' Landsat5 ','bright red')
-            pretty.writec(' Landsat7 ','bright yellow')
+            pretty.writec(' Landsat7 ','bright green')
+            pretty.writec(' Landsat8 ','bright blue')
             sys.stdout.write('\n')
             print '  Total of %i matching data files' % totalfiles
         else:
@@ -142,7 +145,7 @@ if __name__ == "__main__":
 
     elif args.command == 'link':
         for pr in args.pathrow:
-            landsat.link(pr,args.dates,hard=args.hard,filt=args.filter)
+            landsat.link(pr,args.dates,hard=args.hard,filt=args.product)
 
     elif args.command == 'process':
         for pr in args.pathrow:
@@ -186,7 +189,7 @@ if __name__ == "__main__":
             for f in fnames:
                 start = datetime.datetime.now()
                 try:
-                    meta = landsat.readmtl(f)
+                    meta = landsat.readmeta(f)
                     merrafname = fetchmerra(meta['datetime'])
                     print '%s: %s' % (os.path.basename(merrafname),datetime.datetime.now()-start)
                 except Exception,e:

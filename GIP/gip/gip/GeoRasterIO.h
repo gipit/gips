@@ -10,7 +10,7 @@ namespace gip {
     using cimg_library::CImg;
 
     // TODO - Compile with C++0x to use scoped enums
-    enum UNITS {RAW, RADIANCE, REFLECTIVITY};
+    //enum UNITS {RAW, RADIANCE, REFLECTIVITY};
 
 	template<class T> class GeoRasterIO : public GeoRaster {
 	public:
@@ -41,7 +41,7 @@ namespace gip {
 			// Convert data to radiance
 			if (units != RAW) {
                 if (Gain() != 1.0 || Offset() != 0.0) {
-                    img = Gain() * (img-_Sensor.minDC()) + Offset();
+                    img = Gain() * (img-_minDC) + Offset();
                 }
 			}
 			// Coef image
@@ -51,21 +51,19 @@ namespace gip {
             double normrad;
             if (Atmosphere()) {
                 // For thermal band, currently water only
-                double e = (_Sensor.Thermal()) ? 0.95 : 1;
+                double e = (Thermal()) ? 0.95 : 1;
                 img = (img - (_Atmosphere.Lu() + (1-e)*_Atmosphere.Ld())) / (_Atmosphere.t() * e);
                 normrad = 1.0/_Atmosphere.Ld();
             } else {
-                normrad = 1.0/_Sensor.Radiance();
+                normrad = 1.0/_Esun;
                 //std::cout << "normrad, rad " << normrad << ", " << _Sensor.Radiance() << ", " << _Sensor.RefCoef() << std::endl;
             }
 
             // Convert to reflectance
 			if (units == REFLECTIVITY) {
                 // Convert to reflectance or temperature here
-                if (_Sensor.Thermal()) {
-                    float k1 = _Sensor.K1();
-                    float k2 = _Sensor.K2();
-                    cimg_for(img,ptr,T) *ptr = (k2/log(k1/(*ptr) + 1)) - 273.15;
+                if (Thermal()) {
+                    cimg_for(img,ptr,T) *ptr = (_K2/log(_K1/(*ptr) + 1)) - 273.15;
                     //img = _Sensor.K2()/(((_Sensor.K1()/img) + 1).log());
                 } else {
                     cimg_for(img,ptr,T) *ptr = *ptr * normrad; //* _Sensor.RefCoef();
@@ -148,21 +146,16 @@ namespace gip {
                     if (Gain() != 1.0 || Offset() != 0.0)
                         imgout = (img-Offset()) / Gain();
                     else imgout = img;
-                    if (src.NoDataValue() != NoDataValue()) {
-                        cimg_forXY(img,x,y) { if (img(x,y) == src.NoDataValue()) imgout(x,y) = NoDataValue(); }
-                    }
+                    //if (src.NoDataValue() != NoDataValue()) {
+                    //    cimg_forXY(img,x,y) { if (img(x,y) == src.NoDataValue()) imgout(x,y) = NoDataValue(); }
+                    //}
                     Write(imgout,*iChunk);
-                    /*CImg<double> stats = img.get_stats();
-                    cout << "stats " << endl;
-                    for (int i=0;i<12;i++) cout << stats(i) << " ";
-                    cout << endl;*/
             }
-            //CopyMeta(src);
-            // casting away const...these are all safe Get functions
-            // Set band color and description
+            // Copy relevant metadata
             GDALRasterBand* band = src.GetGDALRasterBand();
+            if (img.NoData()) SetNoData(img.NoDataValue());
+            CopyCategoryNames(src);
             _GDALRasterBand->SetDescription(band->GetDescription());
-            _GDALRasterBand->SetCategoryNames(band->GetCategoryNames());
             _GDALRasterBand->SetColorInterpretation(band->GetColorInterpretation());
             _GDALRasterBand->SetMetadata(band->GetMetadata());
             CopyCoordinateSystem(src);
@@ -188,7 +181,7 @@ namespace gip {
         //! Get Saturation mask
 		CImg<bool> SaturationMask(bbox chunk) const {
 		    CImg<float> band(Read(chunk, RAW));
-		    return band.threshold(_Sensor.maxDC());
+		    return band.threshold(_maxDC);
 		}
 
 		//! Creates map of indices for each value in image (used for rasterized vector images)

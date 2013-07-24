@@ -14,15 +14,13 @@
 namespace gip {
 
     //! Copy input raster band into output raster band
-    GeoRaster Copy(const GeoRaster& Input, GeoRaster& Output, UNITS units=RAW);
+    //GeoRaster Copy(const GeoRaster& Input, GeoRaster& Output, UNITS units=RAW);
 
     //! Copy input file into output file
     GeoImage Copy(const GeoImage& Input, GeoImage& Output, UNITS units=RAW);
 
 	//! Copy input file into new output file
 	GeoImage Copy(const GeoImage&, std::string, UNITS units=RAW, GDALDataType=GDT_Unknown);
-
-
 
 	//! Create new file of standard indices: NDVI, EVI, LSWI, NDSI, BI
 	GeoImage Indices(const GeoImage&, std::string, bool=true, bool=true, bool=true, bool=true, bool=true);
@@ -42,17 +40,17 @@ namespace gip {
     //! Create a mask of NoData values
 	GeoRaster CreateMask(const GeoImage&, std::string="");
 
-	//! Replace all 'Inf' results with the bands NoData value
-	GeoImage InfReplace(GeoImage&);
+	//! Replace all 'Inf' or 'NaN' results with the bands NoData value
+	GeoImage FixBadPixels(GeoImage&);
 
     // Replace all 'NaN' results with bands NoData value
 	//GeoImage NoDataReplace(GeoImage&);
 
 	//! Calculate spectral covariance
-	CImg<double> SpectralCovariance(const GeoImage&);
+	//CImg<double> SpectralCovariance(const GeoImage&);
 
 	//! Kmeans
-	//ĺGeoImage kmeans(const GeoImage&, std::string, int classes=5, int iterations=5, float threshold=1.0);
+	GeoImage kmeans(const GeoImage&, std::string, int classes=5, int iterations=5, float threshold=1.0);
 
     //! Calculate spectral correlation
 	//CImg<double> SpectralCorrelation(const GeoImage&, CImg<double> covariance=CImg<double>() );

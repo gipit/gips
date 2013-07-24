@@ -177,13 +177,16 @@ def SixS(bandnum, meta):
     import agspy.data.aod.RetrieveOptDep as RetrieveOptDep
     from Py6S import SixS, Geometry, AeroProfile, Altitudes, Wavelength, GroundReflectance, AtmosCorr
 
-    idoy = meta['JulianDay']
-    model = atmmodel(idoy, meta['lat'])
-    bandlocs = meta['bands']
-    bandwidths = meta['bandwidths']
-    dt = meta['datetime']
-    wvlen1 = bandlocs[bandnum-1] - bandwidths[bandnum-1]/2.0
-    wvlen2 = bandlocs[bandnum-1] + bandwidths[bandnum-1]/2.0
+    geometa = meta['geometry']
+    dtmeta = meta['datetime']
+    dt = dtmeta['datetime']
+
+    idoy = dtmeta['JulianDay']
+    model = atmmodel(idoy, geometa['lat'])
+    bandmeta = meta['bands'][bandnum-1]
+    
+    wvlen1 = bandmeta['wavelength'] - bandmeta['bandwidth']/2.0
+    wvlen2 = bandmeta['wavelength'] + bandmeta['bandwidth']/2.0
 
     # Get aerosols
     strdoy=str(idoy)
@@ -191,15 +194,15 @@ def SixS(bandnum, meta):
         strdoy = '0'+strdoy
     if idoy < 100:
         strdoy = '0'+strdoy
-    aod,aod_source,aod_rmse = RetrieveOptDep.getaod(strdoy,str(dt.year),str(meta['lon']),str(meta['lat']))
+    aod,aod_source,aod_rmse = RetrieveOptDep.getaod(strdoy,str(dt.year),str(geometa['lon']),str(geometa['lat']))
     if aod < 0.0:
         aod = 0.17
         print 'NO AOD DATA AVAILABLE; USING 0.17 default' 
 
     s = SixS()
-    s.atmos_profile = atmmodel(idoy,meta['lat'])
+    s.atmos_profile = atmmodel(idoy,geometa['lat'])
     s.geometry = Geometry.User()
-    s.geometry.from_time_and_location(meta['lat'], meta['lon'], str(dt), meta['zenith'], meta['azimuth'])
+    s.geometry.from_time_and_location(geometa['lat'], geometa['lon'], str(dt), geometa['zenith'], geometa['azimuth'])
     aero = AeroProfile.PredefinedType(AeroProfile.Continental)
     s.aero_profile = aero
     s.aot550 = aod
@@ -232,8 +235,10 @@ class MODTRAN():
     def __init__(self,bandnum,meta,merraprofile=True):
         #workdir = os.path.join(workdir,'modtran')
         self.meta = meta
+        geometa = meta['geometry']
+        dtmeta = meta['datetime']
 
-        self.model = atmmodel(self.meta['JulianDay'], self.meta['lat'])
+        self.model = atmmodel(dtmeta['JulianDay'], geometa['lat'])
 
         #fout = open('atm.txt','w')
         #fout.write('{:>5}{:>20}{:>20}\n'.format('Band','%T','Radiance'))
@@ -247,7 +252,8 @@ class MODTRAN():
         if not os.path.lexists('DATA'): os.symlink(_moddatadir, 'DATA')
 
         if merraprofile:
-            mprofile = atmprofile(meta['lat'],meta['lon'],meta['datetime'])
+            geometa = meta['geometry']
+            mprofile = atmprofile(geometa['lat'],geometa['lon'],dtmeta['datetime'])
             height = mprofile['height']
             temp = mprofile['temp']
             humidity = mprofile['humidity']
@@ -260,8 +266,7 @@ class MODTRAN():
         else: self.atmprofile = None
 
         # Generate MODTRAN input files
-        bandloc = meta['bands'][bandnum-1]
-        bandwidth = meta['bandwidths'][bandnum-1]
+
         # Determine if radiance or transmittance mode
         rootnames = self.addband(bandnum)
 
@@ -303,11 +308,10 @@ class MODTRAN():
 
     def addband(self,bandnum):
         rootname1 = 'band' + str(bandnum)
-        bandloc = self.meta['bands'][bandnum-1]
-        bandwidth = self.meta['bandwidths'][bandnum-1]
-        wvlen1 = bandloc - bandwidth/2.0
-        wvlen2 = bandloc + bandwidth/2.0 
-        if bandloc < 3:
+        bandmeta = self.meta['bands'][bandnum-1]
+        wvlen1 = bandmeta['wavelength'] - bandmeta['bandwidth']/2.0
+        wvlen2 = bandmeta['wavelength'] + bandmeta['bandwidth']/2.0 
+        if bandmeta['wavelength'] < 3:
             """ Run in transmittance mode for visible bands """
             mode = 4
             fwhm = 0.001
@@ -391,11 +395,14 @@ class MODTRAN():
 
     def card3a1(self):
         card = ('{IPARM:>5}{IPH:>5}{IDAY:>5}{ISOURC:>5}')
-        return card.format(IPARM=1,IPH=2,IDAY=self.meta['JulianDay'],ISOURC=1)
+        return card.format(IPARM=1,IPH=2,IDAY=self.meta['datetime']['JulianDay'],ISOURC=1)
 
     def card3a2(self):
         card = ('{PARM1:10.3f}{PARM2:10.3f}{PARM3:10.3f}{PARM4:10.3f}{TIME:10.3f}{PSIPO:10.3f}{ANGLEM:10.3f}{G:10.3f}')
-        return card.format(PARM1=self.meta['lat'],PARM2=self.meta['lon'],PARM3=0,PARM4=0,TIME=self.meta['DecimalTime'],PSIPO=0,ANGLEM=0,G=0)
+        lat = self.meta['geometry']['lat']
+        lon = self.meta['geometry']['lon']
+        dtime = self.meta['datetime']['DecimalTime']
+        return card.format(PARM1=lat,PARM2=lon,PARM3=0,PARM4=0,TIME=dtime,PSIPO=0,ANGLEM=0,G=0)
 
     def card4(self,v1=0.4,v2=1.0,fwhm=0.002):
         """ Spectral parameters """
@@ -458,7 +465,7 @@ def atmosphere(bandnum,meta=None,merraprofile=False):
     #output = dict()
     #for i,bandloc in enumerate(meta['bandlocs']):
     #for b in bandnums:
-    bandloc = meta['bands'][bandnum-1]
+    bandloc = meta['bands'][bandnum-1]['wavelength']
     # visible
     if bandloc < 3:
         if vismodel == '6s':

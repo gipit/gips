@@ -19,21 +19,25 @@ if __name__ == "__main__":
     # Global options
     gparser = argparse.ArgumentParser(add_help=False, formatter_class=hformat)
     gparser.add_argument('files', nargs='*', help='Image files to process')
+    gparser.add_argument('-v','--verbose', help='Verbosity level', default=0, type=int)
 
     # Inplace Operations
-    iparser = argparse.ArgumentParser(add_help=False)
-    group = iparser.add_argument_group('In-place options')
-    group.add_argument('-i','--inplace', help='Perform operation in original file', action='store_true', default=False)
+    #iparser = argparse.ArgumentParser(add_help=False)
+    #group = iparser.add_argument_group('In-place options')
+    #group.add_argument('-i','--inplace', help='Perform operation in original file', action='store_true', default=False)
 
     # Output file options
     oparser = argparse.ArgumentParser(add_help=False)
     group = oparser.add_argument_group('Output file options (not used with inplace operations)')
-    group.add_argument('-s','--suffix', help='Append suffix to filename for output', default=None)
+    #group.add_argument('-s','--suffix', help='Append suffix to filename for output')
     group.add_argument('--format', help='Output format', default='GTiff')
     #gparser.add_argument('-m','--mask', help='Only reclass underneath supplied mask (where == 1)', default=None)
 
     parser = subparser.add_parser('CreateMask',help='Create valid pixel mask based on all bands', parents=[gparser,oparser], formatter_class=hformat)
-    parser = subparser.add_parser('InfReplace',help='Replace Inf results in image with the NoData value', parents=[gparser], formatter_class=hformat)
+    parser = subparser.add_parser('FixBadPixels',help='Replace Inf/NaN results with NoData value', parents=[gparser], formatter_class=hformat)
+    parser = subparser.add_parser('kmeans',help='Run k-means classifier', parents=[gparser,oparser], formatter_class=hformat)
+    parser.add_argument('-s','--suffix',help='Append suffix to filename for output', default='_kmeans')
+
     parser = subparser.add_parser('thresh', help='Threshold image', parents=[gparser,oparser], formatter_class=hformat)
     parser.add_argument('-t','--threshold', help='Threshold value (> threshold is true)', default=0.5, type=float)
     parser.add_argument('-b', '--band', help='Band to threshold', default=1, type=int)
@@ -42,16 +46,21 @@ if __name__ == "__main__":
 
     args = parser0.parse_args()
 
-    if args.suffix == None: 
+    gippy.Options.SetVerbose(args.verbose)
+
+    try:
+        suffix = args.suffix
+    except:
         if args.command == 'CreateMask':
-            args.suffix = '_mask'
+            suffix = '_mask'
+        #else: suffix = ''
         else:
-            args.suffix = '_' + args.command
+            suffix = '_' + args.command
 
     for f in args.files:
         start = datetime.datetime.now()
         fbase,ext = os.path.splitext(os.path.basename(f))
-        fout = fbase+args.suffix+ext
+        fout = fbase+suffix+ext
 
         if args.command == 'thresh':
             # Create output file
@@ -73,7 +82,7 @@ if __name__ == "__main__":
             fhout.GetRasterBand(1).WriteArray(imgarr)
             fhout.GetRasterBand(1).SetNoDataValue(0)
         else:
-            cmd = "gippy.%s(gippy.GeoImage('%s'))" % (args.command, f)
+            cmd = "gippy.%s(gippy.GeoImage('%s'), '%s')" % (args.command, f, fout)
             exec(cmd)
 
-        print "%s -> %s: %s" % (fbase, fout, datetime.datetime.now()-start)
+        print "%s -> %s: %s" % (fbase, os.path.basename(fout), datetime.datetime.now()-start)

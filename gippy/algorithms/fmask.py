@@ -16,7 +16,7 @@ def process(image, outfile, tolerance=3, dilate=10, verbose=0, **kwargs):
 	img = gippy.Fmask(image, outfile, tolerance, dilate)
 	filename = img.Filename()
 	del img
-	meta = gippy.landsat.readmtl(image.Filename())
+	meta = gippy.landsat.readmeta(image.Filename())
 	from gippy.algorithms.acloud import AddShadowMask
 	AddShadowMask(filename, 90.0 - meta['solarzenith'], meta['solarazimuth'], 4000, 2)
 	return gippy.GeoImage(filename)

@@ -160,32 +160,6 @@ class Colors(_object):
 Colors_swigregister = _gippylib.Colors_swigregister
 Colors_swigregister(Colors)
 
-class Sensor(_object):
-    __swig_setmethods__ = {}
-    __setattr__ = lambda self, name, value: _swig_setattr(self, Sensor, name, value)
-    __swig_getmethods__ = {}
-    __getattr__ = lambda self, name: _swig_getattr(self, Sensor, name)
-    __repr__ = _swig_repr
-    def __init__(self, *args): 
-        this = _gippylib.new_Sensor(*args)
-        try: self.this.append(this)
-        except: self.this = this
-    __swig_destroy__ = _gippylib.delete_Sensor
-    __del__ = lambda self : None;
-    def minDC(self): return _gippylib.Sensor_minDC(self)
-    def maxDC(self): return _gippylib.Sensor_maxDC(self)
-    def K1(self): return _gippylib.Sensor_K1(self)
-    def K2(self): return _gippylib.Sensor_K2(self)
-    def RefCoef(self): return _gippylib.Sensor_RefCoef(self)
-    def Radiance(self): return _gippylib.Sensor_Radiance(self)
-    def SetDynamicRange(self, *args): return _gippylib.Sensor_SetDynamicRange(self, *args)
-    def SetTotalRadiance(self, *args): return _gippylib.Sensor_SetTotalRadiance(self, *args)
-    def SetRefCoef(self, *args): return _gippylib.Sensor_SetRefCoef(self, *args)
-    def Thermal(self): return _gippylib.Sensor_Thermal(self)
-    def SetThermal(self, k1 = 666.09, k2 = 1282.71): return _gippylib.Sensor_SetThermal(self, k1, k2)
-Sensor_swigregister = _gippylib.Sensor_swigregister
-Sensor_swigregister(Sensor)
-
 class Atmosphere(_object):
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Atmosphere, name, value)
@@ -248,6 +222,9 @@ class GeoData(_object):
 GeoData_swigregister = _gippylib.GeoData_swigregister
 GeoData_swigregister(GeoData)
 
+RAW = _gippylib.RAW
+RADIANCE = _gippylib.RADIANCE
+REFLECTIVITY = _gippylib.REFLECTIVITY
 class GeoFunction(_object):
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, GeoFunction, name, value)
@@ -279,6 +256,7 @@ class GeoRaster(GeoData):
         except: self.this = this
     __swig_destroy__ = _gippylib.delete_GeoRaster
     __del__ = lambda self : None;
+    def Copy(self, *args): return _gippylib.GeoRaster_Copy(self, *args)
     def XSize(self): return _gippylib.GeoRaster_XSize(self)
     def YSize(self): return _gippylib.GeoRaster_YSize(self)
     def ValidSize(self): return _gippylib.GeoRaster_ValidSize(self)
@@ -290,14 +268,15 @@ class GeoRaster(GeoData):
     def Description(self): return _gippylib.GeoRaster_Description(self)
     def SetDescription(self, *args): return _gippylib.GeoRaster_SetDescription(self, *args)
     def SetColor(self, *args): return _gippylib.GeoRaster_SetColor(self, *args)
-    def CopyColorTable(self, *args): return _gippylib.GeoRaster_CopyColorTable(self, *args)
     def CopyCategoryNames(self, *args): return _gippylib.GeoRaster_CopyCategoryNames(self, *args)
     def Gain(self): return _gippylib.GeoRaster_Gain(self)
     def Offset(self): return _gippylib.GeoRaster_Offset(self)
     def SetGain(self, *args): return _gippylib.GeoRaster_SetGain(self, *args)
     def SetOffset(self, *args): return _gippylib.GeoRaster_SetOffset(self, *args)
-    def Sensor(self): return _gippylib.GeoRaster_Sensor(self)
-    def SetSensor(self, *args): return _gippylib.GeoRaster_SetSensor(self, *args)
+    def Thermal(self): return _gippylib.GeoRaster_Thermal(self)
+    def SetThermal(self, k1 = 0, k2 = 0): return _gippylib.GeoRaster_SetThermal(self, k1, k2)
+    def SetDynamicRange(self, *args): return _gippylib.GeoRaster_SetDynamicRange(self, *args)
+    def SetEsun(self, *args): return _gippylib.GeoRaster_SetEsun(self, *args)
     def Atmosphere(self): return _gippylib.GeoRaster_Atmosphere(self)
     def SetAtmosphere(self, *args): return _gippylib.GeoRaster_SetAtmosphere(self, *args)
     def ClearAtmosphere(self): return _gippylib.GeoRaster_ClearAtmosphere(self)
@@ -342,6 +321,7 @@ class GeoImage(GeoData):
     def GetColors(self): return _gippylib.GeoImage_GetColors(self)
     def SetColor(self, *args): return _gippylib.GeoImage_SetColor(self, *args)
     def SetColors(self, *args): return _gippylib.GeoImage_SetColors(self, *args)
+    def CopyColorTable(self, *args): return _gippylib.GeoImage_CopyColorTable(self, *args)
     def AddBand(self, *args): return _gippylib.GeoImage_AddBand(self, *args)
     def RemoveBand(self, *args): return _gippylib.GeoImage_RemoveBand(self, *args)
     def ComputeStats(self): return _gippylib.GeoImage_ComputeStats(self)
@@ -359,13 +339,9 @@ def ApplyMask(*args):
   return _gippylib.ApplyMask(*args)
 ApplyMask = _gippylib.ApplyMask
 
-def InfReplace(*args):
-  return _gippylib.InfReplace(*args)
-InfReplace = _gippylib.InfReplace
-
-def SpectralCovariance(*args):
-  return _gippylib.SpectralCovariance(*args)
-SpectralCovariance = _gippylib.SpectralCovariance
+def FixBadPixels(*args):
+  return _gippylib.FixBadPixels(*args)
+FixBadPixels = _gippylib.FixBadPixels
 GDT_Unknown = _gippylib.GDT_Unknown
 GDT_Byte = _gippylib.GDT_Byte
 GDT_UInt16 = _gippylib.GDT_UInt16
@@ -374,9 +350,6 @@ GDT_UInt32 = _gippylib.GDT_UInt32
 GDT_Int32 = _gippylib.GDT_Int32
 GDT_Float32 = _gippylib.GDT_Float32
 GDT_Float64 = _gippylib.GDT_Float64
-RAW = _gippylib.RAW
-RADIANCE = _gippylib.RADIANCE
-REFLECTIVITY = _gippylib.REFLECTIVITY
 
 def reg():
   return _gippylib.reg()
@@ -427,6 +400,10 @@ Fmask = _gippylib.Fmask
 def CreateMask(*args):
   return _gippylib.CreateMask(*args)
 CreateMask = _gippylib.CreateMask
+
+def kmeans(*args):
+  return _gippylib.kmeans(*args)
+kmeans = _gippylib.kmeans
 
 def Options_DefaultFormat():
   return _gippylib.Options_DefaultFormat()
