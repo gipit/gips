@@ -438,78 +438,72 @@ namespace gip {
                 << "  Pixel Change Threshold = " << threshold << "%" << endl;
         }
         // Calculate threshold in # of pixels
-        threshold = threshold/100.0 * image.XSize() * image.YSize();
+        threshold = threshold/100.0 * image.Size();
 
         GeoImageIO<float> img(image);
-
         // Create new output image
         GeoImageIO<unsigned char> imgout(GeoImage(filename, image, GDT_Byte, 1));
 
         // Get initial class estimates (uses random pixels)
         CImg<float> ClassMeans = img.GetPixelClasses(classes);
 
-        CImg<float> Pixel, C_img, DistanceToClass(classes), NumSamples(classes,1,1,1,0), ThisClass;
-        CImg<unsigned char> C_imgout;
-        CImg<double> RunningTotal(classes+1,image.NumBands(),1,1,0);
+        int i;
+        CImg<double> Pixel, C_img, DistanceToClass(classes), NumSamples(classes), ThisClass;
+        CImg<unsigned char> C_imgout, C_mask;
+        CImg<double> RunningTotal(classes,image.NumBands(),1,1,0);
 
         vector<bbox> Chunks = image.Chunk();
         vector<bbox>::const_iterator iChunk;
-
-        int NumPixelChange, iteration=0; //, PercentComplete=0;
-
+        int NumPixelChange, iteration=0;
         do {
-            if (Options::Verbose()) cout << "  Iteration " << iteration+1 << std::flush;
             NumPixelChange = 0;
+            for (i=0; i<classes; i++) NumSamples(i) = 0;
+            if (Options::Verbose()) cout << "  Iteration " << iteration+1 << std::flush;
 
-            //int chunknum = 0;
             for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
                 C_img = img.Read(*iChunk);
+                C_mask = img.NoDataMask(*iChunk);
                 C_imgout = imgout[0].Read(*iChunk);
+
                 CImg<double> stats;
-                cimg_forXY(C_img,x,y) {
+                cimg_forXY(C_img,x,y) { // Loop through image
                     // Calculate distance between this pixel and all classes
-                    Pixel = C_img.get_crop(x,y,0,0,x,y,0,C_img.spectrum()-1).unroll('x');
-                    cimg_forY(ClassMeans,Y) {
-                        ThisClass = ClassMeans.get_row(Y);
-                        DistanceToClass(Y) = (Pixel - ThisClass).dot(Pixel - ThisClass);
-                    }
-                    // Get closest distance
-                    stats = DistanceToClass.get_stats();
-                    // Check if new class is same as old class
-                    if (C_imgout(x,y) != (stats(4)+1)) {
-                        NumPixelChange++;
-                        C_imgout(x,y) = stats(4)+1;
-                    }
-                    NumSamples(stats(4))++;
-                    cimg_forY(RunningTotal,yband) RunningTotal(stats(4)+1,yband) += Pixel(yband);
+                    if (!C_mask(x,y)) {
+                        Pixel = C_img.get_crop(x,y,0,0,x,y,0,C_img.spectrum()-1).unroll('x');
+                        cimg_forY(ClassMeans,cls) {
+                            ThisClass = ClassMeans.get_row(cls);
+                            DistanceToClass(cls) = (Pixel - ThisClass).dot(Pixel - ThisClass);
+                        }
+                        // Get closest distance and see if it's changed since last time
+                        stats = DistanceToClass.get_stats();
+                        if (C_imgout(x,y) != (stats(4)+1)) {
+                            NumPixelChange++;
+                            C_imgout(x,y) = stats(4)+1;
+                        }
+                        NumSamples(stats(4))++;
+                        cimg_forY(RunningTotal,iband) RunningTotal(stats(4),iband) += Pixel(iband);
+                    } else C_imgout(x,y) = 0;
                 }
                 imgout[0].Write(C_imgout,*iChunk);
-                //PercentComplete += (100/Chunks.size())/iterations; //*(iteration+1)/iterations) + (++chunknum*100/Chunks.size());
                 if (Options::Verbose()) cout << "." << std::flush;
             }
 
             // Calculate new Mean class vectors
-            for (int i=0; i<classes; i++) {
+            for (i=0; i<classes; i++) {
                 if (NumSamples(i) > 0) {
                     cimg_forX(ClassMeans,x) {
-                        ClassMeans(x,i) = RunningTotal(i+1,x)/NumSamples(i);
-                        RunningTotal(i+1,x) = 0;
+                        ClassMeans(x,i) = RunningTotal(i,x)/NumSamples(i);
+                        RunningTotal(i,x) = 0;
                     }
                     NumSamples(i) = 0;
                 }
-
             }
-            if (Options::Verbose()) {
-                //PercentComplete = (100*(iteration+1)/iterations);
-                cout << 100.0*((double)NumPixelChange/image.Size()) << "% pixels changed class" << endl;
-                cimg_printclasses(ClassMeans);
-                //cout << PercentComplete << "% complete" << std::endl;
-            }
+            if (Options::Verbose()) cout << 100.0*((double)NumPixelChange/image.Size()) << "% pixels changed class" << endl;
+            if (Options::Verbose()>1) cimg_printclasses(ClassMeans);
         } while ( (++iteration < iterations) && (NumPixelChange > threshold) );
 
         imgout[0].SetDescription("k-means");
         //imgout.GetGDALDataset()->FlushCache();
-        if (Options::Verbose()) cout << endl << image.Basename() << ": k-means end" << endl;
         return imgout;
     }
 

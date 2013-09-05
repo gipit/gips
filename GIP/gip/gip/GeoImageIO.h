@@ -133,14 +133,22 @@ namespace gip {
         CImg<T> GetRandomPixels(int NumPixels) const {
             CImg<T> Pixels(NumBands(), NumPixels);
             srand( time(NULL) );
-            for (int i=0; i<NumPixels; i++) {
+            bool badpix;
+            int p = 0;
+            while(p < NumPixels) {
                 int col = (double)rand()/RAND_MAX * (XSize()-1);
                 int row = (double)rand()/RAND_MAX * (YSize()-1);
                 T pix[1];
+                badpix = false;
                 for (unsigned int j=0; j<NumBands(); j++) {
                     _RasterIOBands[j].GetGDALRasterBand()->RasterIO(GF_Read, col, row, 1, 1, &pix, 1, 1, GDALType(), 0, 0);
-                    Pixels(j,i) = pix[0];
+                    if (_RasterIOBands[j].NoData() && pix[0] == _RasterIOBands[j].NoDataValue()) {
+                        badpix = true;
+                    } else {
+                        Pixels(j,p) = pix[0];
+                    }
                 }
+                if (!badpix) p++;
             }
             return Pixels;
         }
@@ -172,10 +180,9 @@ namespace gip {
                 CImg<T> DistSort = Dist.get_sort();
                 T cutoff = DistSort[RandPixelsPerClass*i]; //(stats.max-stats.min)/10 + stats.min;
                 cimg_forX(Dist,x) if (Dist(x) < cutoff) cimg_forX(RandomPixels,x1) RandomPixels(x1,x) = 0;
-
             }
             // Output Class Vectors
-            if (Options::Verbose()) cimg_printclasses(ClassMeans);
+            if (Options::Verbose()>1) cimg_printclasses(ClassMeans, "Initial Class");
             return ClassMeans;
         }
 

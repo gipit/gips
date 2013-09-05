@@ -10,9 +10,9 @@ namespace gip {
 
     using cimg_library::CImg;
 
-    template<typename T> inline void cimg_printclasses(CImg<T> img) {
+    template<typename T> inline void cimg_printclasses(CImg<T> img, std::string prefix="Class") {
         for (int i=0; i<img.height(); i++) {
-            std::cout << "\tClass " << i+1 << ": ";
+            std::cout << "\t" << prefix << " " << i+1 << ": ";
             cimg_forX(img,x) std::cout << img(x,i) << "  ";
             std::cout << std::endl;
         }
