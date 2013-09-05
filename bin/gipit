@@ -4,12 +4,6 @@ import os, argparse
 import datetime
 import gippy
 
-# needed by threshold function, for now
-import numpy, gdal
-
-
-#def ApplyMask(*args, **kwargs):
-
 if __name__ == "__main__":
     prog = os.path.split(__file__)[1]
     hformat = argparse.ArgumentDefaultsHelpFormatter
@@ -19,70 +13,41 @@ if __name__ == "__main__":
     # Global options
     gparser = argparse.ArgumentParser(add_help=False, formatter_class=hformat)
     gparser.add_argument('files', nargs='*', help='Image files to process')
-    gparser.add_argument('-v','--verbose', help='Verbosity level', default=0, type=int)
-
-    # Inplace Operations
-    #iparser = argparse.ArgumentParser(add_help=False)
-    #group = iparser.add_argument_group('In-place options')
-    #group.add_argument('-i','--inplace', help='Perform operation in original file', action='store_true', default=False)
+    gparser.add_argument('-v','--verbose', help='Verbosity level (0-3)', default=1, type=int)
 
     # Output file options
     oparser = argparse.ArgumentParser(add_help=False)
-    group = oparser.add_argument_group('Output file options (not used with inplace operations)')
-    #group.add_argument('-s','--suffix', help='Append suffix to filename for output')
+    group = oparser.add_argument_group('Output file options')
     group.add_argument('--format', help='Output format', default='GTiff')
-    #gparser.add_argument('-m','--mask', help='Only reclass underneath supplied mask (where == 1)', default=None)
 
+    # ALGORITHMS
     parser = subparser.add_parser('CreateMask',help='Create valid pixel mask based on all bands', parents=[gparser,oparser], formatter_class=hformat)
-    parser = subparser.add_parser('FixBadPixels',help='Replace Inf/NaN results with NoData value', parents=[gparser], formatter_class=hformat)
-    parser = subparser.add_parser('kmeans',help='Run k-means classifier', parents=[gparser,oparser], formatter_class=hformat)
-    parser.add_argument('-s','--suffix',help='Append suffix to filename for output', default='_kmeans')
+    group = parser.add_argument_group('algorithm arguments')
+    group.add_argument('-s','--suffix',help='Append suffix to filename for output', default='_mask')
 
-    parser = subparser.add_parser('thresh', help='Threshold image', parents=[gparser,oparser], formatter_class=hformat)
-    parser.add_argument('-t','--threshold', help='Threshold value (> threshold is true)', default=0.5, type=float)
-    parser.add_argument('-b', '--band', help='Band to threshold', default=1, type=int)
+    parser = subparser.add_parser('FixBadPixels',help='Replace Inf/NaN results with NoData value', parents=[gparser], formatter_class=hformat)
+   
     #parser = subparser.add_parser('ApplyMask', help='Apply Mask to existing image', parents=gparser, formatter_class=hformat)
     #parser.add_argument('-m','--mask', help='Mask to apply', required=True)
 
+    # TODO - automate reading in all algorithms in gippy.algorithms
+    import gippy.algorithms.kmeans as kmeans
+    kmeans.add_options(subparser,[gparser,oparser])
+    import gippy.algorithms.thresh as thresh
+    thresh.add_options(subparser,[gparser,oparser])
+
     args = parser0.parse_args()
-
     gippy.Options.SetVerbose(args.verbose)
-
-    try:
-        suffix = args.suffix
-    except:
-        if args.command == 'CreateMask':
-            suffix = '_mask'
-        #else: suffix = ''
-        else:
-            suffix = '_' + args.command
 
     for f in args.files:
         start = datetime.datetime.now()
         fbase,ext = os.path.splitext(os.path.basename(f))
-        fout = fbase+suffix+ext
-
-        if args.command == 'thresh':
-            # Create output file
-            imgout = gippy.GeoImage(fout, gippy.GeoImage(f), gippy.GDT_Byte, 1)
-            imgarr = numpy.zeros((imgout.YSize(), imgout.XSize()))
-            fout = imgout.Filename()
-            imgout = None
-            # Open input and threshold
-            fh = gdal.Open(f)
-            img = fh.GetRasterBand(args.band).ReadAsArray()
-            #img2 = fh.GetRasterBand(3).ReadAsArray()
-            #img = img1 - img2
-            (i,j) = numpy.where(img > args.threshold)
-            imgarr[i,j] = 1
-            (i,j) = numpy.where(img == fh.GetRasterBand(args.band).GetNoDataValue())
-            imgarr[i,j] = 0
-            # Write output
-            fhout = gdal.Open(fout,gdal.GA_Update)
-            fhout.GetRasterBand(1).WriteArray(imgarr)
-            fhout.GetRasterBand(1).SetNoDataValue(0)
+        if args.command == 'CreateMask':
+            fout = fbase + args.suffix + ext
+            exec("gippy.CreateMask(gippy.GeoImage('%s'),'%s')" % (f,fout))
+            print "%s -> %s: %s" % (fbase, os.path.basename(fout), datetime.datetime.now()-start)
+        elif args.command == 'FixBadPixels':
+            exec("gippy.FixBadPixels(gippy.GeoImage('%s'))" % (f))
+            print "%s: %s" % (fbase, datetime.datetime.now()-start)
         else:
-            cmd = "gippy.%s(gippy.GeoImage('%s'), '%s')" % (args.command, f, fout)
-            exec(cmd)
-
-        print "%s -> %s: %s" % (fbase, os.path.basename(fout), datetime.datetime.now()-start)
+            eval('%s.process(f, **args.__dict__)' % args.command)
