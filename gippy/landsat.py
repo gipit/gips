@@ -250,7 +250,8 @@ def link(pathrow,dates=None,hard=False,filt=''):
         else: 
             try:
                 os.symlink(f,os.path.basename(f))
-                os.symlink(faux,os.path.basename(faux))
+                if os.path.isfile(faux):
+                    os.symlink(faux,os.path.basename(faux))
             except:
                 pass
 
