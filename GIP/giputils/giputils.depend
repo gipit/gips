@@ -256,7 +256,7 @@
 	<gip/GeoRasterIO.h>
 	<gip/Options.h>
 
-1374258442 /home/mhanson/work/gippy/GIP/gip/gip/GeoImage.h
+1379095952 /home/mhanson/work/gippy/GIP/gip/gip/GeoImage.h
 	<gip/Colors.h>
 	<gip/GeoData.h>
 	<gip/GeoRaster.h>
@@ -281,7 +281,7 @@
 	<sstream>
 	<string>
 
-1374601139 /home/mhanson/work/gippy/GIP/gip/gip/GeoRaster.h
+1379098031 /home/mhanson/work/gippy/GIP/gip/gip/GeoRaster.h
 	<boost/filesystem.hpp>
 	<boost/geometry/geometry.hpp>
 	<boost/geometry/geometries/point_xy.hpp>
@@ -291,10 +291,10 @@
 	<iostream>
 	<iomanip>
 
-1300461336 /home/mhanson/work/gippy/GIP/gip/gip/gip_CImg.h
+1379104200 /home/mhanson/work/gippy/GIP/gip/gip/gip_CImg.h
 	<CImg.h>
 
-1354642859 /home/mhanson/work/gippy/GIP/gip/CImg.h
+1379100459 /home/mhanson/work/gippy/GIP/gip/CImg.h
 	<cstdio>
 	<cstdlib>
 	<cstdarg>
@@ -347,12 +347,13 @@
 
 1363798396 /home/mhanson/work/gippy/GIP/gip/gip/Atmosphere.h
 
-1374600147 /home/mhanson/work/gippy/GIP/gip/gip/GeoRasterIO.h
+1379520666 /home/mhanson/work/gippy/GIP/gip/gip/GeoRasterIO.h
 	<exception>
 	<gip/GeoRaster.h>
 	<cmath>
+	<iostream>
 
-1374601715 /home/mhanson/work/gippy/GIP/gip/gip/GeoAlgorithms.h
+1379520328 /home/mhanson/work/gippy/GIP/gip/gip/GeoAlgorithms.h
 	<gip/GeoImage.h>
 	<gip/GeoRaster.h>
 
@@ -374,4 +375,14 @@
 	<gip/GeoImage.h>
 	<gip/GeoAlgorithms.h>
 	<gip/Options.h>
+
+1378934242 source:/home/mhanson/work/gippy/GIP/giputils/gip_ricedetect.cpp
+	<iostream>
+	<gip/GeoImageIO.h>
+	<gip/GeoAlgorithms.h>
+	<gip/Options.h>
+
+1378935043 /home/mhanson/work/gippy/GIP/gip/gip/GeoImageIO.h
+	<gip/GeoImage.h>
+	<gip/GeoRasterIO.h>
 

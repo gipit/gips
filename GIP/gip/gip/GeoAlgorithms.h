@@ -25,6 +25,12 @@ namespace gip {
 	//! Create new file of standard indices: NDVI, EVI, LSWI, NDSI, BI
 	GeoImage Indices(const GeoImage&, std::string, bool=true, bool=true, bool=true, bool=true, bool=true);
 
+	GeoImage Permutations(const GeoImage&, const GeoImage&, std::string);
+
+	GeoImage Index2Probability(const GeoImage&, std::string, float, float);
+
+	GeoImage BandMath(const GeoImage&, std::string, int, int);
+
 	//! Create new file with AutoCloud algorithm
 	GeoImage AutoCloud(const GeoImage&, std::string, int=4000, float=0.2, float=14, float=0.2, int=20);
 
@@ -35,7 +41,7 @@ namespace gip {
 	//GeoImage SMF(const GeoImage& image, std::string, CImg<double>);
 
 	//! Apply a mask to existing file (where mask>0 change to NoDataValue)
-	GeoImage ApplyMask(const GeoImage&, GeoRaster&);
+	//GeoImage ApplyMask(const GeoImage&, GeoRaster&);
 
     //! Create a mask of NoData values
 	GeoRaster CreateMask(const GeoImage&, std::string="");

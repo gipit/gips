@@ -6,6 +6,9 @@
 #include <gip/GeoRaster.h>
 #include <cmath>
 
+// only used for debugging
+#include <iostream>
+
 namespace gip {
     using cimg_library::CImg;
 
@@ -88,25 +91,38 @@ namespace gip {
 			for (iFunc=_Functions.begin();iFunc!=_Functions.end();iFunc++) {
 				//std::cout << Basename() << ": Applying Function " << iFunc->Function() << " " << iFunc->Operand() << std::endl;
 				if (iFunc->Function() == ">") {
-					img = img.threshold(iFunc->Operand(),false,true);
+					img.threshold(iFunc->Operand(),false,true);
 				} else if (iFunc->Function() == ">=") {
-					img = img.threshold(iFunc->Operand(),false,false);
+					img.threshold(iFunc->Operand(),false,false);
 				} else if (iFunc->Function() == "<") {
-					img = (img.threshold(iFunc->Operand(),false,true)-1.0).abs();
+					img.threshold(iFunc->Operand(),false,false)^=1;
 				} else if (iFunc->Function() == "<=") {
-					img = (img.threshold(iFunc->Operand(),false,false)-1.0).abs();
+					img.threshold(iFunc->Operand(),false,true)^=1;
 				} else if (iFunc->Function() == "+") {
 					img = img + iFunc->Operand();
 				} else if (iFunc->Function() == "-") {
 					img = img - iFunc->Operand();
 				}
 			}
+
+			// Apply all masks
+			if (_Masks.size() > 0) {
+                GeoRasterIO<unsigned char> mask(_Masks[0]);
+                CImg<unsigned char> cmask(mask.Read(chunk));
+                for (unsigned int i=1; i<_Masks.size(); i++) {
+                    mask = GeoRasterIO<unsigned char>(_Masks[i]);
+                    cmask.mul(mask.Read(chunk));
+                }
+                img.mul(cmask);
+			}
+
 			// If processing was apply NoData values where needed
 			if (NoData() && units != RAW) {
                 cimg_forXY(img,x,y) {
                     if (imgorig(x,y) == NoDataValue()) img(x,y) = NoDataValue();
                 }
 			}
+
 			delete ptrPixels;
 			return img;
 		}
@@ -143,12 +159,12 @@ namespace gip {
                     CImg<float> img = src.Read(*iChunk, units);
                     CImg<T> imgout;
                     //CImg<unsigned char> mask(img.thresh)
-                    if (Gain() != 1.0 || Offset() != 0.0)
+                    if (Gain() != 1.0 || Offset() != 0.0) {
                         imgout = (img-Offset()) / Gain();
-                    else imgout = img;
-                    //if (src.NoDataValue() != NoDataValue()) {
-                    //    cimg_forXY(img,x,y) { if (img(x,y) == src.NoDataValue()) imgout(x,y) = NoDataValue(); }
-                    //}
+                    } else imgout.assign(img);
+                    if (src.NoDataValue() != NoDataValue()) {
+                        cimg_forXY(img,x,y) { if (img(x,y) == src.NoDataValue()) imgout(x,y) = NoDataValue(); }
+                    }
                     Write(imgout,*iChunk);
             }
             // Copy relevant metadata
@@ -163,7 +179,7 @@ namespace gip {
 		}
 
         //! Apply mask to (where mask>0 make NoDataValue)
-		GeoRasterIO& ApplyMask(const GeoRaster& mask) {
+		/*GeoRasterIO& ApplyMask(const GeoRaster& mask) {
             GeoRasterIO<unsigned char> maskio(mask);
             CImg<unsigned char> maskimg;
             CImg<T> img;
@@ -176,12 +192,22 @@ namespace gip {
                 Write(img,*iChunk);
             }
             return *this;
-		}
+		}*/
 
         //! Get Saturation mask
 		CImg<bool> SaturationMask(bbox chunk) const {
 		    CImg<float> band(Read(chunk, RAW));
 		    return band.threshold(_maxDC);
+		}
+
+		//! NoData mask (all bands)
+		CImg<unsigned char> NoDataMask(bbox chunk) const {
+		    CImg<T> img = Read(chunk);
+		    CImg<unsigned char> mask(img.width(),img.height(),1,1,0);
+		    if (!NoData()) return mask;
+		    T nodataval = NoDataValue();
+            cimg_forXY(img,x,y) if (img(x,y) == nodataval) mask(x,y) = 1;
+            return mask;
 		}
 
 		//! Creates map of indices for each value in image (used for rasterized vector images)

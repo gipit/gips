@@ -42,6 +42,110 @@ namespace gip {
         return Copy(image,ImageOut,units);
 	}
 
+    //! Multiply together all permutations
+    GeoImage Permutations(const GeoImage& image1, const GeoImage& image2, string filename) {
+        GeoImageIO<float> imageout(GeoImage(filename, image1, GDT_Float32, image1.NumBands()*image2.NumBands()));
+        CImg<float> cimgout;
+        int bandout(0);
+        CImg<unsigned char> mask;
+        float nodataout = -32768;
+        imageout.SetNoData(nodataout);
+
+        std::vector<bbox>::const_iterator iChunk;
+        for (unsigned int i1=0; i1<image1.NumBands(); i1++) {
+            GeoRasterIO<float> img1(image1[i1]);
+            std::vector<bbox> Chunks = img1.Chunk();
+            for (unsigned int i2=0; i2<image2.NumBands(); i2++) {
+                GeoRasterIO<float> img2(image2[i2]);
+                imageout[bandout].SetDescription(img1.Description()+'-'+img2.Description());
+                for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
+                    cimgout = img1.Read(*iChunk).mul(img2.Read(*iChunk));
+                    mask = img1.NoDataMask(*iChunk)|=(img2.NoDataMask(*iChunk));
+                    cimg_forXY(mask,x,y) if (mask(x,y)) cimgout(x,y) = nodataout;
+                    imageout[bandout].Write(cimgout, *iChunk);
+                }
+            bandout++;
+            }
+        }
+        return imageout;
+    }
+
+    //! Convert lo-high of index into probability
+    GeoImage Index2Probability(const GeoImage& image, string filename, float min, float max) {
+        // Need method of generating new GeoImage with GeoRaster template in
+        int bandnum = 1;
+        GeoImageIO<float> imagein(image);
+        GeoImageIO<float> imageout(GeoImage(filename, image, GDT_Float32, 2));
+        float nodatain = imagein[0].NoDataValue();
+        float nodataout = -32768;
+        imageout.SetNoData(nodataout);
+
+        std::vector<bbox>::const_iterator iChunk;
+        std::vector<bbox> Chunks = image.Chunk();
+        CImg<float> cimgin, cimgout;
+        for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
+            cimgin = imagein[bandnum-1].Read(*iChunk);
+            cimgout = (cimgin - min)/(max-min);
+            cimgout.min(1.0).max(0.0);
+            cimg_forXY(cimgin,x,y) if (cimgin(x,y) == nodatain) cimgout(x,y) = nodataout;
+            imageout[0].Write(cimgout, *iChunk);
+            cimg_for(cimgout,ptr,float) if (*ptr != nodataout) *ptr = 1.0 - *ptr;
+            imageout[1].Write(cimgout, *iChunk);
+        }
+        return imageout;
+    }
+
+    //! Perform band math (hard coded subtraction)
+    GeoImage BandMath(const GeoImage& image, string filename, int band1, int band2) {
+        GeoImageIO<float> imagein(image);
+        GeoImageIO<float> imageout(GeoImage(filename, image, GDT_Float32, 1));
+        float nodataout = -32768;
+        imageout.SetNoData(nodataout);
+        std::vector<bbox>::const_iterator iChunk;
+        std::vector<bbox> Chunks = image.Chunk();
+        CImg<float> cimgout;
+        CImg<unsigned char> mask;
+        for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
+            mask = imagein[band1-1].NoDataMask(*iChunk)|=(imagein[band2-1].NoDataMask(*iChunk));
+            cimgout = imagein[band1-1].Read(*iChunk) - imagein[band2-1].Read(*iChunk);
+            cimg_forXY(mask,x,y) if (mask(x,y)) cimgout(x,y) = nodataout;
+            imageout[0].Write(cimgout,*iChunk);
+        }
+        return imageout;
+    }
+
+	//! Rewrite file (applying processing, masks, etc)
+	/* GeoImage Process(const GeoImage& image) {
+	    for (unsigned int i=0l i<Output.NumBands(); i++) {
+
+	    }
+	}
+	// Apply a mask to existing file (where mask>0 change to NoDataValue)
+	GeoImage Process(const GeoImage& image, GeoRaster& mask) {
+	    image.AddMask(mask);
+        for (unsigned int i=0; i<image.NumBands(); i++) {
+            switch (image.DataType()) {
+                case GDT_Byte: GeoRasterIO<unsigned char>(image[i]).ApplyMask(mask);
+                    break;
+                case GDT_UInt16: GeoRasterIO<unsigned short>(image[i]).ApplyMask(mask);
+                    break;
+                case GDT_Int16: GeoRasterIO<short>(image[i]).ApplyMask(mask);
+                    break;
+                case GDT_UInt32: GeoRasterIO<unsigned int>(image[i]).ApplyMask(mask);
+                    break;
+                case GDT_Int32: GeoRasterIO<int>(image[i]).ApplyMask(mask);
+                    break;
+                case GDT_Float32: GeoRasterIO<float>(image[i]).ApplyMask(mask);
+                    break;
+                case GDT_Float64: GeoRasterIO<double>(image[i]).ApplyMask(mask);
+                    break;
+                default: GeoRasterIO<unsigned char>(image[i]).ApplyMask(mask);
+            }
+        }
+        return image;
+	}	*/
+
+
 	//! Create multi-band image of various indices calculated from input
 	GeoImage Indices(const GeoImage& ImageIn, string filename, bool ndvi, bool evi, bool lswi, bool ndsi, bool bi) {
 		int numbands(0);
@@ -506,30 +610,6 @@ namespace gip {
         //imgout.GetGDALDataset()->FlushCache();
         return imgout;
     }
-
-	//! Apply a mask to existing file (where mask>0 change to NoDataValue)
-	GeoImage ApplyMask(const GeoImage& image, GeoRaster& mask) {
-        for (unsigned int i=0; i<image.NumBands(); i++) {
-            switch (image.DataType()) {
-                case GDT_Byte: GeoRasterIO<unsigned char>(image[i]).ApplyMask(mask);
-                    break;
-                case GDT_UInt16: GeoRasterIO<unsigned short>(image[i]).ApplyMask(mask);
-                    break;
-                case GDT_Int16: GeoRasterIO<short>(image[i]).ApplyMask(mask);
-                    break;
-                case GDT_UInt32: GeoRasterIO<unsigned int>(image[i]).ApplyMask(mask);
-                    break;
-                case GDT_Int32: GeoRasterIO<int>(image[i]).ApplyMask(mask);
-                    break;
-                case GDT_Float32: GeoRasterIO<float>(image[i]).ApplyMask(mask);
-                    break;
-                case GDT_Float64: GeoRasterIO<double>(image[i]).ApplyMask(mask);
-                    break;
-                default: GeoRasterIO<unsigned char>(image[i]).ApplyMask(mask);
-            }
-        }
-        return image;
-	}
 
     //! Create mask based on NoData values for all bands
 	GeoRaster CreateMask(const GeoImage& image, string filename) {

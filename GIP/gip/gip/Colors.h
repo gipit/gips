@@ -56,6 +56,12 @@ namespace gip {
 			}
 			else return "None";
 		}
+		void Remove(unsigned int bandnum) {
+            if (bandnum <= _ColorsToBandNums.size()) {
+                _ColorsToBandNums.erase(_BandNumsToColors[bandnum]);
+                _BandNumsToColors.erase(bandnum);
+            }
+		}
 
 	private:
         //! Mapping of colors to band numbers

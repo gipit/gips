@@ -182,7 +182,7 @@ namespace gip {
                 cimg_forX(Dist,x) if (Dist(x) < cutoff) cimg_forX(RandomPixels,x1) RandomPixels(x1,x) = 0;
             }
             // Output Class Vectors
-            if (Options::Verbose()>1) cimg_printclasses(ClassMeans, "Initial Class");
+            //if (Options::Verbose()>1) cimg_printclasses(ClassMeans, "Initial Class");
             return ClassMeans;
         }
 

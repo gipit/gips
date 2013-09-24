@@ -3,7 +3,7 @@
 import os, sys, errno
 import glob
 import re
-import agspy.utils.utils as utils
+import agspy.utils.dateparse as dateparse
 import datetime
 import os, errno
 import shutil
@@ -255,16 +255,19 @@ def link(pathrow,dates=None,hard=False,filt=''):
             except:
                 pass
 
-def inventory(pathrow,dates=None,products=False):
+def inventory(pathrow,dates=None,doy=None,products=False):
     """ Get listing of filenames that match pathrow and date range """
     # Raw data
     if products == True:
         fnames = glob.glob(os.path.join(outdir, pathrow, '*', '*.tif'))
     else: # Raw data
         fnames = glob.glob(os.path.join(rawdir, pathrow, '*', '*.tar.gz'))
-    if dates == None:
-        return sorted(fnames)
-    dates = utils.daterange(dates)
+    if dates == None: dates='1984,2050'
+    dates = dateparse.range(dates)
+    if doy: 
+        doys = doy.split(',')
+        doys = ( int(doys[0]), int(doys[1]) )
+    else: doys = (1,366)
     # Find matching dates
     matched = []
     for f in fnames:
@@ -273,7 +276,7 @@ def inventory(pathrow,dates=None,products=False):
             year = int(basename[9:13])
             doy = int(basename[13:16])
             date = datetime.date(year,1,1) + datetime.timedelta(doy-1)
-            if dates[0] <= date <= dates[1]:
+            if (dates[0] <= date <= dates[1]) and (doys[0] <= doy <= doys[1]):
                 matched.append(f)
         except:
             pass
@@ -325,21 +328,29 @@ def process(img, fname_out, product='radi', datatype='Int16', verbose=1, overvie
     gippy.Options.SetChunkSize(64.0)
 
     # Copy input into output
-    if product == 'radi' or product == 'refl' or product == 'temp':
+    # TODO - this should be an algorithm ? (landsat alg instead of landsat process)
+    if product == 'cind':
+        imgout = gippy.Indices(img,fname_out)
+    else:
+    #if product == 'radi' or product == 'refl' or product == 'temp':
+        nodata = -32768
         # Datatype of output
         if datatype.lower() == 'int16':
             dtype = gippy.GDT_Int16
         elif datatype.lower() == 'float32':
             dtype = gippy.GDT_Float32
 
-        # Create output file and set default parameters
-        imgout = gippy.GeoImage(fname_out, img, dtype)
-        imgout.SetNoData(-32768)
-
-        # Units
         if product == 'radi':
             units = gippy.RADIANCE
+        elif product == 'visu':
+            units = gippy.RAW
+            img.PruneToRGB()
+            dtype = gippy.GDT_Byte
         else: units = gippy.REFLECTIVITY
+
+        # Create output file and set default parameters
+        imgout = gippy.GeoImage(fname_out, img, dtype)
+        imgout.SetNoData(nodata)
 
         if dtype == gippy.GDT_Int16:
             if units == gippy.RADIANCE:
@@ -354,11 +365,20 @@ def process(img, fname_out, product='radi', datatype='Int16', verbose=1, overvie
                         imgout[tb] = band
                     except:
                         pass
-        else: imgout.SetGain(1.0)
+        else: 
+            imgout.SetGain(1.0)
+            imgout.SetOffset(0.0)
+        """ L7 already 0-255, but L8 is not
+        elif dtype == gippy.GDT_Byte:
+            stats = img.ComputeStats()
+            for b in range(0,imgout.NumBands()):
+                imgout[b].SetOffset(img[b].Min())
+                imgout[b].SetGain((img[b].Max()-img[b].Min())/256.0)
+                print imgout[b].Offset(), imgout[b].Gain()
+        """
         imgout = gippy.Copy(img, imgout, units)
-    # TODO - this should be an algorithm ? (landsat alg instead of landsat process)
-    elif product == 'cind':
-        imgout = gippy.Indices(img,fname_out)
+        #print imgout.Min(), imgout.Max(), imgout.Mean()
+    """
     elif product == 'temptest':
         meta = readmeta(img.Filename())
         imgout = gippy.GeoImage(fname_out,img,gippy.GDT_Int16,3)
@@ -373,6 +393,7 @@ def process(img, fname_out, product='radi', datatype='Int16', verbose=1, overvie
         gippy.Copy(band,imgout[2],gippy.REFLECTIVITY)
     else:
         raise Exception("Unknown product name %s" % product)
+    """
 
     if overviews: imgout.AddOverviews()
     # Clean up extracted tif files in original dir

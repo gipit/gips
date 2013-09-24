@@ -209,7 +209,7 @@
 
 1363628909 /home/mhanson/work/GIP/gip//gip/Sensor.h
 
-1374699058 source:/home/mhanson/work/gippy/GIP/gip/GeoAlgorithms.cpp
+1379523385 source:/home/mhanson/work/gippy/GIP/gip/GeoAlgorithms.cpp
 	<gip/Options.h>
 	<gip/GeoAlgorithms.h>
 	<gip/GeoImageIO.h>
@@ -221,21 +221,21 @@
 	<boost/filesystem.hpp>
 	<gip/Colors.h>
 
-1358190600 /home/mhanson/work/gippy/GIP/gip//gip/Colors.h
+1380038107 /home/mhanson/work/gippy/GIP/gip//gip/Colors.h
 	<map>
 	<string>
 
-1374607015 /home/mhanson/work/gippy/GIP/gip//gip/GeoAlgorithms.h
+1379520328 /home/mhanson/work/gippy/GIP/gip//gip/GeoAlgorithms.h
 	<gip/GeoImage.h>
 	<gip/GeoRaster.h>
 
-1374258442 /home/mhanson/work/gippy/GIP/gip//gip/GeoImage.h
+1380038475 /home/mhanson/work/gippy/GIP/gip//gip/GeoImage.h
 	<gip/Colors.h>
 	<gip/GeoData.h>
 	<gip/GeoRaster.h>
 	<gip/GeoRasterIO.h>
 
-1367934425 /home/mhanson/work/gippy/GIP/gip//gip/GeoData.h
+1380050632 /home/mhanson/work/gippy/GIP/gip//gip/GeoData.h
 	<vector>
 	<string>
 	<gdal/gdal_priv.h>
@@ -250,7 +250,7 @@
 	<sstream>
 	<string>
 
-1374603794 /home/mhanson/work/gippy/GIP/gip//gip/GeoRaster.h
+1380042177 /home/mhanson/work/gippy/GIP/gip//gip/GeoRaster.h
 	<boost/filesystem.hpp>
 	<boost/geometry/geometry.hpp>
 	<boost/geometry/geometries/point_xy.hpp>
@@ -260,10 +260,10 @@
 	<iostream>
 	<iomanip>
 
-1374696753 /home/mhanson/work/gippy/GIP/gip//gip/gip_CImg.h
+1379104200 /home/mhanson/work/gippy/GIP/gip//gip/gip_CImg.h
 	<CImg.h>
 
-1354642859 /home/mhanson/work/gippy/GIP/gip//CImg.h
+1380047831 /home/mhanson/work/gippy/GIP/gip//CImg.h
 	<cstdio>
 	<cstdlib>
 	<cstdarg>
@@ -316,12 +316,13 @@
 
 1363798396 /home/mhanson/work/gippy/GIP/gip//gip/Atmosphere.h
 
-1374600147 /home/mhanson/work/gippy/GIP/gip//gip/GeoRasterIO.h
+1380046170 /home/mhanson/work/gippy/GIP/gip//gip/GeoRasterIO.h
 	<exception>
 	<gip/GeoRaster.h>
 	<cmath>
+	<iostream>
 
-1374697322 /home/mhanson/work/gippy/GIP/gip//gip/GeoImageIO.h
+1378935043 /home/mhanson/work/gippy/GIP/gip//gip/GeoImageIO.h
 	<gip/GeoImage.h>
 	<gip/GeoRasterIO.h>
 
@@ -331,11 +332,11 @@
 	<boost/make_shared.hpp>
 	<iostream>
 
-1366212647 source:/home/mhanson/work/gippy/GIP/gip/GeoImage.cpp
+1380038622 source:/home/mhanson/work/gippy/GIP/gip/GeoImage.cpp
 	<gip/GeoImage.h>
 	<gip/GeoRaster.h>
 
-1374601346 source:/home/mhanson/work/gippy/GIP/gip/GeoRaster.cpp
+1379097828 source:/home/mhanson/work/gippy/GIP/gip/GeoRaster.cpp
 	<gip/GeoRaster.h>
 	<gip/GeoImage.h>
 	<gip/GeoRasterIO.h>

@@ -156,6 +156,7 @@ class Colors(_object):
     __swig_destroy__ = _gippylib.delete_Colors
     __del__ = lambda self : None;
     def SetColor(self, *args): return _gippylib.Colors_SetColor(self, *args)
+    def Remove(self, *args): return _gippylib.Colors_Remove(self, *args)
     def __getitem__(self, *args): return _gippylib.Colors___getitem__(self, *args)
 Colors_swigregister = _gippylib.Colors_swigregister
 Colors_swigregister(Colors)
@@ -260,7 +261,6 @@ class GeoRaster(GeoData):
     def XSize(self): return _gippylib.GeoRaster_XSize(self)
     def YSize(self): return _gippylib.GeoRaster_YSize(self)
     def ValidSize(self): return _gippylib.GeoRaster_ValidSize(self)
-    def SetValidSize(self, *args): return _gippylib.GeoRaster_SetValidSize(self, *args)
     def DataTypeStr(self): return _gippylib.GeoRaster_DataTypeStr(self)
     def DataType(self): return _gippylib.GeoRaster_DataType(self)
     def GetGDALRasterBand(self): return _gippylib.GeoRaster_GetGDALRasterBand(self)
@@ -285,6 +285,7 @@ class GeoRaster(GeoData):
     def SetNoData(self, *args): return _gippylib.GeoRaster_SetNoData(self, *args)
     def ClearNoData(self): return _gippylib.GeoRaster_ClearNoData(self)
     def MaxValue(self): return _gippylib.GeoRaster_MaxValue(self)
+    def AddMask(self, *args): return _gippylib.GeoRaster_AddMask(self, *args)
     def Min(self): return _gippylib.GeoRaster_Min(self)
     def Max(self): return _gippylib.GeoRaster_Max(self)
     def Mean(self): return _gippylib.GeoRaster_Mean(self)
@@ -324,6 +325,9 @@ class GeoImage(GeoData):
     def CopyColorTable(self, *args): return _gippylib.GeoImage_CopyColorTable(self, *args)
     def AddBand(self, *args): return _gippylib.GeoImage_AddBand(self, *args)
     def RemoveBand(self, *args): return _gippylib.GeoImage_RemoveBand(self, *args)
+    def PruneBands(self, *args): return _gippylib.GeoImage_PruneBands(self, *args)
+    def PruneToRGB(self): return _gippylib.GeoImage_PruneToRGB(self)
+    def AddMask(self, *args): return _gippylib.GeoImage_AddMask(self, *args)
     def ComputeStats(self): return _gippylib.GeoImage_ComputeStats(self)
     def SetGain(self, *args): return _gippylib.GeoImage_SetGain(self, *args)
     def SetOffset(self, *args): return _gippylib.GeoImage_SetOffset(self, *args)
@@ -335,9 +339,17 @@ GeoImage_swigregister = _gippylib.GeoImage_swigregister
 GeoImage_swigregister(GeoImage)
 
 
-def ApplyMask(*args):
-  return _gippylib.ApplyMask(*args)
-ApplyMask = _gippylib.ApplyMask
+def Permutations(*args):
+  return _gippylib.Permutations(*args)
+Permutations = _gippylib.Permutations
+
+def Index2Probability(*args):
+  return _gippylib.Index2Probability(*args)
+Index2Probability = _gippylib.Index2Probability
+
+def BandMath(*args):
+  return _gippylib.BandMath(*args)
+BandMath = _gippylib.BandMath
 
 def FixBadPixels(*args):
   return _gippylib.FixBadPixels(*args)

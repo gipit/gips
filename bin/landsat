@@ -18,6 +18,7 @@ if __name__ == "__main__":
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     gparser.add_argument('pathrow', nargs='*', help='the Landsat pathrow(s)')
     gparser.add_argument('-d', '--dates',help='Range of dates (YYYY-MM-DD,YYYY-MM-DD)')
+    gparser.add_argument('--doy',help='Include only those that fall within these days of year (doy1,doy2)',default=None)
 
     # Inventory
     parser = subparser.add_parser('inventory',help='Get Landsat Inventory', parents=[gparser], 
@@ -75,7 +76,7 @@ if __name__ == "__main__":
         else: prs = args.pathrow
         totalfiles = 0
         for pr in prs:
-            fnames = landsat.inventory(pr,args.dates)
+            fnames = landsat.inventory(pr,args.dates,args.doy)
             # print the stuff here
             if len(fnames) > 0:
                 sys.stdout.write('Data for path/row %s' % pr)
@@ -112,7 +113,7 @@ if __name__ == "__main__":
                 if args.p:
                     import glob
                     # Get listing of products
-                    files = landsat.inventory(pr,str(date),products=True)
+                    files = landsat.inventory(pr,str(date),args.doy,products=True)
                     products = {}
                     for f in files:
                         key = os.path.basename(f)[17:18]

@@ -116,6 +116,16 @@ namespace gip {
 		GeoImage& AddBand(const GeoRaster& band); //, unsigned int bandnum=0);
 		//! Remove band
 		GeoImage& RemoveBand(unsigned int bandnum);
+		//! Prune bands to only provided colors
+		GeoImage& PruneBands(std::vector<std::string>);
+		//! Prune bands to RGB
+		GeoImage& PruneToRGB() {
+		    // TODO - get initializer_list working (c++11 standard)
+		    std::vector<std::string> cols; cols.push_back("Red"); cols.push_back("Green"); cols.push_back("Blue");
+		    return PruneBands(cols); }
+
+		//! Adds a mask band (1 for valid) to every band in image
+		void AddMask(const GeoRaster& band) { for (unsigned int i=0;i<_RasterBands.size();i++) _RasterBands[i].AddMask(band); }
 
 		// Raster functions to run on all bands
 		const GeoImage& ComputeStats() const;

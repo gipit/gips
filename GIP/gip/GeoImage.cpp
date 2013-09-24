@@ -77,9 +77,22 @@ namespace gip {
 	}
 
 	GeoImage& GeoImage::RemoveBand(unsigned int bandnum) {
-		if (bandnum <= _RasterBands.size()) _RasterBands.erase(_RasterBands.begin()+bandnum-1);
+		if (bandnum <= _RasterBands.size()) {
+		    _RasterBands.erase(_RasterBands.begin()+bandnum-1);
+            _Colors.Remove(bandnum);
+		}
 		return *this;
 	}
+
+	GeoImage& GeoImage::PruneBands(vector<string> colors) {
+        bool keep = false;
+        for (int i=NumBands(); i>0; i--) {
+            keep = false;
+            for (vector<string>::const_iterator icol=colors.begin(); icol!=colors.end(); icol++) if (*icol == _Colors[i]) keep = true;
+            if (!keep) RemoveBand(i);
+        }
+        return *this;
+    }
 
 	const GeoImage& GeoImage::ComputeStats() const {
 		for (unsigned int b=0;b<NumBands();b++) _RasterBands[b].ComputeStats();

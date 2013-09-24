@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+//#include <map>
 #include <gdal/gdal_priv.h>
 #include <boost/shared_ptr.hpp>
 
@@ -15,6 +16,7 @@
 namespace gip {
 	//class GeoData : boost::enable_shared_from_this<GeoData> {
 	typedef boost::geometry::model::d2::point_xy<float> point;
+	typedef std::map<std::string,std::string> dictionary;
 
 	class GeoData {
 	public:
@@ -25,7 +27,7 @@ namespace gip {
 		//! Open existing file
 		GeoData(std::string, bool=true);
 		//! Create new file on disk
-		GeoData(int, int, int, GDALDataType, std::string);
+		GeoData(int, int, int, GDALDataType, std::string, dictionary = dictionary());
 		//! Copy constructor
 		GeoData(const GeoData&);
 		//! Assignment copy

@@ -67,7 +67,7 @@ namespace gip {
 		//! Total Valid Pixels
 		unsigned int ValidSize() const { return _ValidSize; }
 		//! Set # of total valid pixels
-		void SetValidSize(unsigned int sz) { _ValidSize = sz; }
+		//void SetValidSize(unsigned int sz) { _ValidSize = sz; }
 
 		// Average wavelength of spectral band (in microns)
 		// TODO - Wavelengths ?
@@ -196,6 +196,9 @@ namespace gip {
 			}
 		}
 
+        //! Adds a mask band (1 for valid), applied on read
+		GeoRaster& AddMask(const GeoRaster& band) { _Masks.push_back(band); return *this; }
+
         //! Statistics - should these be stored?
 		double Min() const { return (GetStats())[0]; }
 		double Max() const { return (GetStats())[1]; }
@@ -238,6 +241,9 @@ namespace gip {
 	protected:
 		//! GDALRasterBand
 		GDALRasterBand* _GDALRasterBand;
+
+        //! Vector of masks to apply
+		std::vector< GeoRaster > _Masks;
 
 		//! Bool if nodata value is used
 		bool _NoData;

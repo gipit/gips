@@ -19,6 +19,15 @@ namespace gip {
         return;
     }
 
+    template<typename T> inline void cimg_printstats(CImg<T> img, std::string note="") {
+        if (note != "") std::cout << note << "  ";
+        CImg<float> stats = img.get_stats();
+        std::cout << "Min/Max = " << stats(0) << ", " << stats(1)
+            << " Mean/StdDev = " << stats(2) << " +/- " << stats(3)
+            << " Sum = " << img.sum()
+            << " NumPixels = " << img.size() << std::endl;
+    }
+
 }
 
 #endif

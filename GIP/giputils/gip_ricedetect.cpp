@@ -82,8 +82,8 @@ int main (int ac, char* av[]) {
 		if (Opts.Verbose())	cout << "\tProcessing " << Chunks.size() << " chunks:";
 		for (vector< box<point> >::const_iterator iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
 			if (Opts.Verbose()) cout << " " << (chunknum++)+1 << std::flush;
-			CImgList<T> CImage( Image.ReadCubeAsList(*iChunk) );
-			CImgList<T> CImageOut( ImageOut.ReadCubeAsList(*iChunk) );
+			CImgList<T> CImage( Image.ReadAsList(*iChunk) );
+			CImgList<T> CImageOut( ImageOut.ReadAsList(*iChunk) );
 
 			p1 = iChunk->min_corner();
 			p2 = iChunk->max_corner();
@@ -155,7 +155,7 @@ int main (int ac, char* av[]) {
 			}
 
 			// Write out images
-			ImageOut.WriteCube(CImageOut.get_append('c'), *iChunk, true);
+			ImageOut.Write(CImageOut.get_append('c'), *iChunk, true);
 		}
 		if (Opts.Verbose()) cout << endl;
 	}

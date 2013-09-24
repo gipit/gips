@@ -31,19 +31,20 @@ if __name__ == "__main__":
     #parser.add_argument('-m','--mask', help='Mask to apply', required=True)
 
     # TODO - automate reading in all algorithms in gippy.algorithms
-    import gippy.algorithms.kmeans as kmeans
-    kmeans.add_options(subparser,[gparser,oparser])
-    import gippy.algorithms.thresh as thresh
-    thresh.add_options(subparser,[gparser,oparser])
+    algs = ['kmeans','thresh','index2prob','permutations']
+    for a in algs:
+        exec('import gippy.algorithms.%s as %s' % (a, a))
+        eval('%s.add_options(subparser,[gparser,oparser])' % a)
 
     args = parser0.parse_args()
     gippy.Options.SetVerbose(args.verbose)
+    gippy.Options.SetDefaultFormat(args.format)
 
     for f in args.files:
         start = datetime.datetime.now()
         fbase,ext = os.path.splitext(os.path.basename(f))
         if args.command == 'CreateMask':
-            fout = fbase + args.suffix + ext
+            fout = fbase + args.suffix # + ext
             exec("gippy.CreateMask(gippy.GeoImage('%s'),'%s')" % (f,fout))
             print "%s -> %s: %s" % (fbase, os.path.basename(fout), datetime.datetime.now()-start)
         elif args.command == 'FixBadPixels':

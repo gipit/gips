@@ -14,6 +14,7 @@
 namespace gip {
     using std::string;
     using std::vector;
+    using std::map;
     using boost::filesystem::path;
     typedef boost::geometry::model::d2::point_xy<float> point;
     typedef boost::geometry::model::box<point> bbox;
@@ -38,16 +39,21 @@ namespace gip {
 	/*!
 	 * Creates new file on disk and returns shared pointer
 	 */
-	GeoData::GeoData(int xsz, int ysz, int bsz, GDALDataType datatype, string filename="")
+	GeoData::GeoData(int xsz, int ysz, int bsz, GDALDataType datatype, string filename, dictionary options)
 		:_Filename(filename) {
 		string format = Options::DefaultFormat();
+		if (format == "GTiff" && datatype == GDT_Byte) options["COMPRESS"] = "JPEG";
 		GDALDriver *driver = GetGDALDriverManager()->GetDriverByName(format.c_str());
 		// TODO check for null driver and create method
 		// Check extension
 		string ext = driver->GetMetadataItem(GDAL_DMD_EXTENSION);
 		if (ext != "" && _Filename.extension().string() != ('.'+ext)) _Filename = path(_Filename.string() + '.' + ext);
-		// Create dataset
-		_GDALDataset.reset( driver->Create(_Filename.string().c_str(), xsz,ysz,bsz,datatype, NULL) );
+		char **papszOptions = NULL;
+		if (options.size()) {
+            for (dictionary::const_iterator imap=options.begin(); imap!=options.end(); imap++)
+                papszOptions = CSLSetNameValue(papszOptions,imap->first.c_str(),imap->second.c_str());
+		}
+		_GDALDataset.reset( driver->Create(_Filename.string().c_str(), xsz,ysz,bsz,datatype, papszOptions) );
 		if (_GDALDataset.get() == NULL)
 			std::cout << "Error creating " << _Filename.string() << CPLGetLastErrorMsg() << std::endl;
 	}

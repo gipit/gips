@@ -86,10 +86,35 @@
 					<Add directory="../gip/bin/Release" />
 				</Linker>
 			</Target>
+			<Target title="Debug_ricedetect">
+				<Option output="bin/Debug/gip_ricedetect" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+				<Linker>
+					<Add directory="../gip/bin/Debug" />
+				</Linker>
+			</Target>
+			<Target title="Release_ricedetect">
+				<Option output="bin/Release/gip_ricedetect" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add directory="../gip/bin/Release" />
+				</Linker>
+			</Target>
 		</Build>
 		<VirtualTargets>
-			<Add alias="Debug" targets="Debug_test;Debug_info;Debug_qtest;Debug_classchange;" />
-			<Add alias="Release" targets="Release_test;Release_info;Release_classchange;" />
+			<Add alias="Debug" targets="Debug_test;Debug_info;Debug_qtest;Debug_classchange;Debug_ricedetect;" />
+			<Add alias="Release" targets="Release_test;Release_info;Release_classchange;Release_ricedetect;" />
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-Wall" />
@@ -113,6 +138,10 @@
 		</Unit>
 		<Unit filename="gip_qtest.cpp">
 			<Option target="Debug_qtest" />
+		</Unit>
+		<Unit filename="gip_ricedetect.cpp">
+			<Option target="Debug_ricedetect" />
+			<Option target="Release_ricedetect" />
 		</Unit>
 		<Unit filename="gip_test.cpp">
 			<Option target="Debug_test" />
