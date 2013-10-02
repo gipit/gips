@@ -5,8 +5,8 @@
 #include <boost/geometry/geometry.hpp>
 #include <boost/geometry/geometries/point_xy.hpp>
 
-#include <gip/GeoData.h>
 #include <gip/gip_CImg.h>
+#include <gip/GeoData.h>
 #include <gip/Atmosphere.h>
 
 #include <iostream>
@@ -57,7 +57,9 @@ namespace gip {
 		~GeoRaster() {} //_GDALRasterBand->FlushCache(); }
 
         //! Copy passed raster band into this raster (is this constructor?)
-        GeoRaster& Copy(const GeoRaster&, UNITS units);
+        GeoRaster& Copy(const GeoRaster&, UNITS units=RAW);
+
+        GeoRaster& AddFunction(GeoFunction func) { _Functions.push_back(func); return *this; }
 
 		//! \name File Information
 		//! Band X Size
@@ -195,18 +197,30 @@ namespace gip {
 				default: return 1.79E308;
 			}
 		}
+		//! Return minimum value based on datatype (TODO - get from limits?)
+		double MinValue() const {
+            switch (DataType()) {
+				case GDT_Byte: return 0;
+				case GDT_UInt16: return 0;
+				case GDT_Int16: return -32768;
+				case GDT_UInt32: return 0;
+				case GDT_Int32: return -2147183648;
+				case GDT_Float32: return -3.4E38;
+				default: return -1.79E308;
+            }
+		}
 
         //! Adds a mask band (1 for valid), applied on read
 		GeoRaster& AddMask(const GeoRaster& band) { _Masks.push_back(band); return *this; }
 
         //! Statistics - should these be stored?
-		double Min() const { return (GetStats())[0]; }
-		double Max() const { return (GetStats())[1]; }
-		double Mean() const { return (GetStats())[2]; }
-		double StdDev() const { return (GetStats())[3]; }
+		double Min() const { return (GetGDALStats())[0]; }
+		double Max() const { return (GetGDALStats())[1]; }
+		double Mean() const { return (GetGDALStats())[2]; }
+		double StdDev() const { return (GetGDALStats())[3]; }
 
 		//! Retrieve Statistics
-		cimg_library::CImg<double> GetStats() const {
+		cimg_library::CImg<double> GetGDALStats() const {
 			double min, max, mean, stddev;
 			_GDALRasterBand->GetStatistics(false, true, &min, &max, &mean, &stddev);
 			cimg_library::CImg<double> stats(4);
@@ -218,7 +232,7 @@ namespace gip {
 		}
 
 		//! Compute Statistics
-		cimg_library::CImg<double> ComputeStats() const {
+		cimg_library::CImg<double> ComputeGDALStats() const {
 			double min, max, mean, stddev;
 			_GDALRasterBand->ComputeStatistics(false, &min, &max, &mean, &stddev, NULL, NULL);
 			cimg_library::CImg<double> stats(4);
@@ -229,14 +243,17 @@ namespace gip {
 			return stats;
 		}
 
+		cimg_library::CImg<float> ComputeStats(UNITS=RAW) const;
+
 		// \name Processing functions
 		//! Greater than
 		GeoRaster operator>(double val) const { return GeoRaster(*this, GeoFunction(">",val)); }
 		GeoRaster operator>=(double val) const { return GeoRaster(*this, GeoFunction(">=",val)); }
 		GeoRaster operator<(double val) const { return GeoRaster(*this, GeoFunction("<",val)); }
-		GeoRaster operator<=(double val) const { return GeoRaster(*this, GeoFunction(">=",val)); }
-		GeoRaster operator+(double val) const { return GeoRaster(*this, GeoFunction("-",val)); }
-		GeoRaster operator-(double val) const { return GeoRaster(*this, GeoFunction("+",val)); }
+		GeoRaster operator<=(double val) const { return GeoRaster(*this, GeoFunction("<=",val)); }
+		GeoRaster operator==(double val) const { return GeoRaster(*this, GeoFunction("==",val)); }
+		GeoRaster operator+(double val) const { return GeoRaster(*this, GeoFunction("+",val)); }
+		GeoRaster operator-(double val) const { return GeoRaster(*this, GeoFunction("-",val)); }
 
 	protected:
 		//! GDALRasterBand

@@ -42,8 +42,35 @@ namespace gip {
         return Copy(image,ImageOut,units);
 	}
 
-    //! Multiply together all permutations
-    GeoImage Permutations(const GeoImage& image1, const GeoImage& image2, string filename) {
+    GeoImage Visual(const GeoImage& image, string filename) {
+        GeoImageIO<unsigned char> ImageOut(GeoImage(filename, image, GDT_Byte));
+        GeoImageIO<float> imageIO(image);
+        ImageOut.SetNoData(0);
+        CImg<float> stats, cimg;
+        CImg<unsigned char> mask;
+        std::vector<bbox> Chunks = ImageOut.Chunk();
+        std::vector<bbox>::const_iterator iChunk;
+        for (unsigned int b=0;b<image.NumBands();b++) {
+            stats = imageIO[b].ComputeStats();
+            float lo = std::max(stats(2) - 3*stats(3), stats(0)-1);
+            float hi = std::min(stats(2) + 3*stats(3), stats(1));
+            float gain = 255.0/(hi-lo);
+            std::cout << lo << ", " << hi << ", " << gain << std::endl;
+            for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
+                cimg = imageIO[b].Read(*iChunk);
+                mask = imageIO[b].NoDataMask(*iChunk);
+                cimg_printstats(cimg,"before");
+                ((cimg-=lo)*=(255.0/(hi-lo))).max(0.0).min(255.0);
+                cimg_printstats(cimg,"after");
+                cimg_forXY(cimg,x,y) { if (mask(x,y)) cimg(x,y) = ImageOut[b].NoDataValue(); }
+                ImageOut[b].Write(CImg<unsigned char>().assign(cimg.round()),*iChunk);
+            }
+        }
+        return ImageOut;
+    }
+
+    // Multiply together all permutations
+    /*GeoImage Permutations(const GeoImage& image1, const GeoImage& image2, string filename) {
         GeoImageIO<float> imageout(GeoImage(filename, image1, GDT_Float32, image1.NumBands()*image2.NumBands()));
         CImg<float> cimgout;
         int bandout(0);
@@ -68,7 +95,7 @@ namespace gip {
             }
         }
         return imageout;
-    }
+    }*/
 
     //! Convert lo-high of index into probability
     GeoImage Index2Probability(const GeoImage& image, string filename, float min, float max) {

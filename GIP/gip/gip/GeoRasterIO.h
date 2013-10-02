@@ -10,7 +10,6 @@
 #include <iostream>
 
 namespace gip {
-    using cimg_library::CImg;
 
     // TODO - Compile with C++0x to use scoped enums
     //enum UNITS {RAW, RADIANCE, REFLECTIVITY};
@@ -27,8 +26,14 @@ namespace gip {
 		~GeoRasterIO() {}
 
 		//! \name File I/O
+		//! Read entire image
+		cimg_library::CImg<T> Read(UNITS units=RAW) const {
+            return Read( bbox(point(0,0),point(XSize()-1,YSize()-1)), units );
+		}
+
 		//! Retrieve a piece of the image as a CImg
-		CImg<T> Read(bbox chunk, UNITS units=RAW) const {
+		cimg_library::CImg<T> Read(bbox chunk, UNITS units=RAW) const {
+		    using cimg_library::CImg;
 			point p1 = chunk.min_corner();
 			point p2 = chunk.max_corner();
 			int width = p2.x()-p1.x()+1;
@@ -40,7 +45,6 @@ namespace gip {
 			if (err != CE_None) std::cout << "Error reading " << Filename() << ": " << CPLGetLastErrorMsg() << std::endl;
 			CImg<T> img(ptrPixels, width, height);
 			CImg<T> imgorig(img);
-
 			// Convert data to radiance
 			if (units != RAW) {
                 if (Gain() != 1.0 || Offset() != 0.0) {
@@ -49,7 +53,6 @@ namespace gip {
 			}
 			// Coef image
 			//CImg<T> coefimg(img);
-
             // Atmospheric correction to surface-leaving radiance
             double normrad;
             if (Atmosphere()) {
@@ -98,6 +101,8 @@ namespace gip {
 					img.threshold(iFunc->Operand(),false,false)^=1;
 				} else if (iFunc->Function() == "<=") {
 					img.threshold(iFunc->Operand(),false,true)^=1;
+				} else if (iFunc->Function() == "==") {
+                    img = img.get_threshold(iFunc->Operand(),false,false) - img.get_threshold(iFunc->Operand(),false,true);
 				} else if (iFunc->Function() == "+") {
 					img = img + iFunc->Operand();
 				} else if (iFunc->Function() == "-") {
@@ -115,8 +120,7 @@ namespace gip {
                 }
                 img.mul(cmask);
 			}
-
-			// If processing was apply NoData values where needed
+			// If processing was applied update NoData values where needed
 			if (NoData() && units != RAW) {
                 cimg_forXY(img,x,y) {
                     if (imgorig(x,y) == NoDataValue()) img(x,y) = NoDataValue();
@@ -128,7 +132,7 @@ namespace gip {
 		}
 
 		//! Write a Cimg to the file
-		GeoRasterIO<T>& Write(CImg<T>& img, bbox chunk, bool BadValCheck=false) {
+		GeoRasterIO<T>& Write(cimg_library::CImg<T>& img, bbox chunk, bool BadValCheck=false) {
 			point p1 = chunk.min_corner();
 			point p2 = chunk.max_corner();
 			int width = p2.x()-p1.x()+1;
@@ -151,31 +155,63 @@ namespace gip {
 		}*/
 
 		//! Copy input band into this
-		GeoRasterIO<T>& Copy(const GeoRaster& img, UNITS units=RAW) {
-		    GeoRasterIO<float> src(img);
+		GeoRasterIO<T>& Copy(const GeoRaster& raster, UNITS units=RAW) {
+		    using cimg_library::CImg;
+		    GeoRasterIO<float> rasterIO(raster);
             std::vector<bbox> Chunks = Chunk();
             std::vector<bbox>::const_iterator iChunk;
             for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
-                    CImg<float> img = src.Read(*iChunk, units);
-                    CImg<T> imgout;
-                    //CImg<unsigned char> mask(img.thresh)
+                    CImg<float> cimg = rasterIO.Read(*iChunk, units);
+                    CImg<unsigned char> mask;
                     if (Gain() != 1.0 || Offset() != 0.0) {
-                        imgout = (img-Offset()) / Gain();
-                    } else imgout.assign(img);
-                    if (src.NoDataValue() != NoDataValue()) {
-                        cimg_forXY(img,x,y) { if (img(x,y) == src.NoDataValue()) imgout(x,y) = NoDataValue(); }
+                        (cimg-=Offset())/=Gain();
+                        mask = rasterIO.NoDataMask(*iChunk);
+                        cimg_forXY(cimg,x,y) { if (mask(x,y)) cimg(x,y) = NoDataValue(); }
                     }
-                    Write(imgout,*iChunk);
+                    Write(CImg<T>().assign(cimg.round()),*iChunk);
             }
             // Copy relevant metadata
-            GDALRasterBand* band = src.GetGDALRasterBand();
-            if (img.NoData()) SetNoData(img.NoDataValue());
-            CopyCategoryNames(src);
+            GDALRasterBand* band = raster.GetGDALRasterBand();
+            //if (img.NoData()) SetNoData(img.NoDataValue());
+            CopyCategoryNames(raster);
             _GDALRasterBand->SetDescription(band->GetDescription());
             _GDALRasterBand->SetColorInterpretation(band->GetColorInterpretation());
             _GDALRasterBand->SetMetadata(band->GetMetadata());
-            CopyCoordinateSystem(src);
+            CopyCoordinateSystem(raster);
             return *this;
+		}
+
+		//! Calculate stats
+		cimg_library::CImg<float> ComputeStats(UNITS units=RAW) {
+		    using cimg_library::CImg;
+		    CImg<T> cimg;
+		    T min(MaxValue()), max(MinValue());
+		    long count(0);
+		    double total(0);
+            std::vector<bbox> Chunks = Chunk();
+            std::vector<bbox>::const_iterator iChunk;
+            for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
+                cimg = Read(*iChunk, units);
+                cimg_for(cimg,ptr,T) {
+                    if (*ptr != NoDataValue()) {
+                        total += *ptr;
+                        count++;
+                        if (*ptr > max) max = *ptr;
+                        if (*ptr < min) min = *ptr;
+                    }
+                }
+            }
+            float mean = total/count;
+            total = 0;
+            for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
+                cimg = Read(*iChunk, units);
+                cimg_for(cimg,ptr,T) {
+                    if (*ptr != NoDataValue()) total += (*ptr - mean)*(*ptr - mean);
+                }
+            }
+            float stdev = sqrt(total/count);
+            CImg<float> stats(4,1,1,1,(float)min,(float)max,mean,stdev);
+            return stats;
 		}
 
         //! Apply mask to (where mask>0 make NoDataValue)
@@ -195,13 +231,14 @@ namespace gip {
 		}*/
 
         //! Get Saturation mask
-		CImg<bool> SaturationMask(bbox chunk) const {
-		    CImg<float> band(Read(chunk, RAW));
+		cimg_library::CImg<bool> SaturationMask(bbox chunk) const {
+		    cimg_library::CImg<float> band(Read(chunk, RAW));
 		    return band.threshold(_maxDC);
 		}
 
 		//! NoData mask (all bands)
-		CImg<unsigned char> NoDataMask(bbox chunk) const {
+		cimg_library::CImg<unsigned char> NoDataMask(bbox chunk) const {
+		    using cimg_library::CImg;
 		    CImg<T> img = Read(chunk);
 		    CImg<unsigned char> mask(img.width(),img.height(),1,1,0);
 		    if (!NoData()) return mask;

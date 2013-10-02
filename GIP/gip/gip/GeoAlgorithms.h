@@ -25,7 +25,10 @@ namespace gip {
 	//! Create new file of standard indices: NDVI, EVI, LSWI, NDSI, BI
 	GeoImage Indices(const GeoImage&, std::string, bool=true, bool=true, bool=true, bool=true, bool=true);
 
-	GeoImage Permutations(const GeoImage&, const GeoImage&, std::string);
+	//! Stretch image into byte
+	GeoImage Visual(const GeoImage&, std::string);
+
+	//GeoImage Permutations(const GeoImage&, const GeoImage&, std::string);
 
 	GeoImage Index2Probability(const GeoImage&, std::string, float, float);
 

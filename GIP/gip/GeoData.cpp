@@ -156,7 +156,7 @@ namespace gip {
 	 * each piece being no bigger than GeoData::_ChunkSize
 	 */
 	vector<bbox> GeoData::Chunk(int overlap, unsigned int bytes) const {
-        // TODO - overlap!!
+        // TODO - overlap!!  and bytes is fixed at 2!!!
 		unsigned int rows = floor( (Options::ChunkSize()*1024*1024) / bytes / XSize() );
 		rows = rows > YSize() ? YSize() : rows;
 		int numchunks = ceil( YSize()/(float)rows );

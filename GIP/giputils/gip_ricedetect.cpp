@@ -20,6 +20,7 @@ int main (int ac, char* av[]) {
 	// Add program specific options
 	using namespace boost::program_options;
 	using boost::geometry::model::box;
+	using cimg_library::CImgList;
 	options_description localopts("Rice Detect Options");
 	localopts.add_options()
 		("maxcrops", value<int>()->default_value(0), "Maximum number of crops to record (i.e. peaks)")

@@ -258,6 +258,7 @@ class GeoRaster(GeoData):
     __swig_destroy__ = _gippylib.delete_GeoRaster
     __del__ = lambda self : None;
     def Copy(self, *args): return _gippylib.GeoRaster_Copy(self, *args)
+    def AddFunction(self, *args): return _gippylib.GeoRaster_AddFunction(self, *args)
     def XSize(self): return _gippylib.GeoRaster_XSize(self)
     def YSize(self): return _gippylib.GeoRaster_YSize(self)
     def ValidSize(self): return _gippylib.GeoRaster_ValidSize(self)
@@ -285,19 +286,22 @@ class GeoRaster(GeoData):
     def SetNoData(self, *args): return _gippylib.GeoRaster_SetNoData(self, *args)
     def ClearNoData(self): return _gippylib.GeoRaster_ClearNoData(self)
     def MaxValue(self): return _gippylib.GeoRaster_MaxValue(self)
+    def MinValue(self): return _gippylib.GeoRaster_MinValue(self)
     def AddMask(self, *args): return _gippylib.GeoRaster_AddMask(self, *args)
     def Min(self): return _gippylib.GeoRaster_Min(self)
     def Max(self): return _gippylib.GeoRaster_Max(self)
     def Mean(self): return _gippylib.GeoRaster_Mean(self)
     def StdDev(self): return _gippylib.GeoRaster_StdDev(self)
-    def GetStats(self): return _gippylib.GeoRaster_GetStats(self)
-    def ComputeStats(self): return _gippylib.GeoRaster_ComputeStats(self)
+    def GetGDALStats(self): return _gippylib.GeoRaster_GetGDALStats(self)
+    def ComputeGDALStats(self): return _gippylib.GeoRaster_ComputeGDALStats(self)
+    def ComputeStats(self, *args): return _gippylib.GeoRaster_ComputeStats(self, *args)
     def __gt__(self, *args): return _gippylib.GeoRaster___gt__(self, *args)
     def __ge__(self, *args): return _gippylib.GeoRaster___ge__(self, *args)
     def __lt__(self, *args): return _gippylib.GeoRaster___lt__(self, *args)
     def __le__(self, *args): return _gippylib.GeoRaster___le__(self, *args)
     def __add__(self, *args): return _gippylib.GeoRaster___add__(self, *args)
     def __sub__(self, *args): return _gippylib.GeoRaster___sub__(self, *args)
+    def __eq__(self, *args): return _gippylib.GeoRaster___eq__(self, *args)
 GeoRaster_swigregister = _gippylib.GeoRaster_swigregister
 GeoRaster_swigregister(GeoRaster)
 
@@ -339,9 +343,9 @@ GeoImage_swigregister = _gippylib.GeoImage_swigregister
 GeoImage_swigregister(GeoImage)
 
 
-def Permutations(*args):
-  return _gippylib.Permutations(*args)
-Permutations = _gippylib.Permutations
+def Visual(*args):
+  return _gippylib.Visual(*args)
+Visual = _gippylib.Visual
 
 def Index2Probability(*args):
   return _gippylib.Index2Probability(*args)
@@ -440,6 +444,324 @@ Options_Verbose = _gippylib.Options_Verbose
 def Options_SetVerbose(*args):
   return _gippylib.Options_SetVerbose(*args)
 Options_SetVerbose = _gippylib.Options_SetVerbose
+
+class GeoRaster_byte(GeoRaster):
+    __swig_setmethods__ = {}
+    for _s in [GeoRaster]: __swig_setmethods__.update(getattr(_s,'__swig_setmethods__',{}))
+    __setattr__ = lambda self, name, value: _swig_setattr(self, GeoRaster_byte, name, value)
+    __swig_getmethods__ = {}
+    for _s in [GeoRaster]: __swig_getmethods__.update(getattr(_s,'__swig_getmethods__',{}))
+    __getattr__ = lambda self, name: _swig_getattr(self, GeoRaster_byte, name)
+    __repr__ = _swig_repr
+    def __init__(self, *args): 
+        this = _gippylib.new_GeoRaster_byte(*args)
+        try: self.this.append(this)
+        except: self.this = this
+    __swig_destroy__ = _gippylib.delete_GeoRaster_byte
+    __del__ = lambda self : None;
+    def Read(self, *args): return _gippylib.GeoRaster_byte_Read(self, *args)
+    def Write(self, *args): return _gippylib.GeoRaster_byte_Write(self, *args)
+    def Copy(self, *args): return _gippylib.GeoRaster_byte_Copy(self, *args)
+    def ComputeStats(self, *args): return _gippylib.GeoRaster_byte_ComputeStats(self, *args)
+    def SaturationMask(self, *args): return _gippylib.GeoRaster_byte_SaturationMask(self, *args)
+    def NoDataMask(self, *args): return _gippylib.GeoRaster_byte_NoDataMask(self, *args)
+GeoRaster_byte_swigregister = _gippylib.GeoRaster_byte_swigregister
+GeoRaster_byte_swigregister(GeoRaster_byte)
+
+class GeoRaster_int16(GeoRaster):
+    __swig_setmethods__ = {}
+    for _s in [GeoRaster]: __swig_setmethods__.update(getattr(_s,'__swig_setmethods__',{}))
+    __setattr__ = lambda self, name, value: _swig_setattr(self, GeoRaster_int16, name, value)
+    __swig_getmethods__ = {}
+    for _s in [GeoRaster]: __swig_getmethods__.update(getattr(_s,'__swig_getmethods__',{}))
+    __getattr__ = lambda self, name: _swig_getattr(self, GeoRaster_int16, name)
+    __repr__ = _swig_repr
+    def __init__(self, *args): 
+        this = _gippylib.new_GeoRaster_int16(*args)
+        try: self.this.append(this)
+        except: self.this = this
+    __swig_destroy__ = _gippylib.delete_GeoRaster_int16
+    __del__ = lambda self : None;
+    def Read(self, *args): return _gippylib.GeoRaster_int16_Read(self, *args)
+    def Write(self, *args): return _gippylib.GeoRaster_int16_Write(self, *args)
+    def Copy(self, *args): return _gippylib.GeoRaster_int16_Copy(self, *args)
+    def ComputeStats(self, *args): return _gippylib.GeoRaster_int16_ComputeStats(self, *args)
+    def SaturationMask(self, *args): return _gippylib.GeoRaster_int16_SaturationMask(self, *args)
+    def NoDataMask(self, *args): return _gippylib.GeoRaster_int16_NoDataMask(self, *args)
+GeoRaster_int16_swigregister = _gippylib.GeoRaster_int16_swigregister
+GeoRaster_int16_swigregister(GeoRaster_int16)
+
+class GeoRaster_int32(GeoRaster):
+    __swig_setmethods__ = {}
+    for _s in [GeoRaster]: __swig_setmethods__.update(getattr(_s,'__swig_setmethods__',{}))
+    __setattr__ = lambda self, name, value: _swig_setattr(self, GeoRaster_int32, name, value)
+    __swig_getmethods__ = {}
+    for _s in [GeoRaster]: __swig_getmethods__.update(getattr(_s,'__swig_getmethods__',{}))
+    __getattr__ = lambda self, name: _swig_getattr(self, GeoRaster_int32, name)
+    __repr__ = _swig_repr
+    def __init__(self, *args): 
+        this = _gippylib.new_GeoRaster_int32(*args)
+        try: self.this.append(this)
+        except: self.this = this
+    __swig_destroy__ = _gippylib.delete_GeoRaster_int32
+    __del__ = lambda self : None;
+    def Read(self, *args): return _gippylib.GeoRaster_int32_Read(self, *args)
+    def Write(self, *args): return _gippylib.GeoRaster_int32_Write(self, *args)
+    def Copy(self, *args): return _gippylib.GeoRaster_int32_Copy(self, *args)
+    def ComputeStats(self, *args): return _gippylib.GeoRaster_int32_ComputeStats(self, *args)
+    def SaturationMask(self, *args): return _gippylib.GeoRaster_int32_SaturationMask(self, *args)
+    def NoDataMask(self, *args): return _gippylib.GeoRaster_int32_NoDataMask(self, *args)
+GeoRaster_int32_swigregister = _gippylib.GeoRaster_int32_swigregister
+GeoRaster_int32_swigregister(GeoRaster_int32)
+
+class GeoRaster_int64(GeoRaster):
+    __swig_setmethods__ = {}
+    for _s in [GeoRaster]: __swig_setmethods__.update(getattr(_s,'__swig_setmethods__',{}))
+    __setattr__ = lambda self, name, value: _swig_setattr(self, GeoRaster_int64, name, value)
+    __swig_getmethods__ = {}
+    for _s in [GeoRaster]: __swig_getmethods__.update(getattr(_s,'__swig_getmethods__',{}))
+    __getattr__ = lambda self, name: _swig_getattr(self, GeoRaster_int64, name)
+    __repr__ = _swig_repr
+    def __init__(self, *args): 
+        this = _gippylib.new_GeoRaster_int64(*args)
+        try: self.this.append(this)
+        except: self.this = this
+    __swig_destroy__ = _gippylib.delete_GeoRaster_int64
+    __del__ = lambda self : None;
+    def Read(self, *args): return _gippylib.GeoRaster_int64_Read(self, *args)
+    def Write(self, *args): return _gippylib.GeoRaster_int64_Write(self, *args)
+    def Copy(self, *args): return _gippylib.GeoRaster_int64_Copy(self, *args)
+    def ComputeStats(self, *args): return _gippylib.GeoRaster_int64_ComputeStats(self, *args)
+    def SaturationMask(self, *args): return _gippylib.GeoRaster_int64_SaturationMask(self, *args)
+    def NoDataMask(self, *args): return _gippylib.GeoRaster_int64_NoDataMask(self, *args)
+GeoRaster_int64_swigregister = _gippylib.GeoRaster_int64_swigregister
+GeoRaster_int64_swigregister(GeoRaster_int64)
+
+class GeoRaster_float(GeoRaster):
+    __swig_setmethods__ = {}
+    for _s in [GeoRaster]: __swig_setmethods__.update(getattr(_s,'__swig_setmethods__',{}))
+    __setattr__ = lambda self, name, value: _swig_setattr(self, GeoRaster_float, name, value)
+    __swig_getmethods__ = {}
+    for _s in [GeoRaster]: __swig_getmethods__.update(getattr(_s,'__swig_getmethods__',{}))
+    __getattr__ = lambda self, name: _swig_getattr(self, GeoRaster_float, name)
+    __repr__ = _swig_repr
+    def __init__(self, *args): 
+        this = _gippylib.new_GeoRaster_float(*args)
+        try: self.this.append(this)
+        except: self.this = this
+    __swig_destroy__ = _gippylib.delete_GeoRaster_float
+    __del__ = lambda self : None;
+    def Read(self, *args): return _gippylib.GeoRaster_float_Read(self, *args)
+    def Write(self, *args): return _gippylib.GeoRaster_float_Write(self, *args)
+    def Copy(self, *args): return _gippylib.GeoRaster_float_Copy(self, *args)
+    def ComputeStats(self, *args): return _gippylib.GeoRaster_float_ComputeStats(self, *args)
+    def SaturationMask(self, *args): return _gippylib.GeoRaster_float_SaturationMask(self, *args)
+    def NoDataMask(self, *args): return _gippylib.GeoRaster_float_NoDataMask(self, *args)
+GeoRaster_float_swigregister = _gippylib.GeoRaster_float_swigregister
+GeoRaster_float_swigregister(GeoRaster_float)
+
+class GeoRaster_double(GeoRaster):
+    __swig_setmethods__ = {}
+    for _s in [GeoRaster]: __swig_setmethods__.update(getattr(_s,'__swig_setmethods__',{}))
+    __setattr__ = lambda self, name, value: _swig_setattr(self, GeoRaster_double, name, value)
+    __swig_getmethods__ = {}
+    for _s in [GeoRaster]: __swig_getmethods__.update(getattr(_s,'__swig_getmethods__',{}))
+    __getattr__ = lambda self, name: _swig_getattr(self, GeoRaster_double, name)
+    __repr__ = _swig_repr
+    def __init__(self, *args): 
+        this = _gippylib.new_GeoRaster_double(*args)
+        try: self.this.append(this)
+        except: self.this = this
+    __swig_destroy__ = _gippylib.delete_GeoRaster_double
+    __del__ = lambda self : None;
+    def Read(self, *args): return _gippylib.GeoRaster_double_Read(self, *args)
+    def Write(self, *args): return _gippylib.GeoRaster_double_Write(self, *args)
+    def Copy(self, *args): return _gippylib.GeoRaster_double_Copy(self, *args)
+    def ComputeStats(self, *args): return _gippylib.GeoRaster_double_ComputeStats(self, *args)
+    def SaturationMask(self, *args): return _gippylib.GeoRaster_double_SaturationMask(self, *args)
+    def NoDataMask(self, *args): return _gippylib.GeoRaster_double_NoDataMask(self, *args)
+GeoRaster_double_swigregister = _gippylib.GeoRaster_double_swigregister
+GeoRaster_double_swigregister(GeoRaster_double)
+
+class GeoImage_byte(GeoImage):
+    __swig_setmethods__ = {}
+    for _s in [GeoImage]: __swig_setmethods__.update(getattr(_s,'__swig_setmethods__',{}))
+    __setattr__ = lambda self, name, value: _swig_setattr(self, GeoImage_byte, name, value)
+    __swig_getmethods__ = {}
+    for _s in [GeoImage]: __swig_getmethods__.update(getattr(_s,'__swig_getmethods__',{}))
+    __getattr__ = lambda self, name: _swig_getattr(self, GeoImage_byte, name)
+    __repr__ = _swig_repr
+    def __init__(self, *args): 
+        this = _gippylib.new_GeoImage_byte(*args)
+        try: self.this.append(this)
+        except: self.this = this
+    __swig_destroy__ = _gippylib.delete_GeoImage_byte
+    __del__ = lambda self : None;
+    def LoadRasterIO(self): return _gippylib.GeoImage_byte_LoadRasterIO(self)
+    def Read(self, *args): return _gippylib.GeoImage_byte_Read(self, *args)
+    def ReadAsList(self, *args): return _gippylib.GeoImage_byte_ReadAsList(self, *args)
+    def Write(self, *args): return _gippylib.GeoImage_byte_Write(self, *args)
+    def NDVI(self, *args): return _gippylib.GeoImage_byte_NDVI(self, *args)
+    def NDSI(self, *args): return _gippylib.GeoImage_byte_NDSI(self, *args)
+    def GetRandomPixels(self, *args): return _gippylib.GeoImage_byte_GetRandomPixels(self, *args)
+    def GetPixelClasses(self, *args): return _gippylib.GeoImage_byte_GetPixelClasses(self, *args)
+    def NoDataMask(self, *args): return _gippylib.GeoImage_byte_NoDataMask(self, *args)
+    def SnowMask(self, *args): return _gippylib.GeoImage_byte_SnowMask(self, *args)
+    def WaterMask(self, *args): return _gippylib.GeoImage_byte_WaterMask(self, *args)
+    def HazeMask(self, *args): return _gippylib.GeoImage_byte_HazeMask(self, *args)
+    def Whiteness(self, *args): return _gippylib.GeoImage_byte_Whiteness(self, *args)
+GeoImage_byte_swigregister = _gippylib.GeoImage_byte_swigregister
+GeoImage_byte_swigregister(GeoImage_byte)
+
+class GeoImage_int16(GeoImage):
+    __swig_setmethods__ = {}
+    for _s in [GeoImage]: __swig_setmethods__.update(getattr(_s,'__swig_setmethods__',{}))
+    __setattr__ = lambda self, name, value: _swig_setattr(self, GeoImage_int16, name, value)
+    __swig_getmethods__ = {}
+    for _s in [GeoImage]: __swig_getmethods__.update(getattr(_s,'__swig_getmethods__',{}))
+    __getattr__ = lambda self, name: _swig_getattr(self, GeoImage_int16, name)
+    __repr__ = _swig_repr
+    def __init__(self, *args): 
+        this = _gippylib.new_GeoImage_int16(*args)
+        try: self.this.append(this)
+        except: self.this = this
+    __swig_destroy__ = _gippylib.delete_GeoImage_int16
+    __del__ = lambda self : None;
+    def LoadRasterIO(self): return _gippylib.GeoImage_int16_LoadRasterIO(self)
+    def Read(self, *args): return _gippylib.GeoImage_int16_Read(self, *args)
+    def ReadAsList(self, *args): return _gippylib.GeoImage_int16_ReadAsList(self, *args)
+    def Write(self, *args): return _gippylib.GeoImage_int16_Write(self, *args)
+    def NDVI(self, *args): return _gippylib.GeoImage_int16_NDVI(self, *args)
+    def NDSI(self, *args): return _gippylib.GeoImage_int16_NDSI(self, *args)
+    def GetRandomPixels(self, *args): return _gippylib.GeoImage_int16_GetRandomPixels(self, *args)
+    def GetPixelClasses(self, *args): return _gippylib.GeoImage_int16_GetPixelClasses(self, *args)
+    def NoDataMask(self, *args): return _gippylib.GeoImage_int16_NoDataMask(self, *args)
+    def SnowMask(self, *args): return _gippylib.GeoImage_int16_SnowMask(self, *args)
+    def WaterMask(self, *args): return _gippylib.GeoImage_int16_WaterMask(self, *args)
+    def HazeMask(self, *args): return _gippylib.GeoImage_int16_HazeMask(self, *args)
+    def Whiteness(self, *args): return _gippylib.GeoImage_int16_Whiteness(self, *args)
+GeoImage_int16_swigregister = _gippylib.GeoImage_int16_swigregister
+GeoImage_int16_swigregister(GeoImage_int16)
+
+class GeoImage_int32(GeoImage):
+    __swig_setmethods__ = {}
+    for _s in [GeoImage]: __swig_setmethods__.update(getattr(_s,'__swig_setmethods__',{}))
+    __setattr__ = lambda self, name, value: _swig_setattr(self, GeoImage_int32, name, value)
+    __swig_getmethods__ = {}
+    for _s in [GeoImage]: __swig_getmethods__.update(getattr(_s,'__swig_getmethods__',{}))
+    __getattr__ = lambda self, name: _swig_getattr(self, GeoImage_int32, name)
+    __repr__ = _swig_repr
+    def __init__(self, *args): 
+        this = _gippylib.new_GeoImage_int32(*args)
+        try: self.this.append(this)
+        except: self.this = this
+    __swig_destroy__ = _gippylib.delete_GeoImage_int32
+    __del__ = lambda self : None;
+    def LoadRasterIO(self): return _gippylib.GeoImage_int32_LoadRasterIO(self)
+    def Read(self, *args): return _gippylib.GeoImage_int32_Read(self, *args)
+    def ReadAsList(self, *args): return _gippylib.GeoImage_int32_ReadAsList(self, *args)
+    def Write(self, *args): return _gippylib.GeoImage_int32_Write(self, *args)
+    def NDVI(self, *args): return _gippylib.GeoImage_int32_NDVI(self, *args)
+    def NDSI(self, *args): return _gippylib.GeoImage_int32_NDSI(self, *args)
+    def GetRandomPixels(self, *args): return _gippylib.GeoImage_int32_GetRandomPixels(self, *args)
+    def GetPixelClasses(self, *args): return _gippylib.GeoImage_int32_GetPixelClasses(self, *args)
+    def NoDataMask(self, *args): return _gippylib.GeoImage_int32_NoDataMask(self, *args)
+    def SnowMask(self, *args): return _gippylib.GeoImage_int32_SnowMask(self, *args)
+    def WaterMask(self, *args): return _gippylib.GeoImage_int32_WaterMask(self, *args)
+    def HazeMask(self, *args): return _gippylib.GeoImage_int32_HazeMask(self, *args)
+    def Whiteness(self, *args): return _gippylib.GeoImage_int32_Whiteness(self, *args)
+GeoImage_int32_swigregister = _gippylib.GeoImage_int32_swigregister
+GeoImage_int32_swigregister(GeoImage_int32)
+
+class GeoImage_int64(GeoImage):
+    __swig_setmethods__ = {}
+    for _s in [GeoImage]: __swig_setmethods__.update(getattr(_s,'__swig_setmethods__',{}))
+    __setattr__ = lambda self, name, value: _swig_setattr(self, GeoImage_int64, name, value)
+    __swig_getmethods__ = {}
+    for _s in [GeoImage]: __swig_getmethods__.update(getattr(_s,'__swig_getmethods__',{}))
+    __getattr__ = lambda self, name: _swig_getattr(self, GeoImage_int64, name)
+    __repr__ = _swig_repr
+    def __init__(self, *args): 
+        this = _gippylib.new_GeoImage_int64(*args)
+        try: self.this.append(this)
+        except: self.this = this
+    __swig_destroy__ = _gippylib.delete_GeoImage_int64
+    __del__ = lambda self : None;
+    def LoadRasterIO(self): return _gippylib.GeoImage_int64_LoadRasterIO(self)
+    def Read(self, *args): return _gippylib.GeoImage_int64_Read(self, *args)
+    def ReadAsList(self, *args): return _gippylib.GeoImage_int64_ReadAsList(self, *args)
+    def Write(self, *args): return _gippylib.GeoImage_int64_Write(self, *args)
+    def NDVI(self, *args): return _gippylib.GeoImage_int64_NDVI(self, *args)
+    def NDSI(self, *args): return _gippylib.GeoImage_int64_NDSI(self, *args)
+    def GetRandomPixels(self, *args): return _gippylib.GeoImage_int64_GetRandomPixels(self, *args)
+    def GetPixelClasses(self, *args): return _gippylib.GeoImage_int64_GetPixelClasses(self, *args)
+    def NoDataMask(self, *args): return _gippylib.GeoImage_int64_NoDataMask(self, *args)
+    def SnowMask(self, *args): return _gippylib.GeoImage_int64_SnowMask(self, *args)
+    def WaterMask(self, *args): return _gippylib.GeoImage_int64_WaterMask(self, *args)
+    def HazeMask(self, *args): return _gippylib.GeoImage_int64_HazeMask(self, *args)
+    def Whiteness(self, *args): return _gippylib.GeoImage_int64_Whiteness(self, *args)
+GeoImage_int64_swigregister = _gippylib.GeoImage_int64_swigregister
+GeoImage_int64_swigregister(GeoImage_int64)
+
+class GeoImage_float(GeoImage):
+    __swig_setmethods__ = {}
+    for _s in [GeoImage]: __swig_setmethods__.update(getattr(_s,'__swig_setmethods__',{}))
+    __setattr__ = lambda self, name, value: _swig_setattr(self, GeoImage_float, name, value)
+    __swig_getmethods__ = {}
+    for _s in [GeoImage]: __swig_getmethods__.update(getattr(_s,'__swig_getmethods__',{}))
+    __getattr__ = lambda self, name: _swig_getattr(self, GeoImage_float, name)
+    __repr__ = _swig_repr
+    def __init__(self, *args): 
+        this = _gippylib.new_GeoImage_float(*args)
+        try: self.this.append(this)
+        except: self.this = this
+    __swig_destroy__ = _gippylib.delete_GeoImage_float
+    __del__ = lambda self : None;
+    def LoadRasterIO(self): return _gippylib.GeoImage_float_LoadRasterIO(self)
+    def Read(self, *args): return _gippylib.GeoImage_float_Read(self, *args)
+    def ReadAsList(self, *args): return _gippylib.GeoImage_float_ReadAsList(self, *args)
+    def Write(self, *args): return _gippylib.GeoImage_float_Write(self, *args)
+    def NDVI(self, *args): return _gippylib.GeoImage_float_NDVI(self, *args)
+    def NDSI(self, *args): return _gippylib.GeoImage_float_NDSI(self, *args)
+    def GetRandomPixels(self, *args): return _gippylib.GeoImage_float_GetRandomPixels(self, *args)
+    def GetPixelClasses(self, *args): return _gippylib.GeoImage_float_GetPixelClasses(self, *args)
+    def NoDataMask(self, *args): return _gippylib.GeoImage_float_NoDataMask(self, *args)
+    def SnowMask(self, *args): return _gippylib.GeoImage_float_SnowMask(self, *args)
+    def WaterMask(self, *args): return _gippylib.GeoImage_float_WaterMask(self, *args)
+    def HazeMask(self, *args): return _gippylib.GeoImage_float_HazeMask(self, *args)
+    def Whiteness(self, *args): return _gippylib.GeoImage_float_Whiteness(self, *args)
+GeoImage_float_swigregister = _gippylib.GeoImage_float_swigregister
+GeoImage_float_swigregister(GeoImage_float)
+
+class GeoImage_double(GeoImage):
+    __swig_setmethods__ = {}
+    for _s in [GeoImage]: __swig_setmethods__.update(getattr(_s,'__swig_setmethods__',{}))
+    __setattr__ = lambda self, name, value: _swig_setattr(self, GeoImage_double, name, value)
+    __swig_getmethods__ = {}
+    for _s in [GeoImage]: __swig_getmethods__.update(getattr(_s,'__swig_getmethods__',{}))
+    __getattr__ = lambda self, name: _swig_getattr(self, GeoImage_double, name)
+    __repr__ = _swig_repr
+    def __init__(self, *args): 
+        this = _gippylib.new_GeoImage_double(*args)
+        try: self.this.append(this)
+        except: self.this = this
+    __swig_destroy__ = _gippylib.delete_GeoImage_double
+    __del__ = lambda self : None;
+    def LoadRasterIO(self): return _gippylib.GeoImage_double_LoadRasterIO(self)
+    def Read(self, *args): return _gippylib.GeoImage_double_Read(self, *args)
+    def ReadAsList(self, *args): return _gippylib.GeoImage_double_ReadAsList(self, *args)
+    def Write(self, *args): return _gippylib.GeoImage_double_Write(self, *args)
+    def NDVI(self, *args): return _gippylib.GeoImage_double_NDVI(self, *args)
+    def NDSI(self, *args): return _gippylib.GeoImage_double_NDSI(self, *args)
+    def GetRandomPixels(self, *args): return _gippylib.GeoImage_double_GetRandomPixels(self, *args)
+    def GetPixelClasses(self, *args): return _gippylib.GeoImage_double_GetPixelClasses(self, *args)
+    def NoDataMask(self, *args): return _gippylib.GeoImage_double_NoDataMask(self, *args)
+    def SnowMask(self, *args): return _gippylib.GeoImage_double_SnowMask(self, *args)
+    def WaterMask(self, *args): return _gippylib.GeoImage_double_WaterMask(self, *args)
+    def HazeMask(self, *args): return _gippylib.GeoImage_double_HazeMask(self, *args)
+    def Whiteness(self, *args): return _gippylib.GeoImage_double_Whiteness(self, *args)
+GeoImage_double_swigregister = _gippylib.GeoImage_double_swigregister
+GeoImage_double_swigregister(GeoImage_double)
 
 # This file is compatible with both classic and new-style classes.
 

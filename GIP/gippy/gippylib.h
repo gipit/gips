@@ -1,6 +1,7 @@
 %module gippylib
 
 %{
+#define SWIG_FILE_WITH_INIT
 //#include "gip/Colors.h"
 #include "gip/Options.h"
 //#include "gip/GeoData.h"
@@ -8,12 +9,46 @@
 #include "gip/GeoImage.h"
 #include "gip/GeoAlgorithms.h"
 //#include "gdal/gdal_priv.h"
+#include <python2.7/Python.h>
+#include <numpy/arrayobject.h>
+#include <iostream>
+#include "gip/gip_CImg.h"
+#include "gip/GeoRasterIO.h"
+#include "gip/GeoImageIO.h"
 
 using namespace gip;
 
 namespace gip {
     void reg() { GDALAllRegister(); }
 }
+
+template<typename T> PyObject* CImgToArr(cimg_library::CImg<T> cimg) {
+    npy_intp dims[] = { cimg.height(), cimg.width() };
+    int typenum;
+    if (typeid(T) == typeid(unsigned char)) typenum = NPY_UINT8;
+    else if (typeid(T) == typeid(char)) typenum = NPY_INT8;
+    else if (typeid(T) == typeid(unsigned short)) typenum = NPY_UINT16;
+    else if (typeid(T) == typeid(short)) typenum = NPY_INT16;
+    else if (typeid(T) == typeid(unsigned int)) typenum = NPY_UINT32;
+    else if (typeid(T) == typeid(int)) typenum = NPY_INT32;
+    else if (typeid(T) == typeid(unsigned long)) typenum = NPY_UINT64;
+    else if (typeid(T) == typeid(long)) typenum = NPY_INT64;
+    else if (typeid(T) == typeid(float)) typenum = NPY_FLOAT32;
+    else if (typeid(T) == typeid(double)) typenum = NPY_FLOAT64;
+    else throw(std::exception());
+    PyObject* arr;
+    if (dims[0] == 1)
+        arr = PyArray_SimpleNew(1,&dims[1], typenum);
+    else arr = PyArray_SimpleNew(2, dims, typenum);
+    void *arr_data = PyArray_DATA((PyArrayObject*)arr);
+    memcpy(arr_data, cimg.data(), PyArray_ITEMSIZE((PyArrayObject*) arr) * dims[0] * dims[1]);
+    return arr;
+}
+
+%}
+
+%init %{
+import_array();
 %}
 
 // STL bindings
@@ -32,12 +67,26 @@ namespace std {
   }
 }
 
+// CImg -> numpy
+%typemap (out) cimg_library::CImg<unsigned char> { return CImgToArr($1); }
+%typemap (out) cimg_library::CImg<char> { return CImgToArr($1); }
+%typemap (out) cimg_library::CImg<unsigned short> { return CImgToArr($1); }
+%typemap (out) cimg_library::CImg<short> { return CImgToArr($1); }
+%typemap (out) cimg_library::CImg<unsigned int> { return CImgToArr($1); }
+%typemap (out) cimg_library::CImg<int> { return CImgToArr($1); }
+%typemap (out) cimg_library::CImg<unsigned long> { return CImgToArr($1); }
+%typemap (out) cimg_library::CImg<long> { return CImgToArr($1); }
+%typemap (out) cimg_library::CImg<float> { return CImgToArr($1); }
+%typemap (out) cimg_library::CImg<double> { return CImgToArr($1); }
+
 // GIP functions to ignore (suppresses warnings)
 //%ignore gip::Options::operator=;
-%ignore gip::cimg_library::CImg;
+//%ignore gip::cimg_library::CImg;
+// These operators are redefined below
 %ignore gip::GeoData::operator=;
 %ignore gip::Colors::operator[];
 %ignore gip::GeoImage::operator[];
+%ignore gip::GeoRaster::operator==;
 //%ignore boost::program_options::options_description;
 
 // GIP headers and classes to be wrapped
@@ -48,6 +97,8 @@ namespace std {
 %include "gip/GeoRaster.h"
 %include "gip/GeoImage.h"
 %include "gip/GeoAlgorithms.h"
+%include "gip/GeoRasterIO.h"
+%include "gip/GeoImageIO.h"
 
 enum GDALDataType { GDT_Unknown, GDT_Byte, GDT_UInt16, GDT_Int16, GDT_UInt32, GDT_Int32,
     GDT_Float32, GDT_Float64 };
@@ -103,4 +154,26 @@ namespace gip {
         }
     }
 
+    %extend GeoRaster {
+        GeoRaster __eq__(double val) {
+            return self->operator==(val);
+        }
+    }
+    %template(GeoRaster_byte) gip::GeoRasterIO<unsigned char>;
+    %template(GeoRaster_int16) gip::GeoRasterIO<short int>;
+    %template(GeoRaster_int32) gip::GeoRasterIO<int>;
+    %template(GeoRaster_int64) gip::GeoRasterIO<long>;
+    %template(GeoRaster_float) gip::GeoRasterIO<float>;
+    %template(GeoRaster_double) gip::GeoRasterIO<double>;
+
+    %template(GeoImage_byte) gip::GeoImageIO<unsigned char>;
+    %template(GeoImage_int16) gip::GeoImageIO<short int>;
+    %template(GeoImage_int32) gip::GeoImageIO<int>;
+    %template(GeoImage_int64) gip::GeoImageIO<long>;
+    %template(GeoImage_float) gip::GeoImageIO<float>;
+    %template(GeoImage_double) gip::GeoImageIO<double>;
 }
+
+
+
+

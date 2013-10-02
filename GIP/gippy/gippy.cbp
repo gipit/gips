@@ -51,7 +51,7 @@
 			<Add library="boost_program_options" />
 		</Linker>
 		<ExtraCommands>
-			<Add before="swig -c++ -python -I../gip gippylib.h" />
+			<Add before="swig -c++ -python -w509 -I../gip gippylib.h" />
 			<Add after='echo &quot;reg()&quot; &gt;&gt; gippylib.py' />
 		</ExtraCommands>
 		<Unit filename="gippylib.h" />
