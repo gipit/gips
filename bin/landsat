@@ -7,6 +7,47 @@ import multiprocessing
 import gippy.landsat as landsat
 import traceback
 
+colorcodes = {
+    'black':    '0;30',     'bright gray':  '0;37',
+    'blue':     '0;34',     'white':        '1;37',
+    'green':    '0;32',     'bright blue':  '1;34',
+    'cyan':     '0;36',     'bright green': '1;32',
+    'red':      '0;31',     'bright cyan':  '1;36',
+    'purple':   '0;35',     'bright red':   '1;31',
+    'yellow':   '0;33',     'bright purple':'1;35',
+    'dark gray':'1;30',     'bright yellow':'1;33',
+    'normal':   '0'
+}
+
+def colorize(txt,color):
+    return "\033["+colorcodes[color]+'m' + txt + "\033[0m"
+
+def printsimplecal(dates,md=False, products=False):
+    import calendar
+    c = calendar.TextCalendar()
+    oldyear = ''
+    for d in sorted(dates):        
+        if args.md:
+            daystr = str(d.month) + '-' + str(d.day)
+        else:
+            daystr = str(d.timetuple().tm_yday)
+            if len(daystr) == 1:
+                daystr = '00' + daystr
+            elif len(daystr) == 2:
+                daystr = '0' + daystr
+        if d.year != oldyear:
+            sys.stdout.write('\n{:>5}:'.format(d.year))
+            if products: sys.stdout.write('\n')
+        sys.stdout.write(colorize('{:>7}'.format(daystr),dates[d]['color']))
+        if products:
+            sys.stdout.write('        ')
+            for k,v in dates[d]['products'].iteritems():
+                sys.stdout.write(colorize('{:<50}'.format(v),dates[d]['color']))
+            sys.stdout.write('\n')
+        oldyear = d.year
+    sys.stdout.write('\n')
+
+
 if __name__ == "__main__":
     prog = os.path.split(__file__)[1]
     parser0 = argparse.ArgumentParser(prog=prog, formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -24,7 +65,7 @@ if __name__ == "__main__":
     parser = subparser.add_parser('inventory',help='Get Landsat Inventory', parents=[gparser], 
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--md',help='Show dates using MM-DD',action='store_true',default=False)
-    parser.add_argument('--fn',help='List full filenames instead of dates',action='store_true',default=False)
+    #parser.add_argument('--fn',help='List full filenames instead of dates',action='store_true',default=False)
     parser.add_argument('-p', help='Also list all products available',action='store_true',default=False)
 
     # Links
@@ -75,44 +116,18 @@ if __name__ == "__main__":
             prs = sorted(os.listdir(landsat.rawdir))
         else: prs = args.pathrow
         totalfiles = 0
+        colors = {4:'bright yellow', 5:'bright red', 7:'bright green', 8:'bright blue'}
         for pr in prs:
             fnames = landsat.inventory(pr,args.dates,args.doy)
-            # print the stuff here
-            if len(fnames) > 0:
-                sys.stdout.write('Data for path/row %s' % pr)
-            oldyear = ''
+            dates = dict()
             for pathname in fnames:
                 basename = os.path.basename(pathname)
                 year = int(basename[9:13])
                 doy = int(basename[13:16])
                 date = datetime.date(year,1,1) + datetime.timedelta(doy-1)
                 sensor = int(basename[2:3])
-                if year != oldyear:
-                    sys.stdout.write('\n  %s:' % year)
-                if sensor == 4:
-                    col = 'bright yellow'
-                elif sensor == 5:
-                    col = 'bright red'
-                elif sensor == 7:
-                    col = 'bright green'
-                elif sensor == 8:
-                    col = 'bright blue'
-                else: 
-                    col = 'white'
-                if args.md:
-                    d = str(date.month) + '-' + str(date.day)
-                elif args.fn:
-                    d = '\n  ' + pathname
-                else: d = str(doy)
-                # List products also?
-                sdoy = str(doy)
-                if len(sdoy) == 1:
-                    sdoy = '00' + sdoy
-                elif len(sdoy) == 2:
-                    sdoy = '0' + sdoy
-                if args.p:
-                    import glob
-                    # Get listing of products
+                dates[date] = {'color': colors[sensor]} 
+                if args.p: # Get listing of products
                     files = landsat.inventory(pr,str(date),args.doy,products=True)
                     products = {}
                     for f in files:
@@ -126,19 +141,15 @@ if __name__ == "__main__":
                         else:
                             products[key] = val
                         products[key].strip(', ')
-                    prodstr = ''
-                    for k,v in products.iteritems():
-                        prodstr = prodstr + ' \t' + k + ' (' + v + ') '
-                    d = '\n    ' + d + prodstr
-                pretty.writec(' %s ' % d,col)
-                oldyear = year
-            sys.stdout.write('\n')
+                    dates[date]['products'] = products
             totalfiles = totalfiles + len(fnames)
+            header = 'P/R %s' % pr
+            if args.p: header = '{:15}{:<50}{:<50}'.format(header, "Atm Corrected", "Not Atm Corrected")
+            sys.stdout.write(header)
+            printsimplecal(dates,args.md,args.p)
         if totalfiles > 0:
-            pretty.writec(' Landsat4 ', 'bright yellow')
-            pretty.writec(' Landsat5 ','bright red')
-            pretty.writec(' Landsat7 ','bright green')
-            pretty.writec(' Landsat8 ','bright blue')
+            for s in sorted(colors):
+                sys.stdout.write(colorize(' Landsat%s' % s, colors[s]))
             sys.stdout.write('\n')
             print '  Total of %i matching data files' % totalfiles
         else:

@@ -331,6 +331,9 @@ def process(img, fname_out, product='radi', datatype='Int16', verbose=1, overvie
     # TODO - this should be an algorithm ? (landsat alg instead of landsat process)
     if product == 'cind':
         imgout = gippy.Indices(img,fname_out)
+    elif product == 'visu':
+        img.PruneToRGB()
+        imgout = gippy.Visual(img,fname_out)
     else:
     #if product == 'radi' or product == 'refl' or product == 'temp':
         nodata = -32768
@@ -342,16 +345,12 @@ def process(img, fname_out, product='radi', datatype='Int16', verbose=1, overvie
 
         if product == 'radi':
             units = gippy.RADIANCE
-        elif product == 'visu':
-            units = gippy.RAW
-            img.PruneToRGB()
-            dtype = gippy.GDT_Byte
         else: units = gippy.REFLECTIVITY
 
         # Create output file and set default parameters
         imgout = gippy.GeoImage(fname_out, img, dtype)
         imgout.SetNoData(nodata)
-
+        
         if dtype == gippy.GDT_Int16:
             if units == gippy.RADIANCE:
                 imgout.SetGain(0.1)
@@ -368,14 +367,7 @@ def process(img, fname_out, product='radi', datatype='Int16', verbose=1, overvie
         else: 
             imgout.SetGain(1.0)
             imgout.SetOffset(0.0)
-        """ L7 already 0-255, but L8 is not
-        elif dtype == gippy.GDT_Byte:
-            stats = img.ComputeStats()
-            for b in range(0,imgout.NumBands()):
-                imgout[b].SetOffset(img[b].Min())
-                imgout[b].SetGain((img[b].Max()-img[b].Min())/256.0)
-                print imgout[b].Offset(), imgout[b].Gain()
-        """
+
         imgout = gippy.Copy(img, imgout, units)
         #print imgout.Min(), imgout.Max(), imgout.Mean()
     """
