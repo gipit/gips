@@ -25,6 +25,7 @@ namespace gip {
 	string Options::_DefaultFormat("GTiff");
 	float Options::_ChunkSize(32.0);
 	int Options::_Verbose(1);
+	std::string Options::_WorkDir("/tmp/");
 
 	Options::Options(string filename) {
         options_description opts;

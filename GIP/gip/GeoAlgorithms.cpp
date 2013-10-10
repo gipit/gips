@@ -42,7 +42,58 @@ namespace gip {
         return Copy(image,ImageOut,units);
 	}
 
-    GeoImage Visual(const GeoImage& image, string filename) {
+	//! Calculate Radiance
+	GeoImage Rad(const GeoImage& img, string filename) {
+	    if (img[0].Units() != "radiance") {
+	        throw std::runtime_error("image not in radiance units");
+	    }
+        typedef float T;
+        GeoImageIO<T> imgIO(img);
+        GeoImageIO<T> imgoutIO(GeoImage(filename, img, GDT_Int16));
+        imgoutIO.SetNoData(-32768); // TODO - set nodata option
+        imgoutIO.SetGain(0.1);
+        std::vector<bbox> Chunks = img.Chunk();
+        std::vector<bbox>::const_iterator iChunk;
+        CImg<T> cimg;
+        CImg<unsigned char> nodata;
+        for (unsigned int b=0;b<img.NumBands();b++) {
+            for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
+                cimg = imgIO[b].Read(*iChunk);
+                nodata = imgIO[b].NoDataMask(*iChunk);
+                // only if nodata not same between input and output images
+                cimg_forXY(cimg,x,y) { if (nodata(x,y)) cimg(x,y) = imgoutIO[b].NoDataValue(); }
+                imgoutIO[b].Write(cimg,*iChunk);
+            }
+        }
+        return imgoutIO;
+	}
+
+    //! Calculate reflectance assuming read image is radiance
+	GeoImage Ref(const GeoImage& img, string filename) {
+	    if (img[0].Units() != "radiance") {
+	        throw std::runtime_error("image not in radiance units (required to calculate reflectance)");
+	    }
+	    typedef float t;
+        GeoImageIO<t> imgIO(img);
+        GeoImageIO<t> imgoutIO(GeoImage(filename, img, GDT_Int16));
+        imgoutIO.SetNoData(-32768); // TODO - set nodata option
+        std::vector<bbox> Chunks = img.Chunk();
+        std::vector<bbox>::const_iterator iChunk;
+        CImg<float> cimg;
+        CImg<unsigned char> nodata;
+        for (unsigned int b=0;b<img.NumBands();b++) {
+            if (img[b].Thermal()) imgoutIO[b].SetGain(0.01); else imgoutIO[b].SetGain(0.0001);
+            for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
+                cimg = imgIO[b].Ref(*iChunk);
+                nodata = imgIO[b].NoDataMask(*iChunk);
+                cimg_forXY(cimg,x,y) { if (nodata(x,y)) cimg(x,y) = imgoutIO[b].NoDataValue(); }
+                imgoutIO[b].Write(cimg,*iChunk);
+            }
+        }
+        return imgoutIO;
+	}
+
+    GeoImage RGB(const GeoImage& image, string filename) {
         GeoImageIO<unsigned char> ImageOut(GeoImage(filename, image, GDT_Byte));
         GeoImageIO<float> imageIO(image);
         ImageOut.SetNoData(0);
@@ -54,14 +105,10 @@ namespace gip {
             stats = imageIO[b].ComputeStats();
             float lo = std::max(stats(2) - 3*stats(3), stats(0)-1);
             float hi = std::min(stats(2) + 3*stats(3), stats(1));
-            float gain = 255.0/(hi-lo);
-            std::cout << lo << ", " << hi << ", " << gain << std::endl;
             for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
                 cimg = imageIO[b].Read(*iChunk);
                 mask = imageIO[b].NoDataMask(*iChunk);
-                cimg_printstats(cimg,"before");
                 ((cimg-=lo)*=(255.0/(hi-lo))).max(0.0).min(255.0);
-                cimg_printstats(cimg,"after");
                 cimg_forXY(cimg,x,y) { if (mask(x,y)) cimg(x,y) = ImageOut[b].NoDataValue(); }
                 ImageOut[b].Write(CImg<unsigned char>().assign(cimg.round()),*iChunk);
             }

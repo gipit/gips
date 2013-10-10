@@ -101,6 +101,10 @@ namespace gip {
 		static int Verbose() { return _Verbose; }
 		//! Set verbose level
 		static void SetVerbose(int v) { _Verbose = v; }
+		//! Get workdir
+		static std::string WorkDir() { return _WorkDir; }
+		//! Set workdir
+		static void SetWorkDir(std::string workdir) { _WorkDir = workdir; }
 
 		bool Exit() const { return _Exit; }
 
@@ -118,6 +122,8 @@ namespace gip {
 		static float _ChunkSize;
 		//! Verbosity level
 		static int _Verbose;
+		//! Work dir
+		static std::string _WorkDir;
 
 		//! Exit flag (to indicate program should exit after parsing cmdline)
 		bool _Exit;

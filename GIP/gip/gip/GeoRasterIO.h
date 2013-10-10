@@ -27,12 +27,12 @@ namespace gip {
 
 		//! \name File I/O
 		//! Read entire image
-		cimg_library::CImg<T> Read(UNITS units=RAW) const {
-            return Read( bbox(point(0,0),point(XSize()-1,YSize()-1)), units );
+		cimg_library::CImg<T> Read(bool RAW=false) const {
+            return Read( bbox(point(0,0),point(XSize()-1,YSize()-1)), RAW );
 		}
 
 		//! Retrieve a piece of the image as a CImg
-		cimg_library::CImg<T> Read(bbox chunk, UNITS units=RAW) const {
+		cimg_library::CImg<T> Read(bbox chunk, bool RAW=false) const {
 		    using cimg_library::CImg;
 			point p1 = chunk.min_corner();
 			point p2 = chunk.max_corner();
@@ -45,51 +45,24 @@ namespace gip {
 			if (err != CE_None) std::cout << "Error reading " << Filename() << ": " << CPLGetLastErrorMsg() << std::endl;
 			CImg<T> img(ptrPixels, width, height);
 			CImg<T> imgorig(img);
-			// Convert data to radiance
-			if (units != RAW) {
+
+			bool updatenodata = false;
+
+			// Convert data to radiance (if not raw requested
+			if (!RAW) {
                 if (Gain() != 1.0 || Offset() != 0.0) {
                     img = Gain() * (img-_minDC) + Offset();
+                    updatenodata = true;
                 }
-			}
-			// Coef image
-			//CImg<T> coefimg(img);
-            // Atmospheric correction to surface-leaving radiance
-            double normrad;
-            if (Atmosphere()) {
-                // For thermal band, currently water only
-                double e = (Thermal()) ? 0.95 : 1;
-                img = (img - (_Atmosphere.Lu() + (1-e)*_Atmosphere.Ld())) / (_Atmosphere.t() * e);
-                normrad = 1.0/_Atmosphere.Ld();
-            } else {
-                normrad = 1.0/_Esun;
-                //std::cout << "normrad, rad " << normrad << ", " << _Sensor.Radiance() << ", " << _Sensor.RefCoef() << std::endl;
-            }
-
-            // Convert to reflectance
-			if (units == REFLECTIVITY) {
-                // Convert to reflectance or temperature here
-                if (Thermal()) {
-                    cimg_for(img,ptr,T) *ptr = (_K2/log(_K1/(*ptr) + 1)) - 273.15;
-                    //img = _Sensor.K2()/(((_Sensor.K1()/img) + 1).log());
-                } else {
-                    cimg_for(img,ptr,T) *ptr = *ptr * normrad; //* _Sensor.RefCoef();
+                // apply atmosphere if there is one (which would data is radiance units) TODO - check units
+                if (Atmosphere()) {
+                    double e = (Thermal()) ? 0.95 : 1;  // For thermal band, currently water only
+                    img = (img - (_Atmosphere.Lu() + (1-e)*_Atmosphere.Ld())) / (_Atmosphere.t() * e);
+                    updatenodata = true;
                 }
 			}
 
-			// Testing 6s coefficients
-			/*if (Atmosphere() && units == REFLECTIVITY && _Atmosphere.Coef()) {
-			    double f;
-                cimg_for(coefimg,ptr,T) {
-                    f = _Atmosphere.Xa * *ptr - _Atmosphere.Xb;
-                    *ptr = f/(1 + _Atmosphere.Xc * f);
-                }
-                CImg<T> stats = (img - coefimg).get_stats();
-                std::cout << "Min/Max = " << stats(0) << ", " << stats(1)
-                    << " Mean/StdDev = " << stats(2) << " +/- " << stats(3) << std::endl;
-                //img = coefimg;
-			}*/
-
-			// Apply Processing functions
+			// Apply Processing functions - TODO - should these apply if RAW ?
 			std::vector<GeoFunction>::const_iterator iFunc;
 			for (iFunc=_Functions.begin();iFunc!=_Functions.end();iFunc++) {
 				//std::cout << Basename() << ": Applying Function " << iFunc->Function() << " " << iFunc->Operand() << std::endl;
@@ -108,6 +81,7 @@ namespace gip {
 				} else if (iFunc->Function() == "-") {
 					img = img - iFunc->Operand();
 				}
+				updatenodata = true;
 			}
 
 			// Apply all masks
@@ -119,9 +93,13 @@ namespace gip {
                     cmask.mul(mask.Read(chunk));
                 }
                 img.mul(cmask);
+                cimg_forXY(img,x,y) {
+                    if (cmask(x,y) != 1) img(x,y) = NoDataValue();
+                }
+                updatenodata = true;
 			}
 			// If processing was applied update NoData values where needed
-			if (NoData() && units != RAW) {
+			if (NoData() && updatenodata) {
                 cimg_forXY(img,x,y) {
                     if (imgorig(x,y) == NoDataValue()) img(x,y) = NoDataValue();
                 }
@@ -132,19 +110,18 @@ namespace gip {
 		}
 
 		//! Write a Cimg to the file
-		GeoRasterIO<T>& Write(cimg_library::CImg<T>& img, bbox chunk, bool BadValCheck=false) {
+		GeoRasterIO<T>& Write(cimg_library::CImg<T>& img, bbox chunk, bool RAW=false) { //, bool BadValCheck=false) {
 			point p1 = chunk.min_corner();
 			point p2 = chunk.max_corner();
 			int width = p2.x()-p1.x()+1;
 			int height = p2.y()-p1.y()+1;
 			// This the right place for this??
-			/*if (Gain() != 1.0) {
-                cimg_for(img,ptr,T) if (*ptr != NoDataValue()) *ptr = *ptr/Gain() - Offset();
-                std::cout << "Writing...gain = " << Gain() << ", " << Offset() << std::endl;
-			}*/
-			if (BadValCheck) {
-				cimg_for(img,ptr,T) if ( std::isinf(*ptr) || std::isnan(*ptr) ) *ptr = NoDataValue();
+			if (!RAW && (Gain() != 1.0 || Offset() != 0.0)) {
+                cimg_for(img,ptr,T) if (*ptr != NoDataValue()) *ptr = (*ptr-Offset())/Gain();
 			}
+			/*if (BadValCheck) {
+				cimg_for(img,ptr,T) if ( std::isinf(*ptr) || std::isnan(*ptr) ) *ptr = NoDataValue();
+			}*/
 			CPLErr err = _GDALRasterBand->RasterIO(GF_Write, p1.x(), p1.y(), width, height, img.data(), width, height, GDALType(), 0, 0);
 			if (err != CE_None) std::cout << "Error writing " << Filename() << ": " << CPLGetLastErrorMsg() << std::endl;
 			return *this;
@@ -155,7 +132,7 @@ namespace gip {
 		}*/
 
 		//! Copy input band into this
-		GeoRasterIO<T>& Copy(const GeoRaster& raster, UNITS units=RAW) {
+		/*GeoRasterIO<T>& Copy(const GeoRaster& raster, UNITS units=RAW) {
 		    using cimg_library::CImg;
 		    GeoRasterIO<float> rasterIO(raster);
             std::vector<bbox> Chunks = Chunk();
@@ -179,7 +156,7 @@ namespace gip {
             _GDALRasterBand->SetMetadata(band->GetMetadata());
             CopyCoordinateSystem(raster);
             return *this;
-		}
+		}*/
 
 		//! Calculate stats
 		cimg_library::CImg<float> ComputeStats(UNITS units=RAW) {
@@ -239,12 +216,24 @@ namespace gip {
 		//! NoData mask (all bands)
 		cimg_library::CImg<unsigned char> NoDataMask(bbox chunk) const {
 		    using cimg_library::CImg;
-		    CImg<T> img = Read(chunk);
+		    CImg<T> img = Read(chunk, true);  // this reads raw
 		    CImg<unsigned char> mask(img.width(),img.height(),1,1,0);
 		    if (!NoData()) return mask;
 		    T nodataval = NoDataValue();
             cimg_forXY(img,x,y) if (img(x,y) == nodataval) mask(x,y) = 1;
             return mask;
+		}
+
+		//! Return reflectance (or temperature if thermal band)  (move to GeoRaster)
+		cimg_library::CImg<float> Ref(bbox chunk) {
+            cimg_library::CImg<float> cimg = Read(chunk);
+            if (Thermal()) {
+                cimg_for(cimg,ptr,float) *ptr = (_K2/log(_K1/(*ptr)+1)) - 273.15;
+            } else {
+                float normrad = Atmosphere() ? (1.0/_Atmosphere.Ld()) : (1.0/_Esun);
+                cimg_for(cimg,ptr,float) *ptr = *ptr * normrad;
+            }
+            return cimg;
 		}
 
 		//! Creates map of indices for each value in image (used for rasterized vector images)

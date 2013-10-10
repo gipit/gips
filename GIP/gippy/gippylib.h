@@ -121,6 +121,8 @@ namespace gip {
         static void SetChunkSize(float sz);
         static int Verbose();
         static void SetVerbose(int v);
+        static std::string WorkDir();
+        static void SetWorkDir(std::string workdir);
     };
 
     //%rename(__getitem__) operator[];

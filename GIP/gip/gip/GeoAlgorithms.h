@@ -25,8 +25,14 @@ namespace gip {
 	//! Create new file of standard indices: NDVI, EVI, LSWI, NDSI, BI
 	GeoImage Indices(const GeoImage&, std::string, bool=true, bool=true, bool=true, bool=true, bool=true);
 
+    //! Calculate and output radiance
+	GeoImage Rad(const GeoImage&, std::string);
+
+    //! Calculate and output reflectance
+	GeoImage Ref(const GeoImage&, std::string);
+
 	//! Stretch image into byte
-	GeoImage Visual(const GeoImage&, std::string);
+	GeoImage RGB(const GeoImage&, std::string);
 
 	//GeoImage Permutations(const GeoImage&, const GeoImage&, std::string);
 

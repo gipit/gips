@@ -12,6 +12,9 @@
 #include <iostream>
 #include <iomanip>
 
+// for tolowercase
+#include <boost/algorithm/string.hpp>
+
 namespace gip {
 	//typedef bgeo::model::d2::point_xy<float> point;
 
@@ -113,9 +116,13 @@ namespace gip {
             _GDALRasterBand->SetCategoryNames(raster.GetGDALRasterBand()->GetCategoryNames());
 		}
 		//! Get GDAL Unit type
-		//std::string Units() const { return _GDALRasterBand->GetUnitType(); }
+		std::string Units() const {
+		    std::string units( _GDALRasterBand->GetUnitType() );
+            boost::algorithm::to_lower(units);
+            return units;
+        }
 		//! Set Unit type
-		//void SetUnits(std::string units) const { _GDALRasterBand->SetUnitType(units.c_str()); }
+		void SetUnits(std::string units) const { _GDALRasterBand->SetUnitType(units.c_str()); }
 		//! Get gain
 		float Gain() const { return _GDALRasterBand->GetScale(); }
 		//! Get offset
@@ -138,7 +145,6 @@ namespace gip {
 
         //! Set exo-atmospheric solar irradiance
         void SetEsun(float E) { _Esun = E; }
-
         // TODO - Does there need to be an atmospheric class???
 		//! Is there an atmospheric correction supplied?
 		bool Atmosphere() const { return _Atmosphere.Valid(); }

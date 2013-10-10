@@ -2951,59 +2951,58 @@ SWIG_Python_NonDynamicSetAttr(PyObject *obj, PyObject *name, PyObject *value) {
 #define SWIGTYPE_p_CImgT_short_t swig_types[6]
 #define SWIGTYPE_p_CImgT_unsigned_char_t swig_types[7]
 #define SWIGTYPE_p_GDALRasterBand swig_types[8]
-#define SWIGTYPE_p_GeoRaster swig_types[9]
-#define SWIGTYPE_p_UNITS swig_types[10]
-#define SWIGTYPE_p_allocator_type swig_types[11]
-#define SWIGTYPE_p_bbox swig_types[12]
-#define SWIGTYPE_p_boost__geometry__model__boxT_gip__point_t swig_types[13]
-#define SWIGTYPE_p_boost__geometry__model__d2__point_xyT_float_t swig_types[14]
-#define SWIGTYPE_p_char swig_types[15]
-#define SWIGTYPE_p_cimg_library__CImgListT_double_t swig_types[16]
-#define SWIGTYPE_p_cimg_library__CImgListT_float_t swig_types[17]
-#define SWIGTYPE_p_cimg_library__CImgListT_int_t swig_types[18]
-#define SWIGTYPE_p_cimg_library__CImgListT_long_t swig_types[19]
-#define SWIGTYPE_p_cimg_library__CImgListT_short_t swig_types[20]
-#define SWIGTYPE_p_cimg_library__CImgListT_unsigned_char_t swig_types[21]
-#define SWIGTYPE_p_cimg_library__CImgT_T_t swig_types[22]
-#define SWIGTYPE_p_cimg_library__CImgT_bool_t swig_types[23]
-#define SWIGTYPE_p_cimg_library__CImgT_double_t swig_types[24]
-#define SWIGTYPE_p_cimg_library__CImgT_float_t swig_types[25]
-#define SWIGTYPE_p_cimg_library__CImgT_int_t swig_types[26]
-#define SWIGTYPE_p_cimg_library__CImgT_long_t swig_types[27]
-#define SWIGTYPE_p_cimg_library__CImgT_short_t swig_types[28]
-#define SWIGTYPE_p_cimg_library__CImgT_unsigned_char_t swig_types[29]
-#define SWIGTYPE_p_difference_type swig_types[30]
-#define SWIGTYPE_p_gip__Atmosphere swig_types[31]
-#define SWIGTYPE_p_gip__Colors swig_types[32]
-#define SWIGTYPE_p_gip__GeoData swig_types[33]
-#define SWIGTYPE_p_gip__GeoFunction swig_types[34]
-#define SWIGTYPE_p_gip__GeoImage swig_types[35]
-#define SWIGTYPE_p_gip__GeoImageIOT_double_t swig_types[36]
-#define SWIGTYPE_p_gip__GeoImageIOT_float_t swig_types[37]
-#define SWIGTYPE_p_gip__GeoImageIOT_int_t swig_types[38]
-#define SWIGTYPE_p_gip__GeoImageIOT_long_t swig_types[39]
-#define SWIGTYPE_p_gip__GeoImageIOT_short_t swig_types[40]
-#define SWIGTYPE_p_gip__GeoImageIOT_unsigned_char_t swig_types[41]
-#define SWIGTYPE_p_gip__GeoRaster swig_types[42]
-#define SWIGTYPE_p_gip__GeoRasterIOT_double_t swig_types[43]
-#define SWIGTYPE_p_gip__GeoRasterIOT_float_t swig_types[44]
-#define SWIGTYPE_p_gip__GeoRasterIOT_int_t swig_types[45]
-#define SWIGTYPE_p_gip__GeoRasterIOT_long_t swig_types[46]
-#define SWIGTYPE_p_gip__GeoRasterIOT_short_t swig_types[47]
-#define SWIGTYPE_p_gip__GeoRasterIOT_unsigned_char_t swig_types[48]
-#define SWIGTYPE_p_gip__Options swig_types[49]
-#define SWIGTYPE_p_p_PyObject swig_types[50]
-#define SWIGTYPE_p_size_type swig_types[51]
-#define SWIGTYPE_p_std__allocatorT_std__string_t swig_types[52]
-#define SWIGTYPE_p_std__invalid_argument swig_types[53]
-#define SWIGTYPE_p_std__mapT_std__string_std__string_t swig_types[54]
-#define SWIGTYPE_p_std__vectorT__Tp__Alloc_t swig_types[55]
-#define SWIGTYPE_p_std__vectorT_boost__geometry__model__boxT_gip__point_t_std__allocatorT_boost__geometry__model__boxT_gip__point_t_t_t swig_types[56]
-#define SWIGTYPE_p_std__vectorT_std__string_std__allocatorT_std__string_t_t swig_types[57]
-#define SWIGTYPE_p_swig__SwigPyIterator swig_types[58]
-#define SWIGTYPE_p_value_type swig_types[59]
-static swig_type_info *swig_types[61];
-static swig_module_info swig_module = {swig_types, 60, 0, 0, 0, 0};
+#define SWIGTYPE_p_UNITS swig_types[9]
+#define SWIGTYPE_p_allocator_type swig_types[10]
+#define SWIGTYPE_p_bbox swig_types[11]
+#define SWIGTYPE_p_boost__geometry__model__boxT_gip__point_t swig_types[12]
+#define SWIGTYPE_p_boost__geometry__model__d2__point_xyT_float_t swig_types[13]
+#define SWIGTYPE_p_char swig_types[14]
+#define SWIGTYPE_p_cimg_library__CImgListT_double_t swig_types[15]
+#define SWIGTYPE_p_cimg_library__CImgListT_float_t swig_types[16]
+#define SWIGTYPE_p_cimg_library__CImgListT_int_t swig_types[17]
+#define SWIGTYPE_p_cimg_library__CImgListT_long_t swig_types[18]
+#define SWIGTYPE_p_cimg_library__CImgListT_short_t swig_types[19]
+#define SWIGTYPE_p_cimg_library__CImgListT_unsigned_char_t swig_types[20]
+#define SWIGTYPE_p_cimg_library__CImgT_T_t swig_types[21]
+#define SWIGTYPE_p_cimg_library__CImgT_bool_t swig_types[22]
+#define SWIGTYPE_p_cimg_library__CImgT_double_t swig_types[23]
+#define SWIGTYPE_p_cimg_library__CImgT_float_t swig_types[24]
+#define SWIGTYPE_p_cimg_library__CImgT_int_t swig_types[25]
+#define SWIGTYPE_p_cimg_library__CImgT_long_t swig_types[26]
+#define SWIGTYPE_p_cimg_library__CImgT_short_t swig_types[27]
+#define SWIGTYPE_p_cimg_library__CImgT_unsigned_char_t swig_types[28]
+#define SWIGTYPE_p_difference_type swig_types[29]
+#define SWIGTYPE_p_gip__Atmosphere swig_types[30]
+#define SWIGTYPE_p_gip__Colors swig_types[31]
+#define SWIGTYPE_p_gip__GeoData swig_types[32]
+#define SWIGTYPE_p_gip__GeoFunction swig_types[33]
+#define SWIGTYPE_p_gip__GeoImage swig_types[34]
+#define SWIGTYPE_p_gip__GeoImageIOT_double_t swig_types[35]
+#define SWIGTYPE_p_gip__GeoImageIOT_float_t swig_types[36]
+#define SWIGTYPE_p_gip__GeoImageIOT_int_t swig_types[37]
+#define SWIGTYPE_p_gip__GeoImageIOT_long_t swig_types[38]
+#define SWIGTYPE_p_gip__GeoImageIOT_short_t swig_types[39]
+#define SWIGTYPE_p_gip__GeoImageIOT_unsigned_char_t swig_types[40]
+#define SWIGTYPE_p_gip__GeoRaster swig_types[41]
+#define SWIGTYPE_p_gip__GeoRasterIOT_double_t swig_types[42]
+#define SWIGTYPE_p_gip__GeoRasterIOT_float_t swig_types[43]
+#define SWIGTYPE_p_gip__GeoRasterIOT_int_t swig_types[44]
+#define SWIGTYPE_p_gip__GeoRasterIOT_long_t swig_types[45]
+#define SWIGTYPE_p_gip__GeoRasterIOT_short_t swig_types[46]
+#define SWIGTYPE_p_gip__GeoRasterIOT_unsigned_char_t swig_types[47]
+#define SWIGTYPE_p_gip__Options swig_types[48]
+#define SWIGTYPE_p_p_PyObject swig_types[49]
+#define SWIGTYPE_p_size_type swig_types[50]
+#define SWIGTYPE_p_std__allocatorT_std__string_t swig_types[51]
+#define SWIGTYPE_p_std__invalid_argument swig_types[52]
+#define SWIGTYPE_p_std__mapT_std__string_std__string_t swig_types[53]
+#define SWIGTYPE_p_std__vectorT__Tp__Alloc_t swig_types[54]
+#define SWIGTYPE_p_std__vectorT_boost__geometry__model__boxT_gip__point_t_std__allocatorT_boost__geometry__model__boxT_gip__point_t_t_t swig_types[55]
+#define SWIGTYPE_p_std__vectorT_std__string_std__allocatorT_std__string_t_t swig_types[56]
+#define SWIGTYPE_p_swig__SwigPyIterator swig_types[57]
+#define SWIGTYPE_p_value_type swig_types[58]
+static swig_type_info *swig_types[60];
+static swig_module_info swig_module = {swig_types, 59, 0, 0, 0, 0};
 #define SWIG_TypeQuery(name) SWIG_TypeQueryModule(&swig_module, &swig_module, name)
 #define SWIG_MangledTypeQuery(name) SWIG_MangledTypeQueryModule(&swig_module, &swig_module, name)
 
@@ -10755,6 +10754,72 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_GeoRaster_Units(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  gip::GeoRaster *arg1 = (gip::GeoRaster *) 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject * obj0 = 0 ;
+  std::string result;
+  
+  if (!PyArg_ParseTuple(args,(char *)"O:GeoRaster_Units",&obj0)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__GeoRaster, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoRaster_Units" "', argument " "1"" of type '" "gip::GeoRaster const *""'"); 
+  }
+  arg1 = reinterpret_cast< gip::GeoRaster * >(argp1);
+  {
+    try {
+      result = ((gip::GeoRaster const *)arg1)->Units();
+    } catch (const std::exception& e) {
+      SWIG_exception(SWIG_RuntimeError, e.what());
+    }
+  }
+  resultobj = SWIG_From_std_string(static_cast< std::string >(result));
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_GeoRaster_SetUnits(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  gip::GeoRaster *arg1 = (gip::GeoRaster *) 0 ;
+  std::string arg2 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OO:GeoRaster_SetUnits",&obj0,&obj1)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__GeoRaster, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoRaster_SetUnits" "', argument " "1"" of type '" "gip::GeoRaster const *""'"); 
+  }
+  arg1 = reinterpret_cast< gip::GeoRaster * >(argp1);
+  {
+    std::string *ptr = (std::string *)0;
+    int res = SWIG_AsPtr_std_string(obj1, &ptr);
+    if (!SWIG_IsOK(res) || !ptr) {
+      SWIG_exception_fail(SWIG_ArgError((ptr ? res : SWIG_TypeError)), "in method '" "GeoRaster_SetUnits" "', argument " "2"" of type '" "std::string""'"); 
+    }
+    arg2 = *ptr;
+    if (SWIG_IsNewObj(res)) delete ptr;
+  }
+  {
+    try {
+      ((gip::GeoRaster const *)arg1)->SetUnits(arg2);
+    } catch (const std::exception& e) {
+      SWIG_exception(SWIG_RuntimeError, e.what());
+    }
+  }
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_GeoRaster_Gain(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   gip::GeoRaster *arg1 = (gip::GeoRaster *) 0 ;
@@ -13528,6 +13593,44 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_GeoImage_SetUnits(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  gip::GeoImage *arg1 = (gip::GeoImage *) 0 ;
+  std::string arg2 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OO:GeoImage_SetUnits",&obj0,&obj1)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__GeoImage, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoImage_SetUnits" "', argument " "1"" of type '" "gip::GeoImage *""'"); 
+  }
+  arg1 = reinterpret_cast< gip::GeoImage * >(argp1);
+  {
+    std::string *ptr = (std::string *)0;
+    int res = SWIG_AsPtr_std_string(obj1, &ptr);
+    if (!SWIG_IsOK(res) || !ptr) {
+      SWIG_exception_fail(SWIG_ArgError((ptr ? res : SWIG_TypeError)), "in method '" "GeoImage_SetUnits" "', argument " "2"" of type '" "std::string""'"); 
+    }
+    arg2 = *ptr;
+    if (SWIG_IsNewObj(res)) delete ptr;
+  }
+  {
+    try {
+      (arg1)->SetUnits(arg2);
+    } catch (const std::exception& e) {
+      SWIG_exception(SWIG_RuntimeError, e.what());
+    }
+  }
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_GeoImage_SetNoData(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   gip::GeoImage *arg1 = (gip::GeoImage *) 0 ;
@@ -14808,7 +14911,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_Visual(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_Rad(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   gip::GeoImage *arg1 = 0 ;
   std::string arg2 ;
@@ -14818,27 +14921,111 @@ SWIGINTERN PyObject *_wrap_Visual(PyObject *SWIGUNUSEDPARM(self), PyObject *args
   PyObject * obj1 = 0 ;
   SwigValueWrapper< gip::GeoImage > result;
   
-  if (!PyArg_ParseTuple(args,(char *)"OO:Visual",&obj0,&obj1)) SWIG_fail;
+  if (!PyArg_ParseTuple(args,(char *)"OO:Rad",&obj0,&obj1)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1, SWIGTYPE_p_gip__GeoImage,  0  | 0);
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Visual" "', argument " "1"" of type '" "gip::GeoImage const &""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Rad" "', argument " "1"" of type '" "gip::GeoImage const &""'"); 
   }
   if (!argp1) {
-    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "Visual" "', argument " "1"" of type '" "gip::GeoImage const &""'"); 
+    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "Rad" "', argument " "1"" of type '" "gip::GeoImage const &""'"); 
   }
   arg1 = reinterpret_cast< gip::GeoImage * >(argp1);
   {
     std::string *ptr = (std::string *)0;
     int res = SWIG_AsPtr_std_string(obj1, &ptr);
     if (!SWIG_IsOK(res) || !ptr) {
-      SWIG_exception_fail(SWIG_ArgError((ptr ? res : SWIG_TypeError)), "in method '" "Visual" "', argument " "2"" of type '" "std::string""'"); 
+      SWIG_exception_fail(SWIG_ArgError((ptr ? res : SWIG_TypeError)), "in method '" "Rad" "', argument " "2"" of type '" "std::string""'"); 
     }
     arg2 = *ptr;
     if (SWIG_IsNewObj(res)) delete ptr;
   }
   {
     try {
-      result = gip::Visual((gip::GeoImage const &)*arg1,arg2);
+      result = gip::Rad((gip::GeoImage const &)*arg1,arg2);
+    } catch (const std::exception& e) {
+      SWIG_exception(SWIG_RuntimeError, e.what());
+    }
+  }
+  resultobj = SWIG_NewPointerObj((new gip::GeoImage(static_cast< const gip::GeoImage& >(result))), SWIGTYPE_p_gip__GeoImage, SWIG_POINTER_OWN |  0 );
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_Ref(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  gip::GeoImage *arg1 = 0 ;
+  std::string arg2 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  SwigValueWrapper< gip::GeoImage > result;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OO:Ref",&obj0,&obj1)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1, SWIGTYPE_p_gip__GeoImage,  0  | 0);
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ref" "', argument " "1"" of type '" "gip::GeoImage const &""'"); 
+  }
+  if (!argp1) {
+    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "Ref" "', argument " "1"" of type '" "gip::GeoImage const &""'"); 
+  }
+  arg1 = reinterpret_cast< gip::GeoImage * >(argp1);
+  {
+    std::string *ptr = (std::string *)0;
+    int res = SWIG_AsPtr_std_string(obj1, &ptr);
+    if (!SWIG_IsOK(res) || !ptr) {
+      SWIG_exception_fail(SWIG_ArgError((ptr ? res : SWIG_TypeError)), "in method '" "Ref" "', argument " "2"" of type '" "std::string""'"); 
+    }
+    arg2 = *ptr;
+    if (SWIG_IsNewObj(res)) delete ptr;
+  }
+  {
+    try {
+      result = gip::Ref((gip::GeoImage const &)*arg1,arg2);
+    } catch (const std::exception& e) {
+      SWIG_exception(SWIG_RuntimeError, e.what());
+    }
+  }
+  resultobj = SWIG_NewPointerObj((new gip::GeoImage(static_cast< const gip::GeoImage& >(result))), SWIGTYPE_p_gip__GeoImage, SWIG_POINTER_OWN |  0 );
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_RGB(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  gip::GeoImage *arg1 = 0 ;
+  std::string arg2 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  SwigValueWrapper< gip::GeoImage > result;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OO:RGB",&obj0,&obj1)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1, SWIGTYPE_p_gip__GeoImage,  0  | 0);
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "RGB" "', argument " "1"" of type '" "gip::GeoImage const &""'"); 
+  }
+  if (!argp1) {
+    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "RGB" "', argument " "1"" of type '" "gip::GeoImage const &""'"); 
+  }
+  arg1 = reinterpret_cast< gip::GeoImage * >(argp1);
+  {
+    std::string *ptr = (std::string *)0;
+    int res = SWIG_AsPtr_std_string(obj1, &ptr);
+    if (!SWIG_IsOK(res) || !ptr) {
+      SWIG_exception_fail(SWIG_ArgError((ptr ? res : SWIG_TypeError)), "in method '" "RGB" "', argument " "2"" of type '" "std::string""'"); 
+    }
+    arg2 = *ptr;
+    if (SWIG_IsNewObj(res)) delete ptr;
+  }
+  {
+    try {
+      result = gip::RGB((gip::GeoImage const &)*arg1,arg2);
     } catch (const std::exception& e) {
       SWIG_exception(SWIG_RuntimeError, e.what());
     }
@@ -16401,6 +16588,54 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_Options_WorkDir(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  std::string result;
+  
+  if (!PyArg_ParseTuple(args,(char *)":Options_WorkDir")) SWIG_fail;
+  {
+    try {
+      result = gip::Options::WorkDir();
+    } catch (const std::exception& e) {
+      SWIG_exception(SWIG_RuntimeError, e.what());
+    }
+  }
+  resultobj = SWIG_From_std_string(static_cast< std::string >(result));
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_Options_SetWorkDir(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  std::string arg1 ;
+  PyObject * obj0 = 0 ;
+  
+  if (!PyArg_ParseTuple(args,(char *)"O:Options_SetWorkDir",&obj0)) SWIG_fail;
+  {
+    std::string *ptr = (std::string *)0;
+    int res = SWIG_AsPtr_std_string(obj0, &ptr);
+    if (!SWIG_IsOK(res) || !ptr) {
+      SWIG_exception_fail(SWIG_ArgError((ptr ? res : SWIG_TypeError)), "in method '" "Options_SetWorkDir" "', argument " "1"" of type '" "std::string""'"); 
+    }
+    arg1 = *ptr;
+    if (SWIG_IsNewObj(res)) delete ptr;
+  }
+  {
+    try {
+      gip::Options::SetWorkDir(arg1);
+    } catch (const std::exception& e) {
+      SWIG_exception(SWIG_RuntimeError, e.what());
+    }
+  }
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_new_Options(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   gip::Options *result = 0 ;
@@ -16583,10 +16818,10 @@ fail:
 SWIGINTERN PyObject *_wrap_GeoRaster_byte_Read__SWIG_0(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   gip::GeoRasterIO< unsigned char > *arg1 = (gip::GeoRasterIO< unsigned char > *) 0 ;
-  gip::UNITS arg2 ;
+  bool arg2 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  int val2 ;
+  bool val2 ;
   int ecode2 = 0 ;
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
@@ -16598,11 +16833,11 @@ SWIGINTERN PyObject *_wrap_GeoRaster_byte_Read__SWIG_0(PyObject *SWIGUNUSEDPARM(
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoRaster_byte_Read" "', argument " "1"" of type '" "gip::GeoRasterIO< unsigned char > const *""'"); 
   }
   arg1 = reinterpret_cast< gip::GeoRasterIO< unsigned char > * >(argp1);
-  ecode2 = SWIG_AsVal_int(obj1, &val2);
+  ecode2 = SWIG_AsVal_bool(obj1, &val2);
   if (!SWIG_IsOK(ecode2)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "GeoRaster_byte_Read" "', argument " "2"" of type '" "gip::UNITS""'");
+    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "GeoRaster_byte_Read" "', argument " "2"" of type '" "bool""'");
   } 
-  arg2 = static_cast< gip::UNITS >(val2);
+  arg2 = static_cast< bool >(val2);
   {
     try {
       result = ((gip::GeoRasterIO< unsigned char > const *)arg1)->Read(arg2);
@@ -16653,12 +16888,12 @@ SWIGINTERN PyObject *_wrap_GeoRaster_byte_Read__SWIG_2(PyObject *SWIGUNUSEDPARM(
   PyObject *resultobj = 0;
   gip::GeoRasterIO< unsigned char > *arg1 = (gip::GeoRasterIO< unsigned char > *) 0 ;
   gip::GeoRasterIO< unsigned char >::bbox arg2 ;
-  gip::UNITS arg3 ;
+  bool arg3 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   void *argp2 ;
   int res2 = 0 ;
-  int val3 ;
+  bool val3 ;
   int ecode3 = 0 ;
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
@@ -16684,11 +16919,11 @@ SWIGINTERN PyObject *_wrap_GeoRaster_byte_Read__SWIG_2(PyObject *SWIGUNUSEDPARM(
       if (SWIG_IsNewObj(res2)) delete temp;
     }
   }
-  ecode3 = SWIG_AsVal_int(obj2, &val3);
+  ecode3 = SWIG_AsVal_bool(obj2, &val3);
   if (!SWIG_IsOK(ecode3)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "GeoRaster_byte_Read" "', argument " "3"" of type '" "gip::UNITS""'");
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "GeoRaster_byte_Read" "', argument " "3"" of type '" "bool""'");
   } 
-  arg3 = static_cast< gip::UNITS >(val3);
+  arg3 = static_cast< bool >(val3);
   {
     try {
       result = ((gip::GeoRasterIO< unsigned char > const *)arg1)->Read(arg2,arg3);
@@ -16791,7 +17026,7 @@ SWIGINTERN PyObject *_wrap_GeoRaster_byte_Read(PyObject *self, PyObject *args) {
     _v = SWIG_CheckState(res);
     if (_v) {
       {
-        int res = SWIG_AsVal_int(argv[1], NULL);
+        int res = SWIG_AsVal_bool(argv[1], NULL);
         _v = SWIG_CheckState(res);
       }
       if (_v) {
@@ -16809,7 +17044,7 @@ SWIGINTERN PyObject *_wrap_GeoRaster_byte_Read(PyObject *self, PyObject *args) {
       _v = SWIG_CheckState(res);
       if (_v) {
         {
-          int res = SWIG_AsVal_int(argv[2], NULL);
+          int res = SWIG_AsVal_bool(argv[2], NULL);
           _v = SWIG_CheckState(res);
         }
         if (_v) {
@@ -16822,9 +17057,9 @@ SWIGINTERN PyObject *_wrap_GeoRaster_byte_Read(PyObject *self, PyObject *args) {
 fail:
   SWIG_SetErrorMsg(PyExc_NotImplementedError,"Wrong number or type of arguments for overloaded function 'GeoRaster_byte_Read'.\n"
     "  Possible C/C++ prototypes are:\n"
-    "    gip::GeoRasterIO< unsigned char >::Read(gip::UNITS) const\n"
+    "    gip::GeoRasterIO< unsigned char >::Read(bool) const\n"
     "    gip::GeoRasterIO< unsigned char >::Read() const\n"
-    "    gip::GeoRasterIO< unsigned char >::Read(gip::GeoRasterIO< unsigned char >::bbox,gip::UNITS) const\n"
+    "    gip::GeoRasterIO< unsigned char >::Read(gip::GeoRasterIO< unsigned char >::bbox,bool) const\n"
     "    gip::GeoRasterIO< unsigned char >::Read(gip::GeoRasterIO< unsigned char >::bbox) const\n");
   return 0;
 }
@@ -17011,147 +17246,6 @@ fail:
     "  Possible C/C++ prototypes are:\n"
     "    gip::GeoRasterIO< unsigned char >::Write(cimg_library::CImg< unsigned char > &,gip::GeoRasterIO< unsigned char >::bbox,bool)\n"
     "    gip::GeoRasterIO< unsigned char >::Write(cimg_library::CImg< unsigned char > &,gip::GeoRasterIO< unsigned char >::bbox)\n");
-  return 0;
-}
-
-
-SWIGINTERN PyObject *_wrap_GeoRaster_byte_Copy__SWIG_0(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  gip::GeoRasterIO< unsigned char > *arg1 = (gip::GeoRasterIO< unsigned char > *) 0 ;
-  gip::GeoRaster *arg2 = 0 ;
-  gip::UNITS arg3 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  void *argp2 = 0 ;
-  int res2 = 0 ;
-  int val3 ;
-  int ecode3 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
-  PyObject * obj2 = 0 ;
-  gip::GeoRasterIO< unsigned char > *result = 0 ;
-  
-  if (!PyArg_ParseTuple(args,(char *)"OOO:GeoRaster_byte_Copy",&obj0,&obj1,&obj2)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__GeoRasterIOT_unsigned_char_t, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoRaster_byte_Copy" "', argument " "1"" of type '" "gip::GeoRasterIO< unsigned char > *""'"); 
-  }
-  arg1 = reinterpret_cast< gip::GeoRasterIO< unsigned char > * >(argp1);
-  res2 = SWIG_ConvertPtr(obj1, &argp2, SWIGTYPE_p_gip__GeoRaster,  0  | 0);
-  if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "GeoRaster_byte_Copy" "', argument " "2"" of type '" "gip::GeoRaster const &""'"); 
-  }
-  if (!argp2) {
-    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "GeoRaster_byte_Copy" "', argument " "2"" of type '" "gip::GeoRaster const &""'"); 
-  }
-  arg2 = reinterpret_cast< gip::GeoRaster * >(argp2);
-  ecode3 = SWIG_AsVal_int(obj2, &val3);
-  if (!SWIG_IsOK(ecode3)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "GeoRaster_byte_Copy" "', argument " "3"" of type '" "gip::UNITS""'");
-  } 
-  arg3 = static_cast< gip::UNITS >(val3);
-  {
-    try {
-      result = (gip::GeoRasterIO< unsigned char > *) &(arg1)->Copy((gip::GeoRaster const &)*arg2,arg3);
-    } catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
-  }
-  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_gip__GeoRasterIOT_unsigned_char_t, 0 |  0 );
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_GeoRaster_byte_Copy__SWIG_1(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  gip::GeoRasterIO< unsigned char > *arg1 = (gip::GeoRasterIO< unsigned char > *) 0 ;
-  gip::GeoRaster *arg2 = 0 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  void *argp2 = 0 ;
-  int res2 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
-  gip::GeoRasterIO< unsigned char > *result = 0 ;
-  
-  if (!PyArg_ParseTuple(args,(char *)"OO:GeoRaster_byte_Copy",&obj0,&obj1)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__GeoRasterIOT_unsigned_char_t, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoRaster_byte_Copy" "', argument " "1"" of type '" "gip::GeoRasterIO< unsigned char > *""'"); 
-  }
-  arg1 = reinterpret_cast< gip::GeoRasterIO< unsigned char > * >(argp1);
-  res2 = SWIG_ConvertPtr(obj1, &argp2, SWIGTYPE_p_gip__GeoRaster,  0  | 0);
-  if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "GeoRaster_byte_Copy" "', argument " "2"" of type '" "gip::GeoRaster const &""'"); 
-  }
-  if (!argp2) {
-    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "GeoRaster_byte_Copy" "', argument " "2"" of type '" "gip::GeoRaster const &""'"); 
-  }
-  arg2 = reinterpret_cast< gip::GeoRaster * >(argp2);
-  {
-    try {
-      result = (gip::GeoRasterIO< unsigned char > *) &(arg1)->Copy((gip::GeoRaster const &)*arg2);
-    } catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
-  }
-  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_gip__GeoRasterIOT_unsigned_char_t, 0 |  0 );
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_GeoRaster_byte_Copy(PyObject *self, PyObject *args) {
-  int argc;
-  PyObject *argv[4];
-  int ii;
-  
-  if (!PyTuple_Check(args)) SWIG_fail;
-  argc = args ? (int)PyObject_Length(args) : 0;
-  for (ii = 0; (ii < 3) && (ii < argc); ii++) {
-    argv[ii] = PyTuple_GET_ITEM(args,ii);
-  }
-  if (argc == 2) {
-    int _v;
-    void *vptr = 0;
-    int res = SWIG_ConvertPtr(argv[0], &vptr, SWIGTYPE_p_gip__GeoRasterIOT_unsigned_char_t, 0);
-    _v = SWIG_CheckState(res);
-    if (_v) {
-      int res = SWIG_ConvertPtr(argv[1], 0, SWIGTYPE_p_gip__GeoRaster, 0);
-      _v = SWIG_CheckState(res);
-      if (_v) {
-        return _wrap_GeoRaster_byte_Copy__SWIG_1(self, args);
-      }
-    }
-  }
-  if (argc == 3) {
-    int _v;
-    void *vptr = 0;
-    int res = SWIG_ConvertPtr(argv[0], &vptr, SWIGTYPE_p_gip__GeoRasterIOT_unsigned_char_t, 0);
-    _v = SWIG_CheckState(res);
-    if (_v) {
-      int res = SWIG_ConvertPtr(argv[1], 0, SWIGTYPE_p_gip__GeoRaster, 0);
-      _v = SWIG_CheckState(res);
-      if (_v) {
-        {
-          int res = SWIG_AsVal_int(argv[2], NULL);
-          _v = SWIG_CheckState(res);
-        }
-        if (_v) {
-          return _wrap_GeoRaster_byte_Copy__SWIG_0(self, args);
-        }
-      }
-    }
-  }
-  
-fail:
-  SWIG_SetErrorMsg(PyExc_NotImplementedError,"Wrong number or type of arguments for overloaded function 'GeoRaster_byte_Copy'.\n"
-    "  Possible C/C++ prototypes are:\n"
-    "    gip::GeoRasterIO< unsigned char >::Copy(gip::GeoRaster const &,gip::UNITS)\n"
-    "    gip::GeoRasterIO< unsigned char >::Copy(gip::GeoRaster const &)\n");
   return 0;
 }
 
@@ -17361,6 +17455,53 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_GeoRaster_byte_Ref(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  gip::GeoRasterIO< unsigned char > *arg1 = (gip::GeoRasterIO< unsigned char > *) 0 ;
+  gip::GeoRasterIO< unsigned char >::bbox arg2 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  void *argp2 ;
+  int res2 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  cimg_library::CImg< float > result;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OO:GeoRaster_byte_Ref",&obj0,&obj1)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__GeoRasterIOT_unsigned_char_t, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoRaster_byte_Ref" "', argument " "1"" of type '" "gip::GeoRasterIO< unsigned char > *""'"); 
+  }
+  arg1 = reinterpret_cast< gip::GeoRasterIO< unsigned char > * >(argp1);
+  {
+    res2 = SWIG_ConvertPtr(obj1, &argp2, SWIGTYPE_p_boost__geometry__model__boxT_gip__point_t,  0  | 0);
+    if (!SWIG_IsOK(res2)) {
+      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "GeoRaster_byte_Ref" "', argument " "2"" of type '" "gip::GeoRasterIO< unsigned char >::bbox""'"); 
+    }  
+    if (!argp2) {
+      SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "GeoRaster_byte_Ref" "', argument " "2"" of type '" "gip::GeoRasterIO< unsigned char >::bbox""'");
+    } else {
+      gip::GeoRasterIO< unsigned char >::bbox * temp = reinterpret_cast< gip::GeoRasterIO< unsigned char >::bbox * >(argp2);
+      arg2 = *temp;
+      if (SWIG_IsNewObj(res2)) delete temp;
+    }
+  }
+  {
+    try {
+      result = (arg1)->Ref(arg2);
+    } catch (const std::exception& e) {
+      SWIG_exception(SWIG_RuntimeError, e.what());
+    }
+  }
+  {
+    return CImgToArr(result); 
+  }
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *GeoRaster_byte_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *obj;
   if (!PyArg_ParseTuple(args,(char*)"O:swigregister", &obj)) return NULL;
@@ -17497,10 +17638,10 @@ fail:
 SWIGINTERN PyObject *_wrap_GeoRaster_int16_Read__SWIG_0(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   gip::GeoRasterIO< short > *arg1 = (gip::GeoRasterIO< short > *) 0 ;
-  gip::UNITS arg2 ;
+  bool arg2 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  int val2 ;
+  bool val2 ;
   int ecode2 = 0 ;
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
@@ -17512,11 +17653,11 @@ SWIGINTERN PyObject *_wrap_GeoRaster_int16_Read__SWIG_0(PyObject *SWIGUNUSEDPARM
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoRaster_int16_Read" "', argument " "1"" of type '" "gip::GeoRasterIO< short > const *""'"); 
   }
   arg1 = reinterpret_cast< gip::GeoRasterIO< short > * >(argp1);
-  ecode2 = SWIG_AsVal_int(obj1, &val2);
+  ecode2 = SWIG_AsVal_bool(obj1, &val2);
   if (!SWIG_IsOK(ecode2)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "GeoRaster_int16_Read" "', argument " "2"" of type '" "gip::UNITS""'");
+    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "GeoRaster_int16_Read" "', argument " "2"" of type '" "bool""'");
   } 
-  arg2 = static_cast< gip::UNITS >(val2);
+  arg2 = static_cast< bool >(val2);
   {
     try {
       result = ((gip::GeoRasterIO< short > const *)arg1)->Read(arg2);
@@ -17567,12 +17708,12 @@ SWIGINTERN PyObject *_wrap_GeoRaster_int16_Read__SWIG_2(PyObject *SWIGUNUSEDPARM
   PyObject *resultobj = 0;
   gip::GeoRasterIO< short > *arg1 = (gip::GeoRasterIO< short > *) 0 ;
   gip::GeoRasterIO< short >::bbox arg2 ;
-  gip::UNITS arg3 ;
+  bool arg3 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   void *argp2 ;
   int res2 = 0 ;
-  int val3 ;
+  bool val3 ;
   int ecode3 = 0 ;
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
@@ -17598,11 +17739,11 @@ SWIGINTERN PyObject *_wrap_GeoRaster_int16_Read__SWIG_2(PyObject *SWIGUNUSEDPARM
       if (SWIG_IsNewObj(res2)) delete temp;
     }
   }
-  ecode3 = SWIG_AsVal_int(obj2, &val3);
+  ecode3 = SWIG_AsVal_bool(obj2, &val3);
   if (!SWIG_IsOK(ecode3)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "GeoRaster_int16_Read" "', argument " "3"" of type '" "gip::UNITS""'");
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "GeoRaster_int16_Read" "', argument " "3"" of type '" "bool""'");
   } 
-  arg3 = static_cast< gip::UNITS >(val3);
+  arg3 = static_cast< bool >(val3);
   {
     try {
       result = ((gip::GeoRasterIO< short > const *)arg1)->Read(arg2,arg3);
@@ -17705,7 +17846,7 @@ SWIGINTERN PyObject *_wrap_GeoRaster_int16_Read(PyObject *self, PyObject *args) 
     _v = SWIG_CheckState(res);
     if (_v) {
       {
-        int res = SWIG_AsVal_int(argv[1], NULL);
+        int res = SWIG_AsVal_bool(argv[1], NULL);
         _v = SWIG_CheckState(res);
       }
       if (_v) {
@@ -17723,7 +17864,7 @@ SWIGINTERN PyObject *_wrap_GeoRaster_int16_Read(PyObject *self, PyObject *args) 
       _v = SWIG_CheckState(res);
       if (_v) {
         {
-          int res = SWIG_AsVal_int(argv[2], NULL);
+          int res = SWIG_AsVal_bool(argv[2], NULL);
           _v = SWIG_CheckState(res);
         }
         if (_v) {
@@ -17736,9 +17877,9 @@ SWIGINTERN PyObject *_wrap_GeoRaster_int16_Read(PyObject *self, PyObject *args) 
 fail:
   SWIG_SetErrorMsg(PyExc_NotImplementedError,"Wrong number or type of arguments for overloaded function 'GeoRaster_int16_Read'.\n"
     "  Possible C/C++ prototypes are:\n"
-    "    gip::GeoRasterIO< short >::Read(gip::UNITS) const\n"
+    "    gip::GeoRasterIO< short >::Read(bool) const\n"
     "    gip::GeoRasterIO< short >::Read() const\n"
-    "    gip::GeoRasterIO< short >::Read(gip::GeoRasterIO< short >::bbox,gip::UNITS) const\n"
+    "    gip::GeoRasterIO< short >::Read(gip::GeoRasterIO< short >::bbox,bool) const\n"
     "    gip::GeoRasterIO< short >::Read(gip::GeoRasterIO< short >::bbox) const\n");
   return 0;
 }
@@ -17925,147 +18066,6 @@ fail:
     "  Possible C/C++ prototypes are:\n"
     "    gip::GeoRasterIO< short >::Write(cimg_library::CImg< short > &,gip::GeoRasterIO< short >::bbox,bool)\n"
     "    gip::GeoRasterIO< short >::Write(cimg_library::CImg< short > &,gip::GeoRasterIO< short >::bbox)\n");
-  return 0;
-}
-
-
-SWIGINTERN PyObject *_wrap_GeoRaster_int16_Copy__SWIG_0(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  gip::GeoRasterIO< short > *arg1 = (gip::GeoRasterIO< short > *) 0 ;
-  gip::GeoRaster *arg2 = 0 ;
-  gip::UNITS arg3 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  void *argp2 = 0 ;
-  int res2 = 0 ;
-  int val3 ;
-  int ecode3 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
-  PyObject * obj2 = 0 ;
-  gip::GeoRasterIO< short > *result = 0 ;
-  
-  if (!PyArg_ParseTuple(args,(char *)"OOO:GeoRaster_int16_Copy",&obj0,&obj1,&obj2)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__GeoRasterIOT_short_t, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoRaster_int16_Copy" "', argument " "1"" of type '" "gip::GeoRasterIO< short > *""'"); 
-  }
-  arg1 = reinterpret_cast< gip::GeoRasterIO< short > * >(argp1);
-  res2 = SWIG_ConvertPtr(obj1, &argp2, SWIGTYPE_p_gip__GeoRaster,  0  | 0);
-  if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "GeoRaster_int16_Copy" "', argument " "2"" of type '" "gip::GeoRaster const &""'"); 
-  }
-  if (!argp2) {
-    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "GeoRaster_int16_Copy" "', argument " "2"" of type '" "gip::GeoRaster const &""'"); 
-  }
-  arg2 = reinterpret_cast< gip::GeoRaster * >(argp2);
-  ecode3 = SWIG_AsVal_int(obj2, &val3);
-  if (!SWIG_IsOK(ecode3)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "GeoRaster_int16_Copy" "', argument " "3"" of type '" "gip::UNITS""'");
-  } 
-  arg3 = static_cast< gip::UNITS >(val3);
-  {
-    try {
-      result = (gip::GeoRasterIO< short > *) &(arg1)->Copy((gip::GeoRaster const &)*arg2,arg3);
-    } catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
-  }
-  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_gip__GeoRasterIOT_short_t, 0 |  0 );
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_GeoRaster_int16_Copy__SWIG_1(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  gip::GeoRasterIO< short > *arg1 = (gip::GeoRasterIO< short > *) 0 ;
-  gip::GeoRaster *arg2 = 0 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  void *argp2 = 0 ;
-  int res2 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
-  gip::GeoRasterIO< short > *result = 0 ;
-  
-  if (!PyArg_ParseTuple(args,(char *)"OO:GeoRaster_int16_Copy",&obj0,&obj1)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__GeoRasterIOT_short_t, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoRaster_int16_Copy" "', argument " "1"" of type '" "gip::GeoRasterIO< short > *""'"); 
-  }
-  arg1 = reinterpret_cast< gip::GeoRasterIO< short > * >(argp1);
-  res2 = SWIG_ConvertPtr(obj1, &argp2, SWIGTYPE_p_gip__GeoRaster,  0  | 0);
-  if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "GeoRaster_int16_Copy" "', argument " "2"" of type '" "gip::GeoRaster const &""'"); 
-  }
-  if (!argp2) {
-    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "GeoRaster_int16_Copy" "', argument " "2"" of type '" "gip::GeoRaster const &""'"); 
-  }
-  arg2 = reinterpret_cast< gip::GeoRaster * >(argp2);
-  {
-    try {
-      result = (gip::GeoRasterIO< short > *) &(arg1)->Copy((gip::GeoRaster const &)*arg2);
-    } catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
-  }
-  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_gip__GeoRasterIOT_short_t, 0 |  0 );
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_GeoRaster_int16_Copy(PyObject *self, PyObject *args) {
-  int argc;
-  PyObject *argv[4];
-  int ii;
-  
-  if (!PyTuple_Check(args)) SWIG_fail;
-  argc = args ? (int)PyObject_Length(args) : 0;
-  for (ii = 0; (ii < 3) && (ii < argc); ii++) {
-    argv[ii] = PyTuple_GET_ITEM(args,ii);
-  }
-  if (argc == 2) {
-    int _v;
-    void *vptr = 0;
-    int res = SWIG_ConvertPtr(argv[0], &vptr, SWIGTYPE_p_gip__GeoRasterIOT_short_t, 0);
-    _v = SWIG_CheckState(res);
-    if (_v) {
-      int res = SWIG_ConvertPtr(argv[1], 0, SWIGTYPE_p_gip__GeoRaster, 0);
-      _v = SWIG_CheckState(res);
-      if (_v) {
-        return _wrap_GeoRaster_int16_Copy__SWIG_1(self, args);
-      }
-    }
-  }
-  if (argc == 3) {
-    int _v;
-    void *vptr = 0;
-    int res = SWIG_ConvertPtr(argv[0], &vptr, SWIGTYPE_p_gip__GeoRasterIOT_short_t, 0);
-    _v = SWIG_CheckState(res);
-    if (_v) {
-      int res = SWIG_ConvertPtr(argv[1], 0, SWIGTYPE_p_gip__GeoRaster, 0);
-      _v = SWIG_CheckState(res);
-      if (_v) {
-        {
-          int res = SWIG_AsVal_int(argv[2], NULL);
-          _v = SWIG_CheckState(res);
-        }
-        if (_v) {
-          return _wrap_GeoRaster_int16_Copy__SWIG_0(self, args);
-        }
-      }
-    }
-  }
-  
-fail:
-  SWIG_SetErrorMsg(PyExc_NotImplementedError,"Wrong number or type of arguments for overloaded function 'GeoRaster_int16_Copy'.\n"
-    "  Possible C/C++ prototypes are:\n"
-    "    gip::GeoRasterIO< short >::Copy(gip::GeoRaster const &,gip::UNITS)\n"
-    "    gip::GeoRasterIO< short >::Copy(gip::GeoRaster const &)\n");
   return 0;
 }
 
@@ -18275,6 +18275,53 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_GeoRaster_int16_Ref(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  gip::GeoRasterIO< short > *arg1 = (gip::GeoRasterIO< short > *) 0 ;
+  gip::GeoRasterIO< short >::bbox arg2 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  void *argp2 ;
+  int res2 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  cimg_library::CImg< float > result;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OO:GeoRaster_int16_Ref",&obj0,&obj1)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__GeoRasterIOT_short_t, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoRaster_int16_Ref" "', argument " "1"" of type '" "gip::GeoRasterIO< short > *""'"); 
+  }
+  arg1 = reinterpret_cast< gip::GeoRasterIO< short > * >(argp1);
+  {
+    res2 = SWIG_ConvertPtr(obj1, &argp2, SWIGTYPE_p_boost__geometry__model__boxT_gip__point_t,  0  | 0);
+    if (!SWIG_IsOK(res2)) {
+      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "GeoRaster_int16_Ref" "', argument " "2"" of type '" "gip::GeoRasterIO< short >::bbox""'"); 
+    }  
+    if (!argp2) {
+      SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "GeoRaster_int16_Ref" "', argument " "2"" of type '" "gip::GeoRasterIO< short >::bbox""'");
+    } else {
+      gip::GeoRasterIO< short >::bbox * temp = reinterpret_cast< gip::GeoRasterIO< short >::bbox * >(argp2);
+      arg2 = *temp;
+      if (SWIG_IsNewObj(res2)) delete temp;
+    }
+  }
+  {
+    try {
+      result = (arg1)->Ref(arg2);
+    } catch (const std::exception& e) {
+      SWIG_exception(SWIG_RuntimeError, e.what());
+    }
+  }
+  {
+    return CImgToArr(result); 
+  }
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *GeoRaster_int16_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *obj;
   if (!PyArg_ParseTuple(args,(char*)"O:swigregister", &obj)) return NULL;
@@ -18411,10 +18458,10 @@ fail:
 SWIGINTERN PyObject *_wrap_GeoRaster_int32_Read__SWIG_0(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   gip::GeoRasterIO< int > *arg1 = (gip::GeoRasterIO< int > *) 0 ;
-  gip::UNITS arg2 ;
+  bool arg2 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  int val2 ;
+  bool val2 ;
   int ecode2 = 0 ;
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
@@ -18426,11 +18473,11 @@ SWIGINTERN PyObject *_wrap_GeoRaster_int32_Read__SWIG_0(PyObject *SWIGUNUSEDPARM
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoRaster_int32_Read" "', argument " "1"" of type '" "gip::GeoRasterIO< int > const *""'"); 
   }
   arg1 = reinterpret_cast< gip::GeoRasterIO< int > * >(argp1);
-  ecode2 = SWIG_AsVal_int(obj1, &val2);
+  ecode2 = SWIG_AsVal_bool(obj1, &val2);
   if (!SWIG_IsOK(ecode2)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "GeoRaster_int32_Read" "', argument " "2"" of type '" "gip::UNITS""'");
+    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "GeoRaster_int32_Read" "', argument " "2"" of type '" "bool""'");
   } 
-  arg2 = static_cast< gip::UNITS >(val2);
+  arg2 = static_cast< bool >(val2);
   {
     try {
       result = ((gip::GeoRasterIO< int > const *)arg1)->Read(arg2);
@@ -18481,12 +18528,12 @@ SWIGINTERN PyObject *_wrap_GeoRaster_int32_Read__SWIG_2(PyObject *SWIGUNUSEDPARM
   PyObject *resultobj = 0;
   gip::GeoRasterIO< int > *arg1 = (gip::GeoRasterIO< int > *) 0 ;
   gip::GeoRasterIO< int >::bbox arg2 ;
-  gip::UNITS arg3 ;
+  bool arg3 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   void *argp2 ;
   int res2 = 0 ;
-  int val3 ;
+  bool val3 ;
   int ecode3 = 0 ;
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
@@ -18512,11 +18559,11 @@ SWIGINTERN PyObject *_wrap_GeoRaster_int32_Read__SWIG_2(PyObject *SWIGUNUSEDPARM
       if (SWIG_IsNewObj(res2)) delete temp;
     }
   }
-  ecode3 = SWIG_AsVal_int(obj2, &val3);
+  ecode3 = SWIG_AsVal_bool(obj2, &val3);
   if (!SWIG_IsOK(ecode3)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "GeoRaster_int32_Read" "', argument " "3"" of type '" "gip::UNITS""'");
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "GeoRaster_int32_Read" "', argument " "3"" of type '" "bool""'");
   } 
-  arg3 = static_cast< gip::UNITS >(val3);
+  arg3 = static_cast< bool >(val3);
   {
     try {
       result = ((gip::GeoRasterIO< int > const *)arg1)->Read(arg2,arg3);
@@ -18619,7 +18666,7 @@ SWIGINTERN PyObject *_wrap_GeoRaster_int32_Read(PyObject *self, PyObject *args) 
     _v = SWIG_CheckState(res);
     if (_v) {
       {
-        int res = SWIG_AsVal_int(argv[1], NULL);
+        int res = SWIG_AsVal_bool(argv[1], NULL);
         _v = SWIG_CheckState(res);
       }
       if (_v) {
@@ -18637,7 +18684,7 @@ SWIGINTERN PyObject *_wrap_GeoRaster_int32_Read(PyObject *self, PyObject *args) 
       _v = SWIG_CheckState(res);
       if (_v) {
         {
-          int res = SWIG_AsVal_int(argv[2], NULL);
+          int res = SWIG_AsVal_bool(argv[2], NULL);
           _v = SWIG_CheckState(res);
         }
         if (_v) {
@@ -18650,9 +18697,9 @@ SWIGINTERN PyObject *_wrap_GeoRaster_int32_Read(PyObject *self, PyObject *args) 
 fail:
   SWIG_SetErrorMsg(PyExc_NotImplementedError,"Wrong number or type of arguments for overloaded function 'GeoRaster_int32_Read'.\n"
     "  Possible C/C++ prototypes are:\n"
-    "    gip::GeoRasterIO< int >::Read(gip::UNITS) const\n"
+    "    gip::GeoRasterIO< int >::Read(bool) const\n"
     "    gip::GeoRasterIO< int >::Read() const\n"
-    "    gip::GeoRasterIO< int >::Read(gip::GeoRasterIO< int >::bbox,gip::UNITS) const\n"
+    "    gip::GeoRasterIO< int >::Read(gip::GeoRasterIO< int >::bbox,bool) const\n"
     "    gip::GeoRasterIO< int >::Read(gip::GeoRasterIO< int >::bbox) const\n");
   return 0;
 }
@@ -18839,147 +18886,6 @@ fail:
     "  Possible C/C++ prototypes are:\n"
     "    gip::GeoRasterIO< int >::Write(cimg_library::CImg< int > &,gip::GeoRasterIO< int >::bbox,bool)\n"
     "    gip::GeoRasterIO< int >::Write(cimg_library::CImg< int > &,gip::GeoRasterIO< int >::bbox)\n");
-  return 0;
-}
-
-
-SWIGINTERN PyObject *_wrap_GeoRaster_int32_Copy__SWIG_0(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  gip::GeoRasterIO< int > *arg1 = (gip::GeoRasterIO< int > *) 0 ;
-  gip::GeoRaster *arg2 = 0 ;
-  gip::UNITS arg3 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  void *argp2 = 0 ;
-  int res2 = 0 ;
-  int val3 ;
-  int ecode3 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
-  PyObject * obj2 = 0 ;
-  gip::GeoRasterIO< int > *result = 0 ;
-  
-  if (!PyArg_ParseTuple(args,(char *)"OOO:GeoRaster_int32_Copy",&obj0,&obj1,&obj2)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__GeoRasterIOT_int_t, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoRaster_int32_Copy" "', argument " "1"" of type '" "gip::GeoRasterIO< int > *""'"); 
-  }
-  arg1 = reinterpret_cast< gip::GeoRasterIO< int > * >(argp1);
-  res2 = SWIG_ConvertPtr(obj1, &argp2, SWIGTYPE_p_gip__GeoRaster,  0  | 0);
-  if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "GeoRaster_int32_Copy" "', argument " "2"" of type '" "gip::GeoRaster const &""'"); 
-  }
-  if (!argp2) {
-    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "GeoRaster_int32_Copy" "', argument " "2"" of type '" "gip::GeoRaster const &""'"); 
-  }
-  arg2 = reinterpret_cast< gip::GeoRaster * >(argp2);
-  ecode3 = SWIG_AsVal_int(obj2, &val3);
-  if (!SWIG_IsOK(ecode3)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "GeoRaster_int32_Copy" "', argument " "3"" of type '" "gip::UNITS""'");
-  } 
-  arg3 = static_cast< gip::UNITS >(val3);
-  {
-    try {
-      result = (gip::GeoRasterIO< int > *) &(arg1)->Copy((gip::GeoRaster const &)*arg2,arg3);
-    } catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
-  }
-  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_gip__GeoRasterIOT_int_t, 0 |  0 );
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_GeoRaster_int32_Copy__SWIG_1(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  gip::GeoRasterIO< int > *arg1 = (gip::GeoRasterIO< int > *) 0 ;
-  gip::GeoRaster *arg2 = 0 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  void *argp2 = 0 ;
-  int res2 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
-  gip::GeoRasterIO< int > *result = 0 ;
-  
-  if (!PyArg_ParseTuple(args,(char *)"OO:GeoRaster_int32_Copy",&obj0,&obj1)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__GeoRasterIOT_int_t, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoRaster_int32_Copy" "', argument " "1"" of type '" "gip::GeoRasterIO< int > *""'"); 
-  }
-  arg1 = reinterpret_cast< gip::GeoRasterIO< int > * >(argp1);
-  res2 = SWIG_ConvertPtr(obj1, &argp2, SWIGTYPE_p_gip__GeoRaster,  0  | 0);
-  if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "GeoRaster_int32_Copy" "', argument " "2"" of type '" "gip::GeoRaster const &""'"); 
-  }
-  if (!argp2) {
-    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "GeoRaster_int32_Copy" "', argument " "2"" of type '" "gip::GeoRaster const &""'"); 
-  }
-  arg2 = reinterpret_cast< gip::GeoRaster * >(argp2);
-  {
-    try {
-      result = (gip::GeoRasterIO< int > *) &(arg1)->Copy((gip::GeoRaster const &)*arg2);
-    } catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
-  }
-  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_gip__GeoRasterIOT_int_t, 0 |  0 );
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_GeoRaster_int32_Copy(PyObject *self, PyObject *args) {
-  int argc;
-  PyObject *argv[4];
-  int ii;
-  
-  if (!PyTuple_Check(args)) SWIG_fail;
-  argc = args ? (int)PyObject_Length(args) : 0;
-  for (ii = 0; (ii < 3) && (ii < argc); ii++) {
-    argv[ii] = PyTuple_GET_ITEM(args,ii);
-  }
-  if (argc == 2) {
-    int _v;
-    void *vptr = 0;
-    int res = SWIG_ConvertPtr(argv[0], &vptr, SWIGTYPE_p_gip__GeoRasterIOT_int_t, 0);
-    _v = SWIG_CheckState(res);
-    if (_v) {
-      int res = SWIG_ConvertPtr(argv[1], 0, SWIGTYPE_p_gip__GeoRaster, 0);
-      _v = SWIG_CheckState(res);
-      if (_v) {
-        return _wrap_GeoRaster_int32_Copy__SWIG_1(self, args);
-      }
-    }
-  }
-  if (argc == 3) {
-    int _v;
-    void *vptr = 0;
-    int res = SWIG_ConvertPtr(argv[0], &vptr, SWIGTYPE_p_gip__GeoRasterIOT_int_t, 0);
-    _v = SWIG_CheckState(res);
-    if (_v) {
-      int res = SWIG_ConvertPtr(argv[1], 0, SWIGTYPE_p_gip__GeoRaster, 0);
-      _v = SWIG_CheckState(res);
-      if (_v) {
-        {
-          int res = SWIG_AsVal_int(argv[2], NULL);
-          _v = SWIG_CheckState(res);
-        }
-        if (_v) {
-          return _wrap_GeoRaster_int32_Copy__SWIG_0(self, args);
-        }
-      }
-    }
-  }
-  
-fail:
-  SWIG_SetErrorMsg(PyExc_NotImplementedError,"Wrong number or type of arguments for overloaded function 'GeoRaster_int32_Copy'.\n"
-    "  Possible C/C++ prototypes are:\n"
-    "    gip::GeoRasterIO< int >::Copy(gip::GeoRaster const &,gip::UNITS)\n"
-    "    gip::GeoRasterIO< int >::Copy(gip::GeoRaster const &)\n");
   return 0;
 }
 
@@ -19189,6 +19095,53 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_GeoRaster_int32_Ref(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  gip::GeoRasterIO< int > *arg1 = (gip::GeoRasterIO< int > *) 0 ;
+  gip::GeoRasterIO< int >::bbox arg2 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  void *argp2 ;
+  int res2 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  cimg_library::CImg< float > result;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OO:GeoRaster_int32_Ref",&obj0,&obj1)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__GeoRasterIOT_int_t, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoRaster_int32_Ref" "', argument " "1"" of type '" "gip::GeoRasterIO< int > *""'"); 
+  }
+  arg1 = reinterpret_cast< gip::GeoRasterIO< int > * >(argp1);
+  {
+    res2 = SWIG_ConvertPtr(obj1, &argp2, SWIGTYPE_p_boost__geometry__model__boxT_gip__point_t,  0  | 0);
+    if (!SWIG_IsOK(res2)) {
+      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "GeoRaster_int32_Ref" "', argument " "2"" of type '" "gip::GeoRasterIO< int >::bbox""'"); 
+    }  
+    if (!argp2) {
+      SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "GeoRaster_int32_Ref" "', argument " "2"" of type '" "gip::GeoRasterIO< int >::bbox""'");
+    } else {
+      gip::GeoRasterIO< int >::bbox * temp = reinterpret_cast< gip::GeoRasterIO< int >::bbox * >(argp2);
+      arg2 = *temp;
+      if (SWIG_IsNewObj(res2)) delete temp;
+    }
+  }
+  {
+    try {
+      result = (arg1)->Ref(arg2);
+    } catch (const std::exception& e) {
+      SWIG_exception(SWIG_RuntimeError, e.what());
+    }
+  }
+  {
+    return CImgToArr(result); 
+  }
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *GeoRaster_int32_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *obj;
   if (!PyArg_ParseTuple(args,(char*)"O:swigregister", &obj)) return NULL;
@@ -19325,10 +19278,10 @@ fail:
 SWIGINTERN PyObject *_wrap_GeoRaster_int64_Read__SWIG_0(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   gip::GeoRasterIO< long > *arg1 = (gip::GeoRasterIO< long > *) 0 ;
-  gip::UNITS arg2 ;
+  bool arg2 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  int val2 ;
+  bool val2 ;
   int ecode2 = 0 ;
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
@@ -19340,11 +19293,11 @@ SWIGINTERN PyObject *_wrap_GeoRaster_int64_Read__SWIG_0(PyObject *SWIGUNUSEDPARM
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoRaster_int64_Read" "', argument " "1"" of type '" "gip::GeoRasterIO< long > const *""'"); 
   }
   arg1 = reinterpret_cast< gip::GeoRasterIO< long > * >(argp1);
-  ecode2 = SWIG_AsVal_int(obj1, &val2);
+  ecode2 = SWIG_AsVal_bool(obj1, &val2);
   if (!SWIG_IsOK(ecode2)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "GeoRaster_int64_Read" "', argument " "2"" of type '" "gip::UNITS""'");
+    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "GeoRaster_int64_Read" "', argument " "2"" of type '" "bool""'");
   } 
-  arg2 = static_cast< gip::UNITS >(val2);
+  arg2 = static_cast< bool >(val2);
   {
     try {
       result = ((gip::GeoRasterIO< long > const *)arg1)->Read(arg2);
@@ -19395,12 +19348,12 @@ SWIGINTERN PyObject *_wrap_GeoRaster_int64_Read__SWIG_2(PyObject *SWIGUNUSEDPARM
   PyObject *resultobj = 0;
   gip::GeoRasterIO< long > *arg1 = (gip::GeoRasterIO< long > *) 0 ;
   gip::GeoRasterIO< long >::bbox arg2 ;
-  gip::UNITS arg3 ;
+  bool arg3 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   void *argp2 ;
   int res2 = 0 ;
-  int val3 ;
+  bool val3 ;
   int ecode3 = 0 ;
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
@@ -19426,11 +19379,11 @@ SWIGINTERN PyObject *_wrap_GeoRaster_int64_Read__SWIG_2(PyObject *SWIGUNUSEDPARM
       if (SWIG_IsNewObj(res2)) delete temp;
     }
   }
-  ecode3 = SWIG_AsVal_int(obj2, &val3);
+  ecode3 = SWIG_AsVal_bool(obj2, &val3);
   if (!SWIG_IsOK(ecode3)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "GeoRaster_int64_Read" "', argument " "3"" of type '" "gip::UNITS""'");
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "GeoRaster_int64_Read" "', argument " "3"" of type '" "bool""'");
   } 
-  arg3 = static_cast< gip::UNITS >(val3);
+  arg3 = static_cast< bool >(val3);
   {
     try {
       result = ((gip::GeoRasterIO< long > const *)arg1)->Read(arg2,arg3);
@@ -19533,7 +19486,7 @@ SWIGINTERN PyObject *_wrap_GeoRaster_int64_Read(PyObject *self, PyObject *args) 
     _v = SWIG_CheckState(res);
     if (_v) {
       {
-        int res = SWIG_AsVal_int(argv[1], NULL);
+        int res = SWIG_AsVal_bool(argv[1], NULL);
         _v = SWIG_CheckState(res);
       }
       if (_v) {
@@ -19551,7 +19504,7 @@ SWIGINTERN PyObject *_wrap_GeoRaster_int64_Read(PyObject *self, PyObject *args) 
       _v = SWIG_CheckState(res);
       if (_v) {
         {
-          int res = SWIG_AsVal_int(argv[2], NULL);
+          int res = SWIG_AsVal_bool(argv[2], NULL);
           _v = SWIG_CheckState(res);
         }
         if (_v) {
@@ -19564,9 +19517,9 @@ SWIGINTERN PyObject *_wrap_GeoRaster_int64_Read(PyObject *self, PyObject *args) 
 fail:
   SWIG_SetErrorMsg(PyExc_NotImplementedError,"Wrong number or type of arguments for overloaded function 'GeoRaster_int64_Read'.\n"
     "  Possible C/C++ prototypes are:\n"
-    "    gip::GeoRasterIO< long >::Read(gip::UNITS) const\n"
+    "    gip::GeoRasterIO< long >::Read(bool) const\n"
     "    gip::GeoRasterIO< long >::Read() const\n"
-    "    gip::GeoRasterIO< long >::Read(gip::GeoRasterIO< long >::bbox,gip::UNITS) const\n"
+    "    gip::GeoRasterIO< long >::Read(gip::GeoRasterIO< long >::bbox,bool) const\n"
     "    gip::GeoRasterIO< long >::Read(gip::GeoRasterIO< long >::bbox) const\n");
   return 0;
 }
@@ -19753,147 +19706,6 @@ fail:
     "  Possible C/C++ prototypes are:\n"
     "    gip::GeoRasterIO< long >::Write(cimg_library::CImg< long > &,gip::GeoRasterIO< long >::bbox,bool)\n"
     "    gip::GeoRasterIO< long >::Write(cimg_library::CImg< long > &,gip::GeoRasterIO< long >::bbox)\n");
-  return 0;
-}
-
-
-SWIGINTERN PyObject *_wrap_GeoRaster_int64_Copy__SWIG_0(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  gip::GeoRasterIO< long > *arg1 = (gip::GeoRasterIO< long > *) 0 ;
-  gip::GeoRaster *arg2 = 0 ;
-  gip::UNITS arg3 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  void *argp2 = 0 ;
-  int res2 = 0 ;
-  int val3 ;
-  int ecode3 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
-  PyObject * obj2 = 0 ;
-  gip::GeoRasterIO< long > *result = 0 ;
-  
-  if (!PyArg_ParseTuple(args,(char *)"OOO:GeoRaster_int64_Copy",&obj0,&obj1,&obj2)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__GeoRasterIOT_long_t, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoRaster_int64_Copy" "', argument " "1"" of type '" "gip::GeoRasterIO< long > *""'"); 
-  }
-  arg1 = reinterpret_cast< gip::GeoRasterIO< long > * >(argp1);
-  res2 = SWIG_ConvertPtr(obj1, &argp2, SWIGTYPE_p_gip__GeoRaster,  0  | 0);
-  if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "GeoRaster_int64_Copy" "', argument " "2"" of type '" "gip::GeoRaster const &""'"); 
-  }
-  if (!argp2) {
-    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "GeoRaster_int64_Copy" "', argument " "2"" of type '" "gip::GeoRaster const &""'"); 
-  }
-  arg2 = reinterpret_cast< gip::GeoRaster * >(argp2);
-  ecode3 = SWIG_AsVal_int(obj2, &val3);
-  if (!SWIG_IsOK(ecode3)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "GeoRaster_int64_Copy" "', argument " "3"" of type '" "gip::UNITS""'");
-  } 
-  arg3 = static_cast< gip::UNITS >(val3);
-  {
-    try {
-      result = (gip::GeoRasterIO< long > *) &(arg1)->Copy((gip::GeoRaster const &)*arg2,arg3);
-    } catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
-  }
-  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_gip__GeoRasterIOT_long_t, 0 |  0 );
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_GeoRaster_int64_Copy__SWIG_1(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  gip::GeoRasterIO< long > *arg1 = (gip::GeoRasterIO< long > *) 0 ;
-  gip::GeoRaster *arg2 = 0 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  void *argp2 = 0 ;
-  int res2 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
-  gip::GeoRasterIO< long > *result = 0 ;
-  
-  if (!PyArg_ParseTuple(args,(char *)"OO:GeoRaster_int64_Copy",&obj0,&obj1)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__GeoRasterIOT_long_t, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoRaster_int64_Copy" "', argument " "1"" of type '" "gip::GeoRasterIO< long > *""'"); 
-  }
-  arg1 = reinterpret_cast< gip::GeoRasterIO< long > * >(argp1);
-  res2 = SWIG_ConvertPtr(obj1, &argp2, SWIGTYPE_p_gip__GeoRaster,  0  | 0);
-  if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "GeoRaster_int64_Copy" "', argument " "2"" of type '" "gip::GeoRaster const &""'"); 
-  }
-  if (!argp2) {
-    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "GeoRaster_int64_Copy" "', argument " "2"" of type '" "gip::GeoRaster const &""'"); 
-  }
-  arg2 = reinterpret_cast< gip::GeoRaster * >(argp2);
-  {
-    try {
-      result = (gip::GeoRasterIO< long > *) &(arg1)->Copy((gip::GeoRaster const &)*arg2);
-    } catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
-  }
-  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_gip__GeoRasterIOT_long_t, 0 |  0 );
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_GeoRaster_int64_Copy(PyObject *self, PyObject *args) {
-  int argc;
-  PyObject *argv[4];
-  int ii;
-  
-  if (!PyTuple_Check(args)) SWIG_fail;
-  argc = args ? (int)PyObject_Length(args) : 0;
-  for (ii = 0; (ii < 3) && (ii < argc); ii++) {
-    argv[ii] = PyTuple_GET_ITEM(args,ii);
-  }
-  if (argc == 2) {
-    int _v;
-    void *vptr = 0;
-    int res = SWIG_ConvertPtr(argv[0], &vptr, SWIGTYPE_p_gip__GeoRasterIOT_long_t, 0);
-    _v = SWIG_CheckState(res);
-    if (_v) {
-      int res = SWIG_ConvertPtr(argv[1], 0, SWIGTYPE_p_gip__GeoRaster, 0);
-      _v = SWIG_CheckState(res);
-      if (_v) {
-        return _wrap_GeoRaster_int64_Copy__SWIG_1(self, args);
-      }
-    }
-  }
-  if (argc == 3) {
-    int _v;
-    void *vptr = 0;
-    int res = SWIG_ConvertPtr(argv[0], &vptr, SWIGTYPE_p_gip__GeoRasterIOT_long_t, 0);
-    _v = SWIG_CheckState(res);
-    if (_v) {
-      int res = SWIG_ConvertPtr(argv[1], 0, SWIGTYPE_p_gip__GeoRaster, 0);
-      _v = SWIG_CheckState(res);
-      if (_v) {
-        {
-          int res = SWIG_AsVal_int(argv[2], NULL);
-          _v = SWIG_CheckState(res);
-        }
-        if (_v) {
-          return _wrap_GeoRaster_int64_Copy__SWIG_0(self, args);
-        }
-      }
-    }
-  }
-  
-fail:
-  SWIG_SetErrorMsg(PyExc_NotImplementedError,"Wrong number or type of arguments for overloaded function 'GeoRaster_int64_Copy'.\n"
-    "  Possible C/C++ prototypes are:\n"
-    "    gip::GeoRasterIO< long >::Copy(gip::GeoRaster const &,gip::UNITS)\n"
-    "    gip::GeoRasterIO< long >::Copy(gip::GeoRaster const &)\n");
   return 0;
 }
 
@@ -20103,6 +19915,53 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_GeoRaster_int64_Ref(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  gip::GeoRasterIO< long > *arg1 = (gip::GeoRasterIO< long > *) 0 ;
+  gip::GeoRasterIO< long >::bbox arg2 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  void *argp2 ;
+  int res2 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  cimg_library::CImg< float > result;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OO:GeoRaster_int64_Ref",&obj0,&obj1)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__GeoRasterIOT_long_t, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoRaster_int64_Ref" "', argument " "1"" of type '" "gip::GeoRasterIO< long > *""'"); 
+  }
+  arg1 = reinterpret_cast< gip::GeoRasterIO< long > * >(argp1);
+  {
+    res2 = SWIG_ConvertPtr(obj1, &argp2, SWIGTYPE_p_boost__geometry__model__boxT_gip__point_t,  0  | 0);
+    if (!SWIG_IsOK(res2)) {
+      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "GeoRaster_int64_Ref" "', argument " "2"" of type '" "gip::GeoRasterIO< long >::bbox""'"); 
+    }  
+    if (!argp2) {
+      SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "GeoRaster_int64_Ref" "', argument " "2"" of type '" "gip::GeoRasterIO< long >::bbox""'");
+    } else {
+      gip::GeoRasterIO< long >::bbox * temp = reinterpret_cast< gip::GeoRasterIO< long >::bbox * >(argp2);
+      arg2 = *temp;
+      if (SWIG_IsNewObj(res2)) delete temp;
+    }
+  }
+  {
+    try {
+      result = (arg1)->Ref(arg2);
+    } catch (const std::exception& e) {
+      SWIG_exception(SWIG_RuntimeError, e.what());
+    }
+  }
+  {
+    return CImgToArr(result); 
+  }
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *GeoRaster_int64_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *obj;
   if (!PyArg_ParseTuple(args,(char*)"O:swigregister", &obj)) return NULL;
@@ -20239,10 +20098,10 @@ fail:
 SWIGINTERN PyObject *_wrap_GeoRaster_float_Read__SWIG_0(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   gip::GeoRasterIO< float > *arg1 = (gip::GeoRasterIO< float > *) 0 ;
-  gip::UNITS arg2 ;
+  bool arg2 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  int val2 ;
+  bool val2 ;
   int ecode2 = 0 ;
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
@@ -20254,11 +20113,11 @@ SWIGINTERN PyObject *_wrap_GeoRaster_float_Read__SWIG_0(PyObject *SWIGUNUSEDPARM
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoRaster_float_Read" "', argument " "1"" of type '" "gip::GeoRasterIO< float > const *""'"); 
   }
   arg1 = reinterpret_cast< gip::GeoRasterIO< float > * >(argp1);
-  ecode2 = SWIG_AsVal_int(obj1, &val2);
+  ecode2 = SWIG_AsVal_bool(obj1, &val2);
   if (!SWIG_IsOK(ecode2)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "GeoRaster_float_Read" "', argument " "2"" of type '" "gip::UNITS""'");
+    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "GeoRaster_float_Read" "', argument " "2"" of type '" "bool""'");
   } 
-  arg2 = static_cast< gip::UNITS >(val2);
+  arg2 = static_cast< bool >(val2);
   {
     try {
       result = ((gip::GeoRasterIO< float > const *)arg1)->Read(arg2);
@@ -20309,12 +20168,12 @@ SWIGINTERN PyObject *_wrap_GeoRaster_float_Read__SWIG_2(PyObject *SWIGUNUSEDPARM
   PyObject *resultobj = 0;
   gip::GeoRasterIO< float > *arg1 = (gip::GeoRasterIO< float > *) 0 ;
   gip::GeoRasterIO< float >::bbox arg2 ;
-  gip::UNITS arg3 ;
+  bool arg3 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   void *argp2 ;
   int res2 = 0 ;
-  int val3 ;
+  bool val3 ;
   int ecode3 = 0 ;
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
@@ -20340,11 +20199,11 @@ SWIGINTERN PyObject *_wrap_GeoRaster_float_Read__SWIG_2(PyObject *SWIGUNUSEDPARM
       if (SWIG_IsNewObj(res2)) delete temp;
     }
   }
-  ecode3 = SWIG_AsVal_int(obj2, &val3);
+  ecode3 = SWIG_AsVal_bool(obj2, &val3);
   if (!SWIG_IsOK(ecode3)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "GeoRaster_float_Read" "', argument " "3"" of type '" "gip::UNITS""'");
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "GeoRaster_float_Read" "', argument " "3"" of type '" "bool""'");
   } 
-  arg3 = static_cast< gip::UNITS >(val3);
+  arg3 = static_cast< bool >(val3);
   {
     try {
       result = ((gip::GeoRasterIO< float > const *)arg1)->Read(arg2,arg3);
@@ -20447,7 +20306,7 @@ SWIGINTERN PyObject *_wrap_GeoRaster_float_Read(PyObject *self, PyObject *args) 
     _v = SWIG_CheckState(res);
     if (_v) {
       {
-        int res = SWIG_AsVal_int(argv[1], NULL);
+        int res = SWIG_AsVal_bool(argv[1], NULL);
         _v = SWIG_CheckState(res);
       }
       if (_v) {
@@ -20465,7 +20324,7 @@ SWIGINTERN PyObject *_wrap_GeoRaster_float_Read(PyObject *self, PyObject *args) 
       _v = SWIG_CheckState(res);
       if (_v) {
         {
-          int res = SWIG_AsVal_int(argv[2], NULL);
+          int res = SWIG_AsVal_bool(argv[2], NULL);
           _v = SWIG_CheckState(res);
         }
         if (_v) {
@@ -20478,9 +20337,9 @@ SWIGINTERN PyObject *_wrap_GeoRaster_float_Read(PyObject *self, PyObject *args) 
 fail:
   SWIG_SetErrorMsg(PyExc_NotImplementedError,"Wrong number or type of arguments for overloaded function 'GeoRaster_float_Read'.\n"
     "  Possible C/C++ prototypes are:\n"
-    "    gip::GeoRasterIO< float >::Read(gip::UNITS) const\n"
+    "    gip::GeoRasterIO< float >::Read(bool) const\n"
     "    gip::GeoRasterIO< float >::Read() const\n"
-    "    gip::GeoRasterIO< float >::Read(gip::GeoRasterIO< float >::bbox,gip::UNITS) const\n"
+    "    gip::GeoRasterIO< float >::Read(gip::GeoRasterIO< float >::bbox,bool) const\n"
     "    gip::GeoRasterIO< float >::Read(gip::GeoRasterIO< float >::bbox) const\n");
   return 0;
 }
@@ -20667,147 +20526,6 @@ fail:
     "  Possible C/C++ prototypes are:\n"
     "    gip::GeoRasterIO< float >::Write(cimg_library::CImg< float > &,gip::GeoRasterIO< float >::bbox,bool)\n"
     "    gip::GeoRasterIO< float >::Write(cimg_library::CImg< float > &,gip::GeoRasterIO< float >::bbox)\n");
-  return 0;
-}
-
-
-SWIGINTERN PyObject *_wrap_GeoRaster_float_Copy__SWIG_0(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  gip::GeoRasterIO< float > *arg1 = (gip::GeoRasterIO< float > *) 0 ;
-  gip::GeoRaster *arg2 = 0 ;
-  gip::UNITS arg3 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  void *argp2 = 0 ;
-  int res2 = 0 ;
-  int val3 ;
-  int ecode3 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
-  PyObject * obj2 = 0 ;
-  gip::GeoRasterIO< float > *result = 0 ;
-  
-  if (!PyArg_ParseTuple(args,(char *)"OOO:GeoRaster_float_Copy",&obj0,&obj1,&obj2)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__GeoRasterIOT_float_t, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoRaster_float_Copy" "', argument " "1"" of type '" "gip::GeoRasterIO< float > *""'"); 
-  }
-  arg1 = reinterpret_cast< gip::GeoRasterIO< float > * >(argp1);
-  res2 = SWIG_ConvertPtr(obj1, &argp2, SWIGTYPE_p_gip__GeoRaster,  0  | 0);
-  if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "GeoRaster_float_Copy" "', argument " "2"" of type '" "gip::GeoRaster const &""'"); 
-  }
-  if (!argp2) {
-    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "GeoRaster_float_Copy" "', argument " "2"" of type '" "gip::GeoRaster const &""'"); 
-  }
-  arg2 = reinterpret_cast< gip::GeoRaster * >(argp2);
-  ecode3 = SWIG_AsVal_int(obj2, &val3);
-  if (!SWIG_IsOK(ecode3)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "GeoRaster_float_Copy" "', argument " "3"" of type '" "gip::UNITS""'");
-  } 
-  arg3 = static_cast< gip::UNITS >(val3);
-  {
-    try {
-      result = (gip::GeoRasterIO< float > *) &(arg1)->Copy((gip::GeoRaster const &)*arg2,arg3);
-    } catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
-  }
-  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_gip__GeoRasterIOT_float_t, 0 |  0 );
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_GeoRaster_float_Copy__SWIG_1(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  gip::GeoRasterIO< float > *arg1 = (gip::GeoRasterIO< float > *) 0 ;
-  gip::GeoRaster *arg2 = 0 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  void *argp2 = 0 ;
-  int res2 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
-  gip::GeoRasterIO< float > *result = 0 ;
-  
-  if (!PyArg_ParseTuple(args,(char *)"OO:GeoRaster_float_Copy",&obj0,&obj1)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__GeoRasterIOT_float_t, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoRaster_float_Copy" "', argument " "1"" of type '" "gip::GeoRasterIO< float > *""'"); 
-  }
-  arg1 = reinterpret_cast< gip::GeoRasterIO< float > * >(argp1);
-  res2 = SWIG_ConvertPtr(obj1, &argp2, SWIGTYPE_p_gip__GeoRaster,  0  | 0);
-  if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "GeoRaster_float_Copy" "', argument " "2"" of type '" "gip::GeoRaster const &""'"); 
-  }
-  if (!argp2) {
-    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "GeoRaster_float_Copy" "', argument " "2"" of type '" "gip::GeoRaster const &""'"); 
-  }
-  arg2 = reinterpret_cast< gip::GeoRaster * >(argp2);
-  {
-    try {
-      result = (gip::GeoRasterIO< float > *) &(arg1)->Copy((gip::GeoRaster const &)*arg2);
-    } catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
-  }
-  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_gip__GeoRasterIOT_float_t, 0 |  0 );
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_GeoRaster_float_Copy(PyObject *self, PyObject *args) {
-  int argc;
-  PyObject *argv[4];
-  int ii;
-  
-  if (!PyTuple_Check(args)) SWIG_fail;
-  argc = args ? (int)PyObject_Length(args) : 0;
-  for (ii = 0; (ii < 3) && (ii < argc); ii++) {
-    argv[ii] = PyTuple_GET_ITEM(args,ii);
-  }
-  if (argc == 2) {
-    int _v;
-    void *vptr = 0;
-    int res = SWIG_ConvertPtr(argv[0], &vptr, SWIGTYPE_p_gip__GeoRasterIOT_float_t, 0);
-    _v = SWIG_CheckState(res);
-    if (_v) {
-      int res = SWIG_ConvertPtr(argv[1], 0, SWIGTYPE_p_gip__GeoRaster, 0);
-      _v = SWIG_CheckState(res);
-      if (_v) {
-        return _wrap_GeoRaster_float_Copy__SWIG_1(self, args);
-      }
-    }
-  }
-  if (argc == 3) {
-    int _v;
-    void *vptr = 0;
-    int res = SWIG_ConvertPtr(argv[0], &vptr, SWIGTYPE_p_gip__GeoRasterIOT_float_t, 0);
-    _v = SWIG_CheckState(res);
-    if (_v) {
-      int res = SWIG_ConvertPtr(argv[1], 0, SWIGTYPE_p_gip__GeoRaster, 0);
-      _v = SWIG_CheckState(res);
-      if (_v) {
-        {
-          int res = SWIG_AsVal_int(argv[2], NULL);
-          _v = SWIG_CheckState(res);
-        }
-        if (_v) {
-          return _wrap_GeoRaster_float_Copy__SWIG_0(self, args);
-        }
-      }
-    }
-  }
-  
-fail:
-  SWIG_SetErrorMsg(PyExc_NotImplementedError,"Wrong number or type of arguments for overloaded function 'GeoRaster_float_Copy'.\n"
-    "  Possible C/C++ prototypes are:\n"
-    "    gip::GeoRasterIO< float >::Copy(gip::GeoRaster const &,gip::UNITS)\n"
-    "    gip::GeoRasterIO< float >::Copy(gip::GeoRaster const &)\n");
   return 0;
 }
 
@@ -21017,6 +20735,53 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_GeoRaster_float_Ref(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  gip::GeoRasterIO< float > *arg1 = (gip::GeoRasterIO< float > *) 0 ;
+  gip::GeoRasterIO< float >::bbox arg2 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  void *argp2 ;
+  int res2 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  cimg_library::CImg< float > result;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OO:GeoRaster_float_Ref",&obj0,&obj1)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__GeoRasterIOT_float_t, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoRaster_float_Ref" "', argument " "1"" of type '" "gip::GeoRasterIO< float > *""'"); 
+  }
+  arg1 = reinterpret_cast< gip::GeoRasterIO< float > * >(argp1);
+  {
+    res2 = SWIG_ConvertPtr(obj1, &argp2, SWIGTYPE_p_boost__geometry__model__boxT_gip__point_t,  0  | 0);
+    if (!SWIG_IsOK(res2)) {
+      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "GeoRaster_float_Ref" "', argument " "2"" of type '" "gip::GeoRasterIO< float >::bbox""'"); 
+    }  
+    if (!argp2) {
+      SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "GeoRaster_float_Ref" "', argument " "2"" of type '" "gip::GeoRasterIO< float >::bbox""'");
+    } else {
+      gip::GeoRasterIO< float >::bbox * temp = reinterpret_cast< gip::GeoRasterIO< float >::bbox * >(argp2);
+      arg2 = *temp;
+      if (SWIG_IsNewObj(res2)) delete temp;
+    }
+  }
+  {
+    try {
+      result = (arg1)->Ref(arg2);
+    } catch (const std::exception& e) {
+      SWIG_exception(SWIG_RuntimeError, e.what());
+    }
+  }
+  {
+    return CImgToArr(result); 
+  }
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *GeoRaster_float_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *obj;
   if (!PyArg_ParseTuple(args,(char*)"O:swigregister", &obj)) return NULL;
@@ -21153,10 +20918,10 @@ fail:
 SWIGINTERN PyObject *_wrap_GeoRaster_double_Read__SWIG_0(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   gip::GeoRasterIO< double > *arg1 = (gip::GeoRasterIO< double > *) 0 ;
-  gip::UNITS arg2 ;
+  bool arg2 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  int val2 ;
+  bool val2 ;
   int ecode2 = 0 ;
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
@@ -21168,11 +20933,11 @@ SWIGINTERN PyObject *_wrap_GeoRaster_double_Read__SWIG_0(PyObject *SWIGUNUSEDPAR
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoRaster_double_Read" "', argument " "1"" of type '" "gip::GeoRasterIO< double > const *""'"); 
   }
   arg1 = reinterpret_cast< gip::GeoRasterIO< double > * >(argp1);
-  ecode2 = SWIG_AsVal_int(obj1, &val2);
+  ecode2 = SWIG_AsVal_bool(obj1, &val2);
   if (!SWIG_IsOK(ecode2)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "GeoRaster_double_Read" "', argument " "2"" of type '" "gip::UNITS""'");
+    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "GeoRaster_double_Read" "', argument " "2"" of type '" "bool""'");
   } 
-  arg2 = static_cast< gip::UNITS >(val2);
+  arg2 = static_cast< bool >(val2);
   {
     try {
       result = ((gip::GeoRasterIO< double > const *)arg1)->Read(arg2);
@@ -21223,12 +20988,12 @@ SWIGINTERN PyObject *_wrap_GeoRaster_double_Read__SWIG_2(PyObject *SWIGUNUSEDPAR
   PyObject *resultobj = 0;
   gip::GeoRasterIO< double > *arg1 = (gip::GeoRasterIO< double > *) 0 ;
   gip::GeoRasterIO< double >::bbox arg2 ;
-  gip::UNITS arg3 ;
+  bool arg3 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   void *argp2 ;
   int res2 = 0 ;
-  int val3 ;
+  bool val3 ;
   int ecode3 = 0 ;
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
@@ -21254,11 +21019,11 @@ SWIGINTERN PyObject *_wrap_GeoRaster_double_Read__SWIG_2(PyObject *SWIGUNUSEDPAR
       if (SWIG_IsNewObj(res2)) delete temp;
     }
   }
-  ecode3 = SWIG_AsVal_int(obj2, &val3);
+  ecode3 = SWIG_AsVal_bool(obj2, &val3);
   if (!SWIG_IsOK(ecode3)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "GeoRaster_double_Read" "', argument " "3"" of type '" "gip::UNITS""'");
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "GeoRaster_double_Read" "', argument " "3"" of type '" "bool""'");
   } 
-  arg3 = static_cast< gip::UNITS >(val3);
+  arg3 = static_cast< bool >(val3);
   {
     try {
       result = ((gip::GeoRasterIO< double > const *)arg1)->Read(arg2,arg3);
@@ -21361,7 +21126,7 @@ SWIGINTERN PyObject *_wrap_GeoRaster_double_Read(PyObject *self, PyObject *args)
     _v = SWIG_CheckState(res);
     if (_v) {
       {
-        int res = SWIG_AsVal_int(argv[1], NULL);
+        int res = SWIG_AsVal_bool(argv[1], NULL);
         _v = SWIG_CheckState(res);
       }
       if (_v) {
@@ -21379,7 +21144,7 @@ SWIGINTERN PyObject *_wrap_GeoRaster_double_Read(PyObject *self, PyObject *args)
       _v = SWIG_CheckState(res);
       if (_v) {
         {
-          int res = SWIG_AsVal_int(argv[2], NULL);
+          int res = SWIG_AsVal_bool(argv[2], NULL);
           _v = SWIG_CheckState(res);
         }
         if (_v) {
@@ -21392,9 +21157,9 @@ SWIGINTERN PyObject *_wrap_GeoRaster_double_Read(PyObject *self, PyObject *args)
 fail:
   SWIG_SetErrorMsg(PyExc_NotImplementedError,"Wrong number or type of arguments for overloaded function 'GeoRaster_double_Read'.\n"
     "  Possible C/C++ prototypes are:\n"
-    "    gip::GeoRasterIO< double >::Read(gip::UNITS) const\n"
+    "    gip::GeoRasterIO< double >::Read(bool) const\n"
     "    gip::GeoRasterIO< double >::Read() const\n"
-    "    gip::GeoRasterIO< double >::Read(gip::GeoRasterIO< double >::bbox,gip::UNITS) const\n"
+    "    gip::GeoRasterIO< double >::Read(gip::GeoRasterIO< double >::bbox,bool) const\n"
     "    gip::GeoRasterIO< double >::Read(gip::GeoRasterIO< double >::bbox) const\n");
   return 0;
 }
@@ -21581,147 +21346,6 @@ fail:
     "  Possible C/C++ prototypes are:\n"
     "    gip::GeoRasterIO< double >::Write(cimg_library::CImg< double > &,gip::GeoRasterIO< double >::bbox,bool)\n"
     "    gip::GeoRasterIO< double >::Write(cimg_library::CImg< double > &,gip::GeoRasterIO< double >::bbox)\n");
-  return 0;
-}
-
-
-SWIGINTERN PyObject *_wrap_GeoRaster_double_Copy__SWIG_0(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  gip::GeoRasterIO< double > *arg1 = (gip::GeoRasterIO< double > *) 0 ;
-  gip::GeoRaster *arg2 = 0 ;
-  gip::UNITS arg3 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  void *argp2 = 0 ;
-  int res2 = 0 ;
-  int val3 ;
-  int ecode3 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
-  PyObject * obj2 = 0 ;
-  gip::GeoRasterIO< double > *result = 0 ;
-  
-  if (!PyArg_ParseTuple(args,(char *)"OOO:GeoRaster_double_Copy",&obj0,&obj1,&obj2)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__GeoRasterIOT_double_t, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoRaster_double_Copy" "', argument " "1"" of type '" "gip::GeoRasterIO< double > *""'"); 
-  }
-  arg1 = reinterpret_cast< gip::GeoRasterIO< double > * >(argp1);
-  res2 = SWIG_ConvertPtr(obj1, &argp2, SWIGTYPE_p_gip__GeoRaster,  0  | 0);
-  if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "GeoRaster_double_Copy" "', argument " "2"" of type '" "gip::GeoRaster const &""'"); 
-  }
-  if (!argp2) {
-    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "GeoRaster_double_Copy" "', argument " "2"" of type '" "gip::GeoRaster const &""'"); 
-  }
-  arg2 = reinterpret_cast< gip::GeoRaster * >(argp2);
-  ecode3 = SWIG_AsVal_int(obj2, &val3);
-  if (!SWIG_IsOK(ecode3)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "GeoRaster_double_Copy" "', argument " "3"" of type '" "gip::UNITS""'");
-  } 
-  arg3 = static_cast< gip::UNITS >(val3);
-  {
-    try {
-      result = (gip::GeoRasterIO< double > *) &(arg1)->Copy((gip::GeoRaster const &)*arg2,arg3);
-    } catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
-  }
-  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_gip__GeoRasterIOT_double_t, 0 |  0 );
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_GeoRaster_double_Copy__SWIG_1(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  gip::GeoRasterIO< double > *arg1 = (gip::GeoRasterIO< double > *) 0 ;
-  gip::GeoRaster *arg2 = 0 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  void *argp2 = 0 ;
-  int res2 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
-  gip::GeoRasterIO< double > *result = 0 ;
-  
-  if (!PyArg_ParseTuple(args,(char *)"OO:GeoRaster_double_Copy",&obj0,&obj1)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__GeoRasterIOT_double_t, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoRaster_double_Copy" "', argument " "1"" of type '" "gip::GeoRasterIO< double > *""'"); 
-  }
-  arg1 = reinterpret_cast< gip::GeoRasterIO< double > * >(argp1);
-  res2 = SWIG_ConvertPtr(obj1, &argp2, SWIGTYPE_p_gip__GeoRaster,  0  | 0);
-  if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "GeoRaster_double_Copy" "', argument " "2"" of type '" "gip::GeoRaster const &""'"); 
-  }
-  if (!argp2) {
-    SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "GeoRaster_double_Copy" "', argument " "2"" of type '" "gip::GeoRaster const &""'"); 
-  }
-  arg2 = reinterpret_cast< gip::GeoRaster * >(argp2);
-  {
-    try {
-      result = (gip::GeoRasterIO< double > *) &(arg1)->Copy((gip::GeoRaster const &)*arg2);
-    } catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
-  }
-  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_gip__GeoRasterIOT_double_t, 0 |  0 );
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_GeoRaster_double_Copy(PyObject *self, PyObject *args) {
-  int argc;
-  PyObject *argv[4];
-  int ii;
-  
-  if (!PyTuple_Check(args)) SWIG_fail;
-  argc = args ? (int)PyObject_Length(args) : 0;
-  for (ii = 0; (ii < 3) && (ii < argc); ii++) {
-    argv[ii] = PyTuple_GET_ITEM(args,ii);
-  }
-  if (argc == 2) {
-    int _v;
-    void *vptr = 0;
-    int res = SWIG_ConvertPtr(argv[0], &vptr, SWIGTYPE_p_gip__GeoRasterIOT_double_t, 0);
-    _v = SWIG_CheckState(res);
-    if (_v) {
-      int res = SWIG_ConvertPtr(argv[1], 0, SWIGTYPE_p_gip__GeoRaster, 0);
-      _v = SWIG_CheckState(res);
-      if (_v) {
-        return _wrap_GeoRaster_double_Copy__SWIG_1(self, args);
-      }
-    }
-  }
-  if (argc == 3) {
-    int _v;
-    void *vptr = 0;
-    int res = SWIG_ConvertPtr(argv[0], &vptr, SWIGTYPE_p_gip__GeoRasterIOT_double_t, 0);
-    _v = SWIG_CheckState(res);
-    if (_v) {
-      int res = SWIG_ConvertPtr(argv[1], 0, SWIGTYPE_p_gip__GeoRaster, 0);
-      _v = SWIG_CheckState(res);
-      if (_v) {
-        {
-          int res = SWIG_AsVal_int(argv[2], NULL);
-          _v = SWIG_CheckState(res);
-        }
-        if (_v) {
-          return _wrap_GeoRaster_double_Copy__SWIG_0(self, args);
-        }
-      }
-    }
-  }
-  
-fail:
-  SWIG_SetErrorMsg(PyExc_NotImplementedError,"Wrong number or type of arguments for overloaded function 'GeoRaster_double_Copy'.\n"
-    "  Possible C/C++ prototypes are:\n"
-    "    gip::GeoRasterIO< double >::Copy(gip::GeoRaster const &,gip::UNITS)\n"
-    "    gip::GeoRasterIO< double >::Copy(gip::GeoRaster const &)\n");
   return 0;
 }
 
@@ -21918,6 +21542,53 @@ SWIGINTERN PyObject *_wrap_GeoRaster_double_NoDataMask(PyObject *SWIGUNUSEDPARM(
   {
     try {
       result = ((gip::GeoRasterIO< double > const *)arg1)->NoDataMask(arg2);
+    } catch (const std::exception& e) {
+      SWIG_exception(SWIG_RuntimeError, e.what());
+    }
+  }
+  {
+    return CImgToArr(result); 
+  }
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_GeoRaster_double_Ref(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  gip::GeoRasterIO< double > *arg1 = (gip::GeoRasterIO< double > *) 0 ;
+  gip::GeoRasterIO< double >::bbox arg2 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  void *argp2 ;
+  int res2 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  cimg_library::CImg< float > result;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OO:GeoRaster_double_Ref",&obj0,&obj1)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_gip__GeoRasterIOT_double_t, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "GeoRaster_double_Ref" "', argument " "1"" of type '" "gip::GeoRasterIO< double > *""'"); 
+  }
+  arg1 = reinterpret_cast< gip::GeoRasterIO< double > * >(argp1);
+  {
+    res2 = SWIG_ConvertPtr(obj1, &argp2, SWIGTYPE_p_boost__geometry__model__boxT_gip__point_t,  0  | 0);
+    if (!SWIG_IsOK(res2)) {
+      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "GeoRaster_double_Ref" "', argument " "2"" of type '" "gip::GeoRasterIO< double >::bbox""'"); 
+    }  
+    if (!argp2) {
+      SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "GeoRaster_double_Ref" "', argument " "2"" of type '" "gip::GeoRasterIO< double >::bbox""'");
+    } else {
+      gip::GeoRasterIO< double >::bbox * temp = reinterpret_cast< gip::GeoRasterIO< double >::bbox * >(argp2);
+      arg2 = *temp;
+      if (SWIG_IsNewObj(res2)) delete temp;
+    }
+  }
+  {
+    try {
+      result = (arg1)->Ref(arg2);
     } catch (const std::exception& e) {
       SWIG_exception(SWIG_RuntimeError, e.what());
     }
@@ -27219,6 +26890,8 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"GeoRaster_SetDescription", _wrap_GeoRaster_SetDescription, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_SetColor", _wrap_GeoRaster_SetColor, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_CopyCategoryNames", _wrap_GeoRaster_CopyCategoryNames, METH_VARARGS, NULL},
+	 { (char *)"GeoRaster_Units", _wrap_GeoRaster_Units, METH_VARARGS, NULL},
+	 { (char *)"GeoRaster_SetUnits", _wrap_GeoRaster_SetUnits, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_Gain", _wrap_GeoRaster_Gain, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_Offset", _wrap_GeoRaster_Offset, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_SetGain", _wrap_GeoRaster_SetGain, METH_VARARGS, NULL},
@@ -27270,6 +26943,7 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"GeoImage_ComputeStats", _wrap_GeoImage_ComputeStats, METH_VARARGS, NULL},
 	 { (char *)"GeoImage_SetGain", _wrap_GeoImage_SetGain, METH_VARARGS, NULL},
 	 { (char *)"GeoImage_SetOffset", _wrap_GeoImage_SetOffset, METH_VARARGS, NULL},
+	 { (char *)"GeoImage_SetUnits", _wrap_GeoImage_SetUnits, METH_VARARGS, NULL},
 	 { (char *)"GeoImage_SetNoData", _wrap_GeoImage_SetNoData, METH_VARARGS, NULL},
 	 { (char *)"GeoImage_ClearNoData", _wrap_GeoImage_ClearNoData, METH_VARARGS, NULL},
 	 { (char *)"GeoImage___getitem__", _wrap_GeoImage___getitem__, METH_VARARGS, NULL},
@@ -27277,7 +26951,9 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"GeoImage_swigregister", GeoImage_swigregister, METH_VARARGS, NULL},
 	 { (char *)"Copy", _wrap_Copy, METH_VARARGS, NULL},
 	 { (char *)"Indices", _wrap_Indices, METH_VARARGS, NULL},
-	 { (char *)"Visual", _wrap_Visual, METH_VARARGS, NULL},
+	 { (char *)"Rad", _wrap_Rad, METH_VARARGS, NULL},
+	 { (char *)"Ref", _wrap_Ref, METH_VARARGS, NULL},
+	 { (char *)"RGB", _wrap_RGB, METH_VARARGS, NULL},
 	 { (char *)"Index2Probability", _wrap_Index2Probability, METH_VARARGS, NULL},
 	 { (char *)"BandMath", _wrap_BandMath, METH_VARARGS, NULL},
 	 { (char *)"AutoCloud", _wrap_AutoCloud, METH_VARARGS, NULL},
@@ -27292,6 +26968,8 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"Options_SetChunkSize", _wrap_Options_SetChunkSize, METH_VARARGS, NULL},
 	 { (char *)"Options_Verbose", _wrap_Options_Verbose, METH_VARARGS, NULL},
 	 { (char *)"Options_SetVerbose", _wrap_Options_SetVerbose, METH_VARARGS, NULL},
+	 { (char *)"Options_WorkDir", _wrap_Options_WorkDir, METH_VARARGS, NULL},
+	 { (char *)"Options_SetWorkDir", _wrap_Options_SetWorkDir, METH_VARARGS, NULL},
 	 { (char *)"new_Options", _wrap_new_Options, METH_VARARGS, NULL},
 	 { (char *)"delete_Options", _wrap_delete_Options, METH_VARARGS, NULL},
 	 { (char *)"Options_swigregister", Options_swigregister, METH_VARARGS, NULL},
@@ -27299,55 +26977,55 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"delete_GeoRaster_byte", _wrap_delete_GeoRaster_byte, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_byte_Read", _wrap_GeoRaster_byte_Read, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_byte_Write", _wrap_GeoRaster_byte_Write, METH_VARARGS, NULL},
-	 { (char *)"GeoRaster_byte_Copy", _wrap_GeoRaster_byte_Copy, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_byte_ComputeStats", _wrap_GeoRaster_byte_ComputeStats, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_byte_SaturationMask", _wrap_GeoRaster_byte_SaturationMask, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_byte_NoDataMask", _wrap_GeoRaster_byte_NoDataMask, METH_VARARGS, NULL},
+	 { (char *)"GeoRaster_byte_Ref", _wrap_GeoRaster_byte_Ref, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_byte_swigregister", GeoRaster_byte_swigregister, METH_VARARGS, NULL},
 	 { (char *)"new_GeoRaster_int16", _wrap_new_GeoRaster_int16, METH_VARARGS, NULL},
 	 { (char *)"delete_GeoRaster_int16", _wrap_delete_GeoRaster_int16, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_int16_Read", _wrap_GeoRaster_int16_Read, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_int16_Write", _wrap_GeoRaster_int16_Write, METH_VARARGS, NULL},
-	 { (char *)"GeoRaster_int16_Copy", _wrap_GeoRaster_int16_Copy, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_int16_ComputeStats", _wrap_GeoRaster_int16_ComputeStats, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_int16_SaturationMask", _wrap_GeoRaster_int16_SaturationMask, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_int16_NoDataMask", _wrap_GeoRaster_int16_NoDataMask, METH_VARARGS, NULL},
+	 { (char *)"GeoRaster_int16_Ref", _wrap_GeoRaster_int16_Ref, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_int16_swigregister", GeoRaster_int16_swigregister, METH_VARARGS, NULL},
 	 { (char *)"new_GeoRaster_int32", _wrap_new_GeoRaster_int32, METH_VARARGS, NULL},
 	 { (char *)"delete_GeoRaster_int32", _wrap_delete_GeoRaster_int32, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_int32_Read", _wrap_GeoRaster_int32_Read, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_int32_Write", _wrap_GeoRaster_int32_Write, METH_VARARGS, NULL},
-	 { (char *)"GeoRaster_int32_Copy", _wrap_GeoRaster_int32_Copy, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_int32_ComputeStats", _wrap_GeoRaster_int32_ComputeStats, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_int32_SaturationMask", _wrap_GeoRaster_int32_SaturationMask, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_int32_NoDataMask", _wrap_GeoRaster_int32_NoDataMask, METH_VARARGS, NULL},
+	 { (char *)"GeoRaster_int32_Ref", _wrap_GeoRaster_int32_Ref, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_int32_swigregister", GeoRaster_int32_swigregister, METH_VARARGS, NULL},
 	 { (char *)"new_GeoRaster_int64", _wrap_new_GeoRaster_int64, METH_VARARGS, NULL},
 	 { (char *)"delete_GeoRaster_int64", _wrap_delete_GeoRaster_int64, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_int64_Read", _wrap_GeoRaster_int64_Read, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_int64_Write", _wrap_GeoRaster_int64_Write, METH_VARARGS, NULL},
-	 { (char *)"GeoRaster_int64_Copy", _wrap_GeoRaster_int64_Copy, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_int64_ComputeStats", _wrap_GeoRaster_int64_ComputeStats, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_int64_SaturationMask", _wrap_GeoRaster_int64_SaturationMask, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_int64_NoDataMask", _wrap_GeoRaster_int64_NoDataMask, METH_VARARGS, NULL},
+	 { (char *)"GeoRaster_int64_Ref", _wrap_GeoRaster_int64_Ref, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_int64_swigregister", GeoRaster_int64_swigregister, METH_VARARGS, NULL},
 	 { (char *)"new_GeoRaster_float", _wrap_new_GeoRaster_float, METH_VARARGS, NULL},
 	 { (char *)"delete_GeoRaster_float", _wrap_delete_GeoRaster_float, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_float_Read", _wrap_GeoRaster_float_Read, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_float_Write", _wrap_GeoRaster_float_Write, METH_VARARGS, NULL},
-	 { (char *)"GeoRaster_float_Copy", _wrap_GeoRaster_float_Copy, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_float_ComputeStats", _wrap_GeoRaster_float_ComputeStats, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_float_SaturationMask", _wrap_GeoRaster_float_SaturationMask, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_float_NoDataMask", _wrap_GeoRaster_float_NoDataMask, METH_VARARGS, NULL},
+	 { (char *)"GeoRaster_float_Ref", _wrap_GeoRaster_float_Ref, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_float_swigregister", GeoRaster_float_swigregister, METH_VARARGS, NULL},
 	 { (char *)"new_GeoRaster_double", _wrap_new_GeoRaster_double, METH_VARARGS, NULL},
 	 { (char *)"delete_GeoRaster_double", _wrap_delete_GeoRaster_double, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_double_Read", _wrap_GeoRaster_double_Read, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_double_Write", _wrap_GeoRaster_double_Write, METH_VARARGS, NULL},
-	 { (char *)"GeoRaster_double_Copy", _wrap_GeoRaster_double_Copy, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_double_ComputeStats", _wrap_GeoRaster_double_ComputeStats, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_double_SaturationMask", _wrap_GeoRaster_double_SaturationMask, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_double_NoDataMask", _wrap_GeoRaster_double_NoDataMask, METH_VARARGS, NULL},
+	 { (char *)"GeoRaster_double_Ref", _wrap_GeoRaster_double_Ref, METH_VARARGS, NULL},
 	 { (char *)"GeoRaster_double_swigregister", GeoRaster_double_swigregister, METH_VARARGS, NULL},
 	 { (char *)"new_GeoImage_byte", _wrap_new_GeoImage_byte, METH_VARARGS, NULL},
 	 { (char *)"delete_GeoImage_byte", _wrap_delete_GeoImage_byte, METH_VARARGS, NULL},
@@ -27538,7 +27216,6 @@ static swig_type_info _swigt__p_CImgT_long_t = {"_p_CImgT_long_t", "CImg< long >
 static swig_type_info _swigt__p_CImgT_short_t = {"_p_CImgT_short_t", "CImg< short > *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_CImgT_unsigned_char_t = {"_p_CImgT_unsigned_char_t", "CImg< unsigned char > *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_GDALRasterBand = {"_p_GDALRasterBand", "GDALRasterBand *", 0, 0, (void*)0, 0};
-static swig_type_info _swigt__p_GeoRaster = {"_p_GeoRaster", "GeoRaster *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_UNITS = {"_p_UNITS", "UNITS *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_allocator_type = {"_p_allocator_type", "allocator_type *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_bbox = {"_p_bbox", "bbox *", 0, 0, (void*)0, 0};
@@ -27600,7 +27277,6 @@ static swig_type_info *swig_type_initial[] = {
   &_swigt__p_CImgT_short_t,
   &_swigt__p_CImgT_unsigned_char_t,
   &_swigt__p_GDALRasterBand,
-  &_swigt__p_GeoRaster,
   &_swigt__p_UNITS,
   &_swigt__p_allocator_type,
   &_swigt__p_bbox,
@@ -27662,7 +27338,6 @@ static swig_cast_info _swigc__p_CImgT_long_t[] = {  {&_swigt__p_CImgT_long_t, 0,
 static swig_cast_info _swigc__p_CImgT_short_t[] = {  {&_swigt__p_CImgT_short_t, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_CImgT_unsigned_char_t[] = {  {&_swigt__p_CImgT_unsigned_char_t, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_GDALRasterBand[] = {  {&_swigt__p_GDALRasterBand, 0, 0, 0},{0, 0, 0, 0}};
-static swig_cast_info _swigc__p_GeoRaster[] = {  {&_swigt__p_GeoRaster, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_UNITS[] = {  {&_swigt__p_UNITS, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_allocator_type[] = {  {&_swigt__p_allocator_type, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_bbox[] = {  {&_swigt__p_bbox, 0, 0, 0},{0, 0, 0, 0}};
@@ -27724,7 +27399,6 @@ static swig_cast_info *swig_cast_initial[] = {
   _swigc__p_CImgT_short_t,
   _swigc__p_CImgT_unsigned_char_t,
   _swigc__p_GDALRasterBand,
-  _swigc__p_GeoRaster,
   _swigc__p_UNITS,
   _swigc__p_allocator_type,
   _swigc__p_bbox,
