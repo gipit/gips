@@ -3,6 +3,10 @@
 import os, sys
 import ogr 
 from shapely.wkb import loads
+from shapely.geometry import shape
+
+#def flatten():
+
 
 class DataInventory(object):
     _rootdir = ''
@@ -22,33 +26,46 @@ class DataInventory(object):
     }
 
     def __getitem__(self,date):
-        return self.tiles[date]
+        return self.data[date]
 
-    def origpath(self):
-        return os.path.join(self._rootdir,self._origdir)
+    def origpath(self,tile='',date=''):
+        """ Root path to original unprocessed files """
+        if tile == '':
+            return os.path.join(self._rootdir, self._origdir)
+        elif date == '':
+            return os.path.join(self._rootdir, self._origdir, tile)
+        else:
+            return os.path.join(self._rootdir, self._origdir, tile, date)
 
     def prodpath(self):
+        """ Root path to products (processed) files """
         return os.path.join(self._rootdir,self._proddir)
-
-    def tilepath(self,tile): 
-        return os.path.join(self.origpath(),tile)
 
     def _colorize(self,txt,color): 
         return "\033["+self._colorcodes[color]+'m' + txt + "\033[0m"
 
     @property
-    def tile_names(self):
-        """ Get list of all tiles """
-        return [k for k,v in self.tile_coverage.items()]
-
     def dates(self):
         """ Get list of all dates """
-        return [k for k in sorted(self.tiles)]
+        return [k for k in sorted(self.data)]
 
     @property
     def numdates(self): 
         """ Get number of dates """
-        return len(self.tiles)
+        return len(self.data)
+
+    @property
+    def tile_names(self):
+        """ Get list of all tiles """
+        return [k for k,v in self.tiles.items()]
+
+    @property
+    def sensor_names(self):
+        """ Get list of all sensors """
+        return [self._colorize(k, self._colors[k]) for k in sorted(self._colors)]
+
+    def sensor_color(self,sensor):
+        return self._colors[self.sensors[sensor]]
 
     #def get_tiles(self, date):
     #    """ Get list of tile dictionaries for given date """    
@@ -61,18 +78,22 @@ class DataInventory(object):
         """ Get list of products for given date """
         # this doesn't handle different tiles (if prod exists for one tile, it lists it)
         prods = []
-        for datafile in self.tiles[date]:
-            for prod in datafile['products']:
-                prod = os.path.splitext(prod)[0]
-                prods.append( prod[len(datafile['basename'])+1:] )
-        return (prods)
+        for sensor in self.data[date]:
+            for datafile in self.data[date][sensor]:
+                for prod in datafile['products']:
+                    prods.append(prod)
+        return sorted(prods)
 
     def site_to_tiles(self,vector):
         """ Identify sensor tiles that fall within vector """
+        import osr
         geom = vector.union()
         ogrgeom = ogr.CreateGeometryFromWkb(geom.wkb)
         tvector = self.get_tile_vector()
         tlayer = tvector.layer
+        trans = osr.CoordinateTransformation(vector.layer.GetSpatialRef(), tlayer.GetSpatialRef())
+        ogrgeom.Transform(trans)
+        geom = loads(ogrgeom.ExportToWkb())
         tlayer.SetSpatialFilter(ogrgeom)
         tiles = {}
         tlayer.ResetReading()
@@ -86,15 +107,16 @@ class DataInventory(object):
                 if len(tile) == 5: tile = '0' + tile
                 tiles[tile] = area/geom.area
             feat = tlayer.GetNextFeature()  
-        self.tile_coverage = tiles
+        self.tiles = tiles
         return tiles
 
     def createlinks(self,hard=False):
         """ Create product links """
-        for date in self.tiles:
-            for f in self.tiles[date]:
-                for p in f['products']:
-                    link(os.path.join(f['productpath'], p), hard)
+        for date in self.data:
+            for sensor in self.data[date]:
+                for f in self.data[date][sensor]:
+                    for p in f['products']:
+                        link( f['products'][p] )
 
     def printprodcal(self,md=False):
         """ print calendar for each tile displaying products """
@@ -105,7 +127,7 @@ class DataInventory(object):
         #import calendar
         #cal = calendar.TextCalendar()
         oldyear = ''
-        for date in self.dates():        
+        for date in self.dates:        
             if md:
                 daystr = str(date.month) + '-' + str(date.day)
             else:
@@ -117,16 +139,17 @@ class DataInventory(object):
             if date.year != oldyear:
                 sys.stdout.write('\n{:>5}: '.format(date.year))
                 if products: sys.stdout.write('\n ')
-            sys.stdout.write(self._colorize('{:<6}'.format(daystr),self.tiles[date][0]['color']))
+            for s in self.data[date]:
+                sys.stdout.write(self._colorize('{:<6}'.format(daystr), self.sensor_color(s) ))
             if products:
                 sys.stdout.write('        ')
                 prods = self.get_products(date)
                 for p in prods:
-                    sys.stdout.write(self._colorize('{:<9}'.format(p),self.tiles[date][0]['color']))
+                    sys.stdout.write(self._colorize('{:<9}'.format(p), self.sensor_color(s) ))
                 sys.stdout.write('\n ')
             oldyear = date.year
         sys.stdout.write('\n')
-        for s in sorted(self._colors): print self._colorize(s,self._colors[s])
+        for s in self.sensor_names: print s
         print self
         
     def __str__(self):

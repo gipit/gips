@@ -51,6 +51,8 @@ namespace gip {
 		}
 		//! Get product-specific options
 		//Options ProductOptions();
+		//! Get GDALDataset object - use cautiously
+		GDALDataset* GetGDALDataset() const { return _GDALDataset.get(); }
 
 		//! \name Spatial Information
 		//! X Size of image/raster, in pixels
@@ -101,6 +103,7 @@ namespace gip {
 		void Flush() { _GDALDataset->FlushCache(); }
 
 	protected:
+
 		//! Filename to dataset
 		boost::filesystem::path _Filename;
 		//! Underlying GDALDataset of this file

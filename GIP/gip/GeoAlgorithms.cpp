@@ -10,6 +10,34 @@
 #include <gip/GeoImageIO.h>
 #include <gip/gip_CImg.h>
 
+#include <gdal/ogrsf_frmts.h>
+#include <gdal/gdalwarper.h>
+
+class CutlineTransformer : public OGRCoordinateTransformation
+{
+public:
+
+    void         *hSrcImageTransformer;
+
+    virtual OGRSpatialReference *GetSourceCS() { return NULL; }
+    virtual OGRSpatialReference *GetTargetCS() { return NULL; }
+
+    virtual int Transform( int nCount, double *x, double *y, double *z = NULL ) {
+        int nResult;
+
+        int *pabSuccess = (int *) CPLCalloc(sizeof(int),nCount);
+        nResult = TransformEx( nCount, x, y, z, pabSuccess );
+        CPLFree( pabSuccess );
+
+        return nResult;
+    }
+
+    virtual int TransformEx( int nCount, double *x, double *y, double *z = NULL, int *pabSuccess = NULL ) {
+        return GDALGenImgProjTransform( hSrcImageTransformer, TRUE, nCount, x, y, z, pabSuccess );
+    }
+};
+
+
 namespace gip {
     using std::string;
 	using std::vector;
@@ -19,27 +47,161 @@ namespace gip {
 	typedef boost::geometry::model::box<point> bbox;
 	//using namespace boost::accumulators;
 
-    //! Copy input file into output file
-	GeoImage Copy(const GeoImage& Input, GeoImage& Output, UNITS units) {
-	    if (Input.NumBands() != Output.NumBands()) throw;
-        for (unsigned int i=0; i<Output.NumBands(); i++) Output[i].Copy(Input[i], units);
-	    // Set colors
-		Colors colors = Input.GetColors();
-		for (unsigned int i=0;i<Input.NumBands();i++) {
-			//std::cout << "Setting band " << i+1 << " to " << colors[i+1] << std::endl;
-			Output.SetColor(colors[i+1], i+1);
-		}
-		// Copies if only one band
-		Output.CopyColorTable(Input);
-		return Output;
+	//! Copy input file into new output file
+	GeoImage Copy(const GeoImage& img, string filename, GDALDataType datatype) { //, UNITS units, ) {
+	    // TODO: if not supplied base output datatype on units (REFLECTIVITY should be float, etc)
+	    //if (datatype == GDT_Unknown) datatype = img.DataType();
+		GeoImage imgout(filename, img);
+        for (unsigned int i=0; i<imgout.NumBands(); i++) imgout[i].Copy(img[i], true);
+		Colors colors = img.GetColors();
+		for (unsigned int i=0;i<img.NumBands();i++) imgout.SetColor(colors[i+1], i+1);
+		//Output.CopyColorTable(Input);
+		return imgout;
 	}
 
-	//! Copy input file into new output file
-	GeoImage Copy(const GeoImage& image, string filename, UNITS units, GDALDataType datatype) {
-	    // TODO: if not supplied base output datatype on units (REFLECTIVITY should be float, etc)
-	    if (datatype == GDT_Unknown) datatype = image.DataType();
-		GeoImage ImageOut(filename, image, datatype);
-        return Copy(image,ImageOut,units);
+    //! Copy
+	/*GeoImage Raw(const GeoImage& img, string filename) {
+        GeoImage imgout(filename, img);
+        for (unsigned int i=0; i<imgout.NumBands(); i++) imgout[i].Copy(img[i]);
+        return imgout;
+	}*/
+
+	//! Merge images into one file and crop to vector
+	GeoImage CookieCutter(vector<std::string> imgnames, string filename, string vectorname, float xres, float yres) {
+        // Open input images
+        vector<GeoImage> imgs;
+        vector<std::string>::const_iterator iimgs;
+        for (iimgs=imgnames.begin();iimgs!=imgnames.end();iimgs++) imgs.push_back(GeoImage(*iimgs));
+        int bsz = imgs[0].NumBands();
+        GDALDataType dtype = imgs[0].DataType();
+
+	    // Create output file based on input vector
+        OGRDataSource *poDS = OGRSFDriverRegistrar::Open(vectorname.c_str());
+        OGRLayer *poLayer = poDS->GetLayer(0);
+        OGREnvelope extent;
+        poLayer->GetExtent(&extent, true);
+        int xsize = (int)(0.5 + (extent.MaxX - extent.MinX) / xres);
+        int ysize = (int)(0.5 + (extent.MaxY - extent.MinY) / yres);
+        GeoImage imgout(filename, xsize, ysize, bsz, dtype);
+
+        double nodata(imgs[0][0].NoDataValue());
+        imgout.SetNoData(nodata);
+        double affine[6];
+        affine[0] = extent.MinX;
+        affine[1] = xres;
+        affine[2] = 0;
+        affine[3] = extent.MaxY;
+        affine[4] = 0;
+        affine[5] = -yres;
+        char* wkt = NULL;
+        poLayer->GetSpatialRef()->exportToWkt(&wkt);
+        imgout.GetGDALDataset()->SetProjection(wkt);
+        imgout.GetGDALDataset()->SetGeoTransform(affine);
+        // Compute union
+        /*OGRPolygon* site; // = new OGRPolygon();
+        OGRFeature *poFeature;
+        poLayer->ResetReading();
+        while( (poFeature = poLayer->GetNextFeature()) != NULL )
+        {
+            OGRGeometry *poGeometry;
+            poGeometry = poFeature->GetGeometryRef();
+
+            site = (OGRPolygon*)site->Union(poGeometry);
+            OGRFeature::DestroyFeature( poFeature );
+        }*/
+
+        // Combine shape geoemtries into single geometry cutline
+        OGRGeometry* site = OGRGeometryFactory::createGeometry( wkbMultiPolygon );
+        OGRGeometry* poGeometry;
+        OGRFeature *poFeature;
+        poLayer->ResetReading();
+        poFeature = poLayer->GetNextFeature();
+        site = poFeature->GetGeometryRef();
+        while( (poFeature = poLayer->GetNextFeature()) != NULL ) {
+            poGeometry = poFeature->GetGeometryRef();
+
+            if( poGeometry == NULL ) fprintf( stderr, "ERROR: Cutline feature without a geometry.\n" );
+
+            //OGRwkbGeometryType eType = wkbFlatten(poGeometry->getGeometryType());
+            site = site->Union(poGeometry);
+            /*if( eType == wkbPolygon )
+                site->addGeometry(poGeometry);
+            else if( eType == wkbMultiPolygon ) {
+                for(int iGeom = 0; iGeom < OGR_G_GetGeometryCount( poGeometry ); iGeom++ ) {
+                    site->addGeometry( poGeometry->getGeometryRef(iGeom)  );
+                }
+            }
+            else fprintf( stderr, "ERROR: Cutline not of polygon type.\n" );*/
+
+            OGRFeature::DestroyFeature( poFeature );
+        }
+        OGRDataSource::DestroyDataSource( poDS );
+
+        // Cutline transform to pixel coordinates
+        char **papszOptionsCutline = NULL;
+        //papszOptionsCutline = CSLSetNameValue( papszOptionsCutline, "DST_SRS", wkt );
+        //papszOptionsCutline = CSLSetNameValue( papszOptionsCutline, "SRC_SRS", wkt );
+        //papszOptionsCutline = CSLSetNameValue( papszOptionsCutline, "INSERT_CENTER_LONG", "FALSE" );
+        CutlineTransformer oTransformer;
+
+        /* The cutline transformer will *invert* the hSrcImageTransformer */
+        /* so it will convert from the cutline SRS to the source pixel/line */
+        /* coordinates */
+        oTransformer.hSrcImageTransformer = GDALCreateGenImgProjTransformer2( imgout.GetGDALDataset(), NULL, papszOptionsCutline );
+        site->transform(&oTransformer);
+
+        GDALDestroyGenImgProjTransformer( oTransformer.hSrcImageTransformer );
+        CSLDestroy( papszOptionsCutline );
+
+        // Warp options
+        GDALWarpOptions *psWarpOptions = GDALCreateWarpOptions();
+        psWarpOptions->hDstDS = imgout.GetGDALDataset();
+        psWarpOptions->nBandCount = bsz;
+        psWarpOptions->panSrcBands = (int *) CPLMalloc(sizeof(int) * psWarpOptions->nBandCount );
+        psWarpOptions->panDstBands = (int *) CPLMalloc(sizeof(int) * psWarpOptions->nBandCount );
+        psWarpOptions->padfSrcNoDataReal = (double *) CPLMalloc(sizeof(double) * psWarpOptions->nBandCount );
+        psWarpOptions->padfSrcNoDataImag = (double *) CPLMalloc(sizeof(double) * psWarpOptions->nBandCount );
+        psWarpOptions->padfDstNoDataReal = (double *) CPLMalloc(sizeof(double) * psWarpOptions->nBandCount );
+        psWarpOptions->padfDstNoDataImag = (double *) CPLMalloc(sizeof(double) * psWarpOptions->nBandCount );
+        for (int i=0;i<bsz;i++) {
+            psWarpOptions->panSrcBands[i] = i+1;
+            psWarpOptions->panDstBands[i] = i+1;
+            psWarpOptions->padfSrcNoDataReal[i] = nodata;
+            psWarpOptions->padfDstNoDataReal[i] = nodata;
+            psWarpOptions->padfSrcNoDataImag[i] = 0.0;
+            psWarpOptions->padfDstNoDataImag[i] = 0.0;
+        }
+        if (Options::Verbose() > 1)
+            psWarpOptions->pfnProgress = GDALTermProgress;
+        else psWarpOptions->pfnProgress = GDALDummyProgress;
+        char **papszOptions = NULL;
+        //psWarpOptions->hCutline = site;
+        //papszOptions = CSLSetNameValue(papszOptions,"SKIP_NOSOURCE","YES");
+        //papszOptions = CSLSetNameValue(papszOptions,"INIT_DEST",NULL);
+        //site->exportToWkt(&wkt);
+        //papszOptions = CSLSetNameValue(papszOptions,"CUTLINE",wkt);
+        psWarpOptions->papszWarpOptions = CSLDuplicate(papszOptions);
+        psWarpOptions->hCutline = site;
+
+        GDALWarpOperation oOperation;
+        // Perform warp for each input file
+        vector<GeoImage>::iterator iimg;
+        for (iimg=imgs.begin();iimg!=imgs.end();iimg++) {
+            psWarpOptions->hSrcDS = iimg->GetGDALDataset();
+            psWarpOptions->pTransformerArg =
+                GDALCreateGenImgProjTransformer( iimg->GetGDALDataset(), iimg->GetGDALDataset()->GetProjectionRef(),
+                                                imgout.GetGDALDataset(), imgout.GetGDALDataset()->GetProjectionRef(), TRUE, 0.0, 0 );
+            psWarpOptions->pfnTransformer = GDALGenImgProjTransform;
+            oOperation.Initialize( psWarpOptions );
+            std::cout << CPLGetLastErrorMsg() << std::endl;
+            if (Options::Verbose() > 1) std::cout << "Warping file " << iimg->Basename() << std::endl;
+            oOperation.ChunkAndWarpMulti( 0, 0, imgout.XSize(), imgout.YSize() );
+
+            GDALDestroyGenImgProjTransformer( psWarpOptions->pTransformerArg );
+        }
+        GDALDestroyWarpOptions( psWarpOptions );
+
+        return imgout;
 	}
 
 	//! Calculate Radiance
@@ -93,6 +255,7 @@ namespace gip {
         return imgoutIO;
 	}
 
+    //! Generate 3-band RGB image scaled to 1 byte for easy viewing
     GeoImage RGB(const GeoImage& image, string filename) {
         GeoImageIO<unsigned char> ImageOut(GeoImage(filename, image, GDT_Byte));
         GeoImageIO<float> imageIO(image);
@@ -102,7 +265,7 @@ namespace gip {
         std::vector<bbox> Chunks = ImageOut.Chunk();
         std::vector<bbox>::const_iterator iChunk;
         for (unsigned int b=0;b<image.NumBands();b++) {
-            stats = imageIO[b].ComputeStats();
+            stats = imageIO[b].ComputeStats(true);
             float lo = std::max(stats(2) - 3*stats(3), stats(0)-1);
             float hi = std::min(stats(2) + 3*stats(3), stats(1));
             for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
@@ -247,12 +410,12 @@ namespace gip {
         std::vector<bbox> Chunks = imgout.Chunk();
         std::vector<bbox>::const_iterator iChunk;
         for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
-            red = imgin["Red"].Read(*iChunk, REFLECTIVITY);
-            green = imgin["Green"].Read(*iChunk, REFLECTIVITY);
-            blue = imgin["Blue"].Read(*iChunk, REFLECTIVITY);
-            nir = imgin["NIR"].Read(*iChunk, REFLECTIVITY);
-            swir1 = imgin["SWIR1"].Read(*iChunk, REFLECTIVITY);
-            swir2 = imgin["SWIR2"].Read(*iChunk, REFLECTIVITY);
+            red = imgin["Red"].Ref(*iChunk);
+            green = imgin["Green"].Ref(*iChunk);
+            blue = imgin["Blue"].Ref(*iChunk);
+            nir = imgin["NIR"].Ref(*iChunk);
+            swir1 = imgin["SWIR1"].Ref(*iChunk);
+            swir2 = imgin["SWIR2"].Ref(*iChunk);
             int currentband(0);
             if (ndvi) {
                 out = (nir-red).div(nir+red);
@@ -311,8 +474,8 @@ namespace gip {
         std::vector<bbox>::const_iterator iChunk;
         for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
 
-            red = imgin["Red"].Read(*iChunk, REFLECTIVITY);
-            temp = imgin["LWIR"].Read(*iChunk, REFLECTIVITY);
+            red = imgin["Red"].Ref(*iChunk);
+            temp = imgin["LWIR"].Ref(*iChunk);
             ndvi = imgin.NDVI(*iChunk);
 
             mask =
@@ -354,12 +517,12 @@ namespace gip {
         vector<bbox> Chunks = image.Chunk();
         vector<bbox>::const_iterator iChunk;
         for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
-            red = imgin["Red"].Read(*iChunk, REFLECTIVITY);
-            green = imgin["Green"].Read(*iChunk, REFLECTIVITY);
-            nir = imgin["NIR"].Read(*iChunk, REFLECTIVITY);
-            swir1 = imgin["SWIR1"].Read(*iChunk, REFLECTIVITY);
-            swir2 = imgin["SWIR2"].Read(*iChunk, REFLECTIVITY);
-            BT = imgin["LWIR"].Read(*iChunk, REFLECTIVITY);
+            red = imgin["Red"].Ref(*iChunk);
+            green = imgin["Green"].Ref(*iChunk);
+            nir = imgin["NIR"].Ref(*iChunk);
+            swir1 = imgin["SWIR1"].Ref(*iChunk);
+            swir2 = imgin["SWIR2"].Ref(*iChunk);
+            BT = imgin["LWIR"].Ref(*iChunk);
             nodatamask = imgin.NoDataMask(*iChunk)^=1;
             // floodfill....seems bad way
             //shadowmask = nir.draw_fill(nir.width()/2,nir.height()/2,)
@@ -443,7 +606,7 @@ namespace gip {
         CImg<float> wprob, lprob;
         for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
             // Cloud over Water prob
-            BT = imgin["LWIR"].Read(*iChunk,REFLECTIVITY);
+            BT = imgin["LWIR"].Ref(*iChunk);
             nodatamask = imgin.NoDataMask(*iChunk);
 
             vprob = probout[0].Read(*iChunk);
@@ -481,8 +644,8 @@ namespace gip {
             wmask = imgout[1].Read(*iChunk);
 
             nodatamask = imgin.NoDataMask(*iChunk);
-            BT = imgin["LWIR"].Read(*iChunk,REFLECTIVITY);
-            swir1 = imgin["SWIR1"].Read(*iChunk,REFLECTIVITY);
+            BT = imgin["LWIR"].Ref(*iChunk);
+            swir1 = imgin["SWIR1"].Ref(*iChunk);
 
             // temp probability x brightness probability
             wprob = ((Twater - BT)/=4.0).mul( swir1.min(0.11)/=0.11 );
@@ -723,7 +886,7 @@ namespace gip {
 		for (unsigned int b=0;b<image.NumBands();b++) {
 			GeoRasterIO<T> band(image[b]);
 			for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
-				CImg<T> img = band.Read(*iChunk, RAW);
+				CImg<T> img = band.Read(*iChunk, true);
 				T nodata = band.NoDataValue();
 				cimg_forXY(img,x,y)	if ( std::isinf(img(x,y)) || std::isnan(img(x,y)) ) img(x,y) = nodata;
 				band.Write(img,*iChunk);

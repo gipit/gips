@@ -206,6 +206,7 @@ class GeoData(_object):
     def Basename(self): return _gippylib.GeoData_Basename(self)
     def Format(self): return _gippylib.GeoData_Format(self)
     def Product(self): return _gippylib.GeoData_Product(self)
+    def GetGDALDataset(self): return _gippylib.GeoData_GetGDALDataset(self)
     def XSize(self): return _gippylib.GeoData_XSize(self)
     def YSize(self): return _gippylib.GeoData_YSize(self)
     def Size(self): return _gippylib.GeoData_Size(self)
@@ -223,9 +224,6 @@ class GeoData(_object):
 GeoData_swigregister = _gippylib.GeoData_swigregister
 GeoData_swigregister(GeoData)
 
-RAW = _gippylib.RAW
-RADIANCE = _gippylib.RADIANCE
-REFLECTIVITY = _gippylib.REFLECTIVITY
 class GeoFunction(_object):
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, GeoFunction, name, value)
@@ -296,7 +294,7 @@ class GeoRaster(GeoData):
     def StdDev(self): return _gippylib.GeoRaster_StdDev(self)
     def GetGDALStats(self): return _gippylib.GeoRaster_GetGDALStats(self)
     def ComputeGDALStats(self): return _gippylib.GeoRaster_ComputeGDALStats(self)
-    def ComputeStats(self, *args): return _gippylib.GeoRaster_ComputeStats(self, *args)
+    def ComputeStats(self, RAW = False): return _gippylib.GeoRaster_ComputeStats(self, RAW)
     def __gt__(self, *args): return _gippylib.GeoRaster___gt__(self, *args)
     def __ge__(self, *args): return _gippylib.GeoRaster___ge__(self, *args)
     def __lt__(self, *args): return _gippylib.GeoRaster___lt__(self, *args)
@@ -338,6 +336,7 @@ class GeoImage(GeoData):
     def SetGain(self, *args): return _gippylib.GeoImage_SetGain(self, *args)
     def SetOffset(self, *args): return _gippylib.GeoImage_SetOffset(self, *args)
     def SetUnits(self, *args): return _gippylib.GeoImage_SetUnits(self, *args)
+    def ClearAtmosphere(self): return _gippylib.GeoImage_ClearAtmosphere(self)
     def SetNoData(self, *args): return _gippylib.GeoImage_SetNoData(self, *args)
     def ClearNoData(self): return _gippylib.GeoImage_ClearNoData(self)
     def __getitem__(self, *args): return _gippylib.GeoImage___getitem__(self, *args)
@@ -416,6 +415,10 @@ def Copy(*args):
   return _gippylib.Copy(*args)
 Copy = _gippylib.Copy
 
+def CookieCutter(*args):
+  return _gippylib.CookieCutter(*args)
+CookieCutter = _gippylib.CookieCutter
+
 def Indices(*args):
   return _gippylib.Indices(*args)
 Indices = _gippylib.Indices
@@ -484,7 +487,8 @@ class GeoRaster_byte(GeoRaster):
     __del__ = lambda self : None;
     def Read(self, *args): return _gippylib.GeoRaster_byte_Read(self, *args)
     def Write(self, *args): return _gippylib.GeoRaster_byte_Write(self, *args)
-    def ComputeStats(self, *args): return _gippylib.GeoRaster_byte_ComputeStats(self, *args)
+    def Copy(self, *args): return _gippylib.GeoRaster_byte_Copy(self, *args)
+    def ComputeStats(self, RAW = False): return _gippylib.GeoRaster_byte_ComputeStats(self, RAW)
     def SaturationMask(self, *args): return _gippylib.GeoRaster_byte_SaturationMask(self, *args)
     def NoDataMask(self, *args): return _gippylib.GeoRaster_byte_NoDataMask(self, *args)
     def Ref(self, *args): return _gippylib.GeoRaster_byte_Ref(self, *args)
@@ -507,7 +511,8 @@ class GeoRaster_int16(GeoRaster):
     __del__ = lambda self : None;
     def Read(self, *args): return _gippylib.GeoRaster_int16_Read(self, *args)
     def Write(self, *args): return _gippylib.GeoRaster_int16_Write(self, *args)
-    def ComputeStats(self, *args): return _gippylib.GeoRaster_int16_ComputeStats(self, *args)
+    def Copy(self, *args): return _gippylib.GeoRaster_int16_Copy(self, *args)
+    def ComputeStats(self, RAW = False): return _gippylib.GeoRaster_int16_ComputeStats(self, RAW)
     def SaturationMask(self, *args): return _gippylib.GeoRaster_int16_SaturationMask(self, *args)
     def NoDataMask(self, *args): return _gippylib.GeoRaster_int16_NoDataMask(self, *args)
     def Ref(self, *args): return _gippylib.GeoRaster_int16_Ref(self, *args)
@@ -530,7 +535,8 @@ class GeoRaster_int32(GeoRaster):
     __del__ = lambda self : None;
     def Read(self, *args): return _gippylib.GeoRaster_int32_Read(self, *args)
     def Write(self, *args): return _gippylib.GeoRaster_int32_Write(self, *args)
-    def ComputeStats(self, *args): return _gippylib.GeoRaster_int32_ComputeStats(self, *args)
+    def Copy(self, *args): return _gippylib.GeoRaster_int32_Copy(self, *args)
+    def ComputeStats(self, RAW = False): return _gippylib.GeoRaster_int32_ComputeStats(self, RAW)
     def SaturationMask(self, *args): return _gippylib.GeoRaster_int32_SaturationMask(self, *args)
     def NoDataMask(self, *args): return _gippylib.GeoRaster_int32_NoDataMask(self, *args)
     def Ref(self, *args): return _gippylib.GeoRaster_int32_Ref(self, *args)
@@ -553,7 +559,8 @@ class GeoRaster_int64(GeoRaster):
     __del__ = lambda self : None;
     def Read(self, *args): return _gippylib.GeoRaster_int64_Read(self, *args)
     def Write(self, *args): return _gippylib.GeoRaster_int64_Write(self, *args)
-    def ComputeStats(self, *args): return _gippylib.GeoRaster_int64_ComputeStats(self, *args)
+    def Copy(self, *args): return _gippylib.GeoRaster_int64_Copy(self, *args)
+    def ComputeStats(self, RAW = False): return _gippylib.GeoRaster_int64_ComputeStats(self, RAW)
     def SaturationMask(self, *args): return _gippylib.GeoRaster_int64_SaturationMask(self, *args)
     def NoDataMask(self, *args): return _gippylib.GeoRaster_int64_NoDataMask(self, *args)
     def Ref(self, *args): return _gippylib.GeoRaster_int64_Ref(self, *args)
@@ -576,7 +583,8 @@ class GeoRaster_float(GeoRaster):
     __del__ = lambda self : None;
     def Read(self, *args): return _gippylib.GeoRaster_float_Read(self, *args)
     def Write(self, *args): return _gippylib.GeoRaster_float_Write(self, *args)
-    def ComputeStats(self, *args): return _gippylib.GeoRaster_float_ComputeStats(self, *args)
+    def Copy(self, *args): return _gippylib.GeoRaster_float_Copy(self, *args)
+    def ComputeStats(self, RAW = False): return _gippylib.GeoRaster_float_ComputeStats(self, RAW)
     def SaturationMask(self, *args): return _gippylib.GeoRaster_float_SaturationMask(self, *args)
     def NoDataMask(self, *args): return _gippylib.GeoRaster_float_NoDataMask(self, *args)
     def Ref(self, *args): return _gippylib.GeoRaster_float_Ref(self, *args)
@@ -599,7 +607,8 @@ class GeoRaster_double(GeoRaster):
     __del__ = lambda self : None;
     def Read(self, *args): return _gippylib.GeoRaster_double_Read(self, *args)
     def Write(self, *args): return _gippylib.GeoRaster_double_Write(self, *args)
-    def ComputeStats(self, *args): return _gippylib.GeoRaster_double_ComputeStats(self, *args)
+    def Copy(self, *args): return _gippylib.GeoRaster_double_Copy(self, *args)
+    def ComputeStats(self, RAW = False): return _gippylib.GeoRaster_double_ComputeStats(self, RAW)
     def SaturationMask(self, *args): return _gippylib.GeoRaster_double_SaturationMask(self, *args)
     def NoDataMask(self, *args): return _gippylib.GeoRaster_double_NoDataMask(self, *args)
     def Ref(self, *args): return _gippylib.GeoRaster_double_Ref(self, *args)

@@ -56,6 +56,28 @@ namespace gip {
 			LoadBands();
 			//_Colors = image.GetColors();
 		}
+		//! Constructor to create new file based on input vector extents
+		/*explicit GeoImage(std::string filename, std::string vector, float xres, float yres, GDALDataType datatype=GDT_Byte, int bsz=1) {
+		    OGRDataSource *poDS = OGRSFDriverRegistrar::Open(vector.c_str());
+            OGRLayer *poLayer = poDS->GetLayer(0);
+		    OGREnvelope extent;
+		    poLayer->GetExtent(&extent, true);
+            int xsize = (int)(0.5 + (extent.MaxX - extent.MinX) / xres);
+            int ysize = (int)(0.5 + (extent.MaxY - extent.MinY) / yres);
+            GeoData::CreateNew(xsize, ysize, bsz, datatype, filename);
+            double affine[6];
+            affine[0] = extent.MinX;
+            affine[1] = xres;
+            affine[2] = 0;
+            affine[3] = extent.MaxY;
+            affine[4] = 0;
+            affine[5] = -yres;
+            _GDALDataset->SetGeoTransform(affine);
+            char* wkt = NULL;
+            poLayer->GetSpatialRef()->exportToWkt(&wkt);
+            _GDALDataset->SetProjection(wkt);
+            OGRDataSource::DestroyDataSource( poDS );
+		}*/
 
 		//! Copy constructor - copies GeoData and all bands
 		GeoImage(const GeoImage& image);
@@ -136,6 +158,8 @@ namespace gip {
         void SetOffset(float offset) { for (unsigned int i=0;i<_RasterBands.size();i++) _RasterBands[i].SetOffset(offset); }
         //! Set units for all bands
         void SetUnits(std::string units) { for (unsigned int i=0;i<_RasterBands.size();i++) _RasterBands[i].SetUnits(units); }
+        //! Clear atmosphere from all bands
+        void ClearAtmosphere() { for(unsigned int i=0;i<_RasterBands.size();i++) _RasterBands[i].ClearAtmosphere(); }
 
 		//! Set NoData for all bands
 		void SetNoData(double val) { for (unsigned int i=0;i<_RasterBands.size();i++) _RasterBands[i].SetNoData(val); }

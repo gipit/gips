@@ -18,7 +18,8 @@
 namespace gip {
 	//typedef bgeo::model::d2::point_xy<float> point;
 
-    enum UNITS {RAW, RADIANCE, REFLECTIVITY};
+    //enum UNITS {RAW, RADIANCE, REFLECTIVITY};
+    //enum READMODE {NORMAL, RAW, ATMOSPHERE};
 	//template<class T> class GeoRasterIO;
 
 	class GeoFunction {
@@ -60,7 +61,7 @@ namespace gip {
 		~GeoRaster() {} //_GDALRasterBand->FlushCache(); }
 
         //! Copy passed raster band into this raster (is this constructor?)
-        GeoRaster& Copy(const GeoRaster&, UNITS units=RAW);
+        GeoRaster& Copy(const GeoRaster&, bool RAW=false);
 
         GeoRaster& AddFunction(GeoFunction func) { _Functions.push_back(func); return *this; }
 
@@ -249,7 +250,7 @@ namespace gip {
 			return stats;
 		}
 
-		cimg_library::CImg<float> ComputeStats(UNITS=RAW) const;
+		cimg_library::CImg<float> ComputeStats(bool RAW=false) const;
 
 		// \name Processing functions
 		//! Greater than

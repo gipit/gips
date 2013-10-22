@@ -56,6 +56,7 @@ namespace gip {
                 }
                 // apply atmosphere if there is one (which would data is radiance units) TODO - check units
                 if (Atmosphere()) {
+                    std::cout << "applying atmosphere" << std::endl;
                     double e = (Thermal()) ? 0.95 : 1;  // For thermal band, currently water only
                     img = (img - (_Atmosphere.Lu() + (1-e)*_Atmosphere.Ld())) / (_Atmosphere.t() * e);
                     updatenodata = true;
@@ -132,20 +133,21 @@ namespace gip {
 		}*/
 
 		//! Copy input band into this
-		/*GeoRasterIO<T>& Copy(const GeoRaster& raster, UNITS units=RAW) {
+		GeoRasterIO<T>& Copy(const GeoRaster& raster, bool RAW=false) {
 		    using cimg_library::CImg;
-		    GeoRasterIO<float> rasterIO(raster);
+		    GeoRasterIO<double> rasterIO(raster);
             std::vector<bbox> Chunks = Chunk();
             std::vector<bbox>::const_iterator iChunk;
             for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
-                    CImg<float> cimg = rasterIO.Read(*iChunk, units);
-                    CImg<unsigned char> mask;
-                    if (Gain() != 1.0 || Offset() != 0.0) {
+                    CImg<double> cimg = rasterIO.Read(*iChunk, RAW);
+                    cimg_printstats(cimg,"read");
+                    //CImg<unsigned char> mask;
+                    /*if (Gain() != 1.0 || Offset() != 0.0) {
                         (cimg-=Offset())/=Gain();
                         mask = rasterIO.NoDataMask(*iChunk);
                         cimg_forXY(cimg,x,y) { if (mask(x,y)) cimg(x,y) = NoDataValue(); }
-                    }
-                    Write(CImg<T>().assign(cimg.round()),*iChunk);
+                    }*/
+                    Write(CImg<T>().assign(cimg.round()),*iChunk, RAW);
             }
             // Copy relevant metadata
             GDALRasterBand* band = raster.GetGDALRasterBand();
@@ -156,10 +158,10 @@ namespace gip {
             _GDALRasterBand->SetMetadata(band->GetMetadata());
             CopyCoordinateSystem(raster);
             return *this;
-		}*/
+		}
 
 		//! Calculate stats
-		cimg_library::CImg<float> ComputeStats(UNITS units=RAW) {
+		cimg_library::CImg<float> ComputeStats(bool RAW=false) {
 		    using cimg_library::CImg;
 		    CImg<T> cimg;
 		    T min(MaxValue()), max(MinValue());
@@ -168,7 +170,7 @@ namespace gip {
             std::vector<bbox> Chunks = Chunk();
             std::vector<bbox>::const_iterator iChunk;
             for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
-                cimg = Read(*iChunk, units);
+                cimg = Read(*iChunk, RAW);
                 cimg_for(cimg,ptr,T) {
                     if (*ptr != NoDataValue()) {
                         total += *ptr;
@@ -181,7 +183,7 @@ namespace gip {
             float mean = total/count;
             total = 0;
             for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
-                cimg = Read(*iChunk, units);
+                cimg = Read(*iChunk, RAW);
                 cimg_for(cimg,ptr,T) {
                     if (*ptr != NoDataValue()) total += (*ptr - mean)*(*ptr - mean);
                 }
@@ -209,7 +211,7 @@ namespace gip {
 
         //! Get Saturation mask
 		cimg_library::CImg<bool> SaturationMask(bbox chunk) const {
-		    cimg_library::CImg<float> band(Read(chunk, RAW));
+		    cimg_library::CImg<float> band(Read(chunk, true));
 		    return band.threshold(_maxDC);
 		}
 
@@ -225,7 +227,7 @@ namespace gip {
 		}
 
 		//! Return reflectance (or temperature if thermal band)  (move to GeoRaster)
-		cimg_library::CImg<float> Ref(bbox chunk) {
+		cimg_library::CImg<float> Ref(bbox chunk) const {
             cimg_library::CImg<float> cimg = Read(chunk);
             if (Thermal()) {
                 cimg_for(cimg,ptr,float) *ptr = (_K2/log(_K1/(*ptr)+1)) - 273.15;

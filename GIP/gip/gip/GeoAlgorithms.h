@@ -17,10 +17,12 @@ namespace gip {
     //GeoRaster Copy(const GeoRaster& Input, GeoRaster& Output, UNITS units=RAW);
 
     //! Copy input file into output file
-    GeoImage Copy(const GeoImage& Input, GeoImage& Output, UNITS units=RAW);
+    //GeoImage Copy(const GeoImage& Input, GeoImage& Output, UNITS units=RAW);
 
 	//! Copy input file into new output file
-	GeoImage Copy(const GeoImage&, std::string, UNITS units=RAW, GDALDataType=GDT_Unknown);
+	GeoImage Copy(const GeoImage&, std::string, GDALDataType=GDT_Unknown);
+
+	GeoImage CookieCutter(std::vector<std::string>, std::string, std::string, float=1.0, float=1.0);
 
 	//! Create new file of standard indices: NDVI, EVI, LSWI, NDSI, BI
 	GeoImage Indices(const GeoImage&, std::string, bool=true, bool=true, bool=true, bool=true, bool=true);

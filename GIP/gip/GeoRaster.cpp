@@ -44,39 +44,31 @@ namespace gip {
 	}
 
     //! Copy passed raster band into this raster band
-    GeoRaster& GeoRaster::Copy(const GeoRaster& img, UNITS units) {
+    GeoRaster& GeoRaster::Copy(const GeoRaster& img, bool RAW) {
         switch (DataType()) {
-            case GDT_Byte: GeoRasterIO<unsigned char>(*this).Copy(img, units);
-                break;
-            case GDT_UInt16: GeoRasterIO<unsigned short>(*this).Copy(img, units);
-                break;
-            case GDT_Int16: GeoRasterIO<short>(*this).Copy(img, units);
-                break;
-            case GDT_UInt32: GeoRasterIO<unsigned int>(*this).Copy(img, units);
-                break;
-            case GDT_Int32: GeoRasterIO<int>(*this).Copy(img, units);
-                break;
-            case GDT_Float32: GeoRasterIO<float>(*this).Copy(img, units);
-                break;
-            case GDT_Float64: GeoRasterIO<double>(*this).Copy(img, units);
-                break;
-            default: GeoRasterIO<unsigned char>(*this).Copy(img, units);
-                break;
+            case GDT_Byte: return GeoRasterIO<unsigned char>(*this).Copy(img, RAW);
+            case GDT_UInt16: return GeoRasterIO<unsigned short>(*this).Copy(img, RAW);
+            case GDT_Int16: return GeoRasterIO<short>(*this).Copy(img, RAW);
+            case GDT_UInt32: return GeoRasterIO<unsigned int>(*this).Copy(img, RAW);
+            case GDT_Int32: return GeoRasterIO<int>(*this).Copy(img, RAW);
+            case GDT_Float32: return GeoRasterIO<float>(*this).Copy(img, RAW);
+            case GDT_Float64: return GeoRasterIO<double>(*this).Copy(img, RAW);
+            default: return GeoRasterIO<unsigned char>(*this).Copy(img, RAW);
+            // TODO - remove default. This should throw exception
         }
-        return *this;
     }
 
     //! Compute stats
-    cimg_library::CImg<float> GeoRaster::ComputeStats(UNITS units) const {
+    cimg_library::CImg<float> GeoRaster::ComputeStats(bool RAW) const {
         switch (DataType()) {
-            case GDT_Byte: return GeoRasterIO<unsigned char>(*this).ComputeStats(units);
-            case GDT_UInt16: return GeoRasterIO<unsigned short>(*this).ComputeStats(units);
-            case GDT_Int16: return GeoRasterIO<short>(*this).ComputeStats(units);
-            case GDT_UInt32: return GeoRasterIO<unsigned int>(*this).ComputeStats(units);
-            case GDT_Int32: return GeoRasterIO<int>(*this).ComputeStats(units);
-            case GDT_Float32: return GeoRasterIO<float>(*this).ComputeStats(units);
-            case GDT_Float64: return GeoRasterIO<double>(*this).ComputeStats(units);
-            default: return GeoRasterIO<unsigned char>(*this).ComputeStats(units);
+            case GDT_Byte: return GeoRasterIO<unsigned char>(*this).ComputeStats(RAW);
+            case GDT_UInt16: return GeoRasterIO<unsigned short>(*this).ComputeStats(RAW);
+            case GDT_Int16: return GeoRasterIO<short>(*this).ComputeStats(RAW);
+            case GDT_UInt32: return GeoRasterIO<unsigned int>(*this).ComputeStats(RAW);
+            case GDT_Int32: return GeoRasterIO<int>(*this).ComputeStats(RAW);
+            case GDT_Float32: return GeoRasterIO<float>(*this).ComputeStats(RAW);
+            case GDT_Float64: return GeoRasterIO<double>(*this).ComputeStats(RAW);
+            default: return GeoRasterIO<unsigned char>(*this).ComputeStats(RAW);
             // TODO - remove default. This should throw exception
         }
     }

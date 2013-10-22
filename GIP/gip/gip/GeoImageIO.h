@@ -100,8 +100,8 @@ namespace gip {
 
         //! Get NDVI
 		CImg<float> NDVI(bbox chunk) const {
-            CImg<float> red( (*this)["Red"].Read(chunk, REFLECTIVITY) );
-            CImg<float> nir( (*this)["NIR"].Read(chunk, REFLECTIVITY) );
+            CImg<float> red( (*this)["Red"].Ref(chunk) );
+            CImg<float> nir( (*this)["NIR"].Ref(chunk) );
             CImg<float> ndvi( (nir-red).div(nir+red) );
 
             // Check for NoData
@@ -115,8 +115,8 @@ namespace gip {
 
         //! Get NDSI
 		CImg<float> NDSI(bbox chunk) const {
-            CImg<float> green( (*this)["Green"].Read(chunk, REFLECTIVITY) );
-            CImg<float> swir1( (*this)["SWIR1"].Read(chunk, REFLECTIVITY) );
+            CImg<float> green( (*this)["Green"].Ref(chunk) );
+            CImg<float> swir1( (*this)["SWIR1"].Ref(chunk) );
             CImg<float> ndsi( (green-swir1).div(green+swir1) );
 
             // Check for NoData
@@ -201,9 +201,9 @@ namespace gip {
 
 		//! Return a mask of snow
 		CImg<bool> SnowMask(bbox chunk) const {
-            CImg<float> nir( operator[]("NIR").Read(chunk, REFLECTIVITY) );
-            CImg<float> green( operator[]("Green").Read(chunk, REFLECTIVITY) );
-            CImg<float> temp( operator[]("LWIR").Read(chunk, REFLECTIVITY) );
+            CImg<float> nir( operator[]("NIR").Ref(chunk) );
+            CImg<float> green( operator[]("Green").Ref(chunk) );
+            CImg<float> temp( operator[]("LWIR").Ref(chunk) );
 
             float th_nir = 0.11;
             float th_green = 0.1;
@@ -218,8 +218,8 @@ namespace gip {
 
         //! Return a mask of water (and possibley clear-sky pixels)
 		CImg<bool> WaterMask(bbox chunk) const {
-            CImg<float> red( operator[]("Red").Read(chunk, REFLECTIVITY) );
-            CImg<float> nir( operator[]("NIR").Read(chunk, REFLECTIVITY) );
+            CImg<float> red( operator[]("Red").Ref(chunk) );
+            CImg<float> nir( operator[]("NIR").Ref(chunk) );
             CImg<float> ndvi = (nir-red).get_div(nir+red);
             CImg<bool> mask(red.width(),red.height(),1,1,false);
             cimg_forXY(mask,x,y) {
@@ -230,17 +230,17 @@ namespace gip {
 
         //! Return haze mask
         CImg<bool> HazeMask(bbox chunk) const {
-            CImg<float> red( operator[]("Red").Read(chunk, REFLECTIVITY) );
-            CImg<float> blue( operator[]("Blue").Read(chunk, REFLECTIVITY) );
+            CImg<float> red( operator[]("Red").Ref(chunk) );
+            CImg<float> blue( operator[]("Blue").Ref(chunk) );
             CImg<bool> mask( (blue - 0.5*red - 0.08).threshold(0.0) );
             return mask;
         }
 
         CImg<float> Whiteness(bbox chunk) const {
             // RAW or RADIANCE ?
-            CImg<float> red = operator[]("Red").Read(chunk, RAW);
-            CImg<float> green = operator[]("Green").Read(chunk, RAW);
-            CImg<float> blue = operator[]("Blue").Read(chunk, RAW);
+            CImg<float> red = operator[]("Red").Read(chunk, true);
+            CImg<float> green = operator[]("Green").Read(chunk, true);
+            CImg<float> blue = operator[]("Blue").Read(chunk, true);
             CImg<float> white(red.width(),red.height());
             float mu;
             cimg_forXY(white,x,y) {

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 <CodeBlocks_layout_file>
 	<ActiveTarget name="Release" />
-	<File name="gippylib.h" open="0" top="0" tabpos="0">
-		<Cursor position="1481" topLine="17" />
+	<File name="gippylib.h" open="1" top="0" tabpos="1">
+		<Cursor position="3242" topLine="67" />
 	</File>
 	<File name="gippylib_wrap.cxx" open="0" top="0" tabpos="0">
-		<Cursor position="574886" topLine="17412" />
+		<Cursor position="541574" topLine="16529" />
 	</File>
 </CodeBlocks_layout_file>
