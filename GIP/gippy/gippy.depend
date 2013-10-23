@@ -1,8 +1,0 @@
-# depslib dependency file v1.0
-1355169155 source:/home/mhanson/work/GIP/gip/Colors.cpp
-	"gip/Colors.h"
-
-1355167916 /home/mhanson/work/GIP/gip/gip/Colors.h
-	<map>
-	<string>
-
