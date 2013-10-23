@@ -14,9 +14,8 @@ import traceback
 
 import gippy
 from gippy.atmosphere import atmosphere
-from gippy.GeoVector import GeoVector
 
-from gippy.data import DataInventory
+from gippy.data.core import DataInventory
 
 from pdb import set_trace
 
@@ -32,14 +31,14 @@ class LandsatInventory(DataInventory):
     def get_tile_vector():
         """ Get GeoVector of the sensor tile grid """
         dbstr  = "PG:dbname=geodata host=congo port=5432 user=ags"
-        return GeoVector(dbstr, layer='landsat_wrs')
+        return gippy.GeoVector(dbstr, layer='landsat_wrs')
 
     def __init__(self, site=None, tiles=None, dates=None, days=None, products=None):
         # Spatial extent (define self.tiles)
         if tiles is None: tiles = os.listdir(self.origpath())
         self.site = site
         if self.site is not None: 
-            self.site_to_tiles(GeoVector(self.site))
+            self.site_to_tiles(gippy.GeoVector(self.site))
         else: self.tiles = dict((t,1) for t in tiles)
 
         # Temporal extent (define self.dates and self.days)
