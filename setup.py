@@ -23,5 +23,5 @@ setup (name = 'gippy',
         ext_modules = [gippy_module],
         py_modules = ['gippy.atmosphere','gippy.GeoVector'],
         packages = ['gippy.algorithms','gippy.data'],
-        scripts = ['gippy/gipit', 'gippy/data/landsat'],
+        #scripts = ['gippy/gipit', 'gippy/data/landsat'],
         )
