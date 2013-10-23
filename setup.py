@@ -5,6 +5,7 @@ setup for GIP and gippy
 """
 
 from distutils.core import setup, Extension
+#from setuptools import setup, Extension
 
 gippy_module = Extension(name = '_gippylib',
                     sources=['gippy/gippylib.i'],
@@ -20,6 +21,7 @@ setup (name = 'gippy',
         author='Matthew Hanson',
         author_email='mhanson@appliedgeosolutions.com',
         ext_modules = [gippy_module],
-        #py_modules = ['gippy.atmosphere','gippy.GeoVector'],
-        #packages = ['gippy.algorithms','gippy.data']
+        py_modules = ['gippy.atmosphere','gippy.GeoVector'],
+        packages = ['gippy.algorithms','gippy.data'],
+        scripts = ['gippy/gipit', 'gippy/data/landsat'],
         )
