@@ -29,7 +29,7 @@ namespace gip {
 
         //! \name Data Information
         //! Get number of layers
-        int NumLayers() const { return _OGRDataSource.GetLayerCount(); }
+        //int NumLayers() const { return _OGRDataSource.GetLayerCount(); }
 
     protected:
 
