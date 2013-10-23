@@ -16,7 +16,7 @@
 #include "gip/GeoRasterIO.h"
 #include "gip/GeoImageIO.h"
 
-using namespace gip;
+//using namespace gip;
 
 namespace gip {
     void reg() { GDALAllRegister(); }
@@ -161,7 +161,7 @@ namespace gip {
             return self->operator==(val);
         }
     }
-    %template(GeoRaster_byte) gip::GeoRasterIO<unsigned char>;
+    /*%template(GeoRaster_byte) gip::GeoRasterIO<unsigned char>;
     %template(GeoRaster_int16) gip::GeoRasterIO<short int>;
     %template(GeoRaster_int32) gip::GeoRasterIO<int>;
     %template(GeoRaster_int64) gip::GeoRasterIO<long>;
@@ -174,6 +174,7 @@ namespace gip {
     %template(GeoImage_int64) gip::GeoImageIO<long>;
     %template(GeoImage_float) gip::GeoImageIO<float>;
     %template(GeoImage_double) gip::GeoImageIO<double>;
+*/
 }
 
 

@@ -1,1 +1,1 @@
-from _gippylib import *
+from gippylib import *

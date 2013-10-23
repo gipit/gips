@@ -6,13 +6,12 @@ setup for GIP and gippy
 
 from distutils.core import setup, Extension
 
-
-
 gippy_module = Extension(name = '_gippylib',
                     sources=['gippy/gippylib.i'],
                     swig_opts=['-c++', '-w509','-IGIP/gip'],
                     include_dirs=['GIP/gip'],
                     libraries=['gip','gdal','boost_system','boost_program_options','boost_filesystem'],
+                    extra_compile_args=['-fPIC'],
                     ) 
 
 setup (name = 'gippy',
