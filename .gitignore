@@ -1,5 +1,5 @@
 *.pyc
 *~
-src/
 *.o
-obj/
+build/
+src/
