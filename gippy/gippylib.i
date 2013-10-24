@@ -1,54 +1,52 @@
 %module gippylib
-
 %{
-#define SWIG_FILE_WITH_INIT
-//#include "gip/Colors.h"
-#include "gip/Options.h"
-//#include "gip/GeoData.h"
-//#include "gip/GeoRaster.h"
-#include "gip/GeoImage.h"
-#include "gip/GeoAlgorithms.h"
-//#include "gdal/gdal_priv.h"
-#include <python2.7/Python.h>
-#include <numpy/arrayobject.h>
-#include <iostream>
-#include "gip/gip_CImg.h"
-#include "gip/GeoRasterIO.h"
-#include "gip/GeoImageIO.h"
+    #define SWIG_FILE_WITH_INIT
+    //#include "gip/Colors.h"
+    #include "gip/Options.h"
+    //#include "gip/GeoData.h"
+    //#include "gip/GeoRaster.h"
+    #include "gip/GeoImage.h"
+    #include "gip/GeoAlgorithms.h"
+    //#include "gdal/gdal_priv.h"
+    #include <python2.7/Python.h>
+    #include <numpy/arrayobject.h>
+    #include <iostream>
+    #include "gip/gip_CImg.h"
+    #include "gip/GeoRasterIO.h"
+    #include "gip/GeoImageIO.h"
 
-//using namespace gip;
+    using namespace gip;
 
-namespace gip {
-    void reg() { GDALAllRegister(); }
-}
+    namespace gip {
+        void reg() { GDALAllRegister(); }
+    }
 
-template<typename T> PyObject* CImgToArr(cimg_library::CImg<T> cimg) {
-    npy_intp dims[] = { cimg.height(), cimg.width() };
-    int typenum;
-    if (typeid(T) == typeid(unsigned char)) typenum = NPY_UINT8;
-    else if (typeid(T) == typeid(char)) typenum = NPY_INT8;
-    else if (typeid(T) == typeid(unsigned short)) typenum = NPY_UINT16;
-    else if (typeid(T) == typeid(short)) typenum = NPY_INT16;
-    else if (typeid(T) == typeid(unsigned int)) typenum = NPY_UINT32;
-    else if (typeid(T) == typeid(int)) typenum = NPY_INT32;
-    else if (typeid(T) == typeid(unsigned long)) typenum = NPY_UINT64;
-    else if (typeid(T) == typeid(long)) typenum = NPY_INT64;
-    else if (typeid(T) == typeid(float)) typenum = NPY_FLOAT32;
-    else if (typeid(T) == typeid(double)) typenum = NPY_FLOAT64;
-    else throw(std::exception());
-    PyObject* arr;
-    if (dims[0] == 1)
-        arr = PyArray_SimpleNew(1,&dims[1], typenum);
-    else arr = PyArray_SimpleNew(2, dims, typenum);
-    void *arr_data = PyArray_DATA((PyArrayObject*)arr);
-    memcpy(arr_data, cimg.data(), PyArray_ITEMSIZE((PyArrayObject*) arr) * dims[0] * dims[1]);
-    return arr;
-}
-
+    template<typename T> PyObject* CImgToArr(cimg_library::CImg<T> cimg) {
+        npy_intp dims[] = { cimg.height(), cimg.width() };
+        int typenum;
+        if (typeid(T) == typeid(unsigned char)) typenum = NPY_UINT8;
+        else if (typeid(T) == typeid(char)) typenum = NPY_INT8;
+        else if (typeid(T) == typeid(unsigned short)) typenum = NPY_UINT16;
+        else if (typeid(T) == typeid(short)) typenum = NPY_INT16;
+        else if (typeid(T) == typeid(unsigned int)) typenum = NPY_UINT32;
+        else if (typeid(T) == typeid(int)) typenum = NPY_INT32;
+        else if (typeid(T) == typeid(unsigned long)) typenum = NPY_UINT64;
+        else if (typeid(T) == typeid(long)) typenum = NPY_INT64;
+        else if (typeid(T) == typeid(float)) typenum = NPY_FLOAT32;
+        else if (typeid(T) == typeid(double)) typenum = NPY_FLOAT64;
+        else throw(std::exception());
+        PyObject* arr;
+        if (dims[0] == 1)
+            arr = PyArray_SimpleNew(1,&dims[1], typenum);
+        else arr = PyArray_SimpleNew(2, dims, typenum);
+        void *arr_data = PyArray_DATA((PyArrayObject*)arr);
+        memcpy(arr_data, cimg.data(), PyArray_ITEMSIZE((PyArrayObject*) arr) * dims[0] * dims[1]);
+        return arr;
+    }
 %}
 
 %init %{
-import_array();
+    import_array();
 %}
 
 // STL bindings
@@ -161,6 +159,7 @@ namespace gip {
             return self->operator==(val);
         }
     }
+
     %template(GeoRaster_byte) gip::GeoRasterIO<unsigned char>;
     %template(GeoRaster_int16) gip::GeoRasterIO<short int>;
     %template(GeoRaster_int32) gip::GeoRasterIO<int>;
