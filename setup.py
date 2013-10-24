@@ -38,7 +38,7 @@ setup (name = 'gippy',
     install_requires = ['Py6S'],
     entry_points = {
         'console_scripts': [
-            'gipit = gippy.gipit',
+            'gipit = gippy.gipit:main',
             'landsat = gippy.data.landsat:main',
         ],
     },
