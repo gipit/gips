@@ -12,7 +12,7 @@ import os, glob, filecmp, shutil
 src = glob.glob('GIP/giputils/bin/Release/*')
 dst = [os.path.join('/usr/local/bin',os.path.basename(b)) for b in src]
 src.append('GIP/gip/bin/Release/libgip.so')
-dst.append('/usr/local/lib/libgip.so')
+dst.append('/usr/lib/libgip.so')
 for b in zip(src,dst):
     if not os.path.exists(b[1]) or not filecmp.cmp(b[0],b[1]): shutil.copy(b[0],b[1])
 
