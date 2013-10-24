@@ -504,7 +504,7 @@ def project(inventory, site, res):
 #        for dd in datedirs:
 #            _cleandir(os.path.join(origpath,pr,dd))
 
-if __name__ == "__main__":
+def main():
     dhf = argparse.ArgumentDefaultsHelpFormatter
     parser0 = argparse.ArgumentParser(description='Landsat Archive Utilities') #, formatter_class=dhf)
     subparser = parser0.add_subparsers(dest='command')

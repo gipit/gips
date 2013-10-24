@@ -4,7 +4,7 @@ import os, argparse
 import datetime
 import gippy
 
-if __name__ == "__main__":
+def main():
     prog = os.path.split(__file__)[1]
     hformat = argparse.ArgumentDefaultsHelpFormatter
     parser0 = argparse.ArgumentParser(prog=prog, formatter_class=hformat, description='Geospatial Image Process IT!')
