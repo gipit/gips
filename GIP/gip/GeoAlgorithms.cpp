@@ -256,27 +256,29 @@ namespace gip {
 	}
 
     //! Generate 3-band RGB image scaled to 1 byte for easy viewing
-    GeoImage RGB(const GeoImage& image, string filename) {
-        GeoImageIO<unsigned char> ImageOut(GeoImage(filename, image, GDT_Byte));
-        GeoImageIO<float> imageIO(image);
-        ImageOut.SetNoData(0);
+    GeoImage RGB(const GeoImage& img, string filename) {
+        GeoImageIO<float> imgIO(img);
+        imgIO.PruneToRGB();
+        GeoImageIO<unsigned char> imgoutIO(GeoImage(filename, imgIO, GDT_Byte));
+        imgoutIO.SetNoData(0);
         CImg<float> stats, cimg;
         CImg<unsigned char> mask;
-        std::vector<bbox> Chunks = ImageOut.Chunk();
+        std::vector<bbox> Chunks = imgoutIO.Chunk();
         std::vector<bbox>::const_iterator iChunk;
-        for (unsigned int b=0;b<image.NumBands();b++) {
-            stats = imageIO[b].ComputeStats(true);
+        for (unsigned int b=0;b<imgIO.NumBands();b++) {
+            stats = imgIO[b].ComputeStats(true);
             float lo = std::max(stats(2) - 3*stats(3), stats(0)-1);
             float hi = std::min(stats(2) + 3*stats(3), stats(1));
             for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
-                cimg = imageIO[b].Read(*iChunk);
-                mask = imageIO[b].NoDataMask(*iChunk);
+                cimg = imgIO[b].Read(*iChunk);
+                mask = imgIO[b].NoDataMask(*iChunk);
                 ((cimg-=lo)*=(255.0/(hi-lo))).max(0.0).min(255.0);
-                cimg_forXY(cimg,x,y) { if (mask(x,y)) cimg(x,y) = ImageOut[b].NoDataValue(); }
-                ImageOut[b].Write(CImg<unsigned char>().assign(cimg.round()),*iChunk);
+                //cimg_printstats(cimg,"after stretch");
+                cimg_forXY(cimg,x,y) { if (mask(x,y)) cimg(x,y) = imgoutIO[b].NoDataValue(); }
+                imgoutIO[b].Write(CImg<unsigned char>().assign(cimg.round()),*iChunk);
             }
         }
-        return ImageOut;
+        return imgoutIO;
     }
 
     // Multiply together all permutations

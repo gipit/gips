@@ -56,7 +56,6 @@ namespace gip {
                 }
                 // apply atmosphere if there is one (which would data is radiance units) TODO - check units
                 if (Atmosphere()) {
-                    std::cout << "applying atmosphere" << std::endl;
                     double e = (Thermal()) ? 0.95 : 1;  // For thermal band, currently water only
                     img = (img - (_Atmosphere.Lu() + (1-e)*_Atmosphere.Ld())) / (_Atmosphere.t() * e);
                     updatenodata = true;
