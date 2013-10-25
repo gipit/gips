@@ -11,6 +11,7 @@ import numpy
 import tarfile
 from copy import deepcopy as deepcopy
 import traceback
+from collections import OrderedDict
 
 import gippy
 from gippy.atmosphere import atmosphere
@@ -19,12 +20,52 @@ from gippy.data.core import DataInventory
 
 from pdb import set_trace
 
+_products = OrderedDict([
+    ('rgb', {
+        'description': 'RGB image for viewing (quick processing)',
+        'function': 'RGB',
+        'atmcorr': False,
+    }),
+    ('rad', {
+        'description': 'Surface leaving radiance', 
+        'function': 'Rad',
+        'atmcorr': True,
+    }),
+    ('toarad',{
+        'description': 'Top of atmosphere radiance',
+        'function': 'Rad',
+        'atmcorr': False,
+    }),
+    ('ref', {
+        'description': 'Surface reflectance',
+        'function': 'Ref',
+        'atmcorr': True,
+    }),
+    ('toaref', {
+        'description': 'Top of atmosphere reflectance',
+        'function': 'Ref',
+        'atmcorr': False,
+    }),
+    ('ind', {
+        'description': 'Atmospherically corrected common indices (NDVI,EVI,LSWI,NDSI,BI)',
+        'function': 'Indices',
+        'atmcorr': True,
+    }),
+    ('toaind', {
+        'description': 'Top of atmosphere common indices (NDVI,EVI,LSWI,NDSI,BI)',
+        'function': 'Indices',
+        'atmcorr': False,
+    }),
+])
+
+_verbose = 1 
+
 class LandsatInventory(DataInventory):
     sensors = {'LT4': 'Landsat 4', 'LT5': 'Landsat 5', 'LE7': 'Landsat 7', 'LC8': 'Landsat 8'}
     _colors = {'Landsat 4':'bright yellow', 'Landsat 5':'bright red', 'Landsat 7':'bright green', 'Landsat 8':'bright blue'}
     _rootdir = '/titan/data/landsat'
     _origdir = 'unprocessed'
-    _proddir = 'products/gippy-beta'
+    _proddir = 'unprocessed' #products/gippy-beta'
     _tile_attribute = 'pr'
 
     @staticmethod
@@ -308,9 +349,7 @@ def _readmeta(filename):
     }
 
 
-
-
-def process(inventory, products=['rad'], verbose=0, overwrite=False, suffix='', overviews=False):
+def process(inventory, products=['toarad'], verbose=0, overwrite=False, suffix='', overviews=False):
 
     print 'Requested %s products for %s files' % (len(products), inventory.numfiles)
     
@@ -342,8 +381,13 @@ def process(inventory, products=['rad'], verbose=0, overwrite=False, suffix='', 
                 runatm = False
                 # generate all product names
                 for product in products:
-                    if product[0:2] == 'A_':
+                    if product[0:3] == 'toa':
+                        baseprod = product[3:]
+                    else:
+                        baseprod = product
                         runatm = True
+                    if baseprod not in _products.keys():
+                        raise Exception('Product %s not recognized' % product)
                     fout = fout_base + product + suffix
                     if len(glob.glob(fout+'.*')) == 0 or overwrite: fouts[product] = fout
 
@@ -356,37 +400,43 @@ def process(inventory, products=['rad'], verbose=0, overwrite=False, suffix='', 
                         # TODO - shouldn't have to _readmeta again
                         meta = _readmeta(dat['filename'])
                     except Exception,e:
-                        print '%s %s' % (dat['basename'],e)
-                        if verbose: print traceback.format_exc()
+                        print 'Error rading data %s' % dat['filename']
+                        if verbose > 1:
+                            print '%s %s' % (dat['basename'],e)
+                            print traceback.format_exc()
                         continue
-                    if runatm:
-                        atmospheres = [atmosphere(i,meta) for i in range(1,img.NumBands()+1)]
+                    if runatm: atmospheres = [atmosphere(i,meta) for i in range(1,img.NumBands()+1)]
                     print '%s: read in %s' % (dat['basename'],datetime.datetime.now() - start)
 
                     for product,fname in fouts.iteritems():
                         try:
                             start = datetime.datetime.now()
 
-                            if (product[0:1] == 'A'):
-                                for i in range(0,img.NumBands()): img[i].SetAtmosphere(atmospheres[i])
-                            else:
+                            if (product[0:3] == 'toa'):
                                 img.ClearAtmosphere()
-                            product = product[2:]
-                            if product == 'cind':
-                                imgout = gippy.Indices(img,fname)
-                            elif product == 'rgb':
-                                img.PruneToRGB()
-                                imgout = gippy.RGB(img,fname)
-                            elif product == 'radi':
-                                imgout = gippy.Rad(img,fname)
-                            elif product == 'refl':
-                                imgout = gippy.Ref(img,fname)
-                            elif product == 'raw':
-                                imgout = gippy.Copy(img,fname)
-                            elif product == 'fmask':
-                                imgout = gippy.algorithms.fmask.process(img,fname)
+                                product = product[3:]
                             else:
-                                raise Exception('product %s not recognized' % product)
+                                if verbose > 1: print 'atmospherically correcting'
+                                for i in range(0,img.NumBands()):
+                                    b = img[i]
+                                    b.SetAtmosphere(atmospheres[i])
+                                    img[i] = b
+                                
+                            try:
+                                fcall = 'gippy.%s(img, fname)' % _products[product]['function']
+                                if verbose > 1: print fcall
+                                imgout = eval(fcall)
+                            except Exception,e:
+                                print 'Error creating product %s for %s: %s' % (product,fname,e)
+                                if verbose > 1: print traceback.format_exc()
+                                
+                            #elif product == 'rgb':
+                            #    img.PruneToRGB()
+                            #    imgout = gippy.RGB(img,fname)
+                            #elif product == 'rad':
+                            #    imgout = gippy.Rad(img,fname)
+                            #elif product == 'ref':
+                            #    imgout = gippy.Ref(img,fname)                                
 
                             if overviews: imgout.AddOverviews()
                             fname = imgout.Filename()
@@ -398,7 +448,14 @@ def process(inventory, products=['rad'], verbose=0, overwrite=False, suffix='', 
                             print '%s %s' % (dat['basename'],e)
                             if verbose > 1: print traceback.format_exc()
                     img = None
-                    _cleandir(os.path.dirname(dat['filename']))
+                    # cleanup directory
+                    dirname = os.path.dirname(meta['metafilename'])
+                    try:
+                        for bname in meta['filenames']: 
+                            files = glob.glob(os.path.join(dirname,bname)+'*')
+                            for f in files: os.remove(f)
+                        shutil.rmtree(os.path.join(dirname,'modtran'))
+                    except: pass
     print 'Completed processing'
     #if args.multi:
     #    for f in fnames:
@@ -456,17 +513,6 @@ def archive(dir=''):
     if numadded != len(fnames):
         print '%s files not added to archive' % (len(fnames)-numadded)
 
-def _cleandir(dir):
-    try:
-        shutil.rmtree(os.path.join(dir,'modtran'))
-    except: pass
-    # Remove extraneous files
-    fnames = glob.glob(os.path.join(dir,'*'))
-    for f in fnames:
-        extension = os.path.splitext(f)[1][1:].strip()
-        if extension != 'txt' and extension != 'gz' and extension != 'tar':
-            os.remove(f)
-
 def project(inventory, site, res):
     for date in inventory.dates:
         for sensor in inventory.data[date]:
@@ -484,29 +530,9 @@ def project(inventory, site, res):
                 imgout = gippy.CookieCutter(fnamesin, fnameout, site, res[0], res[1])
                 print 'Merged %s files -> %s in %s' % (len(fnamesin),imgout.Basename(),datetime.datetime.now() - start)
 
-#def unarchive(path):
-#    try:
-#        datafile = glob.glob(os.path.join(path,'*tar.gz'))[0]
-#        bname = os.path.basename(datafile)
-#        newf = os.path.join(qdir,bname)
-#        shutil.move(datafile,newf)
-#        print '%s: removed from archive' % os.path.basename(bname)
-#    except Exception,e: pass
-#    shutil.rmtree(path)
-
-#def clean():
-#    """ Clean out archive directories, keeping tar.gz and mtl files """
-#    prdirs = os.listdir(origpath)
-#    print 'Cleaning Landsat archive: %s pathrows' % len(prdirs)
-#    for pr in prdirs:
-#        print 'Cleaning pathrow %s' % pr
-#        datedirs = os.listdir(os.path.join(origpath,pr))
-#        for dd in datedirs:
-#            _cleandir(os.path.join(origpath,pr,dd))
-
 def main():
     dhf = argparse.ArgumentDefaultsHelpFormatter
-    parser0 = argparse.ArgumentParser(description='Landsat Archive Utilities') #, formatter_class=dhf)
+    parser0 = argparse.ArgumentParser(description='Landsat Processing Utilities', formatter_class=argparse.RawTextHelpFormatter)
     subparser = parser0.add_subparsers(dest='command')
 
     # Global options
@@ -518,6 +544,9 @@ def main():
     group.add_argument('--tiles', nargs='*', help='the Landsat pathrow(s)', default=[])
     group.add_argument('-p','--products', nargs='*', help='Process/filter these products') #default=False)
     group.add_argument('-v','--verbose', help='Verbosity level', default=0, type=int)
+
+    # Help
+    parser = subparser.add_parser('help',help='Print extended help', parents=[gparser], formatter_class=dhf)
 
     # Inventory
     parser = subparser.add_parser('inventory',help='Get Landsat Inventory', parents=[gparser], formatter_class=dhf)
@@ -543,15 +572,25 @@ def main():
 
     # Misc
     parser_archive = subparser.add_parser('archive',help='Move files from this directory to Landsat archive')
-    #parser_clean = subparser.add_parser('clean',help='Clean archive of all temporary files')
 
     args = parser0.parse_args()
+
+    if args.command == 'help':
+        parser0.print_help()
+        print '\navailable products:'
+        for key,val in _products.items(): 
+            print '    {:<20}{:<100}'.format(key, val['description'])
+        exit(1)
 
     gippy.Options.SetVerbose(args.verbose)
     gippy.Options.SetChunkSize(128.0)   # replace with option
 
-    inv = LandsatInventory(site=args.site, dates=args.dates, days=args.days, tiles=args.tiles, products=args.products)
-    
+    try:
+        inv = LandsatInventory(site=args.site, dates=args.dates, days=args.days, tiles=args.tiles, products=args.products)
+    except Exception,e:
+        print 'Error getting inventory: %s' % (e)
+        exit(1)
+
     if args.command == 'inventory':
         if args.products is None:
             inv.printcalendar(args.md)
@@ -561,9 +600,13 @@ def main():
         inv.createlinks(args.hard)
 
     elif args.command == 'process':
-        #merrafname = fetchmerra(meta['datetime'])
-        process(inv,products=args.products,verbose=args.verbose,overwrite=args.overwrite,suffix=args.suffix) #, nooverviews=args.nooverviews)
-        #inv = LandsatInventory(site=args.site, dates=args.dates, days=args.days, tiles=args.tiles, products=args.products)
+        try:
+            #merrafname = fetchmerra(meta['datetime'])
+            process(inv,products=args.products,verbose=args.verbose,overwrite=args.overwrite,suffix=args.suffix) #, nooverviews=args.nooverviews)
+            #inv = LandsatInventory(site=args.site, dates=args.dates, days=args.days, tiles=args.tiles, products=args.products)
+        except Exception,e:
+            print 'Error processing: %s' % e
+
 
     elif args.command == 'project':
         process(inv,products=args.products,verbose=args.verbose) 
