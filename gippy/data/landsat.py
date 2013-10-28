@@ -4,7 +4,7 @@ import os, sys, errno
 import argparse
 import glob
 import re
-import agspy.utils.dateparse as dateparse
+
 import datetime
 import shutil
 import numpy
@@ -16,7 +16,7 @@ from collections import OrderedDict
 import gippy
 from gippy.atmosphere import atmosphere
 
-from gippy.data.core import DataInventory
+from gippy.data.core import Data, DataInventory
 
 from pdb import set_trace
 
@@ -58,14 +58,12 @@ _products = OrderedDict([
     }),
 ])
 
-_verbose = 1 
+global _verbose
 
 class LandsatInventory(DataInventory):
     sensors = {'LT4': 'Landsat 4', 'LT5': 'Landsat 5', 'LE7': 'Landsat 7', 'LC8': 'Landsat 8'}
     _colors = {'Landsat 4':'bright yellow', 'Landsat 5':'bright red', 'Landsat 7':'bright green', 'Landsat 8':'bright blue'}
-    _rootdir = '/titan/data/landsat'
-    _origdir = 'unprocessed'
-    _proddir = 'unprocessed' #products/gippy-beta'
+    _rootdir = '/titan/data/landsat/unprocessed'
     _tile_attribute = 'pr'
 
     @staticmethod
@@ -75,32 +73,13 @@ class LandsatInventory(DataInventory):
         return gippy.GeoVector(dbstr, layer='landsat_wrs')
 
     def __init__(self, site=None, tiles=None, dates=None, days=None, products=None):
-        # Spatial extent (define self.tiles)
-        if tiles is None: tiles = os.listdir(self.origpath())
-        self.site = site
-        if self.site is not None: 
-            self.site_to_tiles(gippy.GeoVector(self.site))
-        else: self.tiles = dict((t,1) for t in tiles)
-
-        # Temporal extent (define self.dates and self.days)
-        if dates is None: dates='1984,2050'
-        self.start_date,self.end_date = dateparse.range(dates)
-        if days: 
-            days = days.split(',')
-        else: days = (1,366)
-        self.start_day,self.end_day = ( int(days[0]), int(days[1]) )
-
-        # Products of interest (define self.products)
-        if products is None:
-            products = ['']
-        elif len(products) == 0:
-            products = ['']
-        self.products = products
+        super(LandsatInventory, self).__init__(site, tiles, dates, days)
 
         # get all potential matching dates for tiles
         dates = []
         for t in self.tile_names:
-            for d in os.listdir(self.origpath(t)):
+            #set_trace()
+            for d in os.listdir(self.path(t)):
                 date = datetime.datetime.strptime(os.path.basename(d),'%Y%j').date()
                 doy = int(date.strftime('%j'))
                 if (self.start_date <= date <= self.end_date) and (self.start_day <= doy <= self.end_day): 
@@ -112,27 +91,15 @@ class LandsatInventory(DataInventory):
         for date in sorted(dates):
             datedir = date.strftime('%Y%j')
             fnames = []
-            for t in self.tile_names: fnames.extend( glob.glob(os.path.join(self.origpath(t),datedir,'*.tar.gz')) )
+            for t in self.tile_names: fnames.extend( glob.glob(os.path.join(self.path(t),datedir,'*.tar.gz')) )
             files = []
             for fname in fnames:
-                path,basename = os.path.split(fname)
-                basename = basename[:-12]
-                tile = basename[3:9]
-                # find products for this tile
-                product_path = os.path.split(fname)[0].replace(self.origpath(),self.prodpath())
-                product_fnames = []
-                products = {}
-                for p in self.products:
-                    product_fnames.extend( glob.glob( os.path.join(product_path,'*'+p+'.tif') ) )
-                for f in product_fnames:
-                    prod = os.path.splitext(os.path.split(f)[1][len(basename)+1:])[0]
-                    products[ prod ] = f
-                #f = fname.split()
-                e = {'tile': tile, 'basename':basename, 'filename': fname, 'products': products, 'productpath':product_path}
-                files.append(e)
+                # this is a LandsatData object
+                data = LandsatData(fname, products=products)
+                files.append(data)
             self.numfiles = self.numfiles + len(fnames)
-            self.data[date] = { basename[0:3]: files }
-            #color':self._colors['Landsat'+basename[2:3]]
+            # assuming first file is same sensor for all (and for landsat it is except for initial validation flyover L8-L7)
+            self.data[date] = { files[0].sensor: files }
 
     def printcalendar(self,md=False,products=False):
         print 'Landsat Inventory:'
@@ -141,322 +108,320 @@ class LandsatInventory(DataInventory):
             print 'Tile Coverage:'
             for t in sorted(self.tiles): print ' P/R %s: %2.0f%%' % (t,self.tiles[t]*100)
 
+class LandsatData(Data):
+    """ Represents a single tile and all (existing) product variations (raw, ref, toaref, ind, ndvi, etc) """
+    def __init__(self,filename, products=None):
+        self.filename = filename
+        self.path,basename = os.path.split(filename)
+        self.basename = basename[:-12]
+        self.tile = self.basename[3:9]
+        self.sensor = self.basename[0:3]
 
-def read(filename, bandnums=[],verbose=False):
-    """ Read in Landsat bands using original tar.gz file """
-    
-    # Read in collection metadata
-    meta = _readmeta(filename)
+        # find all products for this tile
+        product_filenames = glob.glob( os.path.join(self.path,'*.tif'))
+        self.products = {}
+        for f in product_filenames:
+            prod = os.path.splitext(os.path.split(f)[1][len(self.basename)+1:])[0]
+            self.products[ prod ] = f
+        # TODO - prune products based on filter
 
-    if len(bandnums) != 0: 
-        bandnums = numpy.array(bandnums)
-    else:
-        bandnums = numpy.arange(0,len(meta['bands'])) + 1
+    def read(self,product='raw'):
+        if product == 'raw':
+            return self.readraw()
+        else:
+            try:
+                return GeoImage(self.products[product])
+            except Exception,e:
+                print 'Unknown product %s' % product
 
-    # Extract desired files from tarfile
-    if tarfile.is_tarfile(filename):
-        tfile = tarfile.open(filename)
-    else:
-        raise Exception('%s not a valid landsat tar file' % os.path.basename(filename))
-        return
-    filenames = []
-    for b in bandnums:
-        dirname = os.path.dirname(filename)
-        fname = meta['filenames'][b-1]
-        if not os.path.exists(fname):
-            tfile.extract(fname,dirname)
-        filenames.append(os.path.join(dirname,fname))
+    def _readmeta(self):
+        """ Read in Landsat MTL (metadata) file """
+        mtlfilename = glob.glob(os.path.join(os.path.dirname(self.filename),'*MTL.txt'))
 
-    # Read in files
-    image = gippy.GeoImage(filenames[0])
-    del filenames[0]
-    for f in filenames: image.AddBand(gippy.GeoImage(f)[0])
-
-    # Geometry used for calculating incident irradiance
-    theta = numpy.pi * meta['geometry']['solarzenith']/180.0
-    sundist = (1.0 - 0.016728 * numpy.cos(numpy.pi * 0.9856 * (meta['datetime']['JulianDay']-4.0)/180.0))
-
-    # Set metadata
-    image.SetNoData(0)
-    image.SetUnits('radiance')
-    # TODO - set appropriate metadata
-    #for key,val in meta.iteritems():
-    #    image.SetMeta(key,str(val))
-
-    for b in bandnums:
-        bandmeta = meta['bands'][b-1]
-        gain = (bandmeta['maxrad']-bandmeta['minrad']) / (bandmeta['maxval']-bandmeta['minval'])
-        offset = bandmeta['minrad']
-        i = bandmeta['num']-1
-        band = image[i]
-        band.SetGain(gain)
-        band.SetOffset(offset)
-        band.SetDynamicRange(bandmeta['minval'],bandmeta['maxval'])
-        band.SetEsun( (bandmeta['E'] * numpy.cos(theta)) / (numpy.pi * sundist * sundist) )
-        band.SetThermal(bandmeta['k1'],bandmeta['k2'])
-        image[i] = band
-        image.SetColor(bandmeta['color'],i+1)
-
-    return image
-
-
-# This should only be called from read function
-def _readmeta(filename):
-    """ Read in Landsat MTL (metadata) file """
-    if filename[-7:] != 'MTL.txt':
-        mtl = glob.glob(os.path.join(os.path.dirname(filename),'*MTL.txt'))
-        if len(mtl) == 0:
+        if len(mtlfilename) == 0:
             # Extract MTL file
-            if tarfile.is_tarfile(filename):
-                tfile = tarfile.open(filename)
+            if tarfile.is_tarfile(self.filename):
+                tfile = tarfile.open(self.filename)
             else:
                 raise Exception('Not a valid landsat tar file')
             try:
                 mtl = ([f for f in tfile.getnames() if "MTL.txt" in f])[0]
             except:
                 raise Exception(': possibly an (unsupported) NLAPS processed file')
-            tfile.extract(mtl,os.path.dirname(filename))
-            filename = os.path.join(os.path.dirname(filename),mtl)
+            tfile.extract(mtl,os.path.dirname(self.filename))
+            mtlfilename = os.path.join(os.path.dirname(self.filename),mtl)
         else:
-            filename = mtl[0]
+            mtlfilename = mtlfilename[0]
 
-    # Read MTL file
-    try:
-        text = open(filename,'r').read()
-    except IOError as e:
-        raise Exception('({})'.format(e))
+        if _verbose > 1: print 'reading %s' % mtlfilename
+        # Read MTL file
+        try:
+            text = open(mtlfilename,'r').read()
+        except IOError as e:
+            raise Exception('({})'.format(e))
 
-    # Find out what Landsat this is
-    try:
-        id = int(os.path.basename(filename)[1:2])
-    except:
-        id = int(os.path.basename(filename)[2:3])
+        # Find out what Landsat this is
+        try:
+            id = int(os.path.basename(mtlfilename)[1:2])
+        except:
+            id = int(os.path.basename(mtlfilename)[2:3])
 
-    # Set sensor specific constants
-    if id == 5:
-        bands = ['1','2','3','4','5','6','7']
-        colors = ["Blue","Green","Red","NIR","SWIR1","LWIR","SWIR2"]
-        # TODO - update bands with actual L5 values (these are L7)
-        bandlocs = [0.4825, 0.565, 0.66, 0.825, 1.65, 11.45, 2.22]
-        bandwidths = [0.065, 0.08, 0.06, 0.15, 0.2, 2.1, 0.26]
-        E = [1983, 1796, 1536, 1031, 220.0, 0, 83.44]
-        K1 = [0, 0, 0, 0, 0, 607.76, 0]
-        K2 = [0, 0, 0, 0, 0, 1260.56, 0]
-        oldbands = bands
-    elif id == 7:
-        #bands = ['1','2','3','4','5','6_VCID_1','6_VCID_2','7','8']
-        bands = ['1','2','3','4','5','6_VCID_1','7']
-        colors = ["Blue","Green","Red","NIR","SWIR1","LWIR","SWIR2"]
-        bandlocs = [0.4825, 0.565, 0.66, 0.825, 1.65, 11.45, 2.22]
-        bandwidths = [0.065, 0.08, 0.06, 0.15, 0.2, 2.1, 0.26]
-        E = [1997, 1812, 1533, 1039, 230.8, 0, 84.90]
-        K1 = [0, 0, 0, 0, 0, 666.09, 0]
-        K2 = [0, 0, 0, 0, 0, 1282.71, 0]
-        oldbands = deepcopy(bands)
-        oldbands[5] = '61'
-        oldbands[6] = '62'
-    elif id == 8:
-        bands = ['1','2','3','4','5','6','7','9'] #,'10','11']
-        colors = ["Coastal","Blue","Green","Red","NIR","SWIR1","SWIR2","Cirrus"] #,"LWIR1","LWIR2"]
-        bandlocs = [0.443, 0.4825, 0.5625, 0.655, 0.865, 1.610, 2.2, 1.375] #, 10.8, 12.0]
-        bandwidths = [0.01, 0.0325, 0.0375, 0.025, 0.02, 0.05, 0.1, 0.015] #, 0.5, 0.5]
-        E = [2638.35, 2031.08, 1821.09, 2075.48, 1272.96, 246.94, 90.61, 369.36] #, 0, 0] 
-        K1 = [0, 0, 0, 0, 0, 0, 0, 0] #774.89, 480.89]
-        K2 = [0, 0, 0, 0, 0, 0, 0, 0] #1321.08, 1201.14]
-        oldbands = bands
-    else:
-        raise Exception('Landsat%s? not recognized' % id)
+        # Set sensor specific constants
+        if id == 5:
+            bands = ['1','2','3','4','5','6','7']
+            colors = ["Blue","Green","Red","NIR","SWIR1","LWIR","SWIR2"]
+            # TODO - update bands with actual L5 values (these are L7)
+            bandlocs = [0.4825, 0.565, 0.66, 0.825, 1.65, 11.45, 2.22]
+            bandwidths = [0.065, 0.08, 0.06, 0.15, 0.2, 2.1, 0.26]
+            E = [1983, 1796, 1536, 1031, 220.0, 0, 83.44]
+            K1 = [0, 0, 0, 0, 0, 607.76, 0]
+            K2 = [0, 0, 0, 0, 0, 1260.56, 0]
+            oldbands = bands
+        elif id == 7:
+            #bands = ['1','2','3','4','5','6_VCID_1','6_VCID_2','7','8']
+            bands = ['1','2','3','4','5','6_VCID_1','7']
+            colors = ["Blue","Green","Red","NIR","SWIR1","LWIR","SWIR2"]
+            bandlocs = [0.4825, 0.565, 0.66, 0.825, 1.65, 11.45, 2.22]
+            bandwidths = [0.065, 0.08, 0.06, 0.15, 0.2, 2.1, 0.26]
+            E = [1997, 1812, 1533, 1039, 230.8, 0, 84.90]
+            K1 = [0, 0, 0, 0, 0, 666.09, 0]
+            K2 = [0, 0, 0, 0, 0, 1282.71, 0]
+            oldbands = deepcopy(bands)
+            oldbands[5] = '61'
+            oldbands[6] = '62'
+        elif id == 8:
+            bands = ['1','2','3','4','5','6','7','9'] #,'10','11']
+            colors = ["Coastal","Blue","Green","Red","NIR","SWIR1","SWIR2","Cirrus"] #,"LWIR1","LWIR2"]
+            bandlocs = [0.443, 0.4825, 0.5625, 0.655, 0.865, 1.610, 2.2, 1.375] #, 10.8, 12.0]
+            bandwidths = [0.01, 0.0325, 0.0375, 0.025, 0.02, 0.05, 0.1, 0.015] #, 0.5, 0.5]
+            E = [2638.35, 2031.08, 1821.09, 2075.48, 1272.96, 246.94, 90.61, 369.36] #, 0, 0] 
+            K1 = [0, 0, 0, 0, 0, 0, 0, 0] #774.89, 480.89]
+            K2 = [0, 0, 0, 0, 0, 0, 0, 0] #1321.08, 1201.14]
+            oldbands = bands
+        else:
+            raise Exception('Landsat%s? not recognized' % id)
 
-    # Process MTL text - replace old metadata tags with new 
-    # NOTE This is not comprehensive, there may be others
-    text = text.replace('ACQUISITION_DATE','DATE_ACQUIRED')
-    text = text.replace('SCENE_CENTER_SCAN_TIME','SCENE_CENTER_TIME')
-    for (ob,nb) in zip(oldbands,bands):
-        text = re.sub(r'\WLMIN_BAND'+ob,'RADIANCE_MINIMUM_BAND_'+nb,text)
-        text = re.sub(r'\WLMAX_BAND'+ob,'RADIANCE_MAXIMUM_BAND_'+nb,text)
-        text = re.sub(r'\WQCALMIN_BAND'+ob,'QUANTIZE_CAL_MIN_BAND_'+nb,text)
-        text = re.sub(r'\WQCALMAX_BAND'+ob,'QUANTIZE_CAL_MAX_BAND_'+nb,text)
-        text = re.sub(r'\WBAND'+ob+'_FILE_NAME','FILE_NAME_BAND_'+nb,text)
-    for l in ('LAT','LON','MAPX','MAPY'):
-        for c in ('UL','UR','LL','LR'):
-            text = text.replace('PRODUCT_'+c+'_CORNER_'+l, 'CORNER_'+c+'_'+l+'_PRODUCT')
-    text = text.replace('\x00','')
-    # Remove junk
-    lines = text.split('\n')
-    mtl = dict()
-    for l in lines:
-        meta = l.replace('\"',"").strip().split('=')
-        if len(meta) > 1:
-            key = meta[0].strip()
-            item = meta[1].strip()
-            if key != "GROUP" and key !="END_GROUP": mtl[key] = item
+        # Process MTL text - replace old metadata tags with new 
+        # NOTE This is not comprehensive, there may be others
+        text = text.replace('ACQUISITION_DATE','DATE_ACQUIRED')
+        text = text.replace('SCENE_CENTER_SCAN_TIME','SCENE_CENTER_TIME')
+        for (ob,nb) in zip(oldbands,bands):
+            text = re.sub(r'\WLMIN_BAND'+ob,'RADIANCE_MINIMUM_BAND_'+nb,text)
+            text = re.sub(r'\WLMAX_BAND'+ob,'RADIANCE_MAXIMUM_BAND_'+nb,text)
+            text = re.sub(r'\WQCALMIN_BAND'+ob,'QUANTIZE_CAL_MIN_BAND_'+nb,text)
+            text = re.sub(r'\WQCALMAX_BAND'+ob,'QUANTIZE_CAL_MAX_BAND_'+nb,text)
+            text = re.sub(r'\WBAND'+ob+'_FILE_NAME','FILE_NAME_BAND_'+nb,text)
+        for l in ('LAT','LON','MAPX','MAPY'):
+            for c in ('UL','UR','LL','LR'):
+                text = text.replace('PRODUCT_'+c+'_CORNER_'+l, 'CORNER_'+c+'_'+l+'_PRODUCT')
+        text = text.replace('\x00','')
+        # Remove junk
+        lines = text.split('\n')
+        mtl = dict()
+        for l in lines:
+            meta = l.replace('\"',"").strip().split('=')
+            if len(meta) > 1:
+                key = meta[0].strip()
+                item = meta[1].strip()
+                if key != "GROUP" and key !="END_GROUP": mtl[key] = item
 
-    # Extract useful metadata
-    lats = ( float(mtl['CORNER_UL_LAT_PRODUCT']), float(mtl['CORNER_UR_LAT_PRODUCT']), 
-            float(mtl['CORNER_LL_LAT_PRODUCT']), float(mtl['CORNER_LR_LAT_PRODUCT']))
-    lons = ( float(mtl['CORNER_UL_LON_PRODUCT']), float(mtl['CORNER_UR_LON_PRODUCT']), 
-        float(mtl['CORNER_LL_LON_PRODUCT']), float(mtl['CORNER_LR_LON_PRODUCT']))
-    lat = (min(lats) + max(lats))/2.0
-    lon = (min(lons) + max(lons))/2.0
-    dt = datetime.datetime.strptime(mtl['DATE_ACQUIRED'] + ' ' + 
-        mtl['SCENE_CENTER_TIME'][:-2],'%Y-%m-%d %H:%M:%S.%f')
-    seconds = (dt.second + dt.microsecond/1000000.)/3600.
-    dectime = dt.hour + dt.minute/60.0 + seconds  
+        # Extract useful metadata
+        lats = ( float(mtl['CORNER_UL_LAT_PRODUCT']), float(mtl['CORNER_UR_LAT_PRODUCT']), 
+                float(mtl['CORNER_LL_LAT_PRODUCT']), float(mtl['CORNER_LR_LAT_PRODUCT']))
+        lons = ( float(mtl['CORNER_UL_LON_PRODUCT']), float(mtl['CORNER_UR_LON_PRODUCT']), 
+            float(mtl['CORNER_LL_LON_PRODUCT']), float(mtl['CORNER_LR_LON_PRODUCT']))
+        lat = (min(lats) + max(lats))/2.0
+        lon = (min(lons) + max(lons))/2.0
+        dt = datetime.datetime.strptime(mtl['DATE_ACQUIRED'] + ' ' + 
+            mtl['SCENE_CENTER_TIME'][:-2],'%Y-%m-%d %H:%M:%S.%f')
+        seconds = (dt.second + dt.microsecond/1000000.)/3600.
+        dectime = dt.hour + dt.minute/60.0 + seconds  
 
-    # Band metadata
-    bandmeta = []
-    filenames = []
-    for i,b in enumerate(bands):
-        band = {
-            'num': i+1,
-            'id': b,
-            'color': colors[i],
-            'E': E[i],
-            'wavelength': bandlocs[i],
-            'bandwidth': bandwidths[i],
-            'minval': int(float(mtl['QUANTIZE_CAL_MIN_BAND_'+b])),
-            'maxval': int(float(mtl['QUANTIZE_CAL_MAX_BAND_'+b])),
-            'minrad': float(mtl['RADIANCE_MINIMUM_BAND_'+b]),
-            'maxrad': float(mtl['RADIANCE_MAXIMUM_BAND_'+b]),
-            'k1': K1[i],
-            'k2': K2[i]
+        # Band metadata
+        bandmeta = []
+        filenames = []
+        for i,b in enumerate(bands):
+            band = {
+                'num': i+1,
+                'id': b,
+                'color': colors[i],
+                'E': E[i],
+                'wavelength': bandlocs[i],
+                'bandwidth': bandwidths[i],
+                'minval': int(float(mtl['QUANTIZE_CAL_MIN_BAND_'+b])),
+                'maxval': int(float(mtl['QUANTIZE_CAL_MAX_BAND_'+b])),
+                'minrad': float(mtl['RADIANCE_MINIMUM_BAND_'+b]),
+                'maxrad': float(mtl['RADIANCE_MAXIMUM_BAND_'+b]),
+                'k1': K1[i],
+                'k2': K2[i]
+            }
+            bandmeta.append(band)
+            filenames.append(mtl['FILE_NAME_BAND_'+b].strip('\"'))
+
+        _geometry = {
+            'solarzenith': (90.0 - float(mtl['SUN_ELEVATION'])),
+            'solarazimuth': float(mtl['SUN_AZIMUTH']),
+            'zenith': 0.0,
+            'azimuth': 180.0,
+            'lat': lat,
+            'lon': lon,
         }
-        bandmeta.append(band)
-        filenames.append(mtl['FILE_NAME_BAND_'+b].strip('\"'))
 
-    _geometry = {
-        'solarzenith': (90.0 - float(mtl['SUN_ELEVATION'])),
-        'solarazimuth': float(mtl['SUN_AZIMUTH']),
-        'zenith': 0.0,
-        'azimuth': 180.0,
-        'lat': lat,
-        'lon': lon,
-    }
+        _datetime = {
+            'datetime': dt,
+            'JulianDay': (dt - datetime.datetime(dt.year,1,1)).days + 1, 
+            'DecimalTime': dectime,
+        }
 
-    _datetime = {
-        'datetime': dt,
-        'JulianDay': (dt - datetime.datetime(dt.year,1,1)).days + 1, 
-        'DecimalTime': dectime,
-    }
+        # TODO - now that metadata part of LandsatData object some of these keys not needed
+        self.metadata = {
+            'sensor': 'Landsat'+str(id),
+            'metafilename': mtlfilename, 
+            'filenames': filenames,
+            'geometry': _geometry,
+            'datetime': _datetime,
+            'bands': bandmeta
+        }
 
-    return {
-        'sensor': 'Landsat'+str(id),
-        'metafilename': filename, 
-        'filenames': filenames,
-        'geometry': _geometry,
-        'datetime': _datetime,
-        'bands': bandmeta
-    }
+    def readraw(self,bandnums=[],verbose=False):
+        """ Read in Landsat bands using original tar.gz file """
+        # Read in collection metadata
+        self._readmeta()
 
+        if len(bandnums) != 0: 
+            bandnums = numpy.array(bandnums)
+        else:
+            bandnums = numpy.arange(0,len(self.metadata['bands'])) + 1
+        
+        # Extract desired files from tarfile
+        if tarfile.is_tarfile(self.filename):
+            tfile = tarfile.open(self.filename)
+        else:
+            raise Exception('%s not a valid landsat tar file' % os.path.basename(self.filename))
+            return
 
-def process(inventory, products=['toarad'], verbose=0, overwrite=False, suffix='', overviews=False):
+        filenames = []
+        for b in bandnums:
+            fname = self.metadata['filenames'][b-1]
+            if not os.path.exists(fname):
+                tfile.extract(fname,self.path)
+            filenames.append(os.path.join(self.path,fname))
 
-    print 'Requested %s products for %s files' % (len(products), inventory.numfiles)
+        if _verbose > 1: 
+            print 'Landsat files: '
+            for f in filenames: print ' %s' % f
+
+        # Read in files
+        image = gippy.GeoImage(filenames[0])
+        del filenames[0]
+        for f in filenames: image.AddBand(gippy.GeoImage(f)[0])
+
+        # Geometry used for calculating incident irradiance
+        theta = numpy.pi * self.metadata['geometry']['solarzenith']/180.0
+        sundist = (1.0 - 0.016728 * numpy.cos(numpy.pi * 0.9856 * (self.metadata['datetime']['JulianDay']-4.0)/180.0))
+
+        # Set metadata
+        image.SetNoData(0)
+        image.SetUnits('radiance')
+        # TODO - set appropriate metadata
+        #for key,val in meta.iteritems():
+        #    image.SetMeta(key,str(val))
+
+        for b in bandnums:
+            bandmeta = self.metadata['bands'][b-1]
+            gain = (bandmeta['maxrad']-bandmeta['minrad']) / (bandmeta['maxval']-bandmeta['minval'])
+            offset = bandmeta['minrad']
+            i = bandmeta['num']-1
+            band = image[i]
+            band.SetGain(gain)
+            band.SetOffset(offset)
+            band.SetDynamicRange(bandmeta['minval'],bandmeta['maxval'])
+            band.SetEsun( (bandmeta['E'] * numpy.cos(theta)) / (numpy.pi * sundist * sundist) )
+            band.SetThermal(bandmeta['k1'],bandmeta['k2'])
+            image[i] = band
+            image.SetColor(bandmeta['color'],i+1)
+        return image
+
+def process(inventory, products=['toarad'], overwrite=False, suffix='', overviews=False):
+    
+    if inventory == None: raise Exception('No data inventory provided')
+    if products == None: raise Exception('No products specified')
+
+    if _verbose > 0:
+        print 'Requested %s products for %s files' % (len(products), inventory.numfiles)
     
     if suffix != '' and suffix[:1] != '_': suffix = '_' + suffix
-
     for date in inventory.dates:
         for sensor in inventory.data[date]:
             for dat in inventory.data[date][sensor]:
-                fout_base = os.path.join(dat['productpath'], dat['basename'] + '_')
-
-                # Make output directory
-                if not os.path.isdir(dat['productpath']):
-                    try:
-                        os.makedirs(dat['productpath'])
-                    except OSError as exc:
-                        raise Exception('Unable to make product directory %s' % dat['productpath'])
-
-                # Copy MTL file
-                #mtlout = meta['metafilename'].replace(origpath,prodpath)
-                #mtl = glob.glob(os.path.join(os.path.dirname(fin),'*MTL.txt'))[0]
-                #mtlout = mtl.replace(origpath,prodpath)
-                #if not os.path.exists(os.path.dirname(mtlout)):
-                #    os.makedirs(os.path.dirname(mtlout))
-                #try:
-                #    shutil.copy(mtl,mtlout)
-                #except: pass
-
+                fout_base = os.path.join(dat.path, dat.basename + '_')
                 fouts = {}
                 runatm = False
-                # generate all product names
+                # generate all product names and check if already existing
                 for product in products:
-                    if product[0:3] == 'toa':
-                        baseprod = product[3:]
-                    else:
-                        baseprod = product
-                        runatm = True
-                    if baseprod not in _products.keys():
+                    if _products[product]['atmcorr']: runatm = True
+                    if product not in _products.keys():
                         raise Exception('Product %s not recognized' % product)
                     fout = fout_base + product + suffix
                     if len(glob.glob(fout+'.*')) == 0 or overwrite: fouts[product] = fout
 
                 if len(fouts) > 0:
-                    # Read in data
                     start = datetime.datetime.now()
                     try:
                         # TODO - If only doing temp then don't waste time with other bands
-                        img = read(dat['filename'], verbose=verbose)
-                        # TODO - shouldn't have to _readmeta again
-                        meta = _readmeta(dat['filename'])
+                        img = dat.read()
                     except Exception,e:
-                        print 'Error rading data %s' % dat['filename']
-                        if verbose > 1:
-                            print '%s %s' % (dat['basename'],e)
-                            print traceback.format_exc()
+                        print 'Error reading data %s' % dat.filename
+                        if _verbose > 1:
+                            print '%s %s' % (dat.basename,e)
+                            if _verbose > 2: print traceback.format_exc()
                         continue
-                    if runatm: atmospheres = [atmosphere(i,meta) for i in range(1,img.NumBands()+1)]
-                    print '%s: read in %s' % (dat['basename'],datetime.datetime.now() - start)
+                    if runatm: atmospheres = [atmosphere(i,dat.meta) for i in range(1,img.NumBands()+1)]
+                    if _verbose > 0:
+                        print '%s: read in %s' % (dat.basename,datetime.datetime.now() - start)
 
                     for product,fname in fouts.iteritems():
                         try:
                             start = datetime.datetime.now()
 
-                            if (product[0:3] == 'toa'):
-                                img.ClearAtmosphere()
-                                product = product[3:]
-                            else:
-                                if verbose > 1: print 'atmospherically correcting'
+                            if (_products[product]['atmcorr']):
                                 for i in range(0,img.NumBands()):
                                     b = img[i]
                                     b.SetAtmosphere(atmospheres[i])
                                     img[i] = b
-                                
+                                if _verbose > 1: print 'atmospherically correcting'
+                            else:
+                                img.ClearAtmosphere()
+
                             try:
                                 fcall = 'gippy.%s(img, fname)' % _products[product]['function']
-                                if verbose > 1: print fcall
+                                if _verbose > 1: print fcall
                                 imgout = eval(fcall)
                             except Exception,e:
                                 print 'Error creating product %s for %s: %s' % (product,fname,e)
-                                if verbose > 1: print traceback.format_exc()
-                                
-                            #elif product == 'rgb':
-                            #    img.PruneToRGB()
-                            #    imgout = gippy.RGB(img,fname)
-                            #elif product == 'rad':
-                            #    imgout = gippy.Rad(img,fname)
-                            #elif product == 'ref':
-                            #    imgout = gippy.Ref(img,fname)                                
+                                if _verbose > 1: print traceback.format_exc()                              
 
                             if overviews: imgout.AddOverviews()
                             fname = imgout.Filename()
                             imgout = None
-                            
-                            dur = datetime.datetime.now() - start
-                            print ' -> %s: processed in %s' % (os.path.basename(fname),dur)
+                            if _verbose > 0:
+                                dur = datetime.datetime.now() - start
+                                print ' -> %s: processed in %s' % (os.path.basename(fname),dur)
                         except Exception,e:
-                            print '%s %s' % (dat['basename'],e)
-                            if verbose > 1: print traceback.format_exc()
+                            print 'Error processing %s' % fname
+                            if _verbose > 1:
+                                print '%s %s' % (dat.basename,e)
+                                if _verbose > 2: print traceback.format_exc()
                     img = None
                     # cleanup directory
-                    dirname = os.path.dirname(meta['metafilename'])
                     try:
-                        for bname in meta['filenames']: 
-                            files = glob.glob(os.path.join(dirname,bname)+'*')
+                        for bname in dat.metadata['filenames']: 
+                            files = glob.glob(os.path.join(dat.path,bname)+'*')
                             for f in files: os.remove(f)
                         shutil.rmtree(os.path.join(dirname,'modtran'))
                     except: pass
-    print 'Completed processing'
+    if _verbose > 0: print 'Completed processing'
+    # TODO - multithreaded ?
     #if args.multi:
     #    for f in fnames:
     #        pool = multiprocessing.Pool(cpus)
@@ -470,6 +435,23 @@ def process(inventory, products=['toarad'], verbose=0, overwrite=False, suffix='
         #p.start()
     #else:
 
+def project(inventory, site, res):
+    for date in inventory.dates:
+        for sensor in inventory.data[date]:
+            products = inventory.data[date][sensor][0].products.keys()
+            for data in inventory.data[date][sensor]:
+                if products != data.products.keys():
+                    raise Exception('SOMETHING IS AFOOT')
+            for p in products:
+                start = datetime.datetime.now()
+                fnamesin = []
+                for data in inventory.data[date][sensor]:
+                    fnamesin.append( data.products[p] )
+                fnameout = date.strftime('%Y%j') + '_%s_%s' % (p,sensor)
+                imgout = gippy.CookieCutter(fnamesin, fnameout, site, res[0], res[1])
+                print 'Merged %s files -> %s in %s' % (len(fnamesin),imgout.Basename(),datetime.datetime.now() - start)
+
+# This is broken
 def archive(dir=''):
     if (dir == ''):
         fnames = glob.glob('L*.tar.gz')
@@ -512,23 +494,6 @@ def archive(dir=''):
     print '%s files added to archive' % numadded
     if numadded != len(fnames):
         print '%s files not added to archive' % (len(fnames)-numadded)
-
-def project(inventory, site, res):
-    for date in inventory.dates:
-        for sensor in inventory.data[date]:
-            products = inventory.data[date][sensor][0]['products'].keys()
-            for data in inventory.data[date][sensor]:
-                if products != data['products'].keys():
-                    raise Exceptio
-                    n('SOMETHING IS AFOOT')
-            for p in products:
-                start = datetime.datetime.now()
-                fnamesin = []
-                for data in inventory.data[date][sensor]:
-                    fnamesin.append( data['products'][p] )
-                fnameout = date.strftime('%Y%j') + '_%s_%s' % (p,sensor)
-                imgout = gippy.CookieCutter(fnamesin, fnameout, site, res[0], res[1])
-                print 'Merged %s files -> %s in %s' % (len(fnamesin),imgout.Basename(),datetime.datetime.now() - start)
 
 def main():
     dhf = argparse.ArgumentDefaultsHelpFormatter
@@ -582,7 +547,9 @@ def main():
             print '    {:<20}{:<100}'.format(key, val['description'])
         exit(1)
 
-    gippy.Options.SetVerbose(args.verbose)
+    global _verbose 
+    _verbose = args.verbose
+    gippy.Options.SetVerbose(_verbose)
     gippy.Options.SetChunkSize(128.0)   # replace with option
 
     try:
@@ -594,7 +561,7 @@ def main():
     if args.command == 'inventory':
         if args.products is None:
             inv.printcalendar(args.md)
-        else: inv.printprodcal(args.md)
+        else: inv.printcalendar(args.md,True)
         
     elif args.command == 'link':
         inv.createlinks(args.hard)
@@ -602,14 +569,14 @@ def main():
     elif args.command == 'process':
         try:
             #merrafname = fetchmerra(meta['datetime'])
-            process(inv,products=args.products,verbose=args.verbose,overwrite=args.overwrite,suffix=args.suffix) #, nooverviews=args.nooverviews)
+            process(inv,products=args.products,overwrite=args.overwrite,suffix=args.suffix) #, nooverviews=args.nooverviews)
             #inv = LandsatInventory(site=args.site, dates=args.dates, days=args.days, tiles=args.tiles, products=args.products)
         except Exception,e:
             print 'Error processing: %s' % e
-
+            if _verbose > 2: print traceback.format_exc()
 
     elif args.command == 'project':
-        process(inv,products=args.products,verbose=args.verbose) 
+        process(inv,products=args.products) 
         inv = LandsatInventory(site=args.site, dates=args.dates, days=args.days, tiles=args.tiles, products=args.products)
         project(inv, args.site, args.res)
 

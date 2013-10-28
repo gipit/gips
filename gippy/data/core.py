@@ -4,14 +4,26 @@ import os, sys
 import ogr 
 from shapely.wkb import loads
 from shapely.geometry import shape
+import gippy
+import agspy.utils.dateparse as dateparse
+from pdb import set_trace
 
-#def flatten():
+#from gippy.data.landsat import LandsatData
 
+# not sure if a base class is needed yet
+class Data(object):
+    """ Base class for representing a data object """
+    filename = ''
+    def read(self,product):
+        set_trace()
+        return gippy.GeoImage(filename) 
+
+    def __str__(self):
+        return 'Data class'
 
 class DataInventory(object):
     _rootdir = ''
     _origdir = ''
-    _proddir = ''
 
     _colorcodes = {
         'black':    '0;30',     'bright gray':  '0;37',
@@ -25,21 +37,39 @@ class DataInventory(object):
         'normal':   '0'
     }
 
+    def __init__(self, site=None, tiles=None, dates=None, days=None, products=None):
+        self.spatial_extent(site, tiles)
+        self.temporal_extent(dates, days)
+
+    def spatial_extent(self, site, tiles):
+        """ Spatial extent (define self.tiles) """
+        #set_trace()
+        if tiles is None: tiles = os.listdir(self.path())
+        self.site = site
+        if self.site is not None: 
+            self.site_to_tiles(gippy.GeoVector(self.site))
+        else: self.tiles = dict((t,1) for t in tiles)
+
+    def temporal_extent(self, dates, days):
+        """ Temporal extent (define self.dates and self.days) """
+        if dates is None: dates='1984,2050'
+        self.start_date,self.end_date = dateparse.range(dates)
+        if days: 
+            days = days.split(',')
+        else: days = (1,366)
+        self.start_day,self.end_day = ( int(days[0]), int(days[1]) )
+
     def __getitem__(self,date):
         return self.data[date]
 
-    def origpath(self,tile='',date=''):
-        """ Root path to original unprocessed files """
+    def path(self,tile='',date=''):
+        """ Path to date or tile directory """
         if tile == '':
-            return os.path.join(self._rootdir, self._origdir)
+            return self._rootdir
         elif date == '':
-            return os.path.join(self._rootdir, self._origdir, tile)
+            return os.path.join(self._rootdir, tile)
         else:
-            return os.path.join(self._rootdir, self._origdir, tile, date)
-
-    def prodpath(self):
-        """ Root path to products (processed) files """
-        return os.path.join(self._rootdir,self._proddir)
+            return os.path.join(self._rootdir, tile, date)
 
     def _colorize(self,txt,color): 
         return "\033["+self._colorcodes[color]+'m' + txt + "\033[0m"
@@ -80,7 +110,7 @@ class DataInventory(object):
         prods = []
         for sensor in self.data[date]:
             for datafile in self.data[date][sensor]:
-                for prod in datafile['products']:
+                for prod in datafile.products:
                     prods.append(prod)
         return sorted(prods)
 
@@ -118,9 +148,9 @@ class DataInventory(object):
                     for p in f['products']:
                         link( f['products'][p] )
 
-    def printprodcal(self,md=False):
-        """ print calendar for each tile displaying products """
-        self.printcalendar(md,True)
+    #def printprodcal(self,md=False):
+    #    """ print calendar for each tile displaying products """
+    #    self.printcalendar(md,True)
 
     def printcalendar(self,md=False, products=False):
         """ print calendar for raw original datafiles """
