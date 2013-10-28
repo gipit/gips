@@ -75,7 +75,8 @@ namespace gip {
 				} else if (iFunc->Function() == "<=") {
 					img.threshold(iFunc->Operand(),false,true)^=1;
 				} else if (iFunc->Function() == "==") {
-                    img = img.get_threshold(iFunc->Operand(),false,false) - img.get_threshold(iFunc->Operand(),false,true);
+				    cimg_forXY(img,x,y) if (img(x,y) == iFunc->Operand()) img(x,y) = 1; else img(x,y) = 0;
+                    //img = img.get_threshold(iFunc->Operand(),false,false) - img.get_threshold(iFunc->Operand(),false,true);
 				} else if (iFunc->Function() == "+") {
 					img = img + iFunc->Operand();
 				} else if (iFunc->Function() == "-") {
