@@ -2,6 +2,8 @@
 
 import os, sys
 import ogr 
+import datetime
+import glob
 from shapely.wkb import loads
 from shapely.geometry import shape
 import gippy
@@ -10,20 +12,7 @@ from pdb import set_trace
 
 #from gippy.data.landsat import LandsatData
 
-# not sure if a base class is needed yet
-class Data(object):
-    """ Base class for representing a data object """
-    filename = ''
-    def read(self,product):
-        set_trace()
-        return gippy.GeoImage(filename) 
-
-    def __str__(self):
-        return 'Data class'
-
 class DataInventory(object):
-    _rootdir = ''
-    _origdir = ''
 
     _colorcodes = {
         'black':    '0;30',     'bright gray':  '0;37',
@@ -65,11 +54,11 @@ class DataInventory(object):
     def path(self,tile='',date=''):
         """ Path to date or tile directory """
         if tile == '':
-            return self._rootdir
+            return self.rootdir
         elif date == '':
-            return os.path.join(self._rootdir, tile)
+            return os.path.join(self.rootdir, tile)
         else:
-            return os.path.join(self._rootdir, tile, date)
+            return os.path.join(self.rootdir, tile, date)
 
     def _colorize(self,txt,color): 
         return "\033["+self._colorcodes[color]+'m' + txt + "\033[0m"
@@ -181,6 +170,9 @@ class DataInventory(object):
         sys.stdout.write('\n')
         for s in self.sensor_names: print s
         print self
+        if self.site is not None:
+            print 'Tile Coverage:'
+            for t in sorted(self.tiles): print '%s: %2.0f%%' % (t,self.tiles[t]*100)
         
     def __str__(self):
         if self.numfiles != 0:

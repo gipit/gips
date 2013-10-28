@@ -16,7 +16,7 @@ from collections import OrderedDict
 import gippy
 from gippy.atmosphere import atmosphere
 
-from gippy.data.core import Data, DataInventory
+from gippy.data.core import DataInventory
 
 from pdb import set_trace
 
@@ -63,7 +63,7 @@ global _verbose
 class LandsatInventory(DataInventory):
     sensors = {'LT4': 'Landsat 4', 'LT5': 'Landsat 5', 'LE7': 'Landsat 7', 'LC8': 'Landsat 8'}
     _colors = {'Landsat 4':'bright yellow', 'Landsat 5':'bright red', 'Landsat 7':'bright green', 'Landsat 8':'bright blue'}
-    _rootdir = '/titan/data/landsat/unprocessed'
+    rootdir = '/titan/data/landsat/unprocessed'
     _tile_attribute = 'pr'
 
     @staticmethod
@@ -78,7 +78,6 @@ class LandsatInventory(DataInventory):
         # get all potential matching dates for tiles
         dates = []
         for t in self.tile_names:
-            #set_trace()
             for d in os.listdir(self.path(t)):
                 date = datetime.datetime.strptime(os.path.basename(d),'%Y%j').date()
                 doy = int(date.strftime('%j'))
@@ -101,14 +100,7 @@ class LandsatInventory(DataInventory):
             # assuming first file is same sensor for all (and for landsat it is except for initial validation flyover L8-L7)
             self.data[date] = { files[0].sensor: files }
 
-    def printcalendar(self,md=False,products=False):
-        print 'Landsat Inventory:'
-        super(LandsatInventory, self).printcalendar(md,products)
-        if self.site is not None:
-            print 'Tile Coverage:'
-            for t in sorted(self.tiles): print ' P/R %s: %2.0f%%' % (t,self.tiles[t]*100)
-
-class LandsatData(Data):
+class LandsatData(object):
     """ Represents a single tile and all (existing) product variations (raw, ref, toaref, ind, ndvi, etc) """
     def __init__(self,filename, products=None):
         self.filename = filename
@@ -556,6 +548,7 @@ def main():
         inv = LandsatInventory(site=args.site, dates=args.dates, days=args.days, tiles=args.tiles, products=args.products)
     except Exception,e:
         print 'Error getting inventory: %s' % (e)
+        if _verbose > 2: print traceback.format_exc()
         exit(1)
 
     if args.command == 'inventory':
