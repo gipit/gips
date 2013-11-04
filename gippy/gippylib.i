@@ -2,7 +2,6 @@
 %{
     #define SWIG_FILE_WITH_INIT
     //#include "gip/Colors.h"
-    #include "gip/Options.h"
     //#include "gip/GeoData.h"
     //#include "gip/GeoRaster.h"
     #include "gip/GeoImage.h"
@@ -43,6 +42,13 @@
         memcpy(arr_data, cimg.data(), PyArray_ITEMSIZE((PyArrayObject*) arr) * dims[0] * dims[1]);
         return arr;
     }
+
+    template<typename T> cimg_library::CImg<T> ArrToCImg(PyObject* arr) {
+        PyArrayObject* _arr = (PyArrayObject*)arr;
+        cimg_library::CImg<T> cimg(_arr->data, _arr->dimensions[0], _arr->dimensions[1]);
+        return cimg;
+    }
+
 %}
 
 %init %{
@@ -77,20 +83,47 @@ namespace std {
 %typemap (out) cimg_library::CImg<float> { return CImgToArr($1); }
 %typemap (out) cimg_library::CImg<double> { return CImgToArr($1); }
 
+// numpy -> CImg
+%typemap (in) cimg_library::CImg<unsigned char> { $1 = ArrToCImg<unsigned char>($input); }
+
+/*%typemap (in) cimg_library::CImg<char> { $1 = ArrToCImg<char>($input); }
+%typemap (in) cimg_library::CImg<unsigned short> { 1 = ArrToCImg<unsigned short>($input); }
+%typemap (in) cimg_library::CImg<short> { $1 = ArrToCImg<short>($input); }
+%typemap (in) cimg_library::CImg<unsigned int> { $1 = ArrToCImg<unsigned int>($input); }
+%typemap (in) cimg_library::CImg<int> { $1 = ArrToCImg<int>($input); }
+%typemap (in) cimg_library::CImg<unsigned long>& { $1 = ArrToCImg<unsigned long>($input); }
+%typemap (in) cimg_library::CImg<long> { $1 = ArrToCImg<long>($input); }
+%typemap (in) cimg_library::CImg<float> { $1 = ArrToCImg<float>($input); }
+%typemap (in) cimg_library::CImg<double> { $1 = ArrToCImg<double>($input); }
+*/
+/*
+%typemap (in) cimg_library::CImg<unsigned char> {
+    PyArrayObject* arr = (PyArrayObject*)$input;
+    cimg_library::CImg<unsigned char> cimg(arr->data, arr->dimensions[0], arr->dimensions[1]);
+    $1 = cimg;
+}
+%typemap (in) cimg_library::CImg<unsigned char>& {
+    PyArrayObject* arr = (PyArrayObject*)$input;
+    cimg_library::CImg<unsigned char> cimg(arr->data, arr->dimensions[0], arr->dimensions[1]);
+    $1 = &cimg;
+}
+%typemap (in) cimg_library::CImg<unsigned char>* {
+    cimg_library::CImg<unsigned char> cimg($input->data, $input->dimensions[0], $input->dimensions[1]);
+    $1 = &cimg;
+}
+*/
+
+
 // GIP functions to ignore (suppresses warnings)
-//%ignore gip::Options::operator=;
-//%ignore gip::cimg_library::CImg;
 // These operators are redefined below
 %ignore gip::GeoData::operator=;
 %ignore gip::Colors::operator[];
 %ignore gip::GeoImage::operator[];
 %ignore gip::GeoRaster::operator==;
-//%ignore boost::program_options::options_description;
 
 // GIP headers and classes to be wrapped
 %include "gip/Colors.h"
 %include "gip/Atmosphere.h"
-//%include "gip/Options.h"
 %include "gip/GeoData.h"
 %include "gip/GeoRaster.h"
 %include "gip/GeoImage.h"
