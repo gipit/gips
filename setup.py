@@ -21,7 +21,7 @@ gippy_module = Extension(name = '_gippylib',
                     sources=['gippy/gippylib.i'],
                     swig_opts=['-c++', '-w509','-IGIP/gip'],
                     include_dirs=['GIP/gip'],
-                    libraries=['gip','gdal','boost_system','boost_program_options','boost_filesystem'],
+                    libraries=['gip','gdal','boost_system','boost_filesystem'],
                     library_dirs=['GIP/gip/bin/Release'], #'/usr/lib','/usr/local/lib'],
                     extra_compile_args=['-fPIC'],
                     ) 
