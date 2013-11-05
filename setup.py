@@ -40,6 +40,7 @@ setup (name = 'gippy',
         'console_scripts': [
             'gipit = gippy.gipit:main',
             'landsat = gippy.data.landsat:main',
+            'cdl = gippy.data.cdl:main',
         ],
     },
     #cmdclass = {"install_gip": install_gip},
