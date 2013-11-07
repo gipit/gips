@@ -9,143 +9,148 @@ import datetime
 import shutil
 import numpy
 import tarfile
-from copy import deepcopy as deepcopy
+from copy import deepcopy
 import traceback
 from collections import OrderedDict
 
 import gippy
 from gippy.atmosphere import atmosphere
 
-from gippy.data.core import DataInventory
+from gippy.data.core import Data, DataInventory, VerboseOut
+from gippy.data.core import main as datamain
 
 from pdb import set_trace
 
-_products = OrderedDict([
-    ('rgb', {
-        'description': 'RGB image for viewing (quick processing)',
-        'function': 'RGB',
-        'atmcorr': False,
-    }),
-    ('rad', {
-        'description': 'Surface leaving radiance', 
-        'function': 'Rad',
-        'atmcorr': True,
-    }),
-    ('toarad',{
-        'description': 'Top of atmosphere radiance',
-        'function': 'Rad',
-        'atmcorr': False,
-    }),
-    ('ref', {
-        'description': 'Surface reflectance',
-        'function': 'Ref',
-        'atmcorr': True,
-    }),
-    ('toaref', {
-        'description': 'Top of atmosphere reflectance',
-        'function': 'Ref',
-        'atmcorr': False,
-    }),
-    ('ind', {
-        'description': 'Atmospherically corrected common indices (NDVI,EVI,LSWI,NDSI,BI)',
-        'function': 'Indices',
-        'atmcorr': True,
-    }),
-    ('toaind', {
-        'description': 'Top of atmosphere common indices (NDVI,EVI,LSWI,NDSI,BI)',
-        'function': 'Indices',
-        'atmcorr': False,
-    }),
-])
-
-global _verbose
-
-class LandsatInventory(DataInventory):
+class LandsatData(Data):
+    """ Represents a single date and temporal extent along with (existing) product variations (raw, ref, toaref, ind, ndvi, etc) """
+    name = 'Landsat'
     sensors = {'LT4': 'Landsat 4', 'LT5': 'Landsat 5', 'LE7': 'Landsat 7', 'LC8': 'Landsat 8'}
-    _colors = {'Landsat 4':'bright yellow', 'Landsat 5':'bright red', 'Landsat 7':'bright green', 'Landsat 8':'bright blue'}
     rootdir = '/titan/data/landsat/unprocessed'
-    _tile_attribute = 'pr'
+    _tiles_vector = 'landsat_wrs'
+    _tiles_attribute = 'pr'
 
-    @staticmethod
-    def get_tile_vector():
-        """ Get GeoVector of the sensor tile grid """
-        dbstr  = "PG:dbname=geodata host=congo port=5432 user=ags"
-        return gippy.GeoVector(dbstr, layer='landsat_wrs')
+    _products = OrderedDict([
+        ('rgb', {
+            'description': 'RGB image for viewing (quick processing)',
+            'function': 'RGB',
+            'atmcorr': False,
+        }),
+        ('rad', {
+            'description': 'Surface leaving radiance', 
+            'function': 'Rad',
+            'atmcorr': True,
+        }),
+        ('toarad',{
+            'description': 'Top of atmosphere radiance',
+            'function': 'Rad',
+            'atmcorr': False,
+        }),
+        ('ref', {
+            'description': 'Surface reflectance',
+            'function': 'Ref',
+            'atmcorr': True,
+        }),
+        ('toaref', {
+            'description': 'Top of atmosphere reflectance',
+            'function': 'Ref',
+            'atmcorr': False,
+        }),
+        ('ind', {
+            'description': 'Atmospherically corrected common indices (NDVI,EVI,LSWI,NDSI,BI)',
+            'function': 'Indices',
+            'atmcorr': True,
+        }),
+        ('toaind', {
+            'description': 'Top of atmosphere common indices (NDVI,EVI,LSWI,NDSI,BI)',
+            'function': 'Indices',
+            'atmcorr': False,
+        }),
+        ('ndvi', {
+            'description': 'Atmospherically corrected NDVI',
+            'function': 'NDVI',
+            'atmcorr': True,
+        }),
+        ('lswi', {
+            'description': 'Atmospherically corrected LSWI',
+            'function': 'LSWI',
+            'atmcorr': True,
+        }),
+        ('satvi', {
+            'description': 'Atmospherically corrected SATVI',
+            'function': 'SATVI',
+            'atmcorr': True,
+        }),
+    ])
 
-    def __init__(self, site=None, tiles=None, dates=None, days=None, products=None):
-        super(LandsatInventory, self).__init__(site, tiles, dates, days)
+    def __init__(self, site=None, tiles=None, date=None, products=None):
+        super(LandsatData, self).__init__(site=site, tiles=tiles, date=date)
 
-        # get all potential matching dates for tiles
-        dates = []
-        for t in self.tile_names:
-            for d in os.listdir(self.path(t)):
-                date = datetime.datetime.strptime(os.path.basename(d),'%Y%j').date()
-                doy = int(date.strftime('%j'))
-                if (self.start_date <= date <= self.end_date) and (self.start_day <= doy <= self.end_day): 
-                    if date not in dates: dates.append(date)
+        if products is None or len(products) == 0: products = ['*']
 
-        # for each date, find all files (define self.data)
-        self.numfiles = 0
-        self.data = {}
-        for date in sorted(dates):
-            datedir = date.strftime('%Y%j')
-            fnames = []
-            for t in self.tile_names: fnames.extend( glob.glob(os.path.join(self.path(t),datedir,'*.tar.gz')) )
-            files = []
-            for fname in fnames:
-                # this is a LandsatData object
-                data = LandsatData(fname, products=products)
-                files.append(data)
-            self.numfiles = self.numfiles + len(fnames)
-            # assuming first file is same sensor for all (and for landsat it is except for initial validation flyover L8-L7)
-            self.data[date] = { files[0].sensor: files }
+        filenames = []
+        empty_tiles = []
+        for t in self.tiles:
+            filename = glob.glob(os.path.join(self.rootdir, t, date.strftime('%Y%j'), '*.tar.gz'))
+            if len(filename) == 0:
+                empty_tiles.append(t)
+                continue
+            if len(filename) > 1:
+                print 'More than 1 landsat data found for same tile/date'
+                print [os.path.basename(fname) for fname in filename]
+            
+            filename = filename[0]
+            path,basename = os.path.split(filename)
+            basename = basename[:-12]
+            
+            # TODO - check all have same sensor? (for a single date, they should not ever)
+            self.sensor = basename[0:3]
 
-class LandsatData(object):
-    """ Represents a single tile and all (existing) product variations (raw, ref, toaref, ind, ndvi, etc) """
-    def __init__(self,filename, products=None):
-        self.filename = filename
-        self.path,basename = os.path.split(filename)
-        self.basename = basename[:-12]
-        self.tile = self.basename[3:9]
-        self.sensor = self.basename[0:3]
+            # find products
+            prods = {}
+            for p in products:
+                fnames = glob.glob( os.path.join(path,'*_%s*.tif' % p) )
+                for f in fnames:
+                    prod = os.path.splitext(os.path.split(f)[1][len(basename)+1:])[0]
+                    prods[ prod ] = f
 
-        # find all products for this tile
-        product_filenames = glob.glob( os.path.join(self.path,'*.tif'))
-        self.products = {}
-        for f in product_filenames:
-            prod = os.path.splitext(os.path.split(f)[1][len(self.basename)+1:])[0]
-            self.products[ prod ] = f
-        # TODO - prune products based on filter
+            self.tiles[t] = {'filename': filename, 'path': path, 'basename': basename, 'products': prods}
 
-    def read(self,product='raw'):
+        for t in empty_tiles: self.tiles.pop(t,None)
+
+        if len(self.tiles) == 0:
+            raise Exception('No landsat data found')
+
+    def read(self, tile, product='raw'):
+        """ Read in specified product as GeoImage """
         if product == 'raw':
-            return self.readraw()
+            return self._readraw(tile)
         else:
             try:
-                return GeoImage(self.products[product])
+                return GeoImage(self.tiles[tile]['products'][product])
             except Exception,e:
                 print 'Unknown product %s' % product
 
-    def _readmeta(self):
+    def _readmeta(self, tile):
         """ Read in Landsat MTL (metadata) file """
-        mtlfilename = glob.glob(os.path.join(os.path.dirname(self.filename),'*MTL.txt'))
+        dat = self.tiles[tile]
+        mtlfilename = glob.glob(os.path.join(os.path.dirname(dat['filename']),'*MTL.txt'))
 
         if len(mtlfilename) == 0:
             # Extract MTL file
-            if tarfile.is_tarfile(self.filename):
-                tfile = tarfile.open(self.filename)
+            if tarfile.is_tarfile(dat['filename']):
+                tfile = tarfile.open(dat['filename'])
             else:
                 raise Exception('Not a valid landsat tar file')
             try:
                 mtl = ([f for f in tfile.getnames() if "MTL.txt" in f])[0]
             except:
                 raise Exception(': possibly an (unsupported) NLAPS processed file')
-            tfile.extract(mtl,os.path.dirname(self.filename))
-            mtlfilename = os.path.join(os.path.dirname(self.filename),mtl)
+            tfile.extract(mtl,os.path.dirname(dat['filename']))
+            mtlfilename = os.path.join(os.path.dirname(dat['filename']),mtl)
         else:
             mtlfilename = mtlfilename[0]
 
-        if _verbose > 1: print 'reading %s' % mtlfilename
+        VerboseOut('reading %s' % mtlfilename, 2)
         # Read MTL file
         try:
             text = open(mtlfilename,'r').read()
@@ -266,7 +271,7 @@ class LandsatData(object):
         }
 
         # TODO - now that metadata part of LandsatData object some of these keys not needed
-        self.metadata = {
+        self.tiles[tile]['metadata'] = {
             'sensor': 'Landsat'+str(id),
             'metafilename': mtlfilename, 
             'filenames': filenames,
@@ -275,31 +280,33 @@ class LandsatData(object):
             'bands': bandmeta
         }
 
-    def readraw(self,bandnums=[],verbose=False):
+    def _readraw(self,tile,bandnums=[]):
         """ Read in Landsat bands using original tar.gz file """
         # Read in collection metadata
-        self._readmeta()
+        self._readmeta(tile)
+
+        tiledata = self.tiles[tile]
 
         if len(bandnums) != 0: 
             bandnums = numpy.array(bandnums)
         else:
-            bandnums = numpy.arange(0,len(self.metadata['bands'])) + 1
+            bandnums = numpy.arange(0,len(tiledata['metadata']['bands'])) + 1
         
         # Extract desired files from tarfile
-        if tarfile.is_tarfile(self.filename):
-            tfile = tarfile.open(self.filename)
+        if tarfile.is_tarfile(tiledata['filename']):
+            tfile = tarfile.open(tiledata['filename'])
         else:
-            raise Exception('%s not a valid landsat tar file' % os.path.basename(self.filename))
+            raise Exception('%s not a valid landsat tar file' % os.path.basename(tiledata['filename']))
             return
 
         filenames = []
         for b in bandnums:
-            fname = self.metadata['filenames'][b-1]
+            fname = tiledata['metadata']['filenames'][b-1]
             if not os.path.exists(fname):
-                tfile.extract(fname,self.path)
-            filenames.append(os.path.join(self.path,fname))
+                tfile.extract(fname,tiledata['path'])
+            filenames.append(os.path.join(tiledata['path'],fname))
 
-        if _verbose > 1: 
+        if gippy.Options.Verbose() > 1:
             print 'Landsat files: '
             for f in filenames: print ' %s' % f
 
@@ -309,8 +316,8 @@ class LandsatData(object):
         for f in filenames: image.AddBand(gippy.GeoImage(f)[0])
 
         # Geometry used for calculating incident irradiance
-        theta = numpy.pi * self.metadata['geometry']['solarzenith']/180.0
-        sundist = (1.0 - 0.016728 * numpy.cos(numpy.pi * 0.9856 * (self.metadata['datetime']['JulianDay']-4.0)/180.0))
+        theta = numpy.pi * tiledata['metadata']['geometry']['solarzenith']/180.0
+        sundist = (1.0 - 0.016728 * numpy.cos(numpy.pi * 0.9856 * (tiledata['metadata']['datetime']['JulianDay']-4.0)/180.0))
 
         # Set metadata
         image.SetNoData(0)
@@ -320,7 +327,7 @@ class LandsatData(object):
         #    image.SetMeta(key,str(val))
 
         for b in bandnums:
-            bandmeta = self.metadata['bands'][b-1]
+            bandmeta = tiledata['metadata']['bands'][b-1]
             gain = (bandmeta['maxrad']-bandmeta['minrad']) / (bandmeta['maxval']-bandmeta['minval'])
             offset = bandmeta['minrad']
             i = bandmeta['num']-1
@@ -334,246 +341,133 @@ class LandsatData(object):
             image.SetColor(bandmeta['color'],i+1)
         return image
 
-def process(inventory, products=['toarad'], overwrite=False, suffix='', overviews=False):
-    
-    if inventory == None: raise Exception('No data inventory provided')
-    if products == None: raise Exception('No products specified')
+    def process(self, products=['toaref'], overwrite=False, suffix='', overviews=False):
+        """ Process these tiles for given products """
+        for tile, data in self.tiles.items():
+            if suffix != '' and suffix[:1] != '_': suffix = '_' + suffix
+            fout_base = os.path.join(data['path'], data['basename'] + '_')
+            fouts = {}
+            runatm = False
+            # generate all product names and check if already existing
+            for product in products:
+                if self._products[product]['atmcorr']: runatm = True
+                if product not in self._products.keys():
+                    raise Exception('Product %s not recognized' % product)
+                fout = fout_base + product + suffix
+                if len(glob.glob(fout+'.*')) == 0 or overwrite: fouts[product] = fout
 
-    if _verbose > 0:
-        print 'Requested %s products for %s files' % (len(products), inventory.numfiles)
-    
-    if suffix != '' and suffix[:1] != '_': suffix = '_' + suffix
-    for date in inventory.dates:
-        for sensor in inventory.data[date]:
-            for dat in inventory.data[date][sensor]:
-                fout_base = os.path.join(dat.path, dat.basename + '_')
-                fouts = {}
-                runatm = False
-                # generate all product names and check if already existing
-                for product in products:
-                    if _products[product]['atmcorr']: runatm = True
-                    if product not in _products.keys():
-                        raise Exception('Product %s not recognized' % product)
-                    fout = fout_base + product + suffix
-                    if len(glob.glob(fout+'.*')) == 0 or overwrite: fouts[product] = fout
-
-                if len(fouts) > 0:
-                    start = datetime.datetime.now()
-                    try:
-                        # TODO - If only doing temp then don't waste time with other bands
-                        img = dat.read()
-                    except Exception,e:
-                        print 'Error reading data %s' % dat.filename
-                        if _verbose > 1:
-                            print '%s %s' % (dat.basename,e)
-                            if _verbose > 2: print traceback.format_exc()
-                        continue
-                    if runatm: atmospheres = [atmosphere(i,dat.meta) for i in range(1,img.NumBands()+1)]
-                    if _verbose > 0:
-                        print '%s: read in %s' % (dat.basename,datetime.datetime.now() - start)
-
-                    for product,fname in fouts.iteritems():
-                        try:
-                            start = datetime.datetime.now()
-
-                            if (_products[product]['atmcorr']):
-                                for i in range(0,img.NumBands()):
-                                    b = img[i]
-                                    b.SetAtmosphere(atmospheres[i])
-                                    img[i] = b
-                                if _verbose > 1: print 'atmospherically correcting'
-                            else:
-                                img.ClearAtmosphere()
-
-                            try:
-                                fcall = 'gippy.%s(img, fname)' % _products[product]['function']
-                                if _verbose > 1: print fcall
-                                imgout = eval(fcall)
-                            except Exception,e:
-                                print 'Error creating product %s for %s: %s' % (product,fname,e)
-                                if _verbose > 1: print traceback.format_exc()                              
-
-                            if overviews: imgout.AddOverviews()
-                            fname = imgout.Filename()
-                            imgout = None
-                            if _verbose > 0:
-                                dur = datetime.datetime.now() - start
-                                print ' -> %s: processed in %s' % (os.path.basename(fname),dur)
-                        except Exception,e:
-                            print 'Error processing %s' % fname
-                            if _verbose > 1:
-                                print '%s %s' % (dat.basename,e)
-                                if _verbose > 2: print traceback.format_exc()
-                    img = None
-                    # cleanup directory
-                    try:
-                        for bname in dat.metadata['filenames']: 
-                            files = glob.glob(os.path.join(dat.path,bname)+'*')
-                            for f in files: os.remove(f)
-                        shutil.rmtree(os.path.join(dirname,'modtran'))
-                    except: pass
-    if _verbose > 0: print 'Completed processing'
-    # TODO - multithreaded ?
-    #if args.multi:
-    #    for f in fnames:
-    #        pool = multiprocessing.Pool(cpus)
-    #        pool.apply_async(landsat.process, 
-    #            [f,args.units, args.atmcorr, args.product, args.datatype, args.verbose, args.overwrite, args.suffix])
-    #    pool.close()
-    #    pool.join()
-        #multiprocessing.Process(target=Process, 
-        #    args=(f, args.units,args.atmcorr, args.product, args.datatype, args.verbose))
-        #jobs.append(p)
-        #p.start()
-    #else:
-
-def project(inventory, site, res):
-    for date in inventory.dates:
-        for sensor in inventory.data[date]:
-            products = inventory.data[date][sensor][0].products.keys()
-            for data in inventory.data[date][sensor]:
-                if products != data.products.keys():
-                    raise Exception('SOMETHING IS AFOOT')
-            for p in products:
+            if len(fouts) > 0:
                 start = datetime.datetime.now()
-                fnamesin = []
-                for data in inventory.data[date][sensor]:
-                    fnamesin.append( data.products[p] )
-                fnameout = date.strftime('%Y%j') + '_%s_%s' % (p,sensor)
-                imgout = gippy.CookieCutter(fnamesin, fnameout, site, res[0], res[1])
-                print 'Merged %s files -> %s in %s' % (len(fnamesin),imgout.Basename(),datetime.datetime.now() - start)
-
-# This is broken
-def archive(dir=''):
-    if (dir == ''):
-        fnames = glob.glob('L*.tar.gz')
-    else:
-        fnames = glob.glob(os.path.join('L*.tar.gz'))
-    numadded = 0
-    for f in fnames:
-        pathrow = f[3:9]
-        year = f[9:13]
-        doy = f[13:16]
-        path = os.path.join(origpath,pathrow,year+doy)
-        try:
-            os.makedirs(path)
-        except OSError as exc: # Python >2.5
-            if exc.errno == errno.EEXIST and os.path.isdir(path):
-                pass
-            else:
-                raise Exception('Unable to make product directory %s' % path)
-        try:
-            newf = os.path.join(path,f)
-            if os.path.exists(newf):
-                print '%s: already in archive' % f
-                os.remove(f)
-            else:
-                shutil.move(f,newf)
                 try:
-                    #mtl = _readmeta(newf)
-                    print f, ' -> ',path
-                    numadded = numadded + 1
+                    # TODO - If only doing temp then don't waste time with other bands
+                    img = self.read(tile)
                 except Exception,e:
-                    print f, ' -> problem with file'
-                    unarchive(os.path.dirname(newf))
-        except shutil.Error as err:
-            print err
-            #raise Exception('shutils error %s' % err)
-            #if exc.errno == errno.EEXIST:
-            #    print f, ' removed, already in archive'
-            #else:
-            #    pass
-    print '%s files added to archive' % numadded
-    if numadded != len(fnames):
-        print '%s files not added to archive' % (len(fnames)-numadded)
+                    print 'Error reading data %s' % data['filename']
+                    VerboseOut('%s %s' % (data['basename'],e), 2)
+                    VerboseOut(traceback.format_exc(), 3)
+                    return
+                if runatm: atmospheres = [atmosphere(i,data['metadata']) for i in range(1,img.NumBands()+1)]
+                VerboseOut('%s: read in %s' % (data['basename'],datetime.datetime.now() - start))
 
-def main():
-    dhf = argparse.ArgumentDefaultsHelpFormatter
-    parser0 = argparse.ArgumentParser(description='Landsat Processing Utilities', formatter_class=argparse.RawTextHelpFormatter)
-    subparser = parser0.add_subparsers(dest='command')
+                for product,fname in fouts.iteritems():
+                    try:
+                        start = datetime.datetime.now()
 
-    # Global options
-    gparser = argparse.ArgumentParser(add_help=False, formatter_class=dhf)
-    group = gparser.add_argument_group('Data Inventory Options')
-    group.add_argument('-s','--site',help='Vector file for region of interest', default=None)
-    group.add_argument('-d','--dates',help='Range of dates (YYYY-MM-DD,YYYY-MM-DD)')
-    group.add_argument('--days',help='Include only those that fall within these days of year (doy1,doy2)',default=None)
-    group.add_argument('--tiles', nargs='*', help='the Landsat pathrow(s)', default=[])
-    group.add_argument('-p','--products', nargs='*', help='Process/filter these products') #default=False)
-    group.add_argument('-v','--verbose', help='Verbosity level', default=0, type=int)
+                        if (self._products[product]['atmcorr']):
+                            for i in range(0,img.NumBands()):
+                                b = img[i]
+                                b.SetAtmosphere(atmospheres[i])
+                                img[i] = b
+                            VerboseOut('atmospherically correcting',2)
+                        else:
+                            img.ClearAtmosphere()
 
-    # Help
-    parser = subparser.add_parser('help',help='Print extended help', parents=[gparser], formatter_class=dhf)
+                        try:
+                            fcall = 'gippy.%s(img, fname)' % self._products[product]['function']
+                            VerboseOut(fcall,2)
+                            imgout = eval(fcall)
+                        except Exception,e:
+                            print 'Error creating product %s for %s: %s' % (product,fname,e)
+                            VerboseOut(traceback.format_exc(),2)
 
-    # Inventory
-    parser = subparser.add_parser('inventory',help='Get Landsat Inventory', parents=[gparser], formatter_class=dhf)
-    parser.add_argument('--md',help='Show dates using MM-DD',action='store_true',default=False)
+                        if overviews: imgout.AddOverviews()
+                        fname = imgout.Filename()
+                        imgout = None
+                        dur = datetime.datetime.now() - start
+                        VerboseOut(' -> %s: processed in %s' % (os.path.basename(fname),dur))
+                    except Exception,e:
+                        print 'Error processing %s' % fname
+                        VerboseOut('%s %s' % (data['basename'],e),2)
+                        VerboseOut(traceback.format_exc(), 3)
+                img = None
+                # cleanup directory
+                try:
+                    for bname in data['metadata']['filenames']: 
+                        files = glob.glob(os.path.join(data['path'],bname)+'*')
+                        for f in files: os.remove(f)
+                    shutil.rmtree(os.path.join(dirname,'modtran'))
+                except: pass
 
-    # Processing
-    parser = subparser.add_parser('process',help='Process Landsat scenes', parents=[gparser],formatter_class=dhf)
-    group = parser.add_argument_group('Processing Options')
-    group.add_argument('--overwrite', help='Overwrite output files if they exist', default=False, action='store_true')
-    group.add_argument('--suffix', help='Append string to end of filename (before extension)',default='')
-    #group.add_argument('--nooverviews', help='Do not add overviews to output', default=False, action='store_true')
-    #pparser.add_argument('--link', help='Create links in current directory to output', default=False, action='store_true')
-    #pparser.add_argument('--multi', help='Use multiple processors', default=False, action='store_true')
-
-    # Project
-    parser = subparser.add_parser('project',help='Create project', parents=[gparser], formatter_class=dhf)
-    group = parser.add_argument_group('Project options')
-    group.add_argument('--res',nargs=2,help='Resolution of output rasters', default=[30,30], type=float)
-
-    # Links
-    parser = subparser.add_parser('link',help='Link to Landsat Products', parents=[gparser], formatter_class=dhf)
-    parser.add_argument('--hard',help='Create hard links instead of symbolic', default=False,action='store_true')
-
-    # Misc
-    parser_archive = subparser.add_parser('archive',help='Move files from this directory to Landsat archive')
-
-    args = parser0.parse_args()
-
-    if args.command == 'help':
-        parser0.print_help()
-        print '\navailable products:'
-        for key,val in _products.items(): 
-            print '    {:<20}{:<100}'.format(key, val['description'])
-        exit(1)
-
-    global _verbose 
-    _verbose = args.verbose
-    gippy.Options.SetVerbose(_verbose)
-    gippy.Options.SetChunkSize(128.0)   # replace with option
-
-    try:
-        inv = LandsatInventory(site=args.site, dates=args.dates, days=args.days, tiles=args.tiles, products=args.products)
-    except Exception,e:
-        print 'Error getting inventory: %s' % (e)
-        if _verbose > 2: print traceback.format_exc()
-        exit(1)
-
-    if args.command == 'inventory':
-        if args.products is None:
-            inv.printcalendar(args.md)
-        else: inv.printcalendar(args.md,True)
+    def project(self, res):
+        if len(res) == 1: res = [res,res]
+        if self.site is None:
+            raise Exception("No site file supplied")
+        # TODO - now it assumes same products available for all tiles (process should come first, or validate)
+        for product in self.get_products:
+            if product not in self.products:
+                start = datetime.datetime.now()
+                filename = self.date.strftime('%Y%j') + '_%s_%s' % (product,self.sensor)
+                filenames = [self.filename(product,t) for t in self.tiles]
+                imgout = gippy.CookieCutter(filenames, filename, self.site, res[0], res[1])
+                self.products[product] = filename
+                print 'Projected and cropped %s files -> %s in %s' % (len(filenames),imgout.Basename(),datetime.datetime.now() - start)
         
-    elif args.command == 'link':
-        inv.createlinks(args.hard)
+    # This is broken
+    @classmethod
+    def archive(self, dir=''):
+        """ Move landsat files from current directory to archive location """
+        if (dir == ''):
+            fnames = glob.glob('L*.tar.gz')
+        else:
+            fnames = glob.glob(os.path.join('L*.tar.gz'))
+        numadded = 0
+        for f in fnames:
+            pathrow = f[3:9]
+            year = f[9:13]
+            doy = f[13:16]
+            path = os.path.join(origpath,pathrow,year+doy)
+            try:
+                os.makedirs(path)
+            except OSError as exc: # Python >2.5
+                if exc.errno == errno.EEXIST and os.path.isdir(path):
+                    pass
+                else:
+                    raise Exception('Unable to make product directory %s' % path)
+            try:
+                newf = os.path.join(path,f)
+                if os.path.exists(newf):
+                    print '%s: already in archive' % f
+                    os.remove(f)
+                else:
+                    shutil.move(f,newf)
+                    try:
+                        #mtl = _readmeta(newf)
+                        print f, ' -> ',path
+                        numadded = numadded + 1
+                    except Exception,e:
+                        print f, ' -> problem with file'
+                        unarchive(os.path.dirname(newf))
+            except shutil.Error as err:
+                print err
+                #raise Exception('shutils error %s' % err)
+                #if exc.errno == errno.EEXIST:
+                #    print f, ' removed, already in archive'
+                #else:
+                #    pass
+        print '%s files added to archive' % numadded
+        if numadded != len(fnames):
+            print '%s files not added to archive' % (len(fnames)-numadded)
 
-    elif args.command == 'process':
-        try:
-            #merrafname = fetchmerra(meta['datetime'])
-            process(inv,products=args.products,overwrite=args.overwrite,suffix=args.suffix) #, nooverviews=args.nooverviews)
-            #inv = LandsatInventory(site=args.site, dates=args.dates, days=args.days, tiles=args.tiles, products=args.products)
-        except Exception,e:
-            print 'Error processing: %s' % e
-            if _verbose > 2: print traceback.format_exc()
+def main(): datamain(LandsatData)
 
-    elif args.command == 'project':
-        process(inv,products=args.products) 
-        inv = LandsatInventory(site=args.site, dates=args.dates, days=args.days, tiles=args.tiles, products=args.products)
-        project(inv, args.site, args.res)
 
-    elif args.command == 'archive': archive()
-    #elif args.command == 'clean': clean()
-    else:
-        print 'Command %s not recognized' % cmd
