@@ -46,6 +46,8 @@ namespace gip {
             cimg_library::CImg<unsigned char> cmask;
             cimg_library::CImg<T> cimg;
             long count = 0;
+            float chunksize = Options::ChunkSize();
+            Options::SetChunkSize(chunksize/NumBands());
             std::vector<bbox> Chunks = Chunk();
             std::vector<bbox>::const_iterator iChunk;
             for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
@@ -55,11 +57,13 @@ namespace gip {
             cimg_library::CImg<T> pixels(count,NumBands());
             for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
                 cimg = Read(*iChunk);
-                return cimg;
                 cmask = maskio.Read(*iChunk);
-                cimg_forXY(cimg,x,y) if (cmask(x,y) > 0) pixels(count++) = cimg(x,y);
+                cimg_forXY(cimg,x,y) if (cmask(x,y) > 0) {
+                    cimg_forZ(cimg,z) pixels(count++,z) = cimg(x,y,z);
+                }
             }
-            //return pixels;
+            Options::SetChunkSize(chunksize);
+            return pixels;
         }
 
 		//! Get raster band by color
@@ -95,7 +99,7 @@ namespace gip {
 				images.insert( iBand->Read(chunk) );
 			}
 			//return images.get_append('c','p');
-			return images.get_append('z');
+			return images.get_append('v','p');
 		}
 
 		//! Read Cube as list

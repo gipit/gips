@@ -21,7 +21,6 @@
     }
 
     template<typename T> PyObject* CImgToArr(cimg_library::CImg<T> cimg) {
-        npy_intp dims[] = { cimg.height(), cimg.width() };
         int typenum;
         if (typeid(T) == typeid(unsigned char)) typenum = NPY_UINT8;
         else if (typeid(T) == typeid(char)) typenum = NPY_INT8;
@@ -34,18 +33,27 @@
         else if (typeid(T) == typeid(float)) typenum = NPY_FLOAT32;
         else if (typeid(T) == typeid(double)) typenum = NPY_FLOAT64;
         else throw(std::exception());
+
+        npy_intp dims[] = { cimg.spectrum(), cimg.depth(), cimg.height(), cimg.width() };
         PyObject* arr;
-        if (dims[0] == 1)
-            arr = PyArray_SimpleNew(1,&dims[1], typenum);
-        else arr = PyArray_SimpleNew(2, dims, typenum);
+        int numdim = 4;
+        if (cimg.spectrum() == 1) {
+            numdim = 3;
+            if (cimg.depth() == 1) numdim=2;
+        } 
+        arr = PyArray_SimpleNew(numdim, &dims[4-numdim], typenum);
+        //if (dims[0] == 1)
+        //    arr = PyArray_SimpleNew(numdim-1,&dims[1], typenum);
+        //else arr = PyArray_SimpleNew(numdim, dims, typenum);
         void *arr_data = PyArray_DATA((PyArrayObject*)arr);
-        memcpy(arr_data, cimg.data(), PyArray_ITEMSIZE((PyArrayObject*) arr) * dims[0] * dims[1]);
+        memcpy(arr_data, cimg.data(), PyArray_ITEMSIZE((PyArrayObject*) arr) * dims[0] * dims[1] * dims[2] * dims[3]);
         return arr;
     }
 
+    // two dimensional only
     template<typename T> cimg_library::CImg<T> ArrToCImg(PyObject* arr) {
         PyArrayObject* _arr = (PyArrayObject*)arr;
-        cimg_library::CImg<T> cimg(_arr->data, _arr->dimensions[0], _arr->dimensions[1]);
+        cimg_library::CImg<T> cimg((T*)_arr->data, _arr->dimensions[1], _arr->dimensions[0]);
         return cimg;
     }
 
@@ -85,8 +93,7 @@ namespace std {
 
 // numpy -> CImg
 %typemap (in) cimg_library::CImg<unsigned char> { $1 = ArrToCImg<unsigned char>($input); }
-
-/*%typemap (in) cimg_library::CImg<char> { $1 = ArrToCImg<char>($input); }
+%typemap (in) cimg_library::CImg<char> { $1 = ArrToCImg<char>($input); }
 %typemap (in) cimg_library::CImg<unsigned short> { 1 = ArrToCImg<unsigned short>($input); }
 %typemap (in) cimg_library::CImg<short> { $1 = ArrToCImg<short>($input); }
 %typemap (in) cimg_library::CImg<unsigned int> { $1 = ArrToCImg<unsigned int>($input); }
@@ -95,24 +102,6 @@ namespace std {
 %typemap (in) cimg_library::CImg<long> { $1 = ArrToCImg<long>($input); }
 %typemap (in) cimg_library::CImg<float> { $1 = ArrToCImg<float>($input); }
 %typemap (in) cimg_library::CImg<double> { $1 = ArrToCImg<double>($input); }
-*/
-/*
-%typemap (in) cimg_library::CImg<unsigned char> {
-    PyArrayObject* arr = (PyArrayObject*)$input;
-    cimg_library::CImg<unsigned char> cimg(arr->data, arr->dimensions[0], arr->dimensions[1]);
-    $1 = cimg;
-}
-%typemap (in) cimg_library::CImg<unsigned char>& {
-    PyArrayObject* arr = (PyArrayObject*)$input;
-    cimg_library::CImg<unsigned char> cimg(arr->data, arr->dimensions[0], arr->dimensions[1]);
-    $1 = &cimg;
-}
-%typemap (in) cimg_library::CImg<unsigned char>* {
-    cimg_library::CImg<unsigned char> cimg($input->data, $input->dimensions[0], $input->dimensions[1]);
-    $1 = &cimg;
-}
-*/
-
 
 // GIP functions to ignore (suppresses warnings)
 // These operators are redefined below

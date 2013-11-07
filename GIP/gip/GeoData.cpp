@@ -170,8 +170,15 @@ namespace gip {
 			point p1(0,rows*i);
 			point p2(XSize()-1, std::min((rows*(i+1)-1),YSize()-1));
 			bbox chunk(p1,p2);
-			//std::cout << "Chunk " << i << ": " << boost::g+eometry::dsv(chunk) << std::endl;
+			//std::cout << "Chunk " << i << ": " << boost::geometry::dsv(chunk) << std::endl;
 			Chunks.push_back(chunk);
+		}
+		if (Options::Verbose() > 2) {
+		    int i(0);
+		    std::cout << "Chunked " << Basename() << " into " << Chunks.size() << " chunks (" << Options::ChunkSize() << " MB each)"<< std::endl;
+            for (vector<bbox>::const_iterator iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
+                std::cout << "Chunk " << i++ << ": " << boost::geometry::dsv(*iChunk) << std::endl;
+            }
 		}
 		return Chunks;
 	}
