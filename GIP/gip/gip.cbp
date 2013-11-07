@@ -47,7 +47,6 @@
 		<Unit filename="GeoImage.cpp" />
 		<Unit filename="GeoRaster.cpp" />
 		<Unit filename="GeoVector.cpp" />
-		<Unit filename="Options.cpp" />
 		<Unit filename="gip/Atmosphere.h" />
 		<Unit filename="gip/Colors.h" />
 		<Unit filename="gip/GeoAlgorithms.h" />
@@ -57,7 +56,6 @@
 		<Unit filename="gip/GeoRaster.h" />
 		<Unit filename="gip/GeoRasterIO.h" />
 		<Unit filename="gip/GeoVector.h" />
-		<Unit filename="gip/Options.h" />
 		<Unit filename="gip/Utils.h" />
 		<Unit filename="gip/gip_CImg.h" />
 		<Extensions>

@@ -1,6 +1,7 @@
 #ifndef GIP_UTILS_H
 #define GIP_UTILS_H
 
+#include <gip/Utils.h>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -20,6 +21,45 @@ namespace gip {
 		ss << t;
 		return ss.str();
 	}
+
+    class Options {
+    public:
+        // \name Global Options (static properties)
+		//! Get Config directory
+		static std::string ConfigDir() { return _ConfigDir.string(); }
+		//! Set Config directory
+		static void SetConfigDir(std::string dir) { _ConfigDir = dir; }
+		//! Default format when creating new files
+		static std::string DefaultFormat() { return _DefaultFormat; }
+		//! Set default format when creating new files
+		static void SetDefaultFormat(std::string str) { _DefaultFormat = str; }
+		//! Default chunk size when chunking an image
+		static float ChunkSize() { return _ChunkSize; }
+		//! Set chunk size, used when chunking an image
+		static void SetChunkSize(float sz) { _ChunkSize = sz; }
+		//! Get verbose level
+		static int Verbose() { return _Verbose; }
+		//! Set verbose level
+		static void SetVerbose(int v) { _Verbose = v; }
+		//! Get workdir
+		static std::string WorkDir() { return _WorkDir; }
+		//! Set workdir
+		static void SetWorkDir(std::string workdir) { _WorkDir = workdir; }
+
+    private:
+            // Static options
+        //! Configuration file directory
+        static boost::filesystem::path _ConfigDir;
+        //! Default format
+        static std::string _DefaultFormat;
+        //! Chunk size used when chunking up an image
+        static float _ChunkSize;
+        //! Verbosity level
+        static int _Verbose;
+        //! Work dir
+        static std::string _WorkDir;
+
+    };
 
     //! Splits the string s on the given delimiter(s) and returns a list of tokens without the delimiter(s)
     /// <param name=s>The string being split</param>

@@ -5,7 +5,6 @@
  *      Author: mhanson
  */
 
-#include <gip/Options.h>
 #include <gip/GeoAlgorithms.h>
 #include <gip/GeoImageIO.h>
 #include <gip/gip_CImg.h>
@@ -181,7 +180,7 @@ namespace gip {
         //site->exportToWkt(&wkt);
         //papszOptions = CSLSetNameValue(papszOptions,"CUTLINE",wkt);
         psWarpOptions->papszWarpOptions = CSLDuplicate(papszOptions);
-        psWarpOptions->hCutline = site;
+        //psWarpOptions->hCutline = site;
 
         GDALWarpOperation oOperation;
         // Perform warp for each input file
@@ -193,7 +192,7 @@ namespace gip {
                                                 imgout.GetGDALDataset(), imgout.GetGDALDataset()->GetProjectionRef(), TRUE, 0.0, 0 );
             psWarpOptions->pfnTransformer = GDALGenImgProjTransform;
             oOperation.Initialize( psWarpOptions );
-            std::cout << CPLGetLastErrorMsg() << std::endl;
+            //std::cout << CPLGetLastErrorMsg() << std::endl;
             if (Options::Verbose() > 1) std::cout << "Warping file " << iimg->Basename() << std::endl;
             oOperation.ChunkAndWarpMulti( 0, 0, imgout.XSize(), imgout.YSize() );
 
@@ -224,7 +223,7 @@ namespace gip {
                 nodata = imgIO[b].NoDataMask(*iChunk);
                 // only if nodata not same between input and output images
                 cimg_forXY(cimg,x,y) { if (nodata(x,y)) cimg(x,y) = imgoutIO[b].NoDataValue(); }
-                imgoutIO[b].Write(cimg,*iChunk);
+                imgoutIO[b].WriteChunk(cimg,*iChunk);
             }
         }
         return imgoutIO;
@@ -249,7 +248,7 @@ namespace gip {
                 cimg = imgIO[b].Ref(*iChunk);
                 nodata = imgIO[b].NoDataMask(*iChunk);
                 cimg_forXY(cimg,x,y) { if (nodata(x,y)) cimg(x,y) = imgoutIO[b].NoDataValue(); }
-                imgoutIO[b].Write(cimg,*iChunk);
+                imgoutIO[b].WriteChunk(cimg,*iChunk);
             }
         }
         return imgoutIO;
@@ -275,7 +274,7 @@ namespace gip {
                 ((cimg-=lo)*=(255.0/(hi-lo))).max(0.0).min(255.0);
                 //cimg_printstats(cimg,"after stretch");
                 cimg_forXY(cimg,x,y) { if (mask(x,y)) cimg(x,y) = imgoutIO[b].NoDataValue(); }
-                imgoutIO[b].Write(CImg<unsigned char>().assign(cimg.round()),*iChunk);
+                imgoutIO[b].WriteChunk(CImg<unsigned char>().assign(cimg.round()),*iChunk);
             }
         }
         return imgoutIO;
@@ -327,9 +326,9 @@ namespace gip {
             cimgout = (cimgin - min)/(max-min);
             cimgout.min(1.0).max(0.0);
             cimg_forXY(cimgin,x,y) if (cimgin(x,y) == nodatain) cimgout(x,y) = nodataout;
-            imageout[0].Write(cimgout, *iChunk);
+            imageout[0].WriteChunk(cimgout, *iChunk);
             cimg_for(cimgout,ptr,float) if (*ptr != nodataout) *ptr = 1.0 - *ptr;
-            imageout[1].Write(cimgout, *iChunk);
+            imageout[1].WriteChunk(cimgout, *iChunk);
         }
         return imageout;
     }
@@ -348,7 +347,7 @@ namespace gip {
             mask = imagein[band1-1].NoDataMask(*iChunk)|=(imagein[band2-1].NoDataMask(*iChunk));
             cimgout = imagein[band1-1].Read(*iChunk) - imagein[band2-1].Read(*iChunk);
             cimg_forXY(mask,x,y) if (mask(x,y)) cimgout(x,y) = nodataout;
-            imageout[0].Write(cimgout,*iChunk);
+            imageout[0].WriteChunk(cimgout,*iChunk);
         }
         return imageout;
     }
@@ -384,6 +383,39 @@ namespace gip {
         return image;
 	}	*/
 
+	GeoImage NDVI(const GeoImage& ImageIn, string filename) { return Indices(ImageIn, filename, true, false, false, false, false); }
+	GeoImage EVI(const GeoImage& ImageIn, string filename) { return Indices(ImageIn, filename, false, true, false, false, false); }
+    GeoImage LSWI(const GeoImage& ImageIn, string filename) { return Indices(ImageIn, filename, false, false, true, false, false); }
+    GeoImage NDSI(const GeoImage& ImageIn, string filename) { return Indices(ImageIn, filename, false, false, false, true, false); }
+
+    // SATVI Algorithm
+    GeoImage SATVI(const GeoImage& img, string filename) {
+        typedef float T;
+        GeoImageIO<T> imgIO(img);
+        GeoImageIO<T> imgout(GeoImage(filename, img, GDT_Int16, 1));
+
+        float nodataout = -32768;
+        imgout.SetNoData(nodataout);
+        imgout.SetGain(0.0001);
+
+        CImg<T> red, swir1, swir2, cimgout;
+        CImg<unsigned char> mask;
+
+        float L = 0.1;
+        std::vector<bbox> Chunks = img.Chunk();
+        std::vector<bbox>::const_iterator iChunk;
+        for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
+            red = imgIO["Red"].Read(*iChunk);
+            swir1 = imgIO["SWIR1"].Read(*iChunk);
+            swir2 = imgIO["SWIR2"].Read(*iChunk);
+            cimgout = (((1.0+L)*(swir1 - red)).div(swir1+red+L)) - (0.5*swir2);
+            mask = imgIO.NoDataMask(*iChunk);
+            cimg_forXY(cimgout,x,y) if (mask(x,y)) cimgout(x,y) = nodataout;
+            imgout[0].WriteChunk(cimgout,*iChunk);
+        }
+        imgout[0].SetDescription("SATVI");
+        return imgout;
+    }
 
 	//! Create multi-band image of various indices calculated from input
 	GeoImage Indices(const GeoImage& ImageIn, string filename, bool ndvi, bool evi, bool lswi, bool ndsi, bool bi) {
@@ -399,7 +431,8 @@ namespace gip {
 			return ImageIn;
 		}
 		GeoImageIO<float> imgin(ImageIn);
-		GeoImageIO<float> imgout(GeoImage(filename, imgin, GDT_Float32, numbands));
+		GeoImageIO<float> imgout(GeoImage(filename, imgin, GDT_Int16, numbands));
+		imgout.SetGain(0.0001);
 		// Assume NoData is set!
 		float nodatain = imgin[0].NoDataValue();
 		float nodataout = -32768;
@@ -422,32 +455,32 @@ namespace gip {
             if (ndvi) {
                 out = (nir-red).div(nir+red);
                 cimg_forXY(out,x,y) if (red(x,y) == nodatain || nir(x,y) == nodatain) out(x,y) = nodataout;
-                imgout[currentband++].Write(out,*iChunk);
+                imgout[currentband++].WriteChunk(out,*iChunk);
             }
             if (evi) {
                 out = 2.5*(nir-red).div(nir + 6*red - 7.5*blue + 1);
                 cimg_forXY(out,x,y) if (red(x,y) == nodatain || nir(x,y) == nodatain || blue(x,y) == nodatain) out(x,y) = nodataout;
-                imgout[currentband++].Write(out,*iChunk);
+                imgout[currentband++].WriteChunk(out,*iChunk);
             }
             if (lswi) {
                 out = (nir-swir1).div(nir+swir1);
                 cimg_forXY(out,x,y) if (red(x,y) == nodatain || nir(x,y) == nodatain) out(x,y) = nodataout;
-                imgout[currentband++].Write(out,*iChunk);
+                imgout[currentband++].WriteChunk(out,*iChunk);
             }
             if (ndsi) {
                 out = (swir1-green).div(swir1+green);
                 cimg_forXY(out,x,y) if (red(x,y) == nodatain || nir(x,y) == nodatain) out(x,y) = nodataout;
-                imgout[currentband++].Write(out,*iChunk);
+                imgout[currentband++].WriteChunk(out,*iChunk);
             }
             if (bi) {
                 out = 0.5*(blue+nir);
                 cimg_forXY(out,x,y) if (blue(x,y) == nodatain || nir(x,y) == nodatain) out(x,y) = nodataout;
-                imgout[currentband++].Write(out,*iChunk);
+                imgout[currentband++].WriteChunk(out,*iChunk);
             }
             /*if (satvi) {
                 out = (1.1 * ;
                 cimg_forXY(out,x,y) if (red(x,y) == nodatain || nir(x,y) == nodatain) out(x,y) = nodataval;
-                imgout[currentband++].Write(out,*iChunk);
+                imgout[currentband++].WriteChunk(out,*iChunk);
             }*/
         }
         // Set descriptions
@@ -487,7 +520,7 @@ namespace gip {
 
             if (morph != 0) mask.dilate(morph);
 
-            imgout[0].Write(mask,*iChunk);
+            imgout[0].WriteChunk(mask,*iChunk);
             /*CImg<double> stats = img.get_stats();
             cout << "stats " << endl;
             for (int i=0;i<12;i++) cout << stats(i) << " ";
@@ -541,7 +574,7 @@ namespace gip {
                 _ndsi = (greensatmask(x,y) && swir1(x,y) > green(x,y)) ? 0 : abs(ndsi(x,y));
                 vprob(x,y) = 1 - std::max(white(x,y), std::max(_ndsi, _ndvi));
             }
-            probout[0].Write(vprob, *iChunk);
+            probout[0].WriteChunk(vprob, *iChunk);
 
             // Potential cloud layer
             mask =
@@ -559,8 +592,8 @@ namespace gip {
 
             // Water and land masks
             wmask = imgin.WaterMask(*iChunk);
-            imgout[0].Write(mask, *iChunk);
-            imgout[1].Write(wmask, *iChunk);
+            imgout[0].WriteChunk(mask, *iChunk);
+            imgout[1].WriteChunk(wmask, *iChunk);
 
             //lmask = wmask^=1 & mask^=1;
             lmask = (wmask^1) & (mask^=1) & nodatamask;
@@ -573,8 +606,8 @@ namespace gip {
             wBT = BT;
             cimg_forXY(BT,x,y) if (!wmask(x,y)) wBT(x,y) = nodata;
             cimg_forXY(BT,x,y) if (!mask(x,y)) lBT(x,y) = nodata;
-            probout[0].Write(wBT,*iChunk);
-            probout[1].Write(lBT,*iChunk);*/
+            probout[0].WriteChunk(wBT,*iChunk);
+            probout[1].WriteChunk(lBT,*iChunk);*/
         }
 
         // If not enough non-cloud pixels then return existing mask
@@ -620,7 +653,7 @@ namespace gip {
             cimg_forXY(nodatamask,x,y) if (nodatamask(x,y) == 1) lprob(x,y) = nodata;
 
             // Cloud probability over water
-            probout[0].Write( lprob, *iChunk);
+            probout[0].WriteChunk( lprob, *iChunk);
         }
 
         // Apply thresholds to get final max
@@ -668,7 +701,7 @@ namespace gip {
             mask.dilate(dilate_elem);
 
             cimg_forXY(nodatamask,x,y) if (nodatamask(x,y) == 1) mask(x,y) = 0;
-            imgout[0].Write(mask, *iChunk);
+            imgout[0].WriteChunk(mask, *iChunk);
         }
 
         // Add shadow mask: bitmask
@@ -827,7 +860,7 @@ namespace gip {
                         cimg_forY(RunningTotal,iband) RunningTotal(stats(4),iband) += Pixel(iband);
                     } else C_imgout(x,y) = 0;
                 }
-                imgout[0].Write(C_imgout,*iChunk);
+                imgout[0].WriteChunk(C_imgout,*iChunk);
                 if (Options::Verbose()) cout << "." << std::flush;
             }
 
@@ -874,7 +907,7 @@ namespace gip {
 			//}
 			//validpixels += imgout.sum();
 			imgout = imageIO.NoDataMask(*iChunk)^=1;
-			mask0.Write(imgout,*iChunk);
+			mask0.WriteChunk(imgout,*iChunk);
 		}
 		//mask[0].SetValidSize(validpixels);
 		return mask[0];
@@ -891,7 +924,7 @@ namespace gip {
 				CImg<T> img = band.Read(*iChunk, true);
 				T nodata = band.NoDataValue();
 				cimg_forXY(img,x,y)	if ( std::isinf(img(x,y)) || std::isnan(img(x,y)) ) img(x,y) = nodata;
-				band.Write(img,*iChunk);
+				band.WriteChunk(img,*iChunk);
 			}
 		}
 		return image;
@@ -912,7 +945,7 @@ namespace gip {
 			for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
 				CImg<T> img = band.Read(*iChunk);
 				cimg_for(img,ptr,T) if (*ptr == val) *ptr = NAN;
-				band.Write(img,*iChunk);
+				band.WriteChunk(img,*iChunk);
 			}
 			band.ClearNoData();
 			band.SetUnits(origunits);

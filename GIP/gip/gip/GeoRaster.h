@@ -220,6 +220,8 @@ namespace gip {
         //! Adds a mask band (1 for valid), applied on read
 		GeoRaster& AddMask(const GeoRaster& band) { _Masks.push_back(band); return *this; }
 
+		GeoRaster& ClearMasks() { _Masks.clear(); return *this; }
+
         //! Statistics - should these be stored?
 		double Min() const { return (GetGDALStats())[0]; }
 		double Max() const { return (GetGDALStats())[1]; }
@@ -261,6 +263,8 @@ namespace gip {
 		GeoRaster operator==(double val) const { return GeoRaster(*this, GeoFunction("==",val)); }
 		GeoRaster operator+(double val) const { return GeoRaster(*this, GeoFunction("+",val)); }
 		GeoRaster operator-(double val) const { return GeoRaster(*this, GeoFunction("-",val)); }
+
+		GeoRaster& ClearFunctions() { _Functions.clear(); return *this; }
 
 	protected:
 		//! GDALRasterBand

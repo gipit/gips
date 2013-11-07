@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 <CodeBlocks_workspace_file>
 	<Workspace title="GIP">
-		<Project filename="gip/gip.cbp" />
-		<Project filename="giputils/giputils.cbp" active="1">
+		<Project filename="gip/gip.cbp" active="1" />
+		<Project filename="giputils/giputils.cbp">
 			<Depends filename="gip/gip.cbp" />
 		</Project>
 	</Workspace>

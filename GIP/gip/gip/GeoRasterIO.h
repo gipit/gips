@@ -56,6 +56,7 @@ namespace gip {
                 }
                 // apply atmosphere if there is one (which would data is radiance units) TODO - check units
                 if (Atmosphere()) {
+                    if (Options::Verbose() > 1) std::cout << Basename() << ": applying atmosphere" << std::endl;
                     double e = (Thermal()) ? 0.95 : 1;  // For thermal band, currently water only
                     img = (img - (_Atmosphere.Lu() + (1-e)*_Atmosphere.Ld())) / (_Atmosphere.t() * e);
                     updatenodata = true;
@@ -65,7 +66,8 @@ namespace gip {
 			// Apply Processing functions - TODO - should these apply if RAW ?
 			std::vector<GeoFunction>::const_iterator iFunc;
 			for (iFunc=_Functions.begin();iFunc!=_Functions.end();iFunc++) {
-				//std::cout << Basename() << ": Applying Function " << iFunc->Function() << " " << iFunc->Operand() << std::endl;
+			    if (Options::Verbose() > 1)
+                    std::cout << Basename() << ": Applying function " << iFunc->Function() << " " << iFunc->Operand() << std::endl;
 				if (iFunc->Function() == ">") {
 					img.threshold(iFunc->Operand(),false,true);
 				} else if (iFunc->Function() == ">=") {
@@ -75,7 +77,7 @@ namespace gip {
 				} else if (iFunc->Function() == "<=") {
 					img.threshold(iFunc->Operand(),false,true)^=1;
 				} else if (iFunc->Function() == "==") {
-				    cimg_forXY(img,x,y) if (img(x,y) == iFunc->Operand()) img(x,y) = 1; else img(x,y) = 0;
+                    cimg_for(img,ptr,T) if (*ptr == iFunc->Operand()) *ptr = 1; else *ptr = 0;
                     //img = img.get_threshold(iFunc->Operand(),false,false) - img.get_threshold(iFunc->Operand(),false,true);
 				} else if (iFunc->Function() == "+") {
 					img = img + iFunc->Operand();
@@ -84,9 +86,10 @@ namespace gip {
 				}
 				updatenodata = true;
 			}
-
 			// Apply all masks
 			if (_Masks.size() > 0) {
+			    if (Options::Verbose() > 1)
+                    std::cout << Basename() << ": Applying " << _Masks.size() << " masks" << std::endl;
                 GeoRasterIO<unsigned char> mask(_Masks[0]);
                 CImg<unsigned char> cmask(mask.Read(chunk));
                 for (unsigned int i=1; i<_Masks.size(); i++) {
@@ -105,13 +108,16 @@ namespace gip {
                     if (imgorig(x,y) == NoDataValue()) img(x,y) = NoDataValue();
                 }
 			}
-
 			delete ptrPixels;
 			return img;
 		}
 
+		GeoRasterIO<T>& Write(cimg_library::CImg<T> img) { //, bool RAW=false) {
+            return WriteChunk(img, bbox(point(0,0),point(XSize()-1,YSize()-1)), false );
+		}
+
 		//! Write a Cimg to the file
-		GeoRasterIO<T>& Write(cimg_library::CImg<T>& img, bbox chunk, bool RAW=false) { //, bool BadValCheck=false) {
+		GeoRasterIO<T>& WriteChunk(cimg_library::CImg<T>& img, bbox chunk, bool RAW=false) { //, bool BadValCheck=false) {
 			point p1 = chunk.min_corner();
 			point p2 = chunk.max_corner();
 			int width = p2.x()-p1.x()+1;
@@ -120,6 +126,8 @@ namespace gip {
 			if (!RAW && (Gain() != 1.0 || Offset() != 0.0)) {
                 cimg_for(img,ptr,T) if (*ptr != NoDataValue()) *ptr = (*ptr-Offset())/Gain();
 			}
+            if (Options::Verbose() > 1)
+                std::cout << Basename() << ": Writing with gain " << Gain() << " and offset " << Offset() << std::endl;
 			/*if (BadValCheck) {
 				cimg_for(img,ptr,T) if ( std::isinf(*ptr) || std::isnan(*ptr) ) *ptr = NoDataValue();
 			}*/
@@ -140,14 +148,14 @@ namespace gip {
             std::vector<bbox>::const_iterator iChunk;
             for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
                     CImg<double> cimg = rasterIO.Read(*iChunk, RAW);
-                    cimg_printstats(cimg,"read");
                     //CImg<unsigned char> mask;
                     /*if (Gain() != 1.0 || Offset() != 0.0) {
                         (cimg-=Offset())/=Gain();
                         mask = rasterIO.NoDataMask(*iChunk);
                         cimg_forXY(cimg,x,y) { if (mask(x,y)) cimg(x,y) = NoDataValue(); }
                     }*/
-                    Write(CImg<T>().assign(cimg.round()),*iChunk, RAW);
+                    //WriteChunk(CImg<T>().assign(cimg.round()),*iChunk, RAW);
+                    WriteChunk(CImg<T>().assign(cimg),*iChunk, RAW);
             }
             // Copy relevant metadata
             GDALRasterBand* band = raster.GetGDALRasterBand();
@@ -237,6 +245,8 @@ namespace gip {
             }
             return cimg;
 		}
+
+
 
 		//! Creates map of indices for each value in image (used for rasterized vector images)
 		/*map<T,POI> MapPOIs(GeoMask<T> Mask) const {
@@ -329,32 +339,6 @@ namespace gip {
 				Write(imgout,*iChunk, true);
 			}
 			SetDescription("EVI");
-			return *this;
-		}*/
-
-		// SATVI Algorithm
-		/*GeoRasterIO& SATVI(const GeoRaster& red, const GeoRaster& swir1, const GeoRaster& swir2) {
-			GeoRasterIO<T> Pred(red);
-			GeoRasterIO<T> Pswir1(swir1);
-			GeoRasterIO<T> Pswir2(swir2);
-			float L = 0.1;
-			red.NoData() ? SetNoData(red.NoDataValue()) : SetNoData();
-			std::vector<bbox> Chunks = Chunk();
-			std::vector<bbox>::const_iterator iChunk;
-			for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
-				CImg<T> Cred = Pred.Read(*iChunk);
-				CImg<T> Cswir1 = Pswir1.Read(*iChunk);
-				CImg<T> Cswir2 = Pswir2.Read(*iChunk);
-				CImg<T> imgout = (((1.0+L)*(Cswir1 - Cred)).div(Cswir1+Cred+L)) - (0.5*Cswir2);
-
-				// Check for NoData
-				if (red.NoData() || swir1.NoData() || swir2.NoData()) {
-					CImg<T> mask = Pred.NoDataMask(Cred) & Pswir1.NoDataMask(Cswir1) & Pswir2.NoDataMask(Cswir2);
-					cimg_forXY(imgout,x,y) if (!mask(x,y)) imgout(x,y) = NoDataValue();
-				}
-				Write(imgout,*iChunk);
-			}
-			SetDescription("SATVI");
 			return *this;
 		}*/
 

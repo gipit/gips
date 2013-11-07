@@ -41,6 +41,27 @@ namespace gip {
 		//! Get raster band by color, const version
 		const GeoRasterIO<T> operator[](std::string col) const { return GeoRasterIO<T>(GeoImage::operator[](col)); }
 
+        cimg_library::CImg<T> Extract(const GeoRaster& mask) {
+            GeoRasterIO<unsigned char> maskio(mask);
+            cimg_library::CImg<unsigned char> cmask;
+            cimg_library::CImg<T> cimg;
+            long count = 0;
+            std::vector<bbox> Chunks = Chunk();
+            std::vector<bbox>::const_iterator iChunk;
+            for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
+                cmask = maskio.Read(*iChunk);
+                cimg_for(cmask,ptr,unsigned char) if (*ptr > 0) count++;
+            }
+            cimg_library::CImg<T> pixels(count,NumBands());
+            for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
+                cimg = Read(*iChunk);
+                return cimg;
+                cmask = maskio.Read(*iChunk);
+                cimg_forXY(cimg,x,y) if (cmask(x,y) > 0) pixels(count++) = cimg(x,y);
+            }
+            //return pixels;
+        }
+
 		//! Get raster band by color
 		/*GeoRasterIO<T>& operator[](Color::Enum col) {
 			// Call const version
@@ -74,7 +95,7 @@ namespace gip {
 				images.insert( iBand->Read(chunk) );
 			}
 			//return images.get_append('c','p');
-			return images.get_append('c');
+			return images.get_append('z');
 		}
 
 		//! Read Cube as list
@@ -93,7 +114,7 @@ namespace gip {
 			int i(0);
 			for (iBand=_RasterIOBands.begin();iBand!=_RasterIOBands.end();iBand++) {
 				CImg<T> tmp = img.get_channel(i++);
-				iBand->Write(tmp,chunk, BadValCheck);
+				iBand->WriteChunk(tmp,chunk, BadValCheck);
 			}
 			return *this;
 		}

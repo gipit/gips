@@ -1,8 +1,8 @@
 install:
 	cp GIP/gip/bin/Release/libgip.so /usr/lib/
 	#cp GIP/giputils/bin/Release/* /usr/local/bin/
-	git clean -xfd
-	python setup.py install
+	#git clean -xfd
+	#python setup.py install
 
 develop:
 	cp GIP/gip/bin/Release/libgip.so /usr/lib/

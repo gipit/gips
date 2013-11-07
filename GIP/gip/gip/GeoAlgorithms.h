@@ -24,6 +24,12 @@ namespace gip {
 
 	GeoImage CookieCutter(std::vector<std::string>, std::string, std::string, float=1.0, float=1.0);
 
+	GeoImage NDVI(const GeoImage&, std::string);
+	GeoImage EVI(const GeoImage&, std::string);
+	GeoImage LSWI(const GeoImage&, std::string);
+	GeoImage NDSI(const GeoImage&, std::string);
+	GeoImage SATVI(const GeoImage&, std::string);
+
 	//! Create new file of standard indices: NDVI, EVI, LSWI, NDSI, BI
 	GeoImage Indices(const GeoImage&, std::string, bool=true, bool=true, bool=true, bool=true, bool=true);
 

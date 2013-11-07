@@ -5,7 +5,6 @@
  *  Author: mhanson
  */
 
-#include <gip/Options.h>
 #include <gip/GeoData.h>
 #include <boost/make_shared.hpp>
 
@@ -18,6 +17,12 @@ namespace gip {
     using boost::filesystem::path;
     typedef boost::geometry::model::d2::point_xy<float> point;
     typedef boost::geometry::model::box<point> bbox;
+
+	boost::filesystem::path Options::_ConfigDir("/usr/share/gip/");
+	string Options::_DefaultFormat("GTiff");
+	float Options::_ChunkSize(128.0);
+	int Options::_Verbose(1);
+	std::string Options::_WorkDir("/tmp/");
 
 	/*!
 	 * Open an existing file and returns a shared pointer
@@ -42,7 +47,7 @@ namespace gip {
 	GeoData::GeoData(int xsz, int ysz, int bsz, GDALDataType datatype, string filename, dictionary options)
 		:_Filename(filename) {
 		string format = Options::DefaultFormat();
-		if (format == "GTiff" && datatype == GDT_Byte) options["COMPRESS"] = "JPEG";
+		//if (format == "GTiff" && datatype == GDT_Byte) options["COMPRESS"] = "JPEG";
 		GDALDriver *driver = GetGDALDriverManager()->GetDriverByName(format.c_str());
 		// TODO check for null driver and create method
 		// Check extension
