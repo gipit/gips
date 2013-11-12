@@ -126,7 +126,7 @@ namespace gip {
 			if (!RAW && (Gain() != 1.0 || Offset() != 0.0)) {
                 cimg_for(img,ptr,T) if (*ptr != NoDataValue()) *ptr = (*ptr-Offset())/Gain();
 			}
-            if (Options::Verbose() > 1)
+            if (Options::Verbose() > 2)
                 std::cout << Basename() << ": Writing with gain " << Gain() << " and offset " << Offset() << std::endl;
 			/*if (BadValCheck) {
 				cimg_for(img,ptr,T) if ( std::isinf(*ptr) || std::isnan(*ptr) ) *ptr = NoDataValue();
@@ -245,8 +245,6 @@ namespace gip {
             }
             return cimg;
 		}
-
-
 
 		//! Creates map of indices for each value in image (used for rasterized vector images)
 		/*map<T,POI> MapPOIs(GeoMask<T> Mask) const {

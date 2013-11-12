@@ -54,7 +54,7 @@ namespace gip {
         for (unsigned int i=0; i<imgout.NumBands(); i++) imgout[i].Copy(img[i], true);
 		Colors colors = img.GetColors();
 		for (unsigned int i=0;i<img.NumBands();i++) imgout.SetColor(colors[i+1], i+1);
-		//Output.CopyColorTable(Input);
+		imgout.CopyColorTable(img);
 		return imgout;
 	}
 
@@ -82,6 +82,7 @@ namespace gip {
         int xsize = (int)(0.5 + (extent.MaxX - extent.MinX) / xres);
         int ysize = (int)(0.5 + (extent.MaxY - extent.MinY) / yres);
         GeoImage imgout(filename, xsize, ysize, bsz, dtype);
+        imgout.CopyMeta(imgs[0]);
 
         double nodata(imgs[0][0].NoDataValue());
         imgout.SetNoData(nodata);

@@ -175,10 +175,10 @@ namespace gip {
 		}
 		if (Options::Verbose() > 2) {
 		    int i(0);
-		    std::cout << "Chunked " << Basename() << " into " << Chunks.size() << " chunks (" << Options::ChunkSize() << " MB each)"<< std::endl;
-            for (vector<bbox>::const_iterator iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
-                std::cout << "Chunk " << i++ << ": " << boost::geometry::dsv(*iChunk) << std::endl;
-            }
+		    std::cout << "Chunked " << Basename() << " into " << Chunks.size() << " chunks ("
+                << Options::ChunkSize() << " MB each)"<< std::endl;
+            for (vector<bbox>::const_iterator iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++)
+                std::cout << "  Chunk " << i++ << ": " << boost::geometry::dsv(*iChunk) << std::endl;
 		}
 		return Chunks;
 	}

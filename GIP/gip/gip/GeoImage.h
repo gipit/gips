@@ -117,8 +117,10 @@ namespace gip {
 
         //! Copy color table from another image
 		void CopyColorTable(const GeoImage& raster) {
-		    if (NumBands() == 1)
-                _RasterBands[0].GetGDALRasterBand()->SetColorTable(raster[0].GetGDALRasterBand()->GetColorTable());
+		    if (NumBands() == 1) {
+                GDALColorTable* table( raster[0].GetGDALRasterBand()->GetColorTable() );
+                if (table != NULL) _RasterBands[0].GetGDALRasterBand()->SetColorTable(table);
+		    }
 		}
 
 		// \name Band Operations

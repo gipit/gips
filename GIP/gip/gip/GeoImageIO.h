@@ -41,7 +41,9 @@ namespace gip {
 		//! Get raster band by color, const version
 		const GeoRasterIO<T> operator[](std::string col) const { return GeoRasterIO<T>(GeoImage::operator[](col)); }
 
+        //! Extract spectra from select pixels (where mask > 0)
         cimg_library::CImg<T> Extract(const GeoRaster& mask) {
+            if (Options::Verbose() > 2 ) std::cout << "Pixel spectral extraction" << std::endl;
             GeoRasterIO<unsigned char> maskio(mask);
             cimg_library::CImg<unsigned char> cmask;
             cimg_library::CImg<T> cimg;
@@ -54,13 +56,20 @@ namespace gip {
                 cmask = maskio.Read(*iChunk);
                 cimg_for(cmask,ptr,unsigned char) if (*ptr > 0) count++;
             }
-            cimg_library::CImg<T> pixels(count,NumBands());
+            cimg_library::CImg<T> pixels(count,NumBands()+1,1,1,_RasterIOBands[0].NoDataValue());
+            count = 0;
+            int ch(0);
+            unsigned int c;
             for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
                 cimg = Read(*iChunk);
                 cmask = maskio.Read(*iChunk);
-                cimg_forXY(cimg,x,y) if (cmask(x,y) > 0) {
-                    cimg_forZ(cimg,z) pixels(count++,z) = cimg(x,y,z);
+                cimg_forXY(cimg,x,y) {
+                    if (cmask(x,y) > 0) {
+                        for (c=0;c<NumBands();c++) pixels(count,c+1) = cimg(x,y,c);
+                        pixels(count++,0) = cmask(x,y);
+                    }
                 }
+                if (Options::Verbose() > 2) std::cout << "  Chunk " << ch++ << std::endl;
             }
             Options::SetChunkSize(chunksize);
             return pixels;
@@ -92,11 +101,11 @@ namespace gip {
 		}
 
 		//! Read Cube
-		CImg<T> Read(bbox chunk) const {
+		CImg<T> Read(bbox chunk, bool RAW=false) const {
 			cimg_library::CImgList<T> images;
 			typename std::vector< GeoRasterIO<T> >::const_iterator iBand;
 			for (iBand=_RasterIOBands.begin();iBand!=_RasterIOBands.end();iBand++) {
-				images.insert( iBand->Read(chunk) );
+				images.insert( iBand->Read(chunk, RAW) );
 			}
 			//return images.get_append('c','p');
 			return images.get_append('v','p');
@@ -214,7 +223,7 @@ namespace gip {
 		//! NoData mask (all bands)
 		CImg<unsigned char> NoDataMask(bbox chunk) const {
 		    unsigned int c;
-		    CImg<T> cube = Read(chunk);
+		    CImg<T> cube = Read(chunk, true);
 		    CImg<unsigned char> mask(cube.width(),cube.height(),1,1,0);
             cimg_forXY(cube,x,y) {
                 for (c=0; c<NumBands(); c++) {
