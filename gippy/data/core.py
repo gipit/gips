@@ -38,17 +38,25 @@ class Data(object):
         self.tiles = {}
         self.date = date
         for t in self.tile_coverage.keys(): self.tiles[t] = {}
+        if products is None: products = self._products.keys()
         self.products = {}
+        for p in products: self.products[p] = ''
 
-    def read(self):
-        return gippy.GeoImage(self.filename)
-
-    def filename(self,product,tile=None):
-        """ Return filename for given product (either given tile or mosaic) """
-        if tile is not None:
-            return self.tiles[tile]['products'][product]
+    def read(self, product=''):
+        """ Open and return as GeoImage """
+        if product != '':
+            return gippy.GeoImage(self.products[product])
+        elif len(self.products) == 1:
+            return gippy.GeoImage(self.products[self.products.keys()[0]])
         else:
-            return self.products['product']
+            raise Exception('No product provided')
+
+    #def filename(self,product,tile=None):
+    #    """ Return filename for given product (either given tile or mosaic) """
+    #    if tile is not None:
+    #        return self.tiles[tile]['products'][product]
+    #    else:
+    #        return self.products['product']
 
     @classmethod
     def path(cls,tile='',date=''):
@@ -61,16 +69,16 @@ class Data(object):
             return os.path.join(cls.rootdir, tile, date)
 
     @classmethod
-    def inventory(cls,site, tiles, dates, days, products=None):
+    def inventory(cls,site=None, tiles=None, dates=None, days=None, products=None):
         return DataInventory(cls, site, tiles, dates, days, products)
 
-    @property
-    def get_products(self):
-        """ Return list of products that exist for all tiles """
-        products = []
-        for t in self.tiles:
-            products.extend(self.tiles[t]['products'].keys())
-        return sorted(set(products))
+    #@property
+    #def get_products(self):
+    #    """ Return list of products that exist for all tiles """
+    #    products = []
+    #    for t in self.tiles:
+    #        products.extend(self.tiles[t]['products'].keys())
+    #    return sorted(set(products))
 
     @classmethod
     def find_dates(cls, tile):
@@ -113,6 +121,9 @@ class Data(object):
             feat = tlayer.GetNextFeature()
         return tiles
 
+    def __str__(self):
+        return self.sensor + ': ' + str(self.date)
+
 class DataInventory(object):
     """ Base class for data inventories """
     # redo color, combine into ordered dictionary
@@ -142,12 +153,12 @@ class DataInventory(object):
     def __getitem__(self,date):
         return self.data[date]
 
-    def filenames(self,sensor,product):
-        """ Return dictionary (date keys) of filenames for given sensor and product if supplied """
-        filenames = {}
-        for date in self.dates:
-            if sensor in self.dates[date]:
-                filenames[date] = self.dates[date][sensor].filename(product)
+    #def filenames(self,product):
+    #    """ Return dictionary (date keys) of filenames for given sensor and product if supplied """
+    #    filenames = {}
+    #    for date in self.dates:
+    #        filenames[date] = self.data[date][0].filename(product)
+    #    return filenames
 
     @property
     def dates(self):
@@ -159,6 +170,14 @@ class DataInventory(object):
         """ Get number of dates """
         return len(self.data)
 
+    def read_timeseries(self,product=''):
+        """ Read all files as time series """
+        # assumes only one sensor row for each date
+        img = self.data[self.dates[0]][0].read(product=product)
+        for i in range(1,len(self.dates)):
+            img.AddBand(self.data[self.dates[i]][0].read(product=product)[0])
+        return img
+
     #@property
     #def sensor_names(self):
     #    """ Get list of all sensors """
@@ -169,6 +188,8 @@ class DataInventory(object):
 
     def AddData(self, dataclass, products=None):
         """ Add additional data to this inventory (usually from different sensors """
+        if self.tiles is None and self.site is None:
+            raise Exception('No shapefile or tiles provided for inventory')
         if self.tiles is None and self.site is not None:
             self.tiles = dataclass.vector2tiles(gippy.GeoVector(self.site))
         # get all potential matching dates for tiles
@@ -182,7 +203,7 @@ class DataInventory(object):
         self.data = {}
         for date in sorted(dates):
             dat = dataclass(site=self.site, tiles=self.tiles, date=date, products=products)
-            self.data[date] = { dat.sensor: dat }
+            self.data[date] = [ dat ]
             self.numfiles = self.numfiles + len(dat.tiles)
         
     def temporal_extent(self, dates, days):
@@ -199,34 +220,34 @@ class DataInventory(object):
         VerboseOut('Requested %s products for %s files' % (len(products), self.numfiles))
         # TODO only process if don't exist
         for date in self.dates:
-            for sensor in self.data[date]:
-                self.data[date][sensor].process(products, overwrite, suffix, overviews)
+            for data in self.data[date]:
+                data.process(products, overwrite, suffix, overviews)
                 # TODO - add completed product(s) to inventory         
         VerboseOut('Completed processing')
 
-    def project(self, res):
+    def project(self, res=None, datadir='gipdata'):
         print 'Preparing data for %s dates' % len(self.dates)
         # res should default to data?
         for date in self.dates:
-            for sensor in self.data[date]:
-                self.data[date][sensor].project(res)
+            for data in self.data[date]:
+                data.project(res)
 
     def get_products(self, date):
         """ Get list of products for given date """
         # this doesn't handle different tiles (if prod exists for one tile, it lists it)
         prods = []
-        for sensor in self.data[date]:
-            for prod in self.data[date][sensor].get_products:
+        for data in self.data[date]:
+            for prod in data.products.keys():
                 prods.append(prod)
         return sorted(prods)
 
     def createlinks(self,hard=False):
         """ Create product links """
         for date in self.data:
-            for sensor in self.data[date]:
-                for t in self.data[date][sensor].tiles:
-                    for p in self.data[date][sensor].tiles[t]['products']:
-                        link( self.data[date][sensor].tiles[t]['products'][p], hard )
+            for data in self.data[date]:
+                for t in data.tiles:
+                    for p in data.tiles[t]['products']:
+                        link( data.tiles[t]['products'][p], hard )
 
     def printcalendar(self,md=False, products=False):
         """ print calendar for raw original datafiles """
@@ -248,13 +269,13 @@ class DataInventory(object):
             colors = {}
             for i,s in enumerate(self.dataclass.sensor_names()): colors[s] = self._colororder[i]
 
-            for s in self.data[date]:
-                sys.stdout.write(self._colorize('{:<6}'.format(daystr), colors[self.dataclass.sensors[s]] ))
+            for dat in self.data[date]:
+                sys.stdout.write(self._colorize('{:<6}'.format(daystr), colors[self.dataclass.sensors[dat.sensor]] ))
             if products:
                 sys.stdout.write('        ')
                 prods = self.get_products(date)
                 for p in prods:
-                    sys.stdout.write(self._colorize('{:<12}'.format(p), colors[self.dataclass.sensors[s]] ))
+                    sys.stdout.write(self._colorize('{:<12}'.format(p), colors[self.dataclass.sensors[dat.sensor]] ))
                 sys.stdout.write('\n ')
             oldyear = date.year
         sys.stdout.write('\n')
@@ -324,10 +345,12 @@ def main(dataclass):
     #group.add_argument('--nooverviews', help='Do not add overviews to output', default=False, action='store_true')
     #pparser.add_argument('--link', help='Create links in current directory to output', default=False, action='store_true')
     #pparser.add_argument('--multi', help='Use multiple processors', default=False, action='store_true')
+
     # Project
     parser = subparser.add_parser('project',help='Create project', parents=[invparser], formatter_class=dhf)
     group = parser.add_argument_group('Project options')
     group.add_argument('--res',nargs=2,help='Resolution of output rasters', default=[30,30], type=float)
+    group.add_argument('--datadir', help='Directory to save project files', default='gipdata')
 
     # Links
     parser = subparser.add_parser('link',help='Link to Products', parents=[invparser], formatter_class=dhf)
@@ -370,13 +393,9 @@ def main(dataclass):
             print 'Error processing: %s' % e
             VerboseOut(traceback.format_exc(), 3)
 
-    elif args.command == 'project':
-        inv.process(products=args.products) 
-        inv = dataclass.inventory(site=args.site, dates=args.dates, days=args.days, tiles=args.tiles, products=args.products)
-        inv.project(args.res)
+    elif args.command == 'project': inv.project(args.res, datadir=args.datadir)
 
-    elif args.command == 'archive':
-        archive()
+    elif args.command == 'archive': dataclass.archive()
 
     else:
         print 'Command %s not recognized' % cmd

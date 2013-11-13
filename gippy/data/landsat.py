@@ -83,7 +83,7 @@ class LandsatData(Data):
     ])
 
     def __init__(self, site=None, tiles=None, date=None, products=None):
-        super(LandsatData, self).__init__(site=site, tiles=tiles, date=date)
+        super(LandsatData, self).__init__(site=site, tiles=tiles, date=date, products=products)
 
         if products is None or len(products) == 0: products = ['*']
 
@@ -119,16 +119,6 @@ class LandsatData(Data):
 
         if len(self.tiles) == 0:
             raise Exception('No landsat data found')
-
-    def read(self, tile, product='raw'):
-        """ Read in specified product as GeoImage """
-        if product == 'raw':
-            return self._readraw(tile)
-        else:
-            try:
-                return GeoImage(self.tiles[tile]['products'][product])
-            except Exception,e:
-                print 'Unknown product %s' % product
 
     def _readmeta(self, tile):
         """ Read in Landsat MTL (metadata) file """
@@ -341,7 +331,7 @@ class LandsatData(Data):
             image.SetColor(bandmeta['color'],i+1)
         return image
 
-    def process(self, products=['toaref'], overwrite=False, suffix='', overviews=False):
+    def process(self, overwrite=False, suffix='', overviews=False):
         """ Process these tiles for given products """
         for tile, data in self.tiles.items():
             if suffix != '' and suffix[:1] != '_': suffix = '_' + suffix
@@ -349,7 +339,7 @@ class LandsatData(Data):
             fouts = {}
             runatm = False
             # generate all product names and check if already existing
-            for product in products:
+            for product in self.products:
                 if self._products[product]['atmcorr']: runatm = True
                 if product not in self._products.keys():
                     raise Exception('Product %s not recognized' % product)
@@ -360,7 +350,7 @@ class LandsatData(Data):
                 start = datetime.datetime.now()
                 try:
                     # TODO - If only doing temp then don't waste time with other bands
-                    img = self.read(tile)
+                    img = self._readraw(tile)
                 except Exception,e:
                     print 'Error reading data %s' % data['filename']
                     VerboseOut('%s %s' % (data['basename'],e), 2)
@@ -394,6 +384,7 @@ class LandsatData(Data):
                         fname = imgout.Filename()
                         imgout = None
                         dur = datetime.datetime.now() - start
+                        data['products'][product] = fname
                         VerboseOut(' -> %s: processed in %s' % (os.path.basename(fname),dur))
                     except Exception,e:
                         print 'Error processing %s' % fname
@@ -408,19 +399,23 @@ class LandsatData(Data):
                     shutil.rmtree(os.path.join(dirname,'modtran'))
                 except: pass
 
-    def project(self, res):
+    def project(self, res=[30,30], datadir='gipdata'):
+        if res is None: res=[30,30]
+        self.process()
+        if not os.path.exists(datadir): os.makedirs(datadir)
+        datadir = os.path.abspath(datadir)
         if len(res) == 1: res = [res,res]
         if self.site is None:
             raise Exception("No site file supplied")
-        # TODO - now it assumes same products available for all tiles (process should come first, or validate)
-        for product in self.get_products:
-            if product not in self.products:
+        for product in self.products:
+            if self.products[product] == '':
                 start = datetime.datetime.now()
-                filename = self.date.strftime('%Y%j') + '_%s_%s' % (product,self.sensor)
-                filenames = [self.filename(product,t) for t in self.tiles]
-                imgout = gippy.CookieCutter(filenames, filename, self.site, res[0], res[1])
+                filename = os.path.join(datadir, self.date.strftime('%Y%j') + '_%s_%s.tif' % (product,self.sensor))
+                if not os.path.exists(filename):
+                    filenames = [self.tiles[t]['products'][product] for t in self.tiles]
+                    imgout = gippy.CookieCutter(filenames, filename, self.site, res[0], res[1])
+                    print 'Projected and cropped %s files -> %s in %s' % (len(filenames),imgout.Basename(),datetime.datetime.now() - start)
                 self.products[product] = filename
-                print 'Projected and cropped %s files -> %s in %s' % (len(filenames),imgout.Basename(),datetime.datetime.now() - start)
         
     # This is broken
     @classmethod
