@@ -12,22 +12,19 @@
 #include <gip/GeoAlgorithms.h>
 #include <gip/GeoRasterIO.h>
 
-#include <gip/Options.h>
-//#include <boost/program_options.hpp>
-
 using namespace std;
 using namespace gip;
 
 int main (int ac, char* av[]) {
 	// Begin boilerplate code ************************
 	// Add program specific options
-	using namespace boost::program_options;
-	options_description localopts("Test Options");
-	localopts.add_options()
-		("algtest", value<bool>()->implicit_value(true)->default_value(false), "Algorithm tests")
-		("updatetest", value<bool>()->implicit_value(true)->default_value(false), "Update test");
-	gip::Options Opts(ac,av,localopts);
-	if (Opts.Exit()) return 0;
+	//using namespace boost::program_options;
+	//options_description localopts("Test Options");
+	//localopts.add_options()
+	//	("algtest", value<bool>()->implicit_value(true)->default_value(false), "Algorithm tests")
+	//	("updatetest", value<bool>()->implicit_value(true)->default_value(false), "Update test");
+	//gip::Options Opts(ac,av,localopts);
+	//if (Opts.Exit()) return 0;
 	GDALAllRegister();
 	// End boilerplate code **************************
 

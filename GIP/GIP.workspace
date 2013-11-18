@@ -2,8 +2,5 @@
 <CodeBlocks_workspace_file>
 	<Workspace title="GIP">
 		<Project filename="gip/gip.cbp" active="1" />
-		<Project filename="giputils/giputils.cbp">
-			<Depends filename="gip/gip.cbp" />
-		</Project>
 	</Workspace>
 </CodeBlocks_workspace_file>

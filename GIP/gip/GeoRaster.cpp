@@ -44,7 +44,7 @@ namespace gip {
 	}
 
     //! Copy passed raster band into this raster band
-    GeoRaster& GeoRaster::Copy(const GeoRaster& img, bool RAW) {
+    /*GeoRaster& GeoRaster::Copy(const GeoRaster& img, bool RAW) {
         switch (DataType()) {
             case GDT_Byte: return GeoRasterIO<unsigned char>(*this).Copy(img, RAW);
             case GDT_UInt16: return GeoRasterIO<unsigned short>(*this).Copy(img, RAW);
@@ -56,7 +56,7 @@ namespace gip {
             default: return GeoRasterIO<unsigned char>(*this).Copy(img, RAW);
             // TODO - remove default. This should throw exception
         }
-    }
+    }*/
 
     //! Compute stats
     cimg_library::CImg<float> GeoRaster::ComputeStats(bool RAW) const {

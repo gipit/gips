@@ -142,7 +142,7 @@ namespace gip {
 		}*/
 
 		//! Copy input band into this
-		GeoRasterIO<T>& Copy(const GeoRaster& raster, bool RAW=false) {
+		/*GeoRasterIO<T>& Copy(const GeoRaster& raster, bool RAW=false) {
 		    using cimg_library::CImg;
 		    GeoRasterIO<double> rasterIO(raster);
             std::vector<bbox> Chunks = Chunk();
@@ -150,11 +150,11 @@ namespace gip {
             for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
                     CImg<double> cimg = rasterIO.Read(*iChunk, RAW);
                     //CImg<unsigned char> mask;
-                    /*if (Gain() != 1.0 || Offset() != 0.0) {
-                        (cimg-=Offset())/=Gain();
-                        mask = rasterIO.NoDataMask(*iChunk);
-                        cimg_forXY(cimg,x,y) { if (mask(x,y)) cimg(x,y) = NoDataValue(); }
-                    }*/
+                    //if (Gain() != 1.0 || Offset() != 0.0) {
+                    //    (cimg-=Offset())/=Gain();
+                    //    mask = rasterIO.NoDataMask(*iChunk);
+                    //    cimg_forXY(cimg,x,y) { if (mask(x,y)) cimg(x,y) = NoDataValue(); }
+                    //}
                     //WriteChunk(CImg<T>().assign(cimg.round()),*iChunk, RAW);
                     WriteChunk(CImg<T>().assign(cimg),*iChunk, RAW);
             }
@@ -167,7 +167,7 @@ namespace gip {
             _GDALRasterBand->SetMetadata(band->GetMetadata());
             CopyCoordinateSystem(raster);
             return *this;
-		}
+		}*/
 
 		//! Calculate stats
 		cimg_library::CImg<float> ComputeStats(bool RAW=false) {
