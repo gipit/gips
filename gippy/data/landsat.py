@@ -82,11 +82,11 @@ class LandsatData(Data):
         }),
     ])
 
-    def __init__(self, site=None, tiles=None, date=None, products=None):
+    def __init__(self, site=None, tiles=None, date=None, products=None, maxclouds = 100):
         super(LandsatData, self).__init__(site=site, tiles=tiles, date=date, products=products)
 
         if products is None or len(products) == 0: products = ['*']
-
+        
         filenames = []
         empty_tiles = []
         for t in self.tiles:
@@ -101,6 +101,13 @@ class LandsatData(Data):
             filename = filename[0]
             path,basename = os.path.split(filename)
             basename = basename[:-12]
+
+            # Cloud check
+            if maxclouds < 100:
+                meta = self._readmeta(t,filename=filename)
+                if meta['clouds'] > maxclouds:
+                    empty_tiles.append(t)
+                    continue
             
             # TODO - check all have same sensor? (for a single date, they should not ever)
             self.sensor = basename[0:3]
@@ -118,29 +125,30 @@ class LandsatData(Data):
         for t in empty_tiles: self.tiles.pop(t,None)
 
         if len(self.tiles) == 0:
-            raise Exception('No landsat data found')
+            raise Exception('No valid landsat data found')
 
-    def _readmeta(self, tile):
+    def _readmeta(self, tile, filename=None):
         """ Read in Landsat MTL (metadata) file """
-        dat = self.tiles[tile]
-        mtlfilename = glob.glob(os.path.join(os.path.dirname(dat['filename']),'*MTL.txt'))
+        if filename is None:
+            filename = self.tiles[tile]['filename']
+        mtlfilename = glob.glob(os.path.join(os.path.dirname(filename),'*MTL.txt'))
 
         if len(mtlfilename) == 0:
             # Extract MTL file
-            if tarfile.is_tarfile(dat['filename']):
-                tfile = tarfile.open(dat['filename'])
+            if tarfile.is_tarfile(filename):
+                tfile = tarfile.open(filename)
             else:
                 raise Exception('Not a valid landsat tar file')
             try:
                 mtl = ([f for f in tfile.getnames() if "MTL.txt" in f])[0]
             except:
                 raise Exception(': possibly an (unsupported) NLAPS processed file')
-            tfile.extract(mtl,os.path.dirname(dat['filename']))
-            mtlfilename = os.path.join(os.path.dirname(dat['filename']),mtl)
+            tfile.extract(mtl,os.path.dirname(filename))
+            mtlfilename = os.path.join(os.path.dirname(filename),mtl)
         else:
             mtlfilename = mtlfilename[0]
 
-        VerboseOut('reading %s' % mtlfilename, 2)
+        VerboseOut('reading %s' % mtlfilename, 3)
         # Read MTL file
         try:
             text = open(mtlfilename,'r').read()
@@ -223,6 +231,9 @@ class LandsatData(Data):
             mtl['SCENE_CENTER_TIME'][:-2],'%Y-%m-%d %H:%M:%S.%f')
         seconds = (dt.second + dt.microsecond/1000000.)/3600.
         dectime = dt.hour + dt.minute/60.0 + seconds  
+        try:
+            clouds = float(mtl['CLOUD_COVER'])
+        except: clouds = 0
 
         # Band metadata
         bandmeta = []
@@ -267,8 +278,10 @@ class LandsatData(Data):
             'filenames': filenames,
             'geometry': _geometry,
             'datetime': _datetime,
-            'bands': bandmeta
+            'bands': bandmeta,
+            'clouds': clouds
         }
+        return self.tiles[tile]['metadata']
 
     def _readraw(self,tile,bandnums=[]):
         """ Read in Landsat bands using original tar.gz file """
@@ -296,7 +309,7 @@ class LandsatData(Data):
                 tfile.extract(fname,tiledata['path'])
             filenames.append(os.path.join(tiledata['path'],fname))
 
-        if gippy.Options.Verbose() > 1:
+        if gippy.Options.Verbose() > 2:
             print 'Landsat files: '
             for f in filenames: print ' %s' % f
 
@@ -417,9 +430,8 @@ class LandsatData(Data):
                     print 'Projected and cropped %s files -> %s in %s' % (len(filenames),imgout.Basename(),datetime.datetime.now() - start)
                 self.products[product] = filename
         
-    # This is broken
     @classmethod
-    def archive(self, dir=''):
+    def archive(cls, dir=''):
         """ Move landsat files from current directory to archive location """
         if (dir == ''):
             fnames = glob.glob('L*.tar.gz')
@@ -430,35 +442,37 @@ class LandsatData(Data):
             pathrow = f[3:9]
             year = f[9:13]
             doy = f[13:16]
-            path = os.path.join(origpath,pathrow,year+doy)
+            path = os.path.join(cls.rootdir,pathrow,year+doy)
+
+            # Make directory
             try:
+                #pass
                 os.makedirs(path)
             except OSError as exc: # Python >2.5
                 if exc.errno == errno.EEXIST and os.path.isdir(path):
+                    #print 'Directory already exists'
                     pass
                 else:
                     raise Exception('Unable to make product directory %s' % path)
+
+            # Move file
             try:
                 newf = os.path.join(path,f)
-                if os.path.exists(newf):
-                    print '%s: already in archive' % f
-                    os.remove(f)
-                else:
+                if not os.path.exists(newf):
+                    # Check for older versions
+                    existing_files = glob.glob(os.path.join(path,'*tar.gz'))
+                    if len(existing_files) > 0:
+                        print 'Other version of %s alrady exist:' % f
+                        for ef in existing_files: print '\t%s' % ef
                     shutil.move(f,newf)
-                    try:
-                        #mtl = _readmeta(newf)
-                        print f, ' -> ',path
-                        numadded = numadded + 1
-                    except Exception,e:
-                        print f, ' -> problem with file'
-                        unarchive(os.path.dirname(newf))
+                    #print f, ' -> ',path
+                    numadded = numadded + 1
             except shutil.Error as err:
                 print err
+                print f, ' -> problem archiving file'
                 #raise Exception('shutils error %s' % err)
                 #if exc.errno == errno.EEXIST:
                 #    print f, ' removed, already in archive'
-                #else:
-                #    pass
         print '%s files added to archive' % numadded
         if numadded != len(fnames):
             print '%s files not added to archive' % (len(fnames)-numadded)

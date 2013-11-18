@@ -69,8 +69,8 @@ class Data(object):
             return os.path.join(cls.rootdir, tile, date)
 
     @classmethod
-    def inventory(cls,site=None, tiles=None, dates=None, days=None, products=None):
-        return DataInventory(cls, site, tiles, dates, days, products)
+    def inventory(cls,site=None, tiles=None, dates=None, days=None, products=None, **kwargs):
+        return DataInventory(cls, site, tiles, dates, days, products, **kwargs)
 
     #@property
     #def get_products(self):
@@ -143,12 +143,12 @@ class DataInventory(object):
         'purple':          '0;35',
     }
 
-    def __init__(self, dataclass, site=None, tiles=None, dates=None, days=None, products=None):
+    def __init__(self, dataclass, site=None, tiles=None, dates=None, days=None, products=None, **kwargs):
         self.dataclass = dataclass
         self.site = site
         self.tiles = tiles
         self.temporal_extent(dates, days)
-        self.AddData(dataclass, products=products)
+        self.AddData(dataclass, products=products, **kwargs)
 
     def __getitem__(self,date):
         return self.data[date]
@@ -170,7 +170,7 @@ class DataInventory(object):
         """ Get number of dates """
         return len(self.data)
 
-    def read_timeseries(self,product=''):
+    def get_timeseries(self,product=''):
         """ Read all files as time series """
         # assumes only one sensor row for each date
         img = self.data[self.dates[0]][0].read(product=product)
@@ -186,7 +186,7 @@ class DataInventory(object):
     def _colorize(self,txt,color): 
         return "\033["+self._colorcodes[color]+'m' + txt + "\033[0m"
 
-    def AddData(self, dataclass, products=None):
+    def AddData(self, dataclass, products=None, **kwargs):
         """ Add additional data to this inventory (usually from different sensors """
         if self.tiles is None and self.site is None:
             raise Exception('No shapefile or tiles provided for inventory')
@@ -202,9 +202,11 @@ class DataInventory(object):
         self.numfiles = 0
         self.data = {}
         for date in sorted(dates):
-            dat = dataclass(site=self.site, tiles=self.tiles, date=date, products=products)
-            self.data[date] = [ dat ]
-            self.numfiles = self.numfiles + len(dat.tiles)
+            try:
+                dat = dataclass(site=self.site, tiles=self.tiles, date=date, products=products, **kwargs)
+                self.data[date] = [ dat ]
+                self.numfiles = self.numfiles + len(dat.tiles)
+            except: pass
         
     def temporal_extent(self, dates, days):
         """ Temporal extent (define self.dates and self.days) """
@@ -226,11 +228,11 @@ class DataInventory(object):
         VerboseOut('Completed processing')
 
     def project(self, res=None, datadir='gipdata'):
-        print 'Preparing data for %s dates' % len(self.dates)
+        VerboseOut('Preparing data for %s dates (%s - %s)' % (len(self.dates),self.dates[0],self.dates[-1]))
         # res should default to data?
         for date in self.dates:
             for data in self.data[date]:
-                data.project(res)
+                data.project(res, datadir=datadir)
 
     def get_products(self, date):
         """ Get list of products for given date """
@@ -388,7 +390,7 @@ def main(dataclass):
     elif args.command == 'process':
         try:
             #merrafname = fetchmerra(meta['datetime'])
-            inv.process(products=args.products,overwrite=args.overwrite,suffix=args.suffix) #, nooverviews=args.nooverviews)
+            inv.process(overwrite=args.overwrite,suffix=args.suffix) #, nooverviews=args.nooverviews)
         except Exception,e:
             print 'Error processing: %s' % e
             VerboseOut(traceback.format_exc(), 3)
