@@ -171,7 +171,7 @@ namespace gip {
             psWarpOptions->padfSrcNoDataImag[i] = 0.0;
             psWarpOptions->padfDstNoDataImag[i] = 0.0;
         }
-        if (Options::Verbose() > 1)
+        if (Options::Verbose() > 2)
             psWarpOptions->pfnProgress = GDALTermProgress;
         else psWarpOptions->pfnProgress = GDALDummyProgress;
         char **papszOptions = NULL;
@@ -194,7 +194,7 @@ namespace gip {
             psWarpOptions->pfnTransformer = GDALGenImgProjTransform;
             oOperation.Initialize( psWarpOptions );
             //std::cout << CPLGetLastErrorMsg() << std::endl;
-            if (Options::Verbose() > 1) std::cout << "Warping file " << iimg->Basename() << std::endl;
+            if (Options::Verbose() > 2) std::cout << "Warping file " << iimg->Basename() << std::endl;
             oOperation.ChunkAndWarpMulti( 0, 0, imgout.XSize(), imgout.YSize() );
 
             GDALDestroyGenImgProjTransformer( psWarpOptions->pTransformerArg );

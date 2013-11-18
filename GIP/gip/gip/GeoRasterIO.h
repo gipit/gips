@@ -28,6 +28,7 @@ namespace gip {
 		//! \name File I/O
 		//! Read entire image
 		cimg_library::CImg<T> Read(bool RAW=false) const {
+		    //std::cout << Basename() << ": Reading " << XSize() << " x " << YSize() << std::endl;
             return Read( bbox(point(0,0),point(XSize()-1,YSize()-1)), RAW );
 		}
 
@@ -38,8 +39,8 @@ namespace gip {
 			point p2 = chunk.max_corner();
 			int width = p2.x()-p1.x()+1;
 			int height = p2.y()-p1.y()+1;
+			//std::cout << Basename() << " reading " << boost::geometry::dsv(p1) << boost::geometry::dsv(p2) << " w=" << width << " h=" << height << std::endl;
 			T* ptrPixels = new T[width*height];
-			//cout << "Reading " << bgeo::dsv(p1) << bgeo::dsv(p2) << " w=" << width << " h=" << height << endl;
 			// casting away const, safe because this is a read-only const_cast<GDALRasterBand*>
 			CPLErr err = _GDALRasterBand->RasterIO(GF_Read, p1.x(), p1.y(), width, height, ptrPixels, width, height, GDALType(), 0, 0);
 			if (err != CE_None) std::cout << "Error reading " << Filename() << ": " << CPLGetLastErrorMsg() << std::endl;

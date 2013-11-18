@@ -75,6 +75,39 @@ namespace gip {
             return pixels;
         }
 
+        cimg_library::CImg<T> TimeSeries(cimg_library::CImg<double> C) {
+            cimg_library::CImg<T> cimg = Read();
+            T nodata = _RasterIOBands[0].NoDataValue();
+            if (cimg.spectrum() > 2) {
+                int lowi, highi;
+                float y0, y1, x0, x1;
+                for (int c=1; c<cimg.spectrum()-1;c++) {
+                    if (Options::Verbose() > 3) cimg_print(C, "days vector");
+                    cimg_forXY(cimg,x,y) {
+                        if (cimg(x,y,c) == nodata) {
+                            // Find next lowest point
+                            lowi = highi = 1;
+                            while ((cimg(x,y,c-lowi) == nodata) && (lowi<c)) lowi++;
+                            while ((cimg(x,y,c+highi) == nodata) && (c+highi < cimg.spectrum()-1) ) highi++;
+                            y0 = cimg(x,y,c-lowi);
+                            y1 = cimg(x,y,c+highi);
+                            x0 = C(c-lowi);
+                            x1 = C(c+highi);
+                            if ((y0 != nodata) && (y1 != nodata)) {
+                                cimg(x,y,c) = y0 + (y1-y0) * ((C(c)-x0)/(x1-x0));
+                            }
+                        } else if (cimg(x,y,c-1) == nodata) {
+                            T val = cimg(x,y,c);
+                            for (int i=c-1; i>=0; i--) {
+                                if (cimg(x,y,i) == nodata) cimg(x,y,i) = val;
+                            }
+                        }
+                    }
+                }
+            }
+            return cimg;
+        }
+
 		//! Get raster band by color
 		/*GeoRasterIO<T>& operator[](Color::Enum col) {
 			// Call const version
@@ -100,8 +133,16 @@ namespace gip {
 			}
 		}
 
+		cimg_library::CImg<T> Read(bool RAW=false) const {
+            cimg_library::CImgList<T> images;
+            typename std::vector< GeoRasterIO<T> >::const_iterator iBand;
+			for (iBand=_RasterIOBands.begin(); iBand!=_RasterIOBands.end(); iBand++)
+                images.insert( iBand->Read(RAW) );
+			return images.get_append('v','p');
+		}
+
 		//! Read Cube
-		CImg<T> Read(bbox chunk, bool RAW=false) const {
+		cimg_library::CImg<T> Read(bbox chunk, bool RAW=false) const {
 			cimg_library::CImgList<T> images;
 			typename std::vector< GeoRasterIO<T> >::const_iterator iBand;
 			for (iBand=_RasterIOBands.begin();iBand!=_RasterIOBands.end();iBand++) {
