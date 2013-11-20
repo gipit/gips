@@ -116,6 +116,7 @@ class Data(object):
             area = geom.intersection(tgeom).area
             if area != 0: 
                 tile = str(feat.GetField(fldindex))
+                # TODO - THIS IS LANDSAT SPECIFIC !
                 if len(tile) == 5: tile = '0' + tile
                 tiles[tile] = area/geom.area
             feat = tlayer.GetNextFeature()
