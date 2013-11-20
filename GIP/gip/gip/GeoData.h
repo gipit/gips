@@ -32,7 +32,7 @@ namespace gip {
 		GeoData(const GeoData&);
 		//! Assignment copy
 		GeoData& operator=(const GeoData&);
-		//! Destructor should flush GDALDataset if last open pointer
+		//! Destructor
 		~GeoData();
 
 		//! \name File Information
@@ -43,14 +43,7 @@ namespace gip {
 		std::string Basename() const { return _Filename.stem().string(); }
 		//! File format of dataset
 		std::string Format() const { return _GDALDataset->GetDriver()->GetDescription(); }
-		//! Get Product name (used for determining Colors, etc
-		std::string Product() const {
-			std::string product = GetMeta("SHORTNAME");
-			// TODO - Other product names?
-			return product;
-		}
-		//! Get product-specific options
-		//Options ProductOptions();
+
 		//! Get GDALDataset object - use cautiously
 		GDALDataset* GetGDALDataset() const { return _GDALDataset.get(); }
 
@@ -79,28 +72,19 @@ namespace gip {
 			_GDALDataset->SetMetadataItem(key.c_str(),item.c_str());
 			return *this;
 		}
-		//! Get metadata group
-		std::vector<std::string> GetMetaGroup(std::string group,std::string filter="") const;
 		//! Copy Meta data from input file.  Currently no error checking
 		GeoData& CopyMeta(const GeoData& img);
-		//! Copy collection of meta data
-		//GeoData& CopyMeta(const GeoData&, std::vector<std::string>);
 		//! Copy coordinate system
 		GeoData& CopyCoordinateSystem(const GeoData&);
+		//! Get group of metadata
+		std::vector<std::string> GetMetaGroup(std::string group,std::string filter="") const;
 
 		//! \name Processing functions
 		//! Break up image into chunks
 		std::vector< boost::geometry::model::box<point> > Chunk(int overlap=0, unsigned int bytes=2) const;
 
-		//! Add overviews
-		GeoData& AddOverviews() {
-            int anOverviewList[3] = { 2, 4, 8 };
-            _GDALDataset->BuildOverviews( "NEAREST", 3, anOverviewList, 0, NULL, GDALDummyProgress, NULL );
-            return *this;
-		}
-
 		//! Flush cache
-		void Flush() { _GDALDataset->FlushCache(); }
+		//void Flush() { _GDALDataset->FlushCache(); }
 
 	protected:
 
@@ -112,6 +96,6 @@ namespace gip {
 		//Options _Options;
 	}; //class GeoData
 
-} // namespace ags
+} // namespace gip
 
 #endif

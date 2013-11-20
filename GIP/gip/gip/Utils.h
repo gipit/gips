@@ -26,9 +26,9 @@ namespace gip {
     public:
         // \name Global Options (static properties)
 		//! Get Config directory
-		static std::string ConfigDir() { return _ConfigDir.string(); }
+		//static std::string ConfigDir() { return _ConfigDir.string(); }
 		//! Set Config directory
-		static void SetConfigDir(std::string dir) { _ConfigDir = dir; }
+		//static void SetConfigDir(std::string dir) { _ConfigDir = dir; }
 		//! Default format when creating new files
 		static std::string DefaultFormat() { return _DefaultFormat; }
 		//! Set default format when creating new files

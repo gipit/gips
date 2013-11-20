@@ -6,6 +6,7 @@
 namespace gip {
     using std::string;
     using std::vector;
+    typedef boost::geometry::model::box<point> bbox;
 
 	// Copy constructor
 	GeoImage::GeoImage(const GeoImage& image)
@@ -26,12 +27,10 @@ namespace gip {
 		return *this;
 	}
 
-	GDALDataType GeoImage::DataType() const { return _RasterBands[0].DataType(); }
-
 	string GeoImage::Info(bool bandinfo, bool stats) const {
 		std::stringstream info;
 		info << Filename() << " - " << _RasterBands.size() << " bands ("
-				<< XSize() << "x" << YSize() << ") " << Product() << std::endl;
+				<< XSize() << "x" << YSize() << ") " << std::endl;
 		info << "\tGeoData References: " << _GDALDataset.use_count() << " (&" << _GDALDataset << ")" << std::endl;
 		info << "\tGeo Coordinates (top left): " << TopLeft().x() << ", " << TopLeft().y() << std::endl;
 		info << "\tGeo Coordinates (lower right): " << LowerRight().x() << ", " << LowerRight().y() << std::endl;
@@ -50,10 +49,15 @@ namespace gip {
 		}
 		return info.str();
 	}
-
-	/*!
-	 * Retrieve specific color band
-	 */
+	// Get band names
+	vector<string> GeoImage::BandNames() const {
+		std::vector<string> names;
+		for (std::vector< GeoRaster >::const_iterator iRaster=_RasterBands.begin();iRaster!=_RasterBands.end();iRaster++) {
+			names.push_back(iRaster->Description());
+		}
+		return names;
+	}
+	// Band indexing
 	const GeoRaster& GeoImage::operator[](std::string col) const {
 		//std::map<Color::Enum,int>::const_iterator pos;
 		//pos = _Colors.find(col);
@@ -64,10 +68,9 @@ namespace gip {
 			// TODO - fix this - can't return NULL reference...?
 			//std::cout << "No band of that color, returning band 0" << std::endl;
 			throw std::out_of_range ("No band of color "+col);
-			//return _RasterBands[0];
 		}
 	}
-
+    // Add a band
 	GeoImage& GeoImage::AddBand(const GeoRaster& band) { //, unsigned int bandnum) {
 		//if ((bandnum == 0) || (bandnum > _RasterBands.size())) bandnum = _RasterBands.size();
 		//_RasterBands.insert(_RasterBands.begin()+bandnum-1, band);
@@ -75,7 +78,7 @@ namespace gip {
 		_RasterBands.push_back(band);
 		return *this;
 	}
-
+    // Remove a band
 	GeoImage& GeoImage::RemoveBand(unsigned int bandnum) {
 		if (bandnum <= _RasterBands.size()) {
 		    _RasterBands.erase(_RasterBands.begin()+bandnum-1);
@@ -83,7 +86,7 @@ namespace gip {
 		}
 		return *this;
 	}
-
+    // Remove bands except given colors
 	GeoImage& GeoImage::PruneBands(vector<string> colors) {
         bool keep = false;
         for (int i=NumBands(); i>0; i--) {
@@ -94,16 +97,45 @@ namespace gip {
         return *this;
     }
 
-	const GeoImage& GeoImage::ComputeStats() const {
-		for (unsigned int b=0;b<NumBands();b++) _RasterBands[b].ComputeStats();
+	// Copy input file into new output file
+	GeoImage GeoImage::Process(string filename, GDALDataType datatype) {
+	    // TODO: if not supplied base output datatype on units?
+	    if (datatype == GDT_Unknown) datatype = this->DataType();
+		GeoImage imgout(filename, *this, datatype);
+        for (unsigned int i=0; i<imgout.NumBands(); i++) imgout[i].Copy((*this)[i], true);
+		Colors colors = this->GetColors();
+		for (unsigned int i=0;i<this->NumBands();i++) imgout.SetColor(colors[i+1], i+1);
+		imgout.CopyColorTable(*this);
+		return imgout;
+	}
+
+	// Replaces all Inf or NaN pixels with NoDataValue
+	GeoImage& GeoImage::FixBadPixels() {
+		typedef float T;
+		vector<bbox> Chunks = Chunk();
+		vector<bbox>::const_iterator iChunk;
+		for (unsigned int b=0;b<NumBands();b++) {
+			GeoRasterIO<T> band((*this)[b]);
+			for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
+				CImg<T> img = band.ReadChunk(*iChunk, true);
+				T nodata = band.NoDataValue();
+				cimg_for(img,ptr,T)	if ( std::isinf(*ptr) || std::isnan(*ptr) ) *ptr = nodata;
+				band.WriteChunk(img,*iChunk, true);
+			}
+		}
 		return *this;
 	}
+
+	/*const GeoImage& GeoImage::ComputeStats() const {
+		for (unsigned int b=0;b<NumBands();b++) _RasterBands[b].ComputeStats();
+		return *this;
+	}*/
 
 	//! Load bands from dataset
 	void GeoImage::LoadBands() {
 		vector<unsigned int> bandnums; // = _Options.Bands();
 		// Check for subdatasets
-		vector<string> names = GetMetaGroup("SUBDATASETS","_NAME=");
+		vector<string> names = this->GetMetaGroup("SUBDATASETS","_NAME=");
 		unsigned int numbands(names.size());
 		if (names.empty()) numbands = _GDALDataset->GetRasterCount();
 		unsigned int b;
@@ -137,19 +169,6 @@ namespace gip {
 			_GDALDataset.reset();
 			_GDALDataset = _RasterBands[index]._GDALDataset;
 		}
-	}
-
-	/*void GeoImage::SaveColors() {
-		for (unsigned int i=0;i<NumBands();i++)
-			_RasterBands[i].SetColor(_Colors[i+1]);
-	}*/
-
-	vector<string> GeoImage::BandNames() const {
-		std::vector<string> names;
-		for (std::vector< GeoRaster >::const_iterator iRaster=_RasterBands.begin();iRaster!=_RasterBands.end();iRaster++) {
-			names.push_back(iRaster->Description());
-		}
-		return names;
 	}
 
 } // namespace gip

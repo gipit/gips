@@ -13,15 +13,20 @@
 
 namespace gip {
 
-    //! Copy input raster band into output raster band
-    //GeoRaster Copy(const GeoRaster& Input, GeoRaster& Output, UNITS units=RAW);
+    //! Create a mask of NoData values
+	GeoRaster CreateMask(const GeoImage&, std::string);
 
-    //! Copy input file into output file
-    //GeoImage Copy(const GeoImage& Input, GeoImage& Output, UNITS units=RAW);
+    // TODO - Rad and Ref can be combined into some sort of product
+    //! Calculate and output radiance
+	GeoImage Rad(const GeoImage&, std::string);
 
-	//! Copy input file into new output file
-	GeoImage Copy(const GeoImage&, std::string, GDALDataType=GDT_Unknown);
+    //! Calculate and output reflectance
+	GeoImage Ref(const GeoImage&, std::string);
 
+	//! Stretch image into byte
+	GeoImage RGB(const GeoImage&, std::string);
+
+    //! Create single image from multiple input images using vector file footprint
 	GeoImage CookieCutter(std::vector<std::string>, std::string, std::string, float=1.0, float=1.0);
 
 	GeoImage NDVI(const GeoImage&, std::string);
@@ -33,53 +38,27 @@ namespace gip {
 	//! Create new file of standard indices: NDVI, EVI, LSWI, NDSI, BI
 	GeoImage Indices(const GeoImage&, std::string, bool=true, bool=true, bool=true, bool=true, bool=true);
 
-    //! Calculate and output radiance
-	GeoImage Rad(const GeoImage&, std::string);
-
-    //! Calculate and output reflectance
-	GeoImage Ref(const GeoImage&, std::string);
-
-	//! Stretch image into byte
-	GeoImage RGB(const GeoImage&, std::string);
-
-	//GeoImage Permutations(const GeoImage&, const GeoImage&, std::string);
-
-	GeoImage Index2Probability(const GeoImage&, std::string, float, float);
-
-	GeoImage BandMath(const GeoImage&, std::string, int, int);
-
 	//! Create new file with AutoCloud algorithm
 	GeoImage AutoCloud(const GeoImage&, std::string, int=4000, float=0.2, float=14, float=0.2, int=20);
 
 	//! Create new file with a basic cloud mask
 	GeoImage Fmask(const GeoImage&, std::string, int=3, int=5);
 
-	//! Spectral Matched Filter
-	//GeoImage SMF(const GeoImage& image, std::string, CImg<double>);
 
-	//! Apply a mask to existing file (where mask>0 change to NoDataValue)
-	//GeoImage ApplyMask(const GeoImage&, GeoRaster&);
-
-    //! Create a mask of NoData values
-	GeoRaster CreateMask(const GeoImage&, std::string="");
-
-	//! Replace all 'Inf' or 'NaN' results with the bands NoData value
-	GeoImage FixBadPixels(GeoImage&);
-
-    // Replace all 'NaN' results with bands NoData value
-	//GeoImage NoDataReplace(GeoImage&);
-
-	//! Calculate spectral covariance
-	//CImg<double> SpectralCovariance(const GeoImage&);
+    //! Rescale indices (between lo and hi) to between 0 and 1
+    GeoImage Index2Probability(const GeoImage&, std::string, float, float);
 
 	//! Kmeans
 	GeoImage kmeans(const GeoImage&, std::string, int classes=5, int iterations=5, float threshold=1.0);
 
+
+    //GeoImage BandMath(const GeoImage&, std::string, int, int);
     //! Calculate spectral correlation
 	//CImg<double> SpectralCorrelation(const GeoImage&, CImg<double> covariance=CImg<double>() );
-
-	//int test(int =1, char** =defaultargv("test") );
-	//int hdf2tiff(std::string filename);
+	//! Calculate spectral covariance
+	//CImg<double> SpectralCovariance(const GeoImage&);
+	//! Spectral Matched Filter
+	//GeoImage SMF(const GeoImage& image, std::string, CImg<double>);
 
 } // namespace gip
 

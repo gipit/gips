@@ -14,6 +14,34 @@ namespace gip {
 
 	//const string DataTypes[] = {"Unknown","Byte","UInt16","Int16","UInt32","Int32","Float32","Float64","CInt16","CInt32","CFloat32","CFloat64"};
 
+    // Multiply together all permutations
+    /*GeoImage Permutations(const GeoImage& image1, const GeoImage& image2, string filename) {
+        GeoImageIO<float> imageout(GeoImage(filename, image1, GDT_Float32, image1.NumBands()*image2.NumBands()));
+        CImg<float> cimgout;
+        int bandout(0);
+        CImg<unsigned char> mask;
+        float nodataout = -32768;
+        imageout.SetNoData(nodataout);
+
+        std::vector<bbox>::const_iterator iChunk;
+        for (unsigned int i1=0; i1<image1.NumBands(); i1++) {
+            GeoRasterIO<float> img1(image1[i1]);
+            std::vector<bbox> Chunks = img1.Chunk();
+            for (unsigned int i2=0; i2<image2.NumBands(); i2++) {
+                GeoRasterIO<float> img2(image2[i2]);
+                imageout[bandout].SetDescription(img1.Description()+'-'+img2.Description());
+                for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
+                    cimgout = img1.Read(*iChunk).mul(img2.Read(*iChunk));
+                    mask = img1.NoDataMask(*iChunk)|=(img2.NoDataMask(*iChunk));
+                    cimg_forXY(mask,x,y) if (mask(x,y)) cimgout(x,y) = nodataout;
+                    imageout[bandout].Write(cimgout, *iChunk);
+                }
+            bandout++;
+            }
+        }
+        return imageout;
+    }*/
+
 	//! Return string of all supported formats
 	string Formats() {
 		std::stringstream str;

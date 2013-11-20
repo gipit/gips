@@ -47,7 +47,7 @@ namespace gip {
 			LoadBands();
 			_Colors = image.GetColors();
 		}
-		//! Constructor for creating new file with same properties (xsize, ysize, bsize,datatype) as existing file
+		//! Constructor for creating new file with given properties (xsize, ysize, bsize,datatype) as existing file
 		explicit GeoImage(std::string filename, const GeoImage& image) :
 			GeoData(image.XSize(), image.YSize(), image.NumBands(), image.DataType(), filename) {
 			//if (datatype == GDT_Unknown) datatype = image->GetDataType();
@@ -78,7 +78,6 @@ namespace gip {
             _GDALDataset->SetProjection(wkt);
             OGRDataSource::DestroyDataSource( poDS );
 		}*/
-
 		//! Copy constructor - copies GeoData and all bands
 		GeoImage(const GeoImage& image);
 		//! Assignment Operator
@@ -90,40 +89,13 @@ namespace gip {
 		//! Number of bands
 		unsigned int NumBands() const { return _RasterBands.size(); }
 		//! Get datatype of image (check all raster bands, return 'largest')
-		GDALDataType DataType() const;
+		GDALDataType DataType() const { return _RasterBands[0].DataType(); }
 		//! Return information on image as string
 		std::string Info(bool=true, bool=false) const;
+
+		//! \name Bands and colors
 		//! Get vector of band names
 		std::vector<std::string> BandNames() const;
-
-		//! Get date/time stamp for this scene
-
-		//! Retrieve colors class
-		Colors GetColors() const { return _Colors; }
-		//! Set a color
-		void SetColor(std::string col,int bandnum) {
-		    _Colors.SetColor(col,bandnum);
-		    // Set color on individual band
-            _RasterBands[bandnum-1].SetColor(col);
-            _RasterBands[bandnum-1].SetDescription(col);
-        }
-		//! Set colors (blue,green,red,nir,swir1,swir2,lwir)
-        void SetColors(int blue, int green, int red, int nir=0) {
-            SetColor("Blue",blue);
-            SetColor("Green",green);
-            SetColor("Red",red);
-            if (nir > 0) SetColor("NIR",nir);
-        }
-
-        //! Copy color table from another image
-		void CopyColorTable(const GeoImage& raster) {
-		    if (NumBands() == 1) {
-                GDALColorTable* table( raster[0].GetGDALRasterBand()->GetColorTable() );
-                if (table != NULL) _RasterBands[0].GetGDALRasterBand()->SetColorTable(table);
-		    }
-		}
-
-		// \name Band Operations
 		//! Get raster band (0-based index)
 		GeoRaster& operator[](int band) { return _RasterBands[band]; }
 		//! Get raster band, const version
@@ -135,7 +107,6 @@ namespace gip {
 		}
 		//! Get raster band by color, const version
 		const GeoRaster& operator[](std::string col) const;
-
 		//! Adds a band, at position bandnum (0-based)
 		GeoImage& AddBand(const GeoRaster& band); //, unsigned int bandnum=0);
 		//! Remove band
@@ -146,16 +117,33 @@ namespace gip {
 		GeoImage& PruneToRGB() {
 		    // TODO - get initializer_list working (c++11 standard)
 		    std::vector<std::string> cols; cols.push_back("Red"); cols.push_back("Green"); cols.push_back("Blue");
-		    return PruneBands(cols); }
+		    return PruneBands(cols);
+        }
+		//! Retrieve colors class
+		Colors GetColors() const { return _Colors; }
+		//! Set a color
+		void SetColor(std::string col,int bandnum) {
+		    _Colors.SetColor(col,bandnum);
+		    // Set color on individual band
+            _RasterBands[bandnum-1].SetColor(col);
+            _RasterBands[bandnum-1].SetDescription(col);
+        }
+		// TODO - dictionary?
+        /*void SetColors(int blue, int green, int red, int nir=0) {
+            SetColor("Blue",blue);
+            SetColor("Green",green);
+            SetColor("Red",red);
+            if (nir > 0) SetColor("NIR",nir);
+        }*/
+        //! Copy color table from another image
+		void CopyColorTable(const GeoImage& raster) {
+		    if (NumBands() == 1) {
+                GDALColorTable* table( raster[0].GetGDALRasterBand()->GetColorTable() );
+                if (table != NULL) _RasterBands[0].GetGDALRasterBand()->SetColorTable(table);
+		    }
+		}
 
-		//! Adds a mask band (1 for valid) to every band in image
-		void AddMask(const GeoRaster& band) { for (unsigned int i=0;i<_RasterBands.size();i++) _RasterBands[i].AddMask(band); }
-		//! Clear all masks
-		void ClearMasks() { for (unsigned int i=0;i<_RasterBands.size();i++) _RasterBands[i].ClearMasks(); }
-
-		// Raster functions to run on all bands
-		const GeoImage& ComputeStats() const;
-
+        //! \name Multiple band convenience functions
         //! Set gain for all bands
         void SetGain(float gain) { for (unsigned int i=0;i<_RasterBands.size();i++) _RasterBands[i].SetGain(gain); }
         //! Set gain for all bands
@@ -164,11 +152,32 @@ namespace gip {
         void SetUnits(std::string units) { for (unsigned int i=0;i<_RasterBands.size();i++) _RasterBands[i].SetUnits(units); }
         //! Clear atmosphere from all bands
         void ClearAtmosphere() { for(unsigned int i=0;i<_RasterBands.size();i++) _RasterBands[i].ClearAtmosphere(); }
-
 		//! Set NoData for all bands
 		void SetNoData(double val) { for (unsigned int i=0;i<_RasterBands.size();i++) _RasterBands[i].SetNoData(val); }
 		//! Unset NoData for all bands
 		void ClearNoData() { for (unsigned int i=0;i<_RasterBands.size();i++) _RasterBands[i].ClearNoData(); }
+
+		//! \name Processing functions
+        //! Process band into new file (copy and apply processing functions)
+		GeoImage Process(std::string, GDALDataType = GDT_Unknown);
+
+		//! Adds a mask band (1 for valid) to every band in image
+		void AddMask(const GeoRaster& band) { for (unsigned int i=0;i<_RasterBands.size();i++) _RasterBands[i].AddMask(band); }
+		//! Clear all masks
+		void ClearMasks() { for (unsigned int i=0;i<_RasterBands.size();i++) _RasterBands[i].ClearMasks(); }
+
+		//! Replace all 'Inf' or 'NaN' results with the bands NoData value
+		GeoImage& FixBadPixels();
+
+        // hmm, what's this do?
+		//const GeoImage& ComputeStats() const;
+
+		//! Add overviews
+		GeoData& AddOverviews() {
+            int panOverviewList[3] = { 2, 4, 8 };
+            _GDALDataset->BuildOverviews( "NEAREST", 3, panOverviewList, 0, NULL, GDALDummyProgress, NULL );
+            return *this;
+		}
 
 	protected:
 		//! Vector of raster bands
@@ -180,8 +189,6 @@ namespace gip {
 		//! Loads Raster Bands of this GDALDataset into _RasterBands vector
 		void LoadBands();
 
-		//! Update colors in file, or at least RGB
-		//void SaveColors();
 	private:
 		//! Default constructor, private so cannot be called
 		explicit GeoImage() : GeoData() {}

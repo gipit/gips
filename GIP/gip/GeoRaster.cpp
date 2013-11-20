@@ -6,20 +6,13 @@
 using namespace std;
 
 namespace gip {
+
 	// Copy constructor
 	GeoRaster::GeoRaster(const GeoRaster& image)
-		: GeoData(image), _GDALRasterBand(image._GDALRasterBand), _Masks(image._Masks), _NoData(image._NoData), _ValidSize(image._ValidSize),
+		: GeoData(image), _GDALRasterBand(image._GDALRasterBand), _Masks(image._Masks), _NoData(image._NoData), //_ValidSize(image._ValidSize),
             _minDC(image._minDC), _maxDC(image._maxDC), _K1(image._K1), _K2(image._K2), _Esun(image._Esun),
             _Atmosphere(image._Atmosphere), _Functions(image._Functions) {
 		//std::cout << Basename() << ": GeoRaster copy (" << this << ")" << std::endl;
-	}
-
-	// Copy and add processing function
-	GeoRaster::GeoRaster(const GeoRaster& image, GeoFunction func)
-		: GeoData(image), _GDALRasterBand(image._GDALRasterBand), _Masks(image._Masks), _NoData(image._NoData), _ValidSize(image._ValidSize),
-            _minDC(image._minDC), _maxDC(image._maxDC), _K1(image._K1), _K2(image._K2), _Esun(image._Esun),
-            _Atmosphere(image._Atmosphere), _Functions(image._Functions) {
-		_Functions.push_back(func);
 	}
 
 	// Assignment
@@ -31,7 +24,7 @@ namespace gip {
 		_GDALRasterBand = image._GDALRasterBand;
 		_Masks = image._Masks;
 		_NoData = image._NoData;
-		_ValidSize = image._ValidSize;
+		//_ValidSize = image._ValidSize;
 		_minDC = image._minDC;
 		_maxDC = image._maxDC;
 		_K1 = image._K1;
@@ -58,6 +51,29 @@ namespace gip {
         }
     }*/
 
+	string GeoRaster::Info(bool showstats) const {
+		std::stringstream info;
+		//info << _GeoImage->Basename() << " - b" << _GDALRasterBand->GetBand() << ":" << endl;
+		info << XSize() << " x " << YSize() << " " << DataType() << ": " << Description();
+		info << " (GeoData: " << _GDALDataset.use_count() << " " << _GDALDataset << ")";
+		info << " RasterBand &" << _GDALRasterBand << endl;
+        info << "\t\tGain = " << Gain() << ", Offset = " << Offset(); //<< ", Units = " << Units();
+        if (_NoData)
+			info << ", NoData = " << NoDataValue() << endl;
+        else info << endl;
+        if (showstats) {
+            cimg_library::CImg<float> stats = this->ComputeStats();
+        	info << "\t\tMin = " << stats(0) << ", Max = " << stats(1) << ", Mean = " << stats(2) << " =/- " << stats(3) << endl;
+        }
+        if (!_Functions.empty()) info << "\t\tFunctions:" << endl;
+        for (unsigned int i=0;i<_Functions.size();i++) {
+        	info << "\t\t\t" << _Functions[i].Function() << " " << _Functions[i].Operand() << endl;
+        }
+		//_GeoImage->GetGDALDataset()->Reference(); int ref = _GeoImage->GetGDALDataset()->Dereference();
+		//info << "  GDALDataset: " << _GDALDataset.use_count() << " (&" << _GDALDataset << ")" << endl;
+        return info.str();
+	}
+
     //! Compute stats
     cimg_library::CImg<float> GeoRaster::ComputeStats(bool RAW) const {
         switch (DataType()) {
@@ -72,27 +88,5 @@ namespace gip {
             // TODO - remove default. This should throw exception
         }
     }
-
-	string GeoRaster::Info(bool stats) const {
-		std::stringstream info;
-		//info << _GeoImage->Basename() << " - b" << _GDALRasterBand->GetBand() << ":" << endl;
-		info << XSize() << " x " << YSize() << " " << DataType() << ": " << Description();
-		info << " (GeoData: " << _GDALDataset.use_count() << " " << _GDALDataset << ")";
-		info << " RasterBand &" << _GDALRasterBand << endl;
-        info << "\t\tGain = " << Gain() << ", Offset = " << Offset(); //<< ", Units = " << Units();
-        if (_NoData)
-			info << ", NoData = " << NoDataValue() << endl;
-        else info << endl;
-        if (stats) {
-        	info << "\t\tMin = " << Min() << ", Max = " << Max() << ", Mean = " << Mean() << " =/- " << StdDev() << endl;
-        }
-        if (!_Functions.empty()) info << "\t\tFunctions:" << endl;
-        for (unsigned int i=0;i<_Functions.size();i++) {
-        	info << "\t\t\t" << _Functions[i].Function() << " " << _Functions[i].Operand() << endl;
-        }
-		//_GeoImage->GetGDALDataset()->Reference(); int ref = _GeoImage->GetGDALDataset()->Dereference();
-		//info << "  GDALDataset: " << _GDALDataset.use_count() << " (&" << _GDALDataset << ")" << endl;
-        return info.str();
-	}
 
 } // namespace gip

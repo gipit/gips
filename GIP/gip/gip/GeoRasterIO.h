@@ -2,7 +2,6 @@
 #define GIP_GEORASTERIO_H
 
 #include <exception>
-//#include <gip/gip.h>
 #include <gip/GeoRaster.h>
 #include <cmath>
 
@@ -15,25 +14,23 @@ namespace gip {
     //enum UNITS {RAW, RADIANCE, REFLECTIVITY};
 
 	template<class T> class GeoRasterIO : public GeoRaster {
+	    typedef boost::geometry::model::box<point> bbox;
 	public:
-        typedef boost::geometry::model::box<point> bbox;
-		// Constructors/Destructor
+        //! \name Constructors/Destructor
 		GeoRasterIO(GeoRaster& img)
 			: GeoRaster(img) {}
 		GeoRasterIO(const GeoRaster& img)
 			: GeoRaster(img) {}
-		//GeoRasterIO(GeoRasterIO& img) {}
 		~GeoRasterIO() {}
 
 		//! \name File I/O
 		//! Read entire image
 		cimg_library::CImg<T> Read(bool RAW=false) const {
-		    //std::cout << Basename() << ": Reading " << XSize() << " x " << YSize() << std::endl;
-            return Read( bbox(point(0,0),point(XSize()-1,YSize()-1)), RAW );
+            return ReadChunk( bbox(point(0,0),point(XSize()-1,YSize()-1)), RAW );
 		}
 
 		//! Retrieve a piece of the image as a CImg
-		cimg_library::CImg<T> Read(bbox chunk, bool RAW=false) const {
+		cimg_library::CImg<T> ReadChunk(bbox chunk, bool RAW=false) const {
 		    using cimg_library::CImg;
 			point p1 = chunk.min_corner();
 			point p2 = chunk.max_corner();
@@ -42,14 +39,14 @@ namespace gip {
 			//std::cout << Basename() << " reading " << boost::geometry::dsv(p1) << boost::geometry::dsv(p2) << " w=" << width << " h=" << height << std::endl;
 			T* ptrPixels = new T[width*height];
 			// casting away const, safe because this is a read-only const_cast<GDALRasterBand*>
-			CPLErr err = _GDALRasterBand->RasterIO(GF_Read, p1.x(), p1.y(), width, height, ptrPixels, width, height, GDALType(), 0, 0);
+			CPLErr err = _GDALRasterBand->RasterIO(GF_Read, p1.x(), p1.y(), width, height, ptrPixels, width, height, this->Type(), 0, 0);
 			if (err != CE_None) std::cout << "Error reading " << Filename() << ": " << CPLGetLastErrorMsg() << std::endl;
 			CImg<T> img(ptrPixels, width, height);
 			CImg<T> imgorig(img);
 
 			bool updatenodata = false;
 
-			// Convert data to radiance (if not raw requested
+			// Convert data to radiance (if not raw requested)
 			if (!RAW) {
                 if (Gain() != 1.0 || Offset() != 0.0) {
                     img = Gain() * (img-_minDC) + Offset();
@@ -92,10 +89,10 @@ namespace gip {
 			    if (Options::Verbose() > 1)
                     std::cout << Basename() << ": Applying " << _Masks.size() << " masks" << std::endl;
                 GeoRasterIO<unsigned char> mask(_Masks[0]);
-                CImg<unsigned char> cmask(mask.Read(chunk));
+                CImg<unsigned char> cmask(mask.ReadChunk(chunk));
                 for (unsigned int i=1; i<_Masks.size(); i++) {
                     mask = GeoRasterIO<unsigned char>(_Masks[i]);
-                    cmask.mul(mask.Read(chunk));
+                    cmask.mul(mask.ReadChunk(chunk));
                 }
                 img.mul(cmask);
                 cimg_forXY(img,x,y) {
@@ -113,8 +110,8 @@ namespace gip {
 			return img;
 		}
 
-		GeoRasterIO<T>& Write(cimg_library::CImg<T> img) { //, bool RAW=false) {
-            return WriteChunk(img, bbox(point(0,0),point(XSize()-1,YSize()-1)), false );
+		GeoRasterIO<T>& Write(cimg_library::CImg<T> img, bool RAW=false) {
+            return WriteChunk(img, bbox(point(0,0),point(XSize()-1,YSize()-1)), RAW );
 		}
 
 		//! Write a Cimg to the file
@@ -132,42 +129,39 @@ namespace gip {
 			/*if (BadValCheck) {
 				cimg_for(img,ptr,T) if ( std::isinf(*ptr) || std::isnan(*ptr) ) *ptr = NoDataValue();
 			}*/
-			CPLErr err = _GDALRasterBand->RasterIO(GF_Write, p1.x(), p1.y(), width, height, img.data(), width, height, GDALType(), 0, 0);
+			CPLErr err = _GDALRasterBand->RasterIO(GF_Write, p1.x(), p1.y(), width, height, img.data(), width, height, this->Type(), 0, 0);
 			if (err != CE_None) std::cout << "Error writing " << Filename() << ": " << CPLGetLastErrorMsg() << std::endl;
 			return *this;
 		}
 
-		/*GeoRasterIO<T>& Copy(const GeoRasterIO<T>& src) {
-            return Process(src,false);
-		}*/
+        //! Get Saturation mask
+		cimg_library::CImg<bool> SaturationMask(bbox chunk) const {
+		    cimg_library::CImg<float> band(ReadChunk(chunk, true));
+		    return band.threshold(_maxDC);
+		}
 
-		//! Copy input band into this
-		/*GeoRasterIO<T>& Copy(const GeoRaster& raster, bool RAW=false) {
+		//! NoData mask
+		cimg_library::CImg<unsigned char> NoDataMask(bbox chunk) const {
 		    using cimg_library::CImg;
-		    GeoRasterIO<double> rasterIO(raster);
-            std::vector<bbox> Chunks = Chunk();
-            std::vector<bbox>::const_iterator iChunk;
-            for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
-                    CImg<double> cimg = rasterIO.Read(*iChunk, RAW);
-                    //CImg<unsigned char> mask;
-                    //if (Gain() != 1.0 || Offset() != 0.0) {
-                    //    (cimg-=Offset())/=Gain();
-                    //    mask = rasterIO.NoDataMask(*iChunk);
-                    //    cimg_forXY(cimg,x,y) { if (mask(x,y)) cimg(x,y) = NoDataValue(); }
-                    //}
-                    //WriteChunk(CImg<T>().assign(cimg.round()),*iChunk, RAW);
-                    WriteChunk(CImg<T>().assign(cimg),*iChunk, RAW);
+		    CImg<T> img = ReadChunk(chunk, true);  // this reads raw
+		    CImg<unsigned char> mask(img.width(),img.height(),1,1,0);
+		    if (!NoData()) return mask;
+		    T nodataval = NoDataValue();
+            cimg_forXY(img,x,y) if (img(x,y) == nodataval) mask(x,y) = 1;
+            return mask;
+		}
+
+		//! Return reflectance (or temperature if thermal band)  (move to GeoRaster)
+		cimg_library::CImg<float> Ref(bbox chunk) const {
+            cimg_library::CImg<float> cimg = ReadChunk(chunk);
+            if (Thermal()) {
+                cimg_for(cimg,ptr,float) *ptr = (_K2/log(_K1/(*ptr)+1)) - 273.15;
+            } else {
+                float normrad = Atmosphere() ? (1.0/_Atmosphere.Ld()) : (1.0/_Esun);
+                cimg_for(cimg,ptr,float) *ptr = *ptr * normrad;
             }
-            // Copy relevant metadata
-            GDALRasterBand* band = raster.GetGDALRasterBand();
-            //if (img.NoData()) SetNoData(img.NoDataValue());
-            CopyCategoryNames(raster);
-            _GDALRasterBand->SetDescription(band->GetDescription());
-            _GDALRasterBand->SetColorInterpretation(band->GetColorInterpretation());
-            _GDALRasterBand->SetMetadata(band->GetMetadata());
-            CopyCoordinateSystem(raster);
-            return *this;
-		}*/
+            return cimg;
+		}
 
 		//! Calculate stats
 		cimg_library::CImg<float> ComputeStats(bool RAW=false) {
@@ -179,7 +173,7 @@ namespace gip {
             std::vector<bbox> Chunks = Chunk();
             std::vector<bbox>::const_iterator iChunk;
             for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
-                cimg = Read(*iChunk, RAW);
+                cimg = ReadChunk(*iChunk, RAW);
                 cimg_for(cimg,ptr,T) {
                     if (*ptr != NoDataValue()) {
                         total += *ptr;
@@ -192,7 +186,7 @@ namespace gip {
             float mean = total/count;
             total = 0;
             for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
-                cimg = Read(*iChunk, RAW);
+                cimg = ReadChunk(*iChunk, RAW);
                 cimg_for(cimg,ptr,T) {
                     if (*ptr != NoDataValue()) total += (*ptr - mean)*(*ptr - mean);
                 }
@@ -202,88 +196,6 @@ namespace gip {
             return stats;
 		}
 
-        //! Apply mask to (where mask>0 make NoDataValue)
-		/*GeoRasterIO& ApplyMask(const GeoRaster& mask) {
-            GeoRasterIO<unsigned char> maskio(mask);
-            CImg<unsigned char> maskimg;
-            CImg<T> img;
-            std::vector<bbox> Chunks = Chunk();
-            std::vector<bbox>::const_iterator iChunk;
-            for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
-                img = Read(*iChunk);
-                maskimg = maskio.Read(*iChunk);
-                cimg_forXY(img,x,y) if (maskimg(x,y) == 0) img(x,y) = NoDataValue();
-                Write(img,*iChunk);
-            }
-            return *this;
-		}*/
-
-        //! Get Saturation mask
-		cimg_library::CImg<bool> SaturationMask(bbox chunk) const {
-		    cimg_library::CImg<float> band(Read(chunk, true));
-		    return band.threshold(_maxDC);
-		}
-
-		//! NoData mask (all bands)
-		cimg_library::CImg<unsigned char> NoDataMask(bbox chunk) const {
-		    using cimg_library::CImg;
-		    CImg<T> img = Read(chunk, true);  // this reads raw
-		    CImg<unsigned char> mask(img.width(),img.height(),1,1,0);
-		    if (!NoData()) return mask;
-		    T nodataval = NoDataValue();
-            cimg_forXY(img,x,y) if (img(x,y) == nodataval) mask(x,y) = 1;
-            return mask;
-		}
-
-		//! Return reflectance (or temperature if thermal band)  (move to GeoRaster)
-		cimg_library::CImg<float> Ref(bbox chunk) const {
-            cimg_library::CImg<float> cimg = Read(chunk);
-            if (Thermal()) {
-                cimg_for(cimg,ptr,float) *ptr = (_K2/log(_K1/(*ptr)+1)) - 273.15;
-            } else {
-                float normrad = Atmosphere() ? (1.0/_Atmosphere.Ld()) : (1.0/_Esun);
-                cimg_for(cimg,ptr,float) *ptr = *ptr * normrad;
-            }
-            return cimg;
-		}
-
-		//! Creates map of indices for each value in image (used for rasterized vector images)
-		/*map<T,POI> MapPOIs(GeoMask<T> Mask) const {
-			map<T,POI> POIs;
-			vector< box<point> > Chunks = _GeoImage->Chunk();
-			vector< box<point> >::const_iterator iChunk;
-			CImg<T> img, mask;
-			for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
-					img = Read(*iChunk);
-					mask = Mask.Read(*iChunk);
-					// Apply Nodata mask
-					//if (Mask.Valid())
-					img.mul(mask);
-					cimg_forXY(img,x,y) {
-							if (img(x,y) != 0) {
-									// If first pixel with this ID, add new
-									if (POIs.find(img(x,y)) != POIs.end()) {
-											POIs.insert( pair<T,POI>(img(x,y),POI() ) );
-											//cout << "Inserting " << img(x,y) << " " << x << " " << y << endl;
-									}
-									// Add pixel to this POI collection
-									POIs[img(x,y)].AddPixel( point_2d(iChunk->min_corner().x()+x,iChunk->min_corner().y()+y) );
-							}
-					}
-			}
-			typename map<T,POI>::iterator iPOI;
-			for (iPOI=POIs.begin();iPOI!=POIs.end();iPOI++) {
-					iPOI->second.Extent();
-			}
-			return POIs;
-		}*/
-
-		//! Copy raster band
-		/*GeoRasterIO<T>& Copy(const GeoRaster& src) {
-			return Copy(GeoRasterIO<T>(src));
-		}*/
-
-		// \name Processing
 		// Normalized difference algorithm (NDVI, NDWI, etc)
 		/*GeoRasterIO& NormDiff(const GeoRaster& band1, const GeoRaster& band2, std::string desc) {
 			// This file needs to use a NoDataValue - use band1 val if absent
@@ -341,23 +253,70 @@ namespace gip {
 			return *this;
 		}*/
 
-		// Return mask of NoData/NaN/Inf values
-		/*CImg<bool> NoDataMask(const CImg<T>& img) {
-			CImg<bool> imgout(img.width(),img.height(),img.depth(),img.spectrum(),1);
-			if (NoData()) {
-				double val = NoDataValue();
-				cimg_forXY(img,x,y)
-					if (img(x,y) == val || std::isinf(img(x,y)) || std::isnan(img(x,y))) imgout(x,y) = 0;
+		// Creates map of indices for each value in image (used for rasterized vector images)
+		/*map<T,POI> MapPOIs(GeoMask<T> Mask) const {
+			map<T,POI> POIs;
+			vector< box<point> > Chunks = _GeoImage->Chunk();
+			vector< box<point> >::const_iterator iChunk;
+			CImg<T> img, mask;
+			for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
+					img = Read(*iChunk);
+					mask = Mask.Read(*iChunk);
+					// Apply Nodata mask
+					//if (Mask.Valid())
+					img.mul(mask);
+					cimg_forXY(img,x,y) {
+							if (img(x,y) != 0) {
+									// If first pixel with this ID, add new
+									if (POIs.find(img(x,y)) != POIs.end()) {
+											POIs.insert( pair<T,POI>(img(x,y),POI() ) );
+											//cout << "Inserting " << img(x,y) << " " << x << " " << y << endl;
+									}
+									// Add pixel to this POI collection
+									POIs[img(x,y)].AddPixel( point_2d(iChunk->min_corner().x()+x,iChunk->min_corner().y()+y) );
+							}
+					}
 			}
-			return imgout;
+			typename map<T,POI>::iterator iPOI;
+			for (iPOI=POIs.begin();iPOI!=POIs.end();iPOI++) {
+					iPOI->second.Extent();
+			}
+			return POIs;
 		}*/
 
+		// Copy input band into this
+		/*GeoRasterIO<T>& Copy(const GeoRaster& raster, bool RAW=false) {
+		    using cimg_library::CImg;
+		    GeoRasterIO<double> rasterIO(raster);
+            std::vector<bbox> Chunks = Chunk();
+            std::vector<bbox>::const_iterator iChunk;
+            for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
+                    CImg<double> cimg = rasterIO.Read(*iChunk, RAW);
+                    //CImg<unsigned char> mask;
+                    //if (Gain() != 1.0 || Offset() != 0.0) {
+                    //    (cimg-=Offset())/=Gain();
+                    //    mask = rasterIO.NoDataMask(*iChunk);
+                    //    cimg_forXY(cimg,x,y) { if (mask(x,y)) cimg(x,y) = NoDataValue(); }
+                    //}
+                    //WriteChunk(CImg<T>().assign(cimg.round()),*iChunk, RAW);
+                    WriteChunk(CImg<T>().assign(cimg),*iChunk, RAW);
+            }
+            // Copy relevant metadata
+            GDALRasterBand* band = raster.GetGDALRasterBand();
+            //if (img.NoData()) SetNoData(img.NoDataValue());
+            CopyCategoryNames(raster);
+            _GDALRasterBand->SetDescription(band->GetDescription());
+            _GDALRasterBand->SetColorInterpretation(band->GetColorInterpretation());
+            _GDALRasterBand->SetMetadata(band->GetMetadata());
+            CopyCoordinateSystem(raster);
+            return *this;
+		}*/
 	private:
 		// Private default constructor prevents direct creation
 		GeoRasterIO() {}
 
 		//! Returns GDAL Type corresponding to template type T
-		GDALDataType GDALType() const {
+		GDALDataType Type() const {
 			if (typeid(T) == typeid(unsigned char)) return GDT_Byte;
 			else if (typeid(T) == typeid(unsigned short)) return GDT_UInt16;
 			else if (typeid(T) == typeid(short)) return GDT_Int16;

@@ -12,21 +12,17 @@
 
 namespace gip {
     using std::string;
-    using std::vector;
-    using std::map;
-    using boost::filesystem::path;
     typedef boost::geometry::model::d2::point_xy<float> point;
     typedef boost::geometry::model::box<point> bbox;
 
-	boost::filesystem::path Options::_ConfigDir("/usr/share/gip/");
+    // Options given initial values here
+	//boost::filesystem::path Options::_ConfigDir("/usr/share/gip/");
 	string Options::_DefaultFormat("GTiff");
 	float Options::_ChunkSize(128.0);
 	int Options::_Verbose(1);
-	std::string Options::_WorkDir("/tmp/");
+	string Options::_WorkDir("/tmp/");
 
-	/*!
-	 * Open an existing file and returns a shared pointer
-	 */
+    // Open existing file
 	GeoData::GeoData(string filename, bool Update) : _Filename(filename) {
 		GDALAccess access = Update ? GA_Update : GA_ReadOnly;
 		GDALDataset* ds = (GDALDataset*)GDALOpenShared(_Filename.string().c_str(), access);
@@ -37,22 +33,21 @@ namespace gip {
 			throw std::runtime_error(to_string(CPLGetLastErrorNo()) + ": " + string(CPLGetLastErrorMsg()));
 		}
 		_GDALDataset.reset(ds);
-		//ProductOptions();
-		//std::cout << "GeoData Open (use_count = " << _GDALDataset.use_count() << ")" << std::endl;
+		if (Options::Verbose() > 3)
+            std::cout << Basename() << ": GeoData Open (use_count = " << _GDALDataset.use_count() << ")" << std::endl;
 	}
 
-	/*!
-	 * Creates new file on disk and returns shared pointer
-	 */
+    // Create new file
 	GeoData::GeoData(int xsz, int ysz, int bsz, GDALDataType datatype, string filename, dictionary options)
 		:_Filename(filename) {
 		string format = Options::DefaultFormat();
 		//if (format == "GTiff" && datatype == GDT_Byte) options["COMPRESS"] = "JPEG";
+		if (format == "GTiff") options["COMPRESS"] = "LZW";
 		GDALDriver *driver = GetGDALDriverManager()->GetDriverByName(format.c_str());
 		// TODO check for null driver and create method
 		// Check extension
 		string ext = driver->GetMetadataItem(GDAL_DMD_EXTENSION);
-		if (ext != "" && _Filename.extension().string() != ('.'+ext)) _Filename = path(_Filename.string() + '.' + ext);
+		if (ext != "" && _Filename.extension().string() != ('.'+ext)) _Filename = boost::filesystem::path(_Filename.string() + '.' + ext);
 		char **papszOptions = NULL;
 		if (options.size()) {
             for (dictionary::const_iterator imap=options.begin(); imap!=options.end(); imap++)
@@ -63,16 +58,12 @@ namespace gip {
 			std::cout << "Error creating " << _Filename.string() << CPLGetLastErrorMsg() << std::endl;
 	}
 
-	/*!
-	 * Copy constructor
-	 */
+	// Copy constructor
 	GeoData::GeoData(const GeoData& geodata)
 		: _Filename(geodata._Filename), _GDALDataset(geodata._GDALDataset) {
 	}
 
-	/*!
-	 * Assignment copy
-	 */
+	// Assignment copy
 	GeoData& GeoData::operator=(const GeoData& geodata) {
 	//GeoData& GeoData::operator=(const GeoData& geodata) {
 		// Check for self assignment
@@ -82,27 +73,16 @@ namespace gip {
 		return *this;
 	}
 
-	/*!
-	 * Destructor
-	 */
+	// Destructor
 	GeoData::~GeoData() {
-		//std::cout << "GeoData::~GeoData " << Basename() << "(use_count " << _GDALDataset.use_count() << ")" << std::endl;
-		if (_GDALDataset.unique()) { _GDALDataset->FlushCache(); }
+	    // flush GDALDataset if last open pointer
+		if (_GDALDataset.unique()) {
+		    _GDALDataset->FlushCache();
+            if (Options::Verbose() > 3) std::cout << Basename() << ": ~GeoData (use_count = " << _GDALDataset.use_count() << ")" << std::endl;
+        }
 	}
 
-	/*!
-	 * Retrieves and loads Options based on current product, if available
-	 */
-	/*Options GeoData::ProductOptions() {
-		if (!Product().empty()) {
-			_Options = Options(Options::ConfigDir() + Product() + ".gipcfg");
-		} else _Options = Options();
-		return _Options;
-	}*/
-
-	/*!
-	 * Using GDALDatasets GeoTransform get Geo-located coordinates
-	 */
+    // Using GDALDatasets GeoTransform get Geo-located coordinates
 	point GeoData::GeoLoc(float xloc, float yloc) const {
 		double Affine[6];
 		_GDALDataset->GetGeoTransform(Affine);
@@ -110,13 +90,27 @@ namespace gip {
 		return Coord;
 	}
 
-	/*!
-	 * Get group of metadata items
-	 */
-	vector<string> GeoData::GetMetaGroup(string group,string filter) const {
+    // Copy all metadata from input
+	GeoData& GeoData::CopyMeta(const GeoData& img) {
+        _GDALDataset->SetMetadata(img._GDALDataset->GetMetadata());
+		return *this;
+	}
+
+	// Copy coordinate system from another image
+	GeoData& GeoData::CopyCoordinateSystem(const GeoData& img) {
+		GDALDataset* ds = const_cast<GeoData&>(img)._GDALDataset.get();
+		_GDALDataset->SetProjection(ds->GetProjectionRef());
+		double Affine[6];
+		ds->GetGeoTransform(Affine);
+		_GDALDataset->SetGeoTransform(Affine);
+		return *this;
+	}
+
+	// Get metadata group
+	std::vector<string> GeoData::GetMetaGroup(string group,string filter) const {
 		char** meta= _GDALDataset->GetMetadata(group.c_str());
 		int num = CSLCount(meta);
-		vector<string> items;
+		std::vector<string> items;
 		for (int i=0;i<num; i++) {
 				if (filter != "") {
 						string md = string(meta[i]);
@@ -127,60 +121,33 @@ namespace gip {
 		return items;
 	}
 
-	/*!
-	 * Copy all meta data, or what is in Options
-	 */
-	GeoData& GeoData::CopyMeta(const GeoData& img) {
-		//_GDALDataset->SetDescription(img.GetGDALDataset()->GetDescription());
-		//vector<string> meta = _Options.Meta();
-		//if (meta.empty())
-		// This now just copies all metadata
-			_GDALDataset->SetMetadata(img._GDALDataset->GetMetadata());
-		/*else {
-			for (vector<string>::const_iterator iMeta=meta.begin();iMeta!=meta.end();iMeta++) {
-				_GDALDataset->SetMetadataItem(iMeta->c_str(),img.GetMeta(*iMeta).c_str());
-			}
-		}*/
-		return *this;
-	}
-
-	/*!
-	 * Copies coordinate system from another GeoData image
-	 */
-	GeoData& GeoData::CopyCoordinateSystem(const GeoData& img) {
-		GDALDataset* ds = const_cast<GeoData&>(img)._GDALDataset.get();
-		_GDALDataset->SetProjection(ds->GetProjectionRef());
-		double Affine[6];
-		ds->GetGeoTransform(Affine);
-		_GDALDataset->SetGeoTransform(Affine);
-		return *this;
-	}
-
-	/*!
-	 * Chunk() breaks up the image into smaller size pieces, with
-	 * each piece being no bigger than GeoData::_ChunkSize
-	 */
-	vector<bbox> GeoData::Chunk(int overlap, unsigned int bytes) const {
+	// Breaks up image into smaller size pieces, each of size GeoData::_ChunkSize
+	std::vector<bbox> GeoData::Chunk(int overlap, unsigned int bytes) const {
         // TODO - overlap!!  and bytes is fixed at 2!!!
 		unsigned int rows = floor( (Options::ChunkSize()*1024*1024) / bytes / XSize() );
 		rows = rows > YSize() ? YSize() : rows;
 		int numchunks = ceil( YSize()/(float)rows );
-		vector<bbox> Chunks;
+		std::vector<bbox> Chunks;
 		for (int i=0; i<numchunks; i++) {
 			point p1(0,rows*i);
 			point p2(XSize()-1, std::min((rows*(i+1)-1),YSize()-1));
 			bbox chunk(p1,p2);
-			//std::cout << "Chunk " << i << ": " << boost::geometry::dsv(chunk) << std::endl;
 			Chunks.push_back(chunk);
 		}
 		if (Options::Verbose() > 2) {
 		    int i(0);
 		    std::cout << "Chunked " << Basename() << " into " << Chunks.size() << " chunks ("
                 << Options::ChunkSize() << " MB each)"<< std::endl;
-            for (vector<bbox>::const_iterator iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++)
+            for (std::vector<bbox>::const_iterator iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++)
                 std::cout << "  Chunk " << i++ << ": " << boost::geometry::dsv(*iChunk) << std::endl;
 		}
 		return Chunks;
 	}
 
-}
+
+
+	// Copy collection of meta data
+	//GeoData& CopyMeta(const GeoData&, std::vector<std::string>);
+
+
+} // namespace gip
