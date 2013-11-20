@@ -122,6 +122,28 @@ class Data(object):
             feat = tlayer.GetNextFeature()
         return tiles
 
+    def process():
+        """ Stub function """
+        pass
+
+    def project(self, res, datadir='gipdata'):
+        self.process()
+        if not os.path.exists(datadir): os.makedirs(datadir)
+        datadir = os.path.abspath(datadir)
+        if len(res) == 1: res = [res,res]
+        if self.site is None:
+            raise Exception("No site file supplied")
+        for product in self.products:
+            if self.products[product] == '':
+                start = datetime.datetime.now()
+                filename = os.path.join(datadir, self.date.strftime('%Y%j') + '_%s_%s.tif' % (product,self.sensor))
+                if not os.path.exists(filename):
+                    filenames = [self.tiles[t]['products'][product] for t in self.tiles]
+                    imgout = gippy.CookieCutter(filenames, filename, self.site, res[0], res[1])
+                    print 'Projected and cropped %s files -> %s in %s' % (len(filenames),imgout.Basename(),datetime.datetime.now() - start)
+                self.products[product] = filename
+
+
     def __str__(self):
         return self.sensor + ': ' + str(self.date)
 

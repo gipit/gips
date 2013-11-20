@@ -86,7 +86,7 @@ class LandsatData(Data):
         super(LandsatData, self).__init__(site=site, tiles=tiles, date=date, products=products)
 
         if products is None or len(products) == 0: products = ['*']
-        
+
         filenames = []
         empty_tiles = []
         for t in self.tiles:
@@ -414,21 +414,7 @@ class LandsatData(Data):
 
     def project(self, res=[30,30], datadir='gipdata'):
         if res is None: res=[30,30]
-        self.process()
-        if not os.path.exists(datadir): os.makedirs(datadir)
-        datadir = os.path.abspath(datadir)
-        if len(res) == 1: res = [res,res]
-        if self.site is None:
-            raise Exception("No site file supplied")
-        for product in self.products:
-            if self.products[product] == '':
-                start = datetime.datetime.now()
-                filename = os.path.join(datadir, self.date.strftime('%Y%j') + '_%s_%s.tif' % (product,self.sensor))
-                if not os.path.exists(filename):
-                    filenames = [self.tiles[t]['products'][product] for t in self.tiles]
-                    imgout = gippy.CookieCutter(filenames, filename, self.site, res[0], res[1])
-                    print 'Projected and cropped %s files -> %s in %s' % (len(filenames),imgout.Basename(),datetime.datetime.now() - start)
-                self.products[product] = filename
+        super(LandsatData, self).project(res=res, datadir=datadir)
         
     @classmethod
     def archive(cls, dir=''):
