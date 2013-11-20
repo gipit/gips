@@ -35,7 +35,7 @@ setup (name = 'gippy',
     py_modules = ['gippy.gippylib','gippy.atmosphere','gippy.GeoVector','gippy.gipit'],
     packages = ['gippy.algorithms','gippy.data'],
     dependency_links = ['https://github.com/matthewhanson/Py6S.git'],
-    install_requires = ['Py6S'],
+    install_requires = ['Py6S','shapely==1.2.18'],
     entry_points = {
         'console_scripts': [
             'gipit = gippy.gipit:main',
