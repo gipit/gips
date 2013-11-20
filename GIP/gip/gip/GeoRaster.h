@@ -202,7 +202,7 @@ namespace gip {
 
         //! \name Processing functions
         //! Copy raster band into this raster
-        GeoRaster& Copy(const GeoRaster&, bool RAW=false);
+        GeoRaster& Process(const GeoRaster&, bool RAW=false);
 
         //! Adds a mask band (1 for valid), applied on read
         GeoRaster& AddMask(const GeoRaster& band) { _Masks.push_back(band); return *this; }

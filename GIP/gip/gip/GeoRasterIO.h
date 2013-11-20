@@ -14,8 +14,8 @@ namespace gip {
     //enum UNITS {RAW, RADIANCE, REFLECTIVITY};
 
 	template<class T> class GeoRasterIO : public GeoRaster {
-	    typedef boost::geometry::model::box<point> bbox;
 	public:
+        typedef boost::geometry::model::box<point> bbox;
         //! \name Constructors/Destructor
 		GeoRasterIO(GeoRaster& img)
 			: GeoRaster(img) {}
@@ -132,6 +132,34 @@ namespace gip {
 			CPLErr err = _GDALRasterBand->RasterIO(GF_Write, p1.x(), p1.y(), width, height, img.data(), width, height, this->Type(), 0, 0);
 			if (err != CE_None) std::cout << "Error writing " << Filename() << ": " << CPLGetLastErrorMsg() << std::endl;
 			return *this;
+		}
+
+		//! Process input band into this
+		GeoRasterIO<T>& Process(const GeoRaster& raster, bool RAW=false) {
+		    using cimg_library::CImg;
+		    GeoRasterIO<double> rasterIO(raster);
+            std::vector<bbox> Chunks = Chunk();
+            std::vector<bbox>::const_iterator iChunk;
+            for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
+                    CImg<double> cimg = rasterIO.ReadChunk(*iChunk, RAW);
+                    //CImg<unsigned char> mask;
+                    //if (Gain() != 1.0 || Offset() != 0.0) {
+                    //    (cimg-=Offset())/=Gain();
+                    //    mask = rasterIO.NoDataMask(*iChunk);
+                    //    cimg_forXY(cimg,x,y) { if (mask(x,y)) cimg(x,y) = NoDataValue(); }
+                    //}
+                    //WriteChunk(CImg<T>().assign(cimg.round()),*iChunk, RAW);
+                    WriteChunk(CImg<T>().assign(cimg),*iChunk, RAW);
+            }
+            // Copy relevant metadata
+            GDALRasterBand* band = raster.GetGDALRasterBand();
+            //if (img.NoData()) SetNoData(img.NoDataValue());
+            CopyCategoryNames(raster);
+            _GDALRasterBand->SetDescription(band->GetDescription());
+            _GDALRasterBand->SetColorInterpretation(band->GetColorInterpretation());
+            _GDALRasterBand->SetMetadata(band->GetMetadata());
+            CopyCoordinateSystem(raster);
+            return *this;
 		}
 
         //! Get Saturation mask
@@ -284,33 +312,6 @@ namespace gip {
 			return POIs;
 		}*/
 
-		// Copy input band into this
-		/*GeoRasterIO<T>& Copy(const GeoRaster& raster, bool RAW=false) {
-		    using cimg_library::CImg;
-		    GeoRasterIO<double> rasterIO(raster);
-            std::vector<bbox> Chunks = Chunk();
-            std::vector<bbox>::const_iterator iChunk;
-            for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
-                    CImg<double> cimg = rasterIO.Read(*iChunk, RAW);
-                    //CImg<unsigned char> mask;
-                    //if (Gain() != 1.0 || Offset() != 0.0) {
-                    //    (cimg-=Offset())/=Gain();
-                    //    mask = rasterIO.NoDataMask(*iChunk);
-                    //    cimg_forXY(cimg,x,y) { if (mask(x,y)) cimg(x,y) = NoDataValue(); }
-                    //}
-                    //WriteChunk(CImg<T>().assign(cimg.round()),*iChunk, RAW);
-                    WriteChunk(CImg<T>().assign(cimg),*iChunk, RAW);
-            }
-            // Copy relevant metadata
-            GDALRasterBand* band = raster.GetGDALRasterBand();
-            //if (img.NoData()) SetNoData(img.NoDataValue());
-            CopyCategoryNames(raster);
-            _GDALRasterBand->SetDescription(band->GetDescription());
-            _GDALRasterBand->SetColorInterpretation(band->GetColorInterpretation());
-            _GDALRasterBand->SetMetadata(band->GetMetadata());
-            CopyCoordinateSystem(raster);
-            return *this;
-		}*/
 	private:
 		// Private default constructor prevents direct creation
 		GeoRasterIO() {}

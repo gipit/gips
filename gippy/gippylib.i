@@ -103,6 +103,8 @@ namespace std {
 %typemap (in) cimg_library::CImg<float> { $1 = ArrToCImg<float>($input); }
 %typemap (in) cimg_library::CImg<double> { $1 = ArrToCImg<double>($input); }
 
+//%typemap(typecheck) PyArrayObject * = cimg_library::CImg<unsigned char> ;
+
 // GIP functions to ignore (suppresses warnings)
 // These operators are redefined below
 %ignore gip::GeoData::operator=;

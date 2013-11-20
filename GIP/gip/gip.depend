@@ -349,7 +349,7 @@
 	<gip/Options.h>
 	<gip/Utils.h>
 
-1384958810 source:/home/mhanson/work/gip.git/GIP/gip/GeoAlgorithms.cpp
+1384975176 source:/home/mhanson/work/gip.git/GIP/gip/GeoAlgorithms.cpp
 	<gip/GeoAlgorithms.h>
 	<gip/GeoImageIO.h>
 	<gip/gip_CImg.h>
@@ -392,7 +392,7 @@
 	<sstream>
 	<string>
 
-1384972309 /home/mhanson/work/gip.git/GIP/gip//gip/GeoRaster.h
+1384976569 /home/mhanson/work/gip.git/GIP/gip//gip/GeoRaster.h
 	<boost/filesystem.hpp>
 	<boost/geometry/geometry.hpp>
 	<boost/geometry/geometries/point_xy.hpp>
@@ -457,13 +457,13 @@
 
 1382714769 /home/mhanson/work/gip.git/GIP/gip//gip/Atmosphere.h
 
-1384969270 /home/mhanson/work/gip.git/GIP/gip//gip/GeoRasterIO.h
+1384982607 /home/mhanson/work/gip.git/GIP/gip//gip/GeoRasterIO.h
 	<exception>
 	<gip/GeoRaster.h>
 	<cmath>
 	<iostream>
 
-1384975014 /home/mhanson/work/gip.git/GIP/gip//gip/GeoImageIO.h
+1384976011 /home/mhanson/work/gip.git/GIP/gip//gip/GeoImageIO.h
 	<gip/GeoImage.h>
 	<gip/GeoRasterIO.h>
 
@@ -472,7 +472,7 @@
 	<boost/make_shared.hpp>
 	<iostream>
 
-1384894127 source:/home/mhanson/work/gip.git/GIP/gip/GeoImage.cpp
+1384976634 source:/home/mhanson/work/gip.git/GIP/gip/GeoImage.cpp
 	<gip/GeoImage.h>
 	<gip/GeoRaster.h>
 

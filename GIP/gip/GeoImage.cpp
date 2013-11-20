@@ -102,7 +102,7 @@ namespace gip {
 	    // TODO: if not supplied base output datatype on units?
 	    if (datatype == GDT_Unknown) datatype = this->DataType();
 		GeoImage imgout(filename, *this, datatype);
-        for (unsigned int i=0; i<imgout.NumBands(); i++) imgout[i].Copy((*this)[i], true);
+        for (unsigned int i=0; i<imgout.NumBands(); i++) imgout[i].Process((*this)[i], true);
 		Colors colors = this->GetColors();
 		for (unsigned int i=0;i<this->NumBands();i++) imgout.SetColor(colors[i+1], i+1);
 		imgout.CopyColorTable(*this);

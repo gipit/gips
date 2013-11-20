@@ -14,8 +14,8 @@
 namespace gip {
 
 	template<class T> class GeoImageIO : public GeoImage {
-	    typedef boost::geometry::model::box<point> bbox;
 	public:
+        typedef boost::geometry::model::box<point> bbox;
 		//! \name Constructors/Destructor
 		GeoImageIO(GeoImage& img)
 			: GeoImage(img) {
@@ -235,7 +235,7 @@ namespace gip {
             int ch(0);
             unsigned int c;
             for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
-                cimg = Read(*iChunk);
+                cimg = ReadChunk(*iChunk);
                 cmask = maskio.ReadChunk(*iChunk);
                 cimg_forXY(cimg,x,y) {
                     if (cmask(x,y) > 0) {

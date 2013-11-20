@@ -36,20 +36,20 @@ namespace gip {
 		return *this;
 	}
 
-    //! Copy passed raster band into this raster band
-    /*GeoRaster& GeoRaster::Copy(const GeoRaster& img, bool RAW) {
+    //! Process passed raster band into this raster band
+    GeoRaster& GeoRaster::Process(const GeoRaster& img, bool RAW) {
         switch (DataType()) {
-            case GDT_Byte: return GeoRasterIO<unsigned char>(*this).Copy(img, RAW);
-            case GDT_UInt16: return GeoRasterIO<unsigned short>(*this).Copy(img, RAW);
-            case GDT_Int16: return GeoRasterIO<short>(*this).Copy(img, RAW);
-            case GDT_UInt32: return GeoRasterIO<unsigned int>(*this).Copy(img, RAW);
-            case GDT_Int32: return GeoRasterIO<int>(*this).Copy(img, RAW);
-            case GDT_Float32: return GeoRasterIO<float>(*this).Copy(img, RAW);
-            case GDT_Float64: return GeoRasterIO<double>(*this).Copy(img, RAW);
-            default: return GeoRasterIO<unsigned char>(*this).Copy(img, RAW);
+            case GDT_Byte: return GeoRasterIO<unsigned char>(*this).Process(img, RAW);
+            case GDT_UInt16: return GeoRasterIO<unsigned short>(*this).Process(img, RAW);
+            case GDT_Int16: return GeoRasterIO<short>(*this).Process(img, RAW);
+            case GDT_UInt32: return GeoRasterIO<unsigned int>(*this).Process(img, RAW);
+            case GDT_Int32: return GeoRasterIO<int>(*this).Process(img, RAW);
+            case GDT_Float32: return GeoRasterIO<float>(*this).Process(img, RAW);
+            case GDT_Float64: return GeoRasterIO<double>(*this).Process(img, RAW);
+            default: return GeoRasterIO<unsigned char>(*this).Process(img, RAW);
             // TODO - remove default. This should throw exception
         }
-    }*/
+    }
 
 	string GeoRaster::Info(bool showstats) const {
 		std::stringstream info;
