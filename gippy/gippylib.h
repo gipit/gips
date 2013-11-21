@@ -189,21 +189,34 @@ namespace gip {
             return self->operator==(val);
         }
         PyObject* read() {
-            if (self->Gain() == 1.0 && self->Offset == 0.0) {
+            if (self->Gain() == 1.0 && self->Offset() == 0.0) {
                 switch(self->DataType()) {
-                    case 1: return GeoRasterIO<unsigned char>(self).Read();
-                    case 2: return GeoRasterIO<unsigned int>(self).Read();
-                    case 3: return GeoRasterIO<int>(self).Read();
-                    case 4: return GeoRasterIO<unsigned long>(self).Read();
-                    case 5: return GeoRasterIO<long>(self).Read();
-                    case 6: return GeoRasterIO<float>(self).Read();
-                    case 7: return GeoRasterIO<double>(self).Read();
-                    else throw(std::exception());
+                    case 1: return CImgToArr(GeoRasterIO<unsigned char>(*self).Read());
+                    case 2: return CImgToArr(GeoRasterIO<unsigned int>(*self).Read());
+                    case 3: return CImgToArr(GeoRasterIO<int>(*self).Read());
+                    case 4: return CImgToArr(GeoRasterIO<unsigned long>(*self).Read());
+                    case 5: return CImgToArr(GeoRasterIO<long>(*self).Read());
+                    case 6: return CImgToArr(GeoRasterIO<float>(*self).Read());
+                    case 7: return CImgToArr(GeoRasterIO<double>(*self).Read());
+                    default: throw(std::exception());
                 }
-            } else {
-                return GeoRasterIO<float>(self).Read();
             }
+            return CImgToArr(GeoRasterIO<float>(*self).Read());
         }
+        GeoRaster& write(PyObject* arr) {
+            switch(((PyArrayObject*)arr)->descr->type_num) {
+                case NPY_UINT8: GeoRasterIO<unsigned char>(*self).Write(ArrToCImg<unsigned char>(arr));
+                case NPY_UINT16: GeoRasterIO<unsigned int>(*self).Write(ArrToCImg<unsigned int>(arr));
+                case NPY_INT16: GeoRasterIO<int>(*self).Write(ArrToCImg<int>(arr));
+                case NPY_UINT32: GeoRasterIO<unsigned long>(*self).Write(ArrToCImg<unsigned long>(arr));
+                case NPY_INT32: GeoRasterIO<long>(*self).Write(ArrToCImg<long>(arr));
+                case NPY_FLOAT32: GeoRasterIO<float>(*self).Write(ArrToCImg<float>(arr));
+                case NPY_FLOAT64: GeoRasterIO<double>(*self).Write(ArrToCImg<double>(arr));
+                default: throw(std::exception());
+            }
+            return *self;
+        }
+
     }
 
     %extend GeoImage {

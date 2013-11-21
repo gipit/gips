@@ -144,7 +144,7 @@ namespace gip {
         int ysize = (int)(0.5 + (extent.MaxY - extent.MinY) / yres);
         GeoImage imgout(filename, xsize, ysize, bsz, dtype);
         imgout.CopyMeta(imgs[0]);
-        imgout.CopyColorTable(imgs);
+        imgout.CopyColorTable(imgs[0]);
 
         double nodata(imgs[0][0].NoDataValue());
         imgout.SetNoData(nodata);
