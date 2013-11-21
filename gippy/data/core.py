@@ -24,7 +24,12 @@ class Data(object):
     _tiles_attribute = ''
 
     def __init__(self, site=None, tiles=None, date=None, products=None):
-        """ Locate data matching vector location (or tiles) and date """
+        """ Locate data matching vector location (or tiles) and date
+        self.tile_coverage - dictionary of tile id and % coverage with site
+        self.tiles - dictionary of tile id and a tile dictionary (see next)
+        self.tiles[tile] - dictionary of tile data (defined and used by child class)
+        self.products - dictionary of product name and final product filename (defined by child class) 
+        """
         self.site = site
         # Calculate spatial extent
         if tiles is not None:
@@ -35,20 +40,22 @@ class Data(object):
             self.tiles = self.tile_coverage.keys()
         else:
             self.tile_coverage = dict((t,1) for t in os.listdir(self.path()))
-        self.tiles = {}
         self.date = date
+        # Create tile and product dictionaries for use by child class
+        self.tiles = {}
         for t in self.tile_coverage.keys(): self.tiles[t] = {}
         if products is None: products = self._products.keys()
         self.products = {}
         for p in products: self.products[p] = ''
 
     def read(self, product=''):
-        """ Open and return as GeoImage """
+        """ Open and return final product GeoImage """
         if product != '':
             return gippy.GeoImage(self.products[product])
         elif len(self.products) == 1:
             return gippy.GeoImage(self.products[self.products.keys()[0]])
         else:
+            # return filename of a tile from self.tiles ?
             raise Exception('No product provided')
 
     #def filename(self,product,tile=None):
@@ -127,6 +134,7 @@ class Data(object):
         pass
 
     def project(self, res, datadir='gipdata'):
+        """ Create image of final product (reprojected/mosaiced) """
         self.process()
         if not os.path.exists(datadir): os.makedirs(datadir)
         datadir = os.path.abspath(datadir)
@@ -142,7 +150,6 @@ class Data(object):
                     imgout = gippy.CookieCutter(filenames, filename, self.site, res[0], res[1])
                     print 'Projected and cropped %s files -> %s in %s' % (len(filenames),imgout.Basename(),datetime.datetime.now() - start)
                 self.products[product] = filename
-
 
     def __str__(self):
         return self.sensor + ': ' + str(self.date)
@@ -360,7 +367,6 @@ def main(dataclass):
     # Inventory
     parser = subparser.add_parser('inventory',help='Get Inventory', parents=[invparser], formatter_class=dhf)
     parser.add_argument('--md',help='Show dates using MM-DD',action='store_true',default=False)
-    
 
     # Processing
     parser = subparser.add_parser('process',help='Process scenes', parents=[invparser],formatter_class=dhf)
@@ -383,6 +389,9 @@ def main(dataclass):
 
     # Misc
     parser_archive = subparser.add_parser('archive',help='Move files from current directory to data archive')
+
+    # Pull in dataclass options here
+    #dataparser = subparser.add_parser('data',help='', parents=[invparser],formatter_class=dhf)
 
     args = parser0.parse_args()
     if args.command == 'help':

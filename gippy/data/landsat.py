@@ -83,6 +83,7 @@ class LandsatData(Data):
     ])
 
     def __init__(self, site=None, tiles=None, date=None, products=None, maxclouds = 100):
+        """ This is what finds all appropriate tiles and products for the site and dates """
         super(LandsatData, self).__init__(site=site, tiles=tiles, date=date, products=products)
 
         if products is None or len(products) == 0: products = ['*']
@@ -345,7 +346,7 @@ class LandsatData(Data):
         return image
 
     def process(self, overwrite=False, suffix='', overviews=False):
-        """ Process these tiles for given products """
+        """ Make sure all products exist for all tiles, process if necessary """
         for tile, data in self.tiles.items():
             if suffix != '' and suffix[:1] != '_': suffix = '_' + suffix
             fout_base = os.path.join(data['path'], data['basename'] + '_')
@@ -412,7 +413,8 @@ class LandsatData(Data):
                     shutil.rmtree(os.path.join(dirname,'modtran'))
                 except: pass
 
-    def project(self, res=[30,30], datadir='gipdata'):
+    def project(self, res=[30,30], datadir='data_landsat'):
+        """ Create reprojected, mosaiced images for this site and date """
         if res is None: res=[30,30]
         super(LandsatData, self).project(res=res, datadir=datadir)
         
@@ -464,5 +466,3 @@ class LandsatData(Data):
             print '%s files not added to archive' % (len(fnames)-numadded)
 
 def main(): datamain(LandsatData)
-
-
