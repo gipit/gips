@@ -23,47 +23,25 @@ class Data(object):
     _tiles_vector = ''
     _tiles_attribute = ''
 
-    def __init__(self, site=None, tiles=None, date=None, products=None):
-        """ Locate data matching vector location (or tiles) and date
-        self.tile_coverage - dictionary of tile id and % coverage with site
-        self.tiles - dictionary of tile id and a tile dictionary (see next)
-        self.tiles[tile] - dictionary of tile data (defined and used by child class)
-        self.products - dictionary of product name and final product filename (defined by child class) 
-        """
-        self.site = site
-        # Calculate spatial extent
-        if tiles is not None:
-            self.tile_coverage = dict((t,1) for t in tiles)
-            self.tiles = tiles
-        elif site is not None:
-            self.tile_coverage = cls.vector2tiles(gippy.GeoVector(site))
-            self.tiles = self.tile_coverage.keys()
-        else:
-            self.tile_coverage = dict((t,1) for t in os.listdir(self.path()))
-        self.date = date
-        # Create tile and product dictionaries for use by child class
-        self.tiles = {}
-        for t in self.tile_coverage.keys(): self.tiles[t] = {}
-        if products is None: products = self._products.keys()
-        self.products = {}
-        for p in products: self.products[p] = ''
+    @classmethod
+    def find_dates(cls, tile):
+        """ Get list of dates for tile """
+        return [datetime.datetime.strptime(os.path.basename(d),'%Y%j').date() for d in os.listdir(cls.path(tile))]
 
-    def read(self, product=''):
-        """ Open and return final product GeoImage """
-        if product != '':
-            return gippy.GeoImage(self.products[product])
-        elif len(self.products) == 1:
-            return gippy.GeoImage(self.products[self.products.keys()[0]])
-        else:
-            # return filename of a tile from self.tiles ?
-            raise Exception('No product provided')
+    @classmethod
+    def find_tile(cls, tile, date):
+        """ Get filename for specified tile. Return (path,basename,filename,sensor) """
+        pass
 
-    #def filename(self,product,tile=None):
-    #    """ Return filename for given product (either given tile or mosaic) """
-    #    if tile is not None:
-    #        return self.tiles[tile]['products'][product]
-    #    else:
-    #        return self.products['product']
+    @classmethod
+    def find_products(cls, tile, products):
+        """ Find all products for specified tile. Set tile['products'] """
+        return tile
+
+    @classmethod
+    def filter(cls, tile, filename):
+        """ Check if tile passes filter """
+        return True
 
     @classmethod
     def path(cls,tile='',date=''):
@@ -76,21 +54,26 @@ class Data(object):
             return os.path.join(cls.rootdir, tile, date)
 
     @classmethod
-    def inventory(cls,site=None, tiles=None, dates=None, days=None, products=None, **kwargs):
-        return DataInventory(cls, site, tiles, dates, days, products, **kwargs)
-
-    #@property
-    #def get_products(self):
-    #    """ Return list of products that exist for all tiles """
-    #    products = []
-    #    for t in self.tiles:
-    #        products.extend(self.tiles[t]['products'].keys())
-    #    return sorted(set(products))
+    def fetch(cls):
+        """ Download data and add to archive """
+        raise Exception("Fetch not implemented for %s" % cls.name)
 
     @classmethod
-    def find_dates(cls, tile):
-        """ Get list of dates for tile """
-        return [datetime.datetime.strptime(os.path.basename(d),'%Y%j').date() for d in os.listdir(cls.path(tile))]
+    def archive(cls, path=''):
+        """ Move files from directory to archive location """
+        raise Exception("Archive not implemented for %s" % cls.name)
+        pass
+
+    def process(self):
+        """ Make sure all products exist and process if needed """
+        pass
+
+    ##########################################################################
+    # Child classes should not generally have to override anything below here
+    ##########################################################################
+    @classmethod
+    def inventory(cls,site=None, tiles=None, dates=None, days=None, products=None, **kwargs):
+        return DataInventory(cls, site, tiles, dates, days, products, **kwargs)
 
     @classmethod
     def sensor_names(cls):
@@ -129,9 +112,15 @@ class Data(object):
             feat = tlayer.GetNextFeature()
         return tiles
 
-    def process():
-        """ Stub function """
-        pass
+    def open(self, product=''):
+        """ Open and return final product GeoImage """
+        if product != '':
+            return gippy.GeoImage(self.products[product])
+        elif len(self.products) == 1:
+            return gippy.GeoImage(self.products[self.products.keys()[0]])
+        else:
+            # return filename of a tile from self.tiles ?
+            raise Exception('No product provided')
 
     def project(self, res, datadir='gipdata'):
         """ Create image of final product (reprojected/mosaiced) """
@@ -151,8 +140,55 @@ class Data(object):
                     print 'Projected and cropped %s files -> %s in %s' % (len(filenames),imgout.Basename(),datetime.datetime.now() - start)
                 self.products[product] = filename
 
+    def __init__(self, site=None, tiles=None, date=None, products=None, **kwargs):
+        """ Locate data matching vector location (or tiles) and date
+        self.tile_coverage - dictionary of tile id and % coverage with site
+        self.tiles - dictionary of tile id and a tile dictionary (see next)
+        self.tiles[tile] - dictionary of tile data
+        self.products - dictionary of product name and final product filename
+        """
+        self.site = site
+        # Calculate spatial extent
+        if tiles is not None:
+            self.tile_coverage = dict((t,1) for t in tiles)
+            self.tiles = tiles
+        elif site is not None:
+            self.tile_coverage = self.vector2tiles(gippy.GeoVector(site))
+            self.tiles = self.tile_coverage.keys()
+        else:
+            self.tile_coverage = dict((t,1) for t in os.listdir(self.path()))
+        self.date = date
+        # Create tile and product dictionaries for use by child class
+        self.tiles = {}
+        for t in self.tile_coverage.keys(): self.tiles[t] = {}
+        if products is None: products = self._products.keys()
+        if len(products) == 0: products = self._products.keys()
+        self.products = {}
+        for p in products: self.products[p] = ''
+        # For each tile locate files
+        empty_tiles = []
+        for t in self.tiles:
+            try:
+                path,basename,filename,self.sensor = self.find_tile(t,date)
+            except Exception,e:
+                #print 'Error: %s' % (e)
+                #VerboseOut(traceback.format_exc(), 3)
+                empty_tiles.append(t)
+                continue
+
+            # Custom filter based on dataclass
+            good = self.filter(t,filename, **kwargs)
+            if good == False:
+                empty_tiles.append(t)
+            tile = {'path': path, 'basename': basename, 'products': {'raw': filename}}
+            self.tiles[t] = self.find_products(tile,products)
+        for t in empty_tiles: self.tiles.pop(t,None)
+        if len(self.tiles) == 0:
+            raise Exception('No valid data found')
+
     def __str__(self):
         return self.sensor + ': ' + str(self.date)
+
 
 class DataInventory(object):
     """ Base class for data inventories """
@@ -203,9 +239,9 @@ class DataInventory(object):
     def get_timeseries(self,product=''):
         """ Read all files as time series """
         # assumes only one sensor row for each date
-        img = self.data[self.dates[0]][0].read(product=product)
+        img = self.data[self.dates[0]][0].open(product=product)
         for i in range(1,len(self.dates)):
-            img.AddBand(self.data[self.dates[i]][0].read(product=product)[0])
+            img.AddBand(self.data[self.dates[i]][0].open(product=product)[0])
         return img
 
     #@property
@@ -223,6 +259,7 @@ class DataInventory(object):
         if self.tiles is None and self.site is not None:
             self.tiles = dataclass.vector2tiles(gippy.GeoVector(self.site))
         # get all potential matching dates for tiles
+        self.products = products
         dates = []
         for t in self.tiles:
             for date in dataclass.find_dates(t):
@@ -247,13 +284,13 @@ class DataInventory(object):
         else: days = (1,366)
         self.start_day,self.end_day = ( int(days[0]), int(days[1]) )
 
-    def process(self, products=['toaref'], overwrite=False, suffix='', overviews=False):
+    def process(self, overwrite=False, suffix='', overviews=False):
         """ Process all data in inventory """
-        VerboseOut('Requested %s products for %s files' % (len(products), self.numfiles))
+        VerboseOut('Requested %s products for %s files' % (len(self.products), self.numfiles))
         # TODO only process if don't exist
         for date in self.dates:
             for data in self.data[date]:
-                data.process(products, overwrite, suffix, overviews)
+                data.process(overwrite, suffix, overviews)
                 # TODO - add completed product(s) to inventory         
         VerboseOut('Completed processing')
 
@@ -264,6 +301,7 @@ class DataInventory(object):
             for data in self.data[date]:
                 data.project(res, datadir=datadir)
 
+    # TODO - check if this is needed
     def get_products(self, date):
         """ Get list of products for given date """
         # this doesn't handle different tiles (if prod exists for one tile, it lists it)
@@ -401,6 +439,10 @@ def main(dataclass):
             print '    {:<20}{:<100}'.format(key, val['description'])
         exit(1)
 
+    if args.command == 'archive':
+        dataclass.archive()
+        exit(1)
+
     gippy.Options.SetVerbose(args.verbose)
     gippy.Options.SetChunkSize(128.0)   # replace with option
 
@@ -428,8 +470,6 @@ def main(dataclass):
             VerboseOut(traceback.format_exc(), 3)
 
     elif args.command == 'project': inv.project(args.res, datadir=args.datadir)
-
-    elif args.command == 'archive': dataclass.archive()
 
     else:
         print 'Command %s not recognized' % cmd

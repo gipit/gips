@@ -82,56 +82,164 @@ class LandsatData(Data):
         }),
     ])
 
-    def __init__(self, site=None, tiles=None, date=None, products=None, maxclouds = 100):
-        """ This is what finds all appropriate tiles and products for the site and dates """
-        super(LandsatData, self).__init__(site=site, tiles=tiles, date=date, products=products)
+    @classmethod
+    def find_tile(cls, tile, date):
+        """ Get filename info for specified tile """
+        filename = glob.glob(os.path.join(cls.rootdir, tile, date.strftime('%Y%j'), '*.tar.gz'))
+        if len(filename) == 0:
+            raise Exception('No files found')
+        elif len(filename) > 1:
+            print 'More than 1 file found for same tile/date!'
+            raise Exception('More than 1 file found for same tile/date')
+        filename = filename[0]
+        path,basename = os.path.split(filename)
+        basename = basename[:-12]
+        sensor = basename[0:3]
+        return (path,basename,filename,sensor)
 
-        if products is None or len(products) == 0: products = ['*']
+    @classmethod
+    def find_products(cls,tile,products):
+        """ Get all products for specified tile """
+        for p in products:
+            fnames = glob.glob( os.path.join(tile['path'],'*_%s*.tif' % p) )
+            for f in fnames:
+                prod = os.path.splitext(os.path.split(f)[1][len(tile['basename'])+1:])[0]
+                tile['products'][ prod ] = f
+        return tile
 
-        filenames = []
-        empty_tiles = []
-        for t in self.tiles:
-            filename = glob.glob(os.path.join(self.rootdir, t, date.strftime('%Y%j'), '*.tar.gz'))
-            if len(filename) == 0:
-                empty_tiles.append(t)
-                continue
-            if len(filename) > 1:
-                print 'More than 1 landsat data found for same tile/date'
-                print [os.path.basename(fname) for fname in filename]
-            
-            filename = filename[0]
-            path,basename = os.path.split(filename)
-            basename = basename[:-12]
+    @classmethod
+    def filter(cls, tile, filename, maxclouds=100):
+        """ Check if tile passes filter """
+        if maxclouds < 100:
+            meta = cls._readmeta(tile,filename=filename)
+            if meta['clouds'] > maxclouds:
+                return False
+        return True
+        
+    @classmethod
+    def archive(cls, path=''):
+        """ Move landsat files from current directory to archive location """
+        if (dir == ''):
+            fnames = glob.glob('L*.tar.gz')
+        else:
+            fnames = glob.glob(os.path.join(path, 'L*.tar.gz'))
+        numadded = 0
+        for f in fnames:
+            pathrow = f[3:9]
+            year = f[9:13]
+            doy = f[13:16]
+            path = os.path.join(cls.rootdir,pathrow,year+doy)
 
-            # Cloud check
-            if maxclouds < 100:
-                meta = self._readmeta(t,filename=filename)
-                if meta['clouds'] > maxclouds:
-                    empty_tiles.append(t)
-                    continue
-            
-            # TODO - check all have same sensor? (for a single date, they should not ever)
-            self.sensor = basename[0:3]
+            # Make directory
+            try:
+                #pass
+                os.makedirs(path)
+            except OSError as exc: # Python >2.5
+                if exc.errno == errno.EEXIST and os.path.isdir(path):
+                    #print 'Directory already exists'
+                    pass
+                else:
+                    raise Exception('Unable to make product directory %s' % path)
 
-            # find products
-            prods = {}
-            for p in products:
-                fnames = glob.glob( os.path.join(path,'*_%s*.tif' % p) )
-                for f in fnames:
-                    prod = os.path.splitext(os.path.split(f)[1][len(basename)+1:])[0]
-                    prods[ prod ] = f
+            # Move file
+            try:
+                newf = os.path.join(path,f)
+                if not os.path.exists(newf):
+                    # Check for older versions
+                    existing_files = glob.glob(os.path.join(path,'*tar.gz'))
+                    if len(existing_files) > 0:
+                        print 'Other version of %s already exist:' % f
+                        for ef in existing_files: print '\t%s' % ef
+                    shutil.move(f,newf)
+                    #print f, ' -> ',path
+                    numadded = numadded + 1
+            except shutil.Error as err:
+                print err
+                print f, ' -> problem archiving file'
+                #raise Exception('shutils error %s' % err)
+                #if exc.errno == errno.EEXIST:
+                #    print f, ' removed, already in archive'
+        print '%s files added to archive' % numadded
+        if numadded != len(fnames):
+            print '%s files not added to archive' % (len(fnames)-numadded)
 
-            self.tiles[t] = {'filename': filename, 'path': path, 'basename': basename, 'products': prods}
+    def process(self, overwrite=False, suffix='', overviews=False):
+        """ Make sure all products exist for all tiles, process if necessary """
+        for tile, data in self.tiles.items():
+            if suffix != '' and suffix[:1] != '_': suffix = '_' + suffix
+            fout_base = os.path.join(data['path'], data['basename'] + '_')
+            fouts = {}
+            runatm = False
+            # generate all product names and check if already existing
+            for product in self.products:
+                if self._products[product]['atmcorr']: runatm = True
+                if product not in self._products.keys():
+                    raise Exception('Product %s not recognized' % product)
+                fout = fout_base + product + suffix
+                if len(glob.glob(fout+'.*')) == 0 or overwrite: fouts[product] = fout
 
-        for t in empty_tiles: self.tiles.pop(t,None)
+            if len(fouts) > 0:
+                start = datetime.datetime.now()
+                try:
+                    # TODO - If only doing temp then don't waste time with other bands
+                    img = self._readraw(tile)
+                except Exception,e:
+                    print 'Error reading data %s' % data['products']['raw']
+                    VerboseOut('%s %s' % (data['basename'],e), 2)
+                    VerboseOut(traceback.format_exc(), 3)
+                    return
+                if runatm: atmospheres = [atmosphere(i,data['metadata']) for i in range(1,img.NumBands()+1)]
+                VerboseOut('%s: read in %s' % (data['basename'],datetime.datetime.now() - start))
 
-        if len(self.tiles) == 0:
-            raise Exception('No valid landsat data found')
+                for product,fname in fouts.iteritems():
+                    try:
+                        start = datetime.datetime.now()
+
+                        if (self._products[product]['atmcorr']):
+                            for i in range(0,img.NumBands()):
+                                b = img[i]
+                                b.SetAtmosphere(atmospheres[i])
+                                img[i] = b
+                            VerboseOut('atmospherically correcting',2)
+                        else:
+                            img.ClearAtmosphere()
+
+                        try:
+                            fcall = 'gippy.%s(img, fname)' % self._products[product]['function']
+                            VerboseOut(fcall,2)
+                            imgout = eval(fcall)
+                        except Exception,e:
+                            print 'Error creating product %s for %s: %s' % (product,fname,e)
+                            VerboseOut(traceback.format_exc(),2)
+
+                        if overviews: imgout.AddOverviews()
+                        fname = imgout.Filename()
+                        imgout = None
+                        dur = datetime.datetime.now() - start
+                        data['products'][product] = fname
+                        VerboseOut(' -> %s: processed in %s' % (os.path.basename(fname),dur))
+                    except Exception,e:
+                        print 'Error processing %s' % fname
+                        VerboseOut('%s %s' % (data['basename'],e),2)
+                        VerboseOut(traceback.format_exc(), 3)
+                img = None
+                # cleanup directory
+                try:
+                    for bname in data['metadata']['filenames']: 
+                        files = glob.glob(os.path.join(data['path'],bname)+'*')
+                        for f in files: os.remove(f)
+                    shutil.rmtree(os.path.join(dirname,'modtran'))
+                except: pass
+
+    def project(self, res=[30,30], datadir='data_landsat'):
+        """ Create reprojected, mosaiced images for this site and date """
+        if res is None: res=[30,30]
+        super(LandsatData, self).project(res=res, datadir=datadir)
 
     def _readmeta(self, tile, filename=None):
         """ Read in Landsat MTL (metadata) file """
         if filename is None:
-            filename = self.tiles[tile]['filename']
+            filename = self.tiles[tile]['products']['raw']
         mtlfilename = glob.glob(os.path.join(os.path.dirname(filename),'*MTL.txt'))
 
         if len(mtlfilename) == 0:
@@ -297,10 +405,11 @@ class LandsatData(Data):
             bandnums = numpy.arange(0,len(tiledata['metadata']['bands'])) + 1
         
         # Extract desired files from tarfile
-        if tarfile.is_tarfile(tiledata['filename']):
-            tfile = tarfile.open(tiledata['filename'])
+        filename = tiledata['products']['raw']
+        if tarfile.is_tarfile(filename):
+            tfile = tarfile.open(filename)
         else:
-            raise Exception('%s not a valid landsat tar file' % os.path.basename(tiledata['filename']))
+            raise Exception('%s not a valid landsat tar file' % os.path.basename(filename))
             return
 
         filenames = []
@@ -344,125 +453,5 @@ class LandsatData(Data):
             image[i] = band
             image.SetColor(bandmeta['color'],i+1)
         return image
-
-    def process(self, overwrite=False, suffix='', overviews=False):
-        """ Make sure all products exist for all tiles, process if necessary """
-        for tile, data in self.tiles.items():
-            if suffix != '' and suffix[:1] != '_': suffix = '_' + suffix
-            fout_base = os.path.join(data['path'], data['basename'] + '_')
-            fouts = {}
-            runatm = False
-            # generate all product names and check if already existing
-            for product in self.products:
-                if self._products[product]['atmcorr']: runatm = True
-                if product not in self._products.keys():
-                    raise Exception('Product %s not recognized' % product)
-                fout = fout_base + product + suffix
-                if len(glob.glob(fout+'.*')) == 0 or overwrite: fouts[product] = fout
-
-            if len(fouts) > 0:
-                start = datetime.datetime.now()
-                try:
-                    # TODO - If only doing temp then don't waste time with other bands
-                    img = self._readraw(tile)
-                except Exception,e:
-                    print 'Error reading data %s' % data['filename']
-                    VerboseOut('%s %s' % (data['basename'],e), 2)
-                    VerboseOut(traceback.format_exc(), 3)
-                    return
-                if runatm: atmospheres = [atmosphere(i,data['metadata']) for i in range(1,img.NumBands()+1)]
-                VerboseOut('%s: read in %s' % (data['basename'],datetime.datetime.now() - start))
-
-                for product,fname in fouts.iteritems():
-                    try:
-                        start = datetime.datetime.now()
-
-                        if (self._products[product]['atmcorr']):
-                            for i in range(0,img.NumBands()):
-                                b = img[i]
-                                b.SetAtmosphere(atmospheres[i])
-                                img[i] = b
-                            VerboseOut('atmospherically correcting',2)
-                        else:
-                            img.ClearAtmosphere()
-
-                        try:
-                            fcall = 'gippy.%s(img, fname)' % self._products[product]['function']
-                            VerboseOut(fcall,2)
-                            imgout = eval(fcall)
-                        except Exception,e:
-                            print 'Error creating product %s for %s: %s' % (product,fname,e)
-                            VerboseOut(traceback.format_exc(),2)
-
-                        if overviews: imgout.AddOverviews()
-                        fname = imgout.Filename()
-                        imgout = None
-                        dur = datetime.datetime.now() - start
-                        data['products'][product] = fname
-                        VerboseOut(' -> %s: processed in %s' % (os.path.basename(fname),dur))
-                    except Exception,e:
-                        print 'Error processing %s' % fname
-                        VerboseOut('%s %s' % (data['basename'],e),2)
-                        VerboseOut(traceback.format_exc(), 3)
-                img = None
-                # cleanup directory
-                try:
-                    for bname in data['metadata']['filenames']: 
-                        files = glob.glob(os.path.join(data['path'],bname)+'*')
-                        for f in files: os.remove(f)
-                    shutil.rmtree(os.path.join(dirname,'modtran'))
-                except: pass
-
-    def project(self, res=[30,30], datadir='data_landsat'):
-        """ Create reprojected, mosaiced images for this site and date """
-        if res is None: res=[30,30]
-        super(LandsatData, self).project(res=res, datadir=datadir)
-        
-    @classmethod
-    def archive(cls, dir=''):
-        """ Move landsat files from current directory to archive location """
-        if (dir == ''):
-            fnames = glob.glob('L*.tar.gz')
-        else:
-            fnames = glob.glob(os.path.join('L*.tar.gz'))
-        numadded = 0
-        for f in fnames:
-            pathrow = f[3:9]
-            year = f[9:13]
-            doy = f[13:16]
-            path = os.path.join(cls.rootdir,pathrow,year+doy)
-
-            # Make directory
-            try:
-                #pass
-                os.makedirs(path)
-            except OSError as exc: # Python >2.5
-                if exc.errno == errno.EEXIST and os.path.isdir(path):
-                    #print 'Directory already exists'
-                    pass
-                else:
-                    raise Exception('Unable to make product directory %s' % path)
-
-            # Move file
-            try:
-                newf = os.path.join(path,f)
-                if not os.path.exists(newf):
-                    # Check for older versions
-                    existing_files = glob.glob(os.path.join(path,'*tar.gz'))
-                    if len(existing_files) > 0:
-                        print 'Other version of %s alrady exist:' % f
-                        for ef in existing_files: print '\t%s' % ef
-                    shutil.move(f,newf)
-                    #print f, ' -> ',path
-                    numadded = numadded + 1
-            except shutil.Error as err:
-                print err
-                print f, ' -> problem archiving file'
-                #raise Exception('shutils error %s' % err)
-                #if exc.errno == errno.EEXIST:
-                #    print f, ' removed, already in archive'
-        print '%s files added to archive' % numadded
-        if numadded != len(fnames):
-            print '%s files not added to archive' % (len(fnames)-numadded)
 
 def main(): datamain(LandsatData)
