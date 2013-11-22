@@ -49,11 +49,9 @@ class Data(object):
         return True
 
     @classmethod
-    def path(cls,tile='',date=''):
+    def path(cls,tile,date=''):
         """ Path to date or tile directory (assuming tiledir/datedir structure """
-        if tile == '':
-            return cls.rootdir
-        elif date == '':
+        if date == '':
             return os.path.join(cls.rootdir, tile)
         else:
             return os.path.join(cls.rootdir, tile, date)
