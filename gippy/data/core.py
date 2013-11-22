@@ -24,8 +24,13 @@ class Data(object):
     _tiles_attribute = ''
 
     @classmethod
+    def find_tiles(cls):
+        """ Get list of all available tiles """
+        return os.listdir(cls.rootdir)
+
+    @classmethod
     def find_dates(cls, tile):
-        """ Get list of dates for tile """
+        """ Get list of dates for a tile """
         return [datetime.datetime.strptime(os.path.basename(d),'%Y%j').date() for d in os.listdir(cls.path(tile))]
 
     @classmethod
@@ -35,7 +40,7 @@ class Data(object):
 
     @classmethod
     def find_products(cls, tile, products):
-        """ Find all products for specified tile. Set tile['products'] """
+        """ Find all products for specified tile dictionary. Set tile['products'] """
         return tile
 
     @classmethod
@@ -156,7 +161,7 @@ class Data(object):
             self.tile_coverage = self.vector2tiles(gippy.GeoVector(site))
             self.tiles = self.tile_coverage.keys()
         else:
-            self.tile_coverage = dict((t,1) for t in os.listdir(self.path()))
+            self.tile_coverage = dict((t,1) for t in self.find_tiles())
         self.date = date
         # Create tile and product dictionaries for use by child class
         self.tiles = {}

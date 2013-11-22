@@ -99,7 +99,7 @@ class LandsatData(Data):
 
     @classmethod
     def find_products(cls,tile,products):
-        """ Get all products for specified tile """
+        """ Get all products for specified path """
         for p in products:
             fnames = glob.glob( os.path.join(tile['path'],'*_%s*.tif' % p) )
             for f in fnames:
