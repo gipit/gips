@@ -39,6 +39,7 @@ setup (name = 'gippy',
     entry_points = {
         'console_scripts': [
             'gipit = gippy.gipit:main',
+            # Data scripts TODO - auto find and add
             'landsat = gippy.data.landsat:main',
             'cdl = gippy.data.cdl:main',
         ],
