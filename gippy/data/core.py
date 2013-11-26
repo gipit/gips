@@ -34,18 +34,19 @@ class Data(object):
         return [datetime.datetime.strptime(os.path.basename(d),'%Y%j').date() for d in os.listdir(cls.path(tile))]
 
     @classmethod
-    def find_tile(cls, tile, date):
-        """ Get filename for specified tile. Return (path,basename,filename,sensor) """
-        pass
-
-    @classmethod
-    def find_products(cls, tile, products):
-        """ Find all products for specified tile dictionary. Set tile['products'] """
-        return tile
+    def find_products(cls, tile, date, products):
+        """ Find all products for specified tile dictionary. Create tile dictionary containing:
+             path - path to files/products
+             basename - base/root name of this tile/date
+             products - dictionary of product name and filename
+             sensor - name of sensor
+        """
+        return {'path': '', 'basename': '', 'sensor': '', 'products': {} }
 
     @classmethod
     def filter(cls, tile, filename):
         """ Check if tile passes filter """
+        # TODO - remove filename parameter
         return True
 
     @classmethod
@@ -89,7 +90,7 @@ class Data(object):
         return gippy.GeoVector("PG:dbname=geodata host=congo port=5432 user=ags", layer=cls._tiles_vector)
 
     @classmethod
-    def vector2tiles(cls, vector):
+    def vector2tiles(cls, vector, mincoverage=5):
         """ Return matching tiles and coverage % for provided vector """
         import osr
         geom = vector.union()
@@ -113,6 +114,10 @@ class Data(object):
                 if len(tile) == 5: tile = '0' + tile
                 tiles[tile] = area/geom.area
             feat = tlayer.GetNextFeature()
+        remove_tiles = []
+        for t in tiles:
+            if tiles[t] < mincoverage/100.0: remove_tiles.append(t)
+        for t in remove_tiles: tiles.pop(t,None)
         return tiles
 
     def open(self, product=''):
@@ -172,7 +177,9 @@ class Data(object):
         empty_tiles = []
         for t in self.tiles:
             try:
-                path,basename,filename,self.sensor = self.find_tile(t,date)
+                self.tiles[t] = self.find_products(t,date,products)
+                self.sensor = self.tiles[t]['sensor']
+                #print self.tiles[t]
             except Exception,e:
                 #print 'Error: %s' % (e)
                 #VerboseOut(traceback.format_exc(), 3)
@@ -180,11 +187,10 @@ class Data(object):
                 continue
 
             # Custom filter based on dataclass
-            good = self.filter(t,filename, **kwargs)
-            if good == False:
-                empty_tiles.append(t)
-            tile = {'path': path, 'basename': basename, 'products': {'raw': filename}}
-            self.tiles[t] = self.find_products(tile,products)
+            #good = self.filter(t,filename, **kwargs)
+            #if good == False:
+            #    empty_tiles.append(t)
+
         for t in empty_tiles: self.tiles.pop(t,None)
         if len(self.tiles) == 0:
             raise Exception('No valid data found')
@@ -265,10 +271,12 @@ class DataInventory(object):
         self.products = products
         dates = []
         for t in self.tiles:
-            for date in dataclass.find_dates(t):
-                day = int(date.strftime('%j'))
-                if (self.start_date <= date <= self.end_date) and (self.start_day <= day <= self.end_day):
-                    if date not in dates: dates.append(date)
+            try:
+                for date in dataclass.find_dates(t):
+                    day = int(date.strftime('%j'))
+                    if (self.start_date <= date <= self.end_date) and (self.start_day <= day <= self.end_day):
+                        if date not in dates: dates.append(date)
+            except: pass
         self.numfiles = 0
         self.data = {}
         for date in sorted(dates):

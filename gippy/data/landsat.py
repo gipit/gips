@@ -80,10 +80,20 @@ class LandsatData(Data):
             'function': 'SATVI',
             'atmcorr': True,
         }),
+        ('crc', {
+            'description': 'Crop Residue Cover',
+            'function': 'CRC',
+            'atmcorr': True,
+        }),
+        ('isti', {
+            'description': 'Inverse Standard Tillage Index',
+            'function': 'iSTI',
+            'atmcorr': True,
+        }),        
     ])
 
     @classmethod
-    def find_tile(cls, tile, date):
+    def find_products(cls, tile, date, products):
         """ Get filename info for specified tile """
         filename = glob.glob(os.path.join(cls.rootdir, tile, date.strftime('%Y%j'), '*.tar.gz'))
         if len(filename) == 0:
@@ -95,21 +105,21 @@ class LandsatData(Data):
         path,basename = os.path.split(filename)
         basename = basename[:-12]
         sensor = basename[0:3]
-        return (path,basename,filename,sensor)
 
-    @classmethod
-    def find_products(cls,tile,products):
-        """ Get all products for specified path """
+        tiledata = { 'path': path, 'basename': basename, 'sensor': sensor }
+        prod = {'raw': filename}
         for p in products:
-            fnames = glob.glob( os.path.join(tile['path'],'*_%s*.tif' % p) )
+            fnames = glob.glob( os.path.join(path,'*_%s*.tif' % p) )
             for f in fnames:
-                prod = os.path.splitext(os.path.split(f)[1][len(tile['basename'])+1:])[0]
-                tile['products'][ prod ] = f
-        return tile
+                prodname = os.path.splitext(os.path.split(f)[1][len(basename)+1:])[0]
+                prod[ p ] = prodname
+        tiledata['products'] = prod
+        return tiledata
 
     @classmethod
     def filter(cls, tile, filename, maxclouds=100):
         """ Check if tile passes filter """
+        # TODO - remove filename parameter
         if maxclouds < 100:
             meta = cls._readmeta(tile,filename=filename)
             if meta['clouds'] > maxclouds:
