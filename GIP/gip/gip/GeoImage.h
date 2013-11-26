@@ -192,6 +192,11 @@ namespace gip {
 	private:
 		//! Default constructor, private so cannot be called
 		explicit GeoImage() : GeoData() {}
+
+		int ChunkSize() const {
+		    int sz = Options::ChunkSize()/NumBands();
+		    return (sz < 1 ? 1 : sz);
+        }
 	};
 
 } // namespace gip

@@ -60,7 +60,7 @@ namespace gip {
 
 	// Copy constructor
 	GeoData::GeoData(const GeoData& geodata)
-		: _Filename(geodata._Filename), _GDALDataset(geodata._GDALDataset) {
+		: _Filename(geodata._Filename), _GDALDataset(geodata._GDALDataset), _Chunks(geodata._Chunks) {
 	}
 
 	// Assignment copy
@@ -70,6 +70,7 @@ namespace gip {
 		if (this == &geodata) return *this;
 		_Filename = geodata._Filename;
 		_GDALDataset = geodata._GDALDataset;
+		_Chunks = geodata._Chunks;
 		return *this;
 	}
 
@@ -121,10 +122,23 @@ namespace gip {
 		return items;
 	}
 
-	// Breaks up image into smaller size pieces, each of size GeoData::_ChunkSize
-	std::vector<bbox> GeoData::Chunk(int overlap, unsigned int bytes) const {
-        // TODO - overlap!!  and bytes is fixed at 2!!!
-		unsigned int rows = floor( (Options::ChunkSize()*1024*1024) / bytes / XSize() );
+    // Data type size
+	int GeoData::DataTypeSize() const {
+        switch(DataType()) {
+            case 1: return sizeof(unsigned char);
+            case 2: return sizeof(unsigned short);
+            case 3: return sizeof(short);
+            case 4: return sizeof(unsigned int);
+            case 5: return sizeof(int);
+            case 6: return sizeof(float);
+            case 7: return sizeof(double);
+            default: throw(std::exception());
+        }
+	}
+
+	//! Break up image into smaller size pieces, each of ChunkSize
+	void GeoData::Chunk() const {
+        unsigned int rows = floor( (ChunkSize()*1024*1024) / DataTypeSize() / XSize() );
 		rows = rows > YSize() ? YSize() : rows;
 		int numchunks = ceil( YSize()/(float)rows );
 		std::vector<bbox> Chunks;
@@ -141,10 +155,8 @@ namespace gip {
             for (std::vector<bbox>::const_iterator iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++)
                 std::cout << "  Chunk " << i++ << ": " << boost::geometry::dsv(*iChunk) << std::endl;
 		}
-		return Chunks;
+		//return Chunks;
 	}
-
-
 
 	// Copy collection of meta data
 	//GeoData& CopyMeta(const GeoData&, std::vector<std::string>);

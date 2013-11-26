@@ -45,33 +45,24 @@ namespace gip {
 		const GeoRasterIO<T> operator[](std::string col) const { return GeoRasterIO<T>(GeoImage::operator[](col)); }
 
 		//! \name File I/O
-        //! Read all bands
-        cimg_library::CImg<T> Read(bool RAW=false) const {
-            cimg_library::CImgList<T> images;
-            typename std::vector< GeoRasterIO<T> >::const_iterator iBand;
-			for (iBand=_RasterIOBands.begin(); iBand!=_RasterIOBands.end(); iBand++)
-                images.insert( iBand->Read(RAW) );
-			return images.get_append('v','p');
-		}
-
 		//! Read chunk, across all bands
-		cimg_library::CImg<T> ReadChunk(bbox chunk, bool RAW=false) const {
+		cimg_library::CImg<T> Read(int chunk=0, bool RAW=false) const {
 			cimg_library::CImgList<T> images;
 			typename std::vector< GeoRasterIO<T> >::const_iterator iBand;
 			for (iBand=_RasterIOBands.begin();iBand!=_RasterIOBands.end();iBand++) {
-				images.insert( iBand->ReadChunk(chunk, RAW) );
+				images.insert( iBand->Read(chunk, RAW) );
 			}
 			//return images.get_append('c','p');
 			return images.get_append('v','p');
 		}
 
 		//! Write cube across all bands
-		GeoImageIO& WriteChunk(const CImg<T> &img, bbox chunk, bool BadValCheck=false) {
+		GeoImageIO& Write(const CImg<T> &img, int chunk=0, bool BadValCheck=false) {
 			typename std::vector< GeoRasterIO<T> >::iterator iBand;
 			int i(0);
 			for (iBand=_RasterIOBands.begin();iBand!=_RasterIOBands.end();iBand++) {
 				CImg<T> tmp = img.get_channel(i++);
-				iBand->WriteChunk(tmp,chunk, BadValCheck);
+				iBand->Write(tmp, chunk, BadValCheck);
 			}
 			return *this;
 		}
@@ -86,9 +77,9 @@ namespace gip {
 		}*/
 
 		//! NoData mask (all bands)
-		CImg<unsigned char> NoDataMask(bbox chunk) const {
+		CImg<unsigned char> NoDataMask(int chunk=0) const {
 		    unsigned int c;
-		    CImg<T> cube = ReadChunk(chunk, true);
+		    CImg<T> cube = Read(chunk, true);
 		    CImg<unsigned char> mask(cube.width(),cube.height(),1,1,0);
             cimg_forXY(cube,x,y) {
                 for (c=0; c<NumBands(); c++) {
@@ -101,7 +92,7 @@ namespace gip {
 		// TODO - examine that these are even generically needed, and aren't just part of algorithms (all or mostly fmask)
 
 		//! Return a mask of snow
-		CImg<bool> SnowMask(bbox chunk) const {
+		CImg<bool> SnowMask(int chunk=0) const {
             CImg<float> nir( operator[]("NIR").Ref(chunk) );
             CImg<float> green( operator[]("Green").Ref(chunk) );
             CImg<float> swir1( (*this)["SWIR1"].Ref(chunk) );
@@ -119,7 +110,7 @@ namespace gip {
 		}
 
         //! Return a mask of water (and possibley clear-sky pixels)
-		CImg<bool> WaterMask(bbox chunk) const {
+		CImg<bool> WaterMask(int chunk=0) const {
             CImg<float> red( operator[]("Red").Ref(chunk) );
             CImg<float> nir( operator[]("NIR").Ref(chunk) );
             CImg<float> ndvi = (nir-red).get_div(nir+red);
@@ -131,18 +122,18 @@ namespace gip {
 		}
 
         //! Return haze mask
-        CImg<bool> HazeMask(bbox chunk) const {
+        CImg<bool> HazeMask(int chunk=0) const {
             CImg<float> red( operator[]("Red").Ref(chunk) );
             CImg<float> blue( operator[]("Blue").Ref(chunk) );
             CImg<bool> mask( (blue - 0.5*red - 0.08).threshold(0.0) );
             return mask;
         }
 
-        CImg<float> Whiteness(bbox chunk) const {
+        CImg<float> Whiteness(int chunk=0) const {
             // RAW or RADIANCE ?
-            CImg<float> red = operator[]("Red").ReadChunk(chunk, true);
-            CImg<float> green = operator[]("Green").ReadChunk(chunk, true);
-            CImg<float> blue = operator[]("Blue").ReadChunk(chunk, true);
+            CImg<float> red = operator[]("Red").Read(chunk, true);
+            CImg<float> green = operator[]("Green").Read(chunk, true);
+            CImg<float> blue = operator[]("Blue").Read(chunk, true);
             CImg<float> white(red.width(),red.height());
             float mu;
             cimg_forXY(white,x,y) {
@@ -222,21 +213,18 @@ namespace gip {
             cimg_library::CImg<unsigned char> cmask;
             cimg_library::CImg<T> cimg;
             long count = 0;
-            float chunksize = Options::ChunkSize();
-            Options::SetChunkSize(chunksize/NumBands());
-            std::vector<bbox> Chunks = Chunk();
-            std::vector<bbox>::const_iterator iChunk;
-            for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
-                cmask = maskio.ReadChunk(*iChunk);
+
+            for (int iChunk=1; iChunk<=NumChunks(); iChunk++) {
+                cmask = maskio.Read(iChunk);
                 cimg_for(cmask,ptr,unsigned char) if (*ptr > 0) count++;
             }
             cimg_library::CImg<T> pixels(count,NumBands()+1,1,1,_RasterIOBands[0].NoDataValue());
             count = 0;
             int ch(0);
             unsigned int c;
-            for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
-                cimg = ReadChunk(*iChunk);
-                cmask = maskio.ReadChunk(*iChunk);
+            for (int iChunk=1; iChunk<=NumChunks(); iChunk++) {
+                cimg = Read(iChunk);
+                cmask = maskio.Read(iChunk);
                 cimg_forXY(cimg,x,y) {
                     if (cmask(x,y) > 0) {
                         for (c=0;c<NumBands();c++) pixels(count,c+1) = cimg(x,y,c);
@@ -245,7 +233,6 @@ namespace gip {
                 }
                 if (Options::Verbose() > 2) std::cout << "  Chunk " << ch++ << std::endl;
             }
-            Options::SetChunkSize(chunksize);
             return pixels;
         }
 
@@ -332,7 +319,5 @@ namespace gip {
 
 	}; // class GeoImageIO
 } // namespace gip
-
-
 
 #endif /* GEOIMAGEIO_H_ */

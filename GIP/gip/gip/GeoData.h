@@ -43,6 +43,10 @@ namespace gip {
 		std::string Basename() const { return _Filename.stem().string(); }
 		//! File format of dataset
 		std::string Format() const { return _GDALDataset->GetDriver()->GetDescription(); }
+		//! Return data type
+		virtual GDALDataType DataType() const;
+		//! Return size of data type (in bytes)
+		int DataTypeSize() const;
 
 		//! Get GDALDataset object - use cautiously
 		GDALDataset* GetGDALDataset() const { return _GDALDataset.get(); }
@@ -80,20 +84,28 @@ namespace gip {
 		std::vector<std::string> GetMetaGroup(std::string group,std::string filter="") const;
 
 		//! \name Processing functions
-		//! Break up image into chunks
-		std::vector< boost::geometry::model::box<point> > Chunk(int overlap=0, unsigned int bytes=2) const;
-
-		//! Flush cache
-		//void Flush() { _GDALDataset->FlushCache(); }
+        //! Get the number of chunks used for processing image
+		int NumChunks() const {
+            if (_Chunks.size() == 0) Chunk();
+            return _Chunks.size();
+		}
 
 	protected:
-
 		//! Filename to dataset
 		boost::filesystem::path _Filename;
 		//! Underlying GDALDataset of this file
 		boost::shared_ptr<GDALDataset> _GDALDataset;
-		//! Options
-		//Options _Options;
+
+		//! Vector of chunk coordinates
+		std::vector< boost::geometry::model::box<point> > _Chunks;
+
+    private:
+        //! Return chunk size
+		int ChunkSize() const { return Options::ChunkSize(); }
+
+		//! Break up image into chunks
+		void Chunk() const;
+
 	}; //class GeoData
 
 } // namespace gip

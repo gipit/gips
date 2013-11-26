@@ -112,15 +112,13 @@ namespace gip {
 	// Replaces all Inf or NaN pixels with NoDataValue
 	GeoImage& GeoImage::FixBadPixels() {
 		typedef float T;
-		vector<bbox> Chunks = Chunk();
-		vector<bbox>::const_iterator iChunk;
 		for (unsigned int b=0;b<NumBands();b++) {
 			GeoRasterIO<T> band((*this)[b]);
-			for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
-				CImg<T> img = band.ReadChunk(*iChunk, true);
+			for (int iChunk=1; iChunk<=NumChunks(); iChunk++) {
+				CImg<T> img = band.Read(iChunk, true);
 				T nodata = band.NoDataValue();
 				cimg_for(img,ptr,T)	if ( std::isinf(*ptr) || std::isnan(*ptr) ) *ptr = nodata;
-				band.WriteChunk(img,*iChunk, true);
+				band.Write(img,iChunk, true);
 			}
 		}
 		return *this;
