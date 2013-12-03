@@ -301,8 +301,8 @@ namespace gip {
 			if (pbSuccess != 0) {
 				if (pbSuccess == 1) _NoData = true;
 			}
+            Chunk();
 		}
-
 	};
 }
 #endif

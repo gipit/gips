@@ -47,7 +47,6 @@ namespace gip {
 			CImg<T> imgorig(img);
 
 			bool updatenodata = false;
-
 			// Convert data to radiance (if not raw requested)
 			if (!RAW) {
                 if (Gain() != 1.0 || Offset() != 0.0) {
@@ -112,8 +111,12 @@ namespace gip {
 			return img;
 		}
 
+		//GeoRasterIO<T>& Write(cimg_library::CImg<T> img, int chunknum=0, bool RAW=false) {
+        //    return Write(img, chunknum, RAW);
+		//}
+
 		//! Write a Cimg to the file
-		GeoRasterIO<T>& Write(cimg_library::CImg<T>& img, int chunknum=0, bool RAW=false) { //, bool BadValCheck=false) {
+		GeoRasterIO<T>& Write(cimg_library::CImg<T> img, int chunknum=0, bool RAW=false) { //, bool BadValCheck=false) {
 		    bbox chunk;
 		    if (chunknum == 0) {
                 chunk = bbox(point(0,0),point(XSize()-1,YSize()-1));

@@ -44,7 +44,7 @@ namespace gip {
 		//! File format of dataset
 		std::string Format() const { return _GDALDataset->GetDriver()->GetDescription(); }
 		//! Return data type
-		virtual GDALDataType DataType() const;
+		virtual GDALDataType DataType() const { return GDT_Unknown; }
 		//! Return size of data type (in bytes)
 		int DataTypeSize() const;
 
@@ -97,14 +97,14 @@ namespace gip {
 		boost::shared_ptr<GDALDataset> _GDALDataset;
 
 		//! Vector of chunk coordinates
-		std::vector< boost::geometry::model::box<point> > _Chunks;
+		mutable std::vector< boost::geometry::model::box<point> > _Chunks;
+
+		//! Break up image into chunks
+		void Chunk() const;
 
     private:
         //! Return chunk size
 		int ChunkSize() const { return Options::ChunkSize(); }
-
-		//! Break up image into chunks
-		void Chunk() const;
 
 	}; //class GeoData
 

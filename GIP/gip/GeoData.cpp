@@ -83,6 +83,21 @@ namespace gip {
         }
 	}
 
+    // Data type size
+	int GeoData::DataTypeSize() const {
+	    std::cout << "DataType = " << DataType() << std::endl;
+        switch(DataType()) {
+            case 1: return sizeof(unsigned char);
+            case 2: return sizeof(unsigned short);
+            case 3: return sizeof(short);
+            case 4: return sizeof(unsigned int);
+            case 5: return sizeof(int);
+            case 6: return sizeof(float);
+            case 7: return sizeof(double);
+            default: throw(std::exception());
+        }
+	}
+
     // Using GDALDatasets GeoTransform get Geo-located coordinates
 	point GeoData::GeoLoc(float xloc, float yloc) const {
 		double Affine[6];
@@ -122,37 +137,23 @@ namespace gip {
 		return items;
 	}
 
-    // Data type size
-	int GeoData::DataTypeSize() const {
-        switch(DataType()) {
-            case 1: return sizeof(unsigned char);
-            case 2: return sizeof(unsigned short);
-            case 3: return sizeof(short);
-            case 4: return sizeof(unsigned int);
-            case 5: return sizeof(int);
-            case 6: return sizeof(float);
-            case 7: return sizeof(double);
-            default: throw(std::exception());
-        }
-	}
-
 	//! Break up image into smaller size pieces, each of ChunkSize
 	void GeoData::Chunk() const {
         unsigned int rows = floor( (ChunkSize()*1024*1024) / DataTypeSize() / XSize() );
 		rows = rows > YSize() ? YSize() : rows;
 		int numchunks = ceil( YSize()/(float)rows );
-		std::vector<bbox> Chunks;
+		//std::vector<bbox> Chunks;
+		_Chunks.clear();
 		for (int i=0; i<numchunks; i++) {
 			point p1(0,rows*i);
 			point p2(XSize()-1, std::min((rows*(i+1)-1),YSize()-1));
 			bbox chunk(p1,p2);
-			Chunks.push_back(chunk);
+			_Chunks.push_back(chunk);
 		}
 		if (Options::Verbose() > 2) {
 		    int i(0);
-		    std::cout << "Chunked " << Basename() << " into " << Chunks.size() << " chunks ("
-                << Options::ChunkSize() << " MB each)"<< std::endl;
-            for (std::vector<bbox>::const_iterator iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++)
+		    std::cout << "Chunked " << Basename() << " into " << _Chunks.size() << " chunks (" << ChunkSize() << " MB each)"<< std::endl;
+            for (std::vector<bbox>::const_iterator iChunk=_Chunks.begin(); iChunk!=_Chunks.end(); iChunk++)
                 std::cout << "  Chunk " << i++ << ": " << boost::geometry::dsv(*iChunk) << std::endl;
 		}
 		//return Chunks;
@@ -160,6 +161,5 @@ namespace gip {
 
 	// Copy collection of meta data
 	//GeoData& CopyMeta(const GeoData&, std::vector<std::string>);
-
 
 } // namespace gip

@@ -57,7 +57,7 @@ namespace gip {
 		CImg<unsigned char> imgout;
 		mask.SetNoData(0);
 		//unsigned int validpixels(0);
-        for (int iChunk=1; iChunk<=imageIO.NumChunks(); iChunk++) {
+        for (int iChunk=1; iChunk<=imageIO[0].NumChunks(); iChunk++) {
         	//imgchunk = imageIO[0].Read(*iChunk);
 			//imgout = Pbands[0].NoDataMask(imgchunk);
 			//for (unsigned int b=1;b<image.NumBands();b++) {
@@ -84,11 +84,13 @@ namespace gip {
         CImg<unsigned char> nodata;
         for (unsigned int b=0;b<img.NumBands();b++) {
             if (img[b].Thermal()) imgoutIO[b].SetGain(0.01); else imgoutIO[b].SetGain(0.0001);
-            for (int iChunk=1; iChunk<=img.NumChunks(); iChunk++) {
+            for (int iChunk=1; iChunk<=img[b].NumChunks(); iChunk++) {
+                std::cout << "Chunk" << iChunk << std::endl;
                 cimg = imgIO[b].Ref(iChunk);
                 nodata = imgIO[b].NoDataMask(iChunk);
                 cimg_forXY(cimg,x,y) { if (nodata(x,y)) cimg(x,y) = imgoutIO[b].NoDataValue(); }
                 imgoutIO[b].Write(cimg,iChunk);
+                std::cout << "End chunk " << std::endl;
             }
         }
         return imgoutIO;
@@ -106,7 +108,7 @@ namespace gip {
             stats = imgIO[b].ComputeStats(true);
             float lo = std::max(stats(2) - 3*stats(3), stats(0)-1);
             float hi = std::min(stats(2) + 3*stats(3), stats(1));
-            for (int iChunk=1; iChunk<=imgIO.NumChunks(); iChunk++) {
+            for (int iChunk=1; iChunk<=imgIO[b].NumChunks(); iChunk++) {
                 cimg = imgIO[b].Read(iChunk);
                 mask = imgIO[b].NoDataMask(iChunk);
                 ((cimg-=lo)*=(255.0/(hi-lo))).max(0.0).min(255.0);
@@ -272,7 +274,7 @@ namespace gip {
         CImg<T> cimg;
         CImg<unsigned char> nodata;
         for (unsigned int b=0;b<img.NumBands();b++) {
-            for (int iChunk=1; iChunk<=imgIO.NumChunks(); iChunk++) {
+            for (int iChunk=1; iChunk<=imgIO[b].NumChunks(); iChunk++) {
                 cimg = imgIO[b].Read(iChunk);
                 nodata = imgIO[b].NoDataMask(iChunk);
                 // only if nodata not same between input and output images
@@ -306,7 +308,7 @@ namespace gip {
         CImg<unsigned char> mask;
 
         float L = 0.1;
-        for (int iChunk=1; iChunk<=imgIO.NumChunks(); iChunk++) {
+        for (int iChunk=1; iChunk<=imgIO[0].NumChunks(); iChunk++) {
             red = imgIO["Red"].Read(iChunk);
             swir1 = imgIO["SWIR1"].Read(iChunk);
             swir2 = imgIO["SWIR2"].Read(iChunk);
@@ -344,7 +346,7 @@ namespace gip {
 		CImg<float> red, nir, blue, swir1, green, swir2, out;
 
         // need to add overlap
-        for (int iChunk=1; iChunk<=ImageIn.NumChunks(); iChunk++) {
+        for (int iChunk=1; iChunk<=ImageIn[0].NumChunks(); iChunk++) {
             red = imgin["Red"].Ref(iChunk);
             green = imgin["Green"].Ref(iChunk);
             blue = imgin["Blue"].Ref(iChunk);
@@ -405,7 +407,7 @@ namespace gip {
         CImg<outtype> mask;
 
         // need to add overlap
-        for (int iChunk=1; iChunk<=image.NumChunks(); iChunk++) {
+        for (int iChunk=1; iChunk<=image[0].NumChunks(); iChunk++) {
 
             red = imgin["Red"].Ref(iChunk);
             temp = imgin["LWIR"].Ref(iChunk);
@@ -448,7 +450,7 @@ namespace gip {
         CImg<double> wstats(image.Size()), lstats(image.Size());
         int wloc(0), lloc(0);
 
-        for (int iChunk=1; iChunk<=image.NumChunks(); iChunk++) {
+        for (int iChunk=1; iChunk<=image[0].NumChunks(); iChunk++) {
             red = imgin["Red"].Ref(iChunk);
             green = imgin["Green"].Ref(iChunk);
             nir = imgin["NIR"].Ref(iChunk);
@@ -525,7 +527,7 @@ namespace gip {
         double Thi(zhi*lstddev + lmean);
 
         if (Options::Verbose() > 0) {
-            cout << "Running fmask in " << image.NumChunks() << " chunks with tolerance of " << tolerance << endl;
+            cout << "Running fmask in " << image[0].NumChunks() << " chunks with tolerance of " << tolerance << endl;
             cout << "Temperature stats:" << endl;
             cout << "  Water: " << wmean << " s = " << wstddev << endl;
             cout << "  Water: " << lmean << " s = " << lstddev << endl;
@@ -536,7 +538,7 @@ namespace gip {
 
         // 2nd pass cloud probabilities over land
         CImg<float> wprob, lprob;
-        for (int iChunk=1; iChunk<=image.NumChunks(); iChunk++) {
+        for (int iChunk=1; iChunk<=image[0].NumChunks(); iChunk++) {
             // Cloud over Water prob
             BT = imgin["LWIR"].Ref(iChunk);
             nodatamask = imgin.NoDataMask(iChunk);
@@ -571,7 +573,7 @@ namespace gip {
         CImg<int> erode_elem(esize,esize,1,1,1);
         CImg<int> dilate_elem(esize+dilate,esize+dilate,1,1,1);
 
-        for (int iChunk=1; iChunk<=image.NumChunks(); iChunk++) {
+        for (int iChunk=1; iChunk<=image[0].NumChunks(); iChunk++) {
             mask = imgout[0].Read(iChunk);
             wmask = imgout[1].Read(iChunk);
 
@@ -618,7 +620,7 @@ namespace gip {
         imageout.SetNoData(nodataout);
 
         CImg<float> cimgin, cimgout;
-        for (int iChunk=1; iChunk<=image.NumChunks(); iChunk++) {
+        for (int iChunk=1; iChunk<=image[bandnum-1].NumChunks(); iChunk++) {
             cimgin = imagein[bandnum-1].Read(iChunk);
             cimgout = (cimgin - min)/(max-min);
             cimgout.min(1.0).max(0.0);
@@ -660,7 +662,7 @@ namespace gip {
             for (i=0; i<classes; i++) NumSamples(i) = 0;
             if (Options::Verbose()) cout << "  Iteration " << iteration+1 << std::flush;
 
-            for (int iChunk=1; iChunk<=image.NumChunks(); iChunk++) {
+            for (int iChunk=1; iChunk<=image[0].NumChunks(); iChunk++) {
                 C_img = img.Read(iChunk);
                 C_mask = img.NoDataMask(iChunk);
                 C_imgout = imgout[0].Read(iChunk);

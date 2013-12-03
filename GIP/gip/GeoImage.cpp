@@ -167,6 +167,7 @@ namespace gip {
 			_GDALDataset.reset();
 			_GDALDataset = _RasterBands[index]._GDALDataset;
 		}
+		Chunk();
 	}
 
 } // namespace gip

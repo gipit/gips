@@ -56,8 +56,12 @@ namespace gip {
 			return images.get_append('v','p');
 		}
 
+        //GeoImageIO& Write(const CImg<T> img, int chunk=0, bool BadValCheck=false) {
+        //    return Write(img, chunk, BadValCheck);
+        //}
+
 		//! Write cube across all bands
-		GeoImageIO& Write(const CImg<T> &img, int chunk=0, bool BadValCheck=false) {
+		GeoImageIO& Write(const CImg<T> img, int chunk=0, bool BadValCheck=false) {
 			typename std::vector< GeoRasterIO<T> >::iterator iBand;
 			int i(0);
 			for (iBand=_RasterIOBands.begin();iBand!=_RasterIOBands.end();iBand++) {
