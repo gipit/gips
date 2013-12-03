@@ -112,7 +112,7 @@ class LandsatData(Data):
             fnames = glob.glob( os.path.join(path,'*_%s*.tif' % p) )
             for f in fnames:
                 prodname = os.path.splitext(os.path.split(f)[1][len(basename)+1:])[0]
-                prod[ p ] = prodname
+                prod[ prodname ] = f
         tiledata['products'] = prod
         return tiledata
 
