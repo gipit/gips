@@ -33,7 +33,6 @@ class CDLData(Data):
     def find_products(cls, tile, date, products):
         """ Get filename for specified tile. Return (path,basename,filename,sensor) """
         filename = glob.glob(os.path.join(cls.rootdir, tile, 'CDL_%s_*.tif' % date.strftime('%Y')))
-        set_trace()
         path, basename = os.path.split(filename[0])
         return {'path': path, 'basename': basename, 'sensor': 'cdl', 'products': {'raw':filename[0],'cdl':filename[0]}} 
 
