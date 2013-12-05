@@ -243,7 +243,7 @@ class LandsatData(Data):
                             VerboseOut(traceback.format_exc(),2)
 
                         if overviews: imgout.AddOverviews()
-                        fname = imgout.Filename()
+                        #fname = imgout.Filename()
                         imgout = None
                         dur = datetime.datetime.now() - start
                         data['products'][product] = fname
@@ -303,7 +303,7 @@ class LandsatData(Data):
         # Set sensor specific constants
         if id == 5:
             bands = ['1','2','3','4','5','6','7']
-            colors = ["Blue","Green","Red","NIR","SWIR1","LWIR","SWIR2"]
+            colors = ["BLUE","GREEN","RED","NIR","SWIR1","LWIR","SWIR2"]
             # TODO - update bands with actual L5 values (these are L7)
             bandlocs = [0.4825, 0.565, 0.66, 0.825, 1.65, 11.45, 2.22]
             bandwidths = [0.065, 0.08, 0.06, 0.15, 0.2, 2.1, 0.26]
@@ -314,7 +314,7 @@ class LandsatData(Data):
         elif id == 7:
             #bands = ['1','2','3','4','5','6_VCID_1','6_VCID_2','7','8']
             bands = ['1','2','3','4','5','6_VCID_1','7']
-            colors = ["Blue","Green","Red","NIR","SWIR1","LWIR","SWIR2"]
+            colors = ["BLUE","GREEN","RED","NIR","SWIR1","LWIR","SWIR2"]
             bandlocs = [0.4825, 0.565, 0.66, 0.825, 1.65, 11.45, 2.22]
             bandwidths = [0.065, 0.08, 0.06, 0.15, 0.2, 2.1, 0.26]
             E = [1997, 1812, 1533, 1039, 230.8, 0, 84.90]
@@ -325,7 +325,7 @@ class LandsatData(Data):
             oldbands[6] = '62'
         elif id == 8:
             bands = ['1','2','3','4','5','6','7','9'] #,'10','11']
-            colors = ["Coastal","Blue","Green","Red","NIR","SWIR1","SWIR2","Cirrus"] #,"LWIR1","LWIR2"]
+            colors = ["COASTAL","BLUE","GREEN","RED","NIR","SWIR1","SWIR2","CIRRUS"] #,"LWIR1","LWIR2"]
             bandlocs = [0.443, 0.4825, 0.5625, 0.655, 0.865, 1.610, 2.2, 1.375] #, 10.8, 12.0]
             bandwidths = [0.01, 0.0325, 0.0375, 0.025, 0.02, 0.05, 0.1, 0.015] #, 0.5, 0.5]
             E = [2638.35, 2031.08, 1821.09, 2075.48, 1272.96, 246.94, 90.61, 369.36] #, 0, 0] 

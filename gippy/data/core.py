@@ -318,9 +318,12 @@ class DataInventory(object):
         # this doesn't handle different tiles (if prod exists for one tile, it lists it)
         prods = []
         for data in self.data[date]:
-            for prod in data.products.keys():
-                prods.append(prod)
-        return sorted(prods)
+            for t in data.tiles:
+                for p in data.tiles[t]['products']:
+                    if not p == 'raw': prods.append(p)
+                #for prod in data.products.keys(): prods.append(prod)
+        #set_trace()
+        return sorted(set(prods))
 
     def createlinks(self,hard=False):
         """ Create product links """
@@ -455,7 +458,7 @@ def main(dataclass):
         exit(1)
 
     gippy.Options.SetVerbose(args.verbose)
-    gippy.Options.SetChunkSize(128.0)   # replace with option
+    gippy.Options.SetChunkSize(256.0)   # replace with option
 
     try:
         inv = dataclass.inventory(site=args.site, dates=args.dates, days=args.days, tiles=args.tiles, products=args.products)
