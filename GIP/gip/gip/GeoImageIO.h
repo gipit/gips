@@ -87,6 +87,7 @@ namespace gip {
 		    CImg<T> cube = Read(chunk, true);
 		    CImg<unsigned char> mask(cube.width(),cube.height(),1,1,0);
 		    std::vector<int> ibands;
+		    std::vector<int>::const_iterator b;
 		    if (bands.size() == 0) {
 		        for (c=0; c<NumBands(); c++) ibands.push_back(c);
             } else {
@@ -94,6 +95,11 @@ namespace gip {
                     ibands.push_back(_Colors[*i]-1);
                 }
             }
+            /*if (Options::Verbose() > 2) {
+                std::cout << "Retrieving nodata mask for bands ";
+                for (b=ibands.begin();b!=ibands.end();b++) std::cout << *b << " ";
+                std::cout << std::endl;
+            }*/
             cimg_forXY(cube,x,y) {
                 for (std::vector<int>::const_iterator i=ibands.begin(); i!=ibands.end(); i++) {
                     if ( (*this)[*i].NoData() && (cube(x,y,*i) == (*this)[*i].NoDataValue())) mask(x,y) = 1;

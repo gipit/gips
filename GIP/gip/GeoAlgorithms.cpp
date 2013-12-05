@@ -309,7 +309,8 @@ namespace gip {
         std::map< string, GeoImageIO<float> > imagesout;
         vector<string>::const_iterator iprod;
         for (iprod=products.begin(); iprod!=products.end(); iprod++) {
-            imagesout[*iprod] = GeoImageIO<float>(GeoImage(basename + '_' + *iprod, imgin, GDT_Int16));
+            //imagesout[*iprod] = GeoImageIO<float>(GeoImage(basename + '_' + *iprod, imgin, GDT_Int16));
+            imagesout[*iprod] = GeoImageIO<float>(GeoImage(basename, imgin, GDT_Int16, 1));
             imagesout[*iprod].SetNoData(nodataout);
             imagesout[*iprod].SetGain(0.0001);
             imagesout[*iprod][0].SetDescription(*iprod);
@@ -344,11 +345,17 @@ namespace gip {
         // need to add overlap
         for (int iChunk=1; iChunk<=ImageIn[0].NumChunks(); iChunk++) {
             for (isstr=used_colors.begin();isstr!=used_colors.end();isstr++) {
-                if (*isstr == "Red") red = imgin["Red"].Ref(iChunk);
-                else if (*isstr == "Green") green = imgin["Green"].Ref(iChunk);
-                else if (*isstr == "Blue") blue = imgin["Blue"].Ref(iChunk);
+                if (*isstr == "RED") red = imgin["RED"].Ref(iChunk);
+                else if (*isstr == "GREEN") green = imgin["GREEN"].Ref(iChunk);
+                else if (*isstr == "BLUE") blue = imgin["BLUE"].Ref(iChunk);
+                else if (*isstr == "NIR") nir = imgin["NIR"].Ref(iChunk);
                 else if (*isstr == "SWIR1") swir1 = imgin["SWIR1"].Ref(iChunk);
                 else if (*isstr == "SWIR2") swir2 = imgin["SWIR2"].Ref(iChunk);
+            }
+            if (Options::Verbose() > 2) {
+                std::cout << "Colors used: ";
+                for (isstr=used_colors.begin();isstr!=used_colors.end();isstr++) std::cout << " " << *isstr;
+                std::cout << std::endl;
             }
 
             for (iprod=products.begin(); iprod!=products.end(); iprod++) {
@@ -375,6 +382,7 @@ namespace gip {
                 } else if (*iprod == "ISTI") {
                     cimgout = swir2.div(swir1);
                 }
+                if (Options::Verbose() > 2) std::cout << "Getting mask" << std::endl;
                 cimgmask = imgin.NoDataMask(iChunk, colors[*iprod]);
                 // TODO don't read mask again...create here
                 cimg_forXY(cimgout,x,y) if (cimgmask(x,y) == 1) cimgout(x,y) = nodataout;
