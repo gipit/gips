@@ -17,6 +17,7 @@ namespace gip {
 	public:
         typedef boost::geometry::model::box<point> bbox;
 		//! \name Constructors/Destructor
+		GeoImageIO() {}
 		GeoImageIO(GeoImage& img)
 			: GeoImage(img) {
 			LoadRasterIO();
@@ -81,13 +82,21 @@ namespace gip {
 		}*/
 
 		//! NoData mask (all bands)
-		CImg<unsigned char> NoDataMask(int chunk=0) const {
+		CImg<unsigned char> NoDataMask(int chunk=0, std::vector<std::string> bands=std::vector<std::string>()) const {
 		    unsigned int c;
 		    CImg<T> cube = Read(chunk, true);
 		    CImg<unsigned char> mask(cube.width(),cube.height(),1,1,0);
+		    std::vector<int> ibands;
+		    if (bands.size() == 0) {
+		        for (c=0; c<NumBands(); c++) ibands.push_back(c);
+            } else {
+                for (std::vector<std::string>::const_iterator i=bands.begin(); i!=bands.end(); i++) {
+                    ibands.push_back(_Colors[*i]-1);
+                }
+            }
             cimg_forXY(cube,x,y) {
-                for (c=0; c<NumBands(); c++) {
-                    if ( (*this)[c].NoData() && (cube(x,y,c) == (*this)[c].NoDataValue())) mask(x,y) = 1;
+                for (std::vector<int>::const_iterator i=ibands.begin(); i!=ibands.end(); i++) {
+                    if ( (*this)[*i].NoData() && (cube(x,y,*i) == (*this)[*i].NoDataValue())) mask(x,y) = 1;
                 }
             }
             return mask;
@@ -302,8 +311,7 @@ namespace gip {
 		std::vector< GeoRasterIO<T> > _RasterIOBands;
 
 	private:
-		// Private default constructor prevents direct creation
-		GeoImageIO() {}
+
 
 		//! Returns GDAL Type corresponding to template type T
 		GDALDataType Type() const {

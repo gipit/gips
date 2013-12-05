@@ -10,6 +10,7 @@
 
 #include <gip/GeoImage.h>
 #include <gip/GeoRaster.h>
+#include <initializer_list>
 
 namespace gip {
 
@@ -29,14 +30,19 @@ namespace gip {
     //! Create single image from multiple input images using vector file footprint
 	GeoImage CookieCutter(std::vector<std::string>, std::string, std::string, float=1.0, float=1.0);
 
-	GeoImage NDVI(const GeoImage&, std::string);
-	GeoImage EVI(const GeoImage&, std::string);
-	GeoImage LSWI(const GeoImage&, std::string);
-	GeoImage NDSI(const GeoImage&, std::string);
-	GeoImage SATVI(const GeoImage&, std::string);
-
 	//! Create new file of standard indices: NDVI, EVI, LSWI, NDSI, BI
-	GeoImage Indices(const GeoImage&, std::string, bool=true, bool=true, bool=true, bool=true, bool=true);
+	//void Indices(const GeoImage&, std::string, std::initializer_list<std::string>);
+	void Indices(const GeoImage&, std::string, std::vector<std::string>);
+
+    void NDVI(const GeoImage&, std::string);
+    void EVI(const GeoImage&, std::string);
+    void LSWI(const GeoImage&, std::string);
+    void NDSI(const GeoImage&, std::string);
+    void SATVI(const GeoImage&, std::string);
+    void NDTI(const GeoImage&, std::string);
+    void CRC(const GeoImage&, std::string);
+    void CRCm(const GeoImage&, std::string);
+    void iSTI(const GeoImage&, std::string);
 
 	//! Create new file with AutoCloud algorithm
 	GeoImage AutoCloud(const GeoImage&, std::string, int=4000, float=0.2, float=14, float=0.2, int=20);
@@ -44,13 +50,11 @@ namespace gip {
 	//! Create new file with a basic cloud mask
 	GeoImage Fmask(const GeoImage&, std::string, int=3, int=5);
 
-
     //! Rescale indices (between lo and hi) to between 0 and 1
     GeoImage Index2Probability(const GeoImage&, std::string, float, float);
 
 	//! Kmeans
 	GeoImage kmeans(const GeoImage&, std::string, int classes=5, int iterations=5, float threshold=1.0);
-
 
     //GeoImage BandMath(const GeoImage&, std::string, int, int);
     //! Calculate spectral correlation

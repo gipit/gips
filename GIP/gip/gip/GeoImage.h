@@ -19,6 +19,8 @@ namespace gip {
 		//friend class GeoRaster;
 	public:
 		//! \name Constructors/Destructor
+		//! Default constructor
+		explicit GeoImage() : GeoData() {}
 		//! Open file constructor
 		explicit GeoImage(std::string filename, bool Update=true)
 			: GeoData(filename, Update) {
@@ -190,9 +192,6 @@ namespace gip {
 		void LoadBands();
 
 	private:
-		//! Default constructor, private so cannot be called
-		explicit GeoImage() : GeoData() {}
-
 		int ChunkSize() const {
 		    int sz = Options::ChunkSize()/NumBands();
 		    return (sz < 1 ? 1 : sz);

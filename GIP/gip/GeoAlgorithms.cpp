@@ -9,6 +9,7 @@
 #include <gip/GeoImageIO.h>
 #include <gip/gip_CImg.h>
 
+
 #include <gdal/ogrsf_frmts.h>
 #include <gdal/gdalwarper.h>
 
@@ -285,115 +286,101 @@ namespace gip {
         return imgoutIO;
 	}
 
-    //! Calculate
-	//GeoImage CRC(const GeoImage& ImageIn, string filename) {
-	//}
-
-	GeoImage NDVI(const GeoImage& ImageIn, string filename) { return Indices(ImageIn, filename, true, false, false, false, false); }
-	GeoImage EVI(const GeoImage& ImageIn, string filename) { return Indices(ImageIn, filename, false, true, false, false, false); }
-    GeoImage LSWI(const GeoImage& ImageIn, string filename) { return Indices(ImageIn, filename, false, false, true, false, false); }
-    GeoImage NDSI(const GeoImage& ImageIn, string filename) { return Indices(ImageIn, filename, false, false, false, true, false); }
-
-    // SATVI Algorithm
-    GeoImage SATVI(const GeoImage& img, string filename) {
-        typedef float T;
-        GeoImageIO<T> imgIO(img);
-        GeoImageIO<T> imgout(GeoImage(filename, img, GDT_Int16, 1));
-
-        float nodataout = -32768;
-        imgout.SetNoData(nodataout);
-        imgout.SetGain(0.0001);
-
-        CImg<T> red, swir1, swir2, cimgout;
-        CImg<unsigned char> mask;
-
-        float L = 0.1;
-        for (int iChunk=1; iChunk<=imgIO[0].NumChunks(); iChunk++) {
-            red = imgIO["Red"].Read(iChunk);
-            swir1 = imgIO["SWIR1"].Read(iChunk);
-            swir2 = imgIO["SWIR2"].Read(iChunk);
-            cimgout = (((1.0+L)*(swir1 - red)).div(swir1+red+L)) - (0.5*swir2);
-            mask = imgIO.NoDataMask(iChunk);
-            cimg_forXY(cimgout,x,y) if (mask(x,y)) cimgout(x,y) = nodataout;
-            imgout[0].Write(cimgout,iChunk);
-        }
-        imgout[0].SetDescription("SATVI");
-        return imgout;
-    }
+	void NDVI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"NDVI"}); }
+	void EVI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"EVI"}); }
+    void LSWI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"LSWI"}); }
+    void NDSI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"NDSI"}); }
+    void SATVI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"SATVI"}); }
+    void NDTI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"NDTI"}); }
+    void CRC(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"CRC"}); }
+    void CRCm(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"CRCM"}); }
+    void iSTI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"ISTI"}); }
 
 	//! Create multi-band image of various indices calculated from input
-	GeoImage Indices(const GeoImage& ImageIn, string filename, bool ndvi, bool evi, bool lswi, bool ndsi, bool bi) {
-		int numbands(0);
-		if (ndvi) numbands++;
-		if (evi) numbands++;
-		if (lswi) numbands++;
-		if (ndsi) numbands++;
-		if (bi) numbands++;
-		//if (satvi) numbands++;
-		if (numbands == 0) {
-			std::cout << "No indices selected for calculation!" << std::endl;
-			return ImageIn;
-		}
-		GeoImageIO<float> imgin(ImageIn);
-		GeoImageIO<float> imgout(GeoImage(filename, imgin, GDT_Int16, numbands));
-		imgout.SetGain(0.0001);
-		// Assume NoData is set!
-		float nodatain = imgin[0].NoDataValue();
+	//GeoImage Indices(const GeoImage& ImageIn, string filename, bool ndvi, bool evi, bool lswi, bool ndsi, bool bi) {
+	/*void Indices(const GeoImage& ImageIn, string basename, std::initializer_list<std::string> list) {
+        Indices(ImageIn, basename, std::vector<std::string>(list));
+	}*/
+
+    void Indices(const GeoImage& ImageIn, string basename, std::vector<std::string> products) {
+        GeoImageIO<float> imgin(ImageIn);
 		float nodataout = -32768;
-		//if (imgin[0].NoData())
-		imgout.SetNoData(nodataout);
-		// Main algorithm
-		CImg<float> red, nir, blue, swir1, green, swir2, out;
+
+        std::map< string, GeoImageIO<float> > imagesout;
+        vector<string>::const_iterator iprod;
+        for (iprod=products.begin(); iprod!=products.end(); iprod++) {
+            imagesout[*iprod] = GeoImageIO<float>(GeoImage(basename + '_' + *iprod, imgin, GDT_Int16));
+            imagesout[*iprod].SetNoData(nodataout);
+            imagesout[*iprod].SetGain(0.0001);
+            imagesout[*iprod][0].SetDescription(*iprod);
+        }
+        if (imagesout.size() == 0) throw std::runtime_error("No indices selected for calculation!");
+
+        std::map< string, std::vector<string> > colors;
+        colors["NDVI"] = {"NIR","RED"};
+        colors["EVI"] = {"NIR","RED","BLUE"};
+        colors["LSWI"] = {"NIR","SWIR1"};
+        colors["NDSI"] = {"SWIR1","GREEN"};
+        colors["BI"] = {"BLUE","NIR"};
+        colors["SATVI"] = {"SWIR1","RED"};
+        colors["NDTI"] = {"SWIR2","SWIR1"};
+        colors["CRC"] = {"SWIR1","SWIR2","BLUE"};
+        colors["CRCM"] = {"SWIR1","SWIR2","GREEN"};
+        colors["ISTI"] = {"SWIR1","SWIR2"};
+
+        // Figure out what colors are needed
+        std::set< string > used_colors;
+        std::set< string >::const_iterator isstr;
+        std::vector< string >::const_iterator ivstr;
+        for (iprod=products.begin(); iprod!=products.end(); iprod++) {
+            for (ivstr=colors[*iprod].begin();ivstr!=colors[*iprod].end();ivstr++) {
+                used_colors.insert(*ivstr);
+            }
+            if (Options::Verbose() > 2) std::cout << "Product " << *iprod << std::endl;
+        }
+
+		CImg<float> red, green, blue, nir, swir1, swir2, cimgout, cimgmask;
 
         // need to add overlap
         for (int iChunk=1; iChunk<=ImageIn[0].NumChunks(); iChunk++) {
-            red = imgin["Red"].Ref(iChunk);
-            green = imgin["Green"].Ref(iChunk);
-            blue = imgin["Blue"].Ref(iChunk);
-            nir = imgin["NIR"].Ref(iChunk);
-            swir1 = imgin["SWIR1"].Ref(iChunk);
-            swir2 = imgin["SWIR2"].Ref(iChunk);
-            int currentband(0);
-            if (ndvi) {
-                out = (nir-red).div(nir+red);
-                cimg_forXY(out,x,y) if (red(x,y) == nodatain || nir(x,y) == nodatain) out(x,y) = nodataout;
-                imgout[currentband++].Write(out,iChunk);
+            for (isstr=used_colors.begin();isstr!=used_colors.end();isstr++) {
+                if (*isstr == "Red") red = imgin["Red"].Ref(iChunk);
+                else if (*isstr == "Green") green = imgin["Green"].Ref(iChunk);
+                else if (*isstr == "Blue") blue = imgin["Blue"].Ref(iChunk);
+                else if (*isstr == "SWIR1") swir1 = imgin["SWIR1"].Ref(iChunk);
+                else if (*isstr == "SWIR2") swir2 = imgin["SWIR2"].Ref(iChunk);
             }
-            if (evi) {
-                out = 2.5*(nir-red).div(nir + 6*red - 7.5*blue + 1);
-                cimg_forXY(out,x,y) if (red(x,y) == nodatain || nir(x,y) == nodatain || blue(x,y) == nodatain) out(x,y) = nodataout;
-                imgout[currentband++].Write(out,iChunk);
+
+            for (iprod=products.begin(); iprod!=products.end(); iprod++) {
+                //string p = iprod->toupper();
+                if (*iprod == "NDVI") {
+                    cimgout = (nir-red).div(nir+red);
+                } else if (*iprod == "EVI") {
+                    cimgout = 2.5*(nir-red).div(nir + 6*red - 7.5*blue + 1);
+                } else if (*iprod == "LSWI") {
+                    cimgout = (nir-swir1).div(nir+swir1);
+                } else if (*iprod == "NDSI") {
+                    cimgout = (swir1-green).div(swir1+green);
+                } else if (*iprod == "BI") {
+                    cimgout = 0.5*(blue+nir);
+                } else if (*iprod == "SATVI") {
+                    float L(0.5);
+                    cimgout = (((1.0+L)*(swir1 - red)).div(swir1+red+L)) - (0.5*swir2);
+                } else if (*iprod == "NDTI") {
+                    cimgout = (swir2-swir1).div(swir2+swir2);
+                } else if (*iprod == "CRC") {
+                    cimgout = (swir1-blue).div(swir2+blue);
+                } else if (*iprod == "CRCM") {
+                    cimgout = (swir1-blue).div(swir2+blue);
+                } else if (*iprod == "ISTI") {
+                    cimgout = swir2.div(swir1);
+                }
+                cimgmask = imgin.NoDataMask(iChunk, colors[*iprod]);
+                // TODO don't read mask again...create here
+                cimg_forXY(cimgout,x,y) if (cimgmask(x,y) == 1) cimgout(x,y) = nodataout;
+                imagesout[*iprod].Write(cimgout,iChunk);
             }
-            if (lswi) {
-                out = (nir-swir1).div(nir+swir1);
-                cimg_forXY(out,x,y) if (red(x,y) == nodatain || nir(x,y) == nodatain) out(x,y) = nodataout;
-                imgout[currentband++].Write(out,iChunk);
-            }
-            if (ndsi) {
-                out = (swir1-green).div(swir1+green);
-                cimg_forXY(out,x,y) if (red(x,y) == nodatain || nir(x,y) == nodatain) out(x,y) = nodataout;
-                imgout[currentband++].Write(out,iChunk);
-            }
-            if (bi) {
-                out = 0.5*(blue+nir);
-                cimg_forXY(out,x,y) if (blue(x,y) == nodatain || nir(x,y) == nodatain) out(x,y) = nodataout;
-                imgout[currentband++].Write(out,iChunk);
-            }
-            /*if (satvi) {
-                out = (1.1 * ;
-                cimg_forXY(out,x,y) if (red(x,y) == nodatain || nir(x,y) == nodatain) out(x,y) = nodataval;
-                imgout[currentband++].WriteChunk(out,*iChunk);
-            }*/
         }
-        // Set descriptions
-        int currentband(0);
-        if (ndvi) imgout[currentband++].SetDescription("NDVI");
-        if (evi) imgout[currentband++].SetDescription("EVI");
-        if (lswi) imgout[currentband++].SetDescription("LSWI");
-        if (ndsi) imgout[currentband++].SetDescription("NDSI");
-        //if (satvi) imgout[currentband++].SetDescription("SATVI");
-        if (bi) imgout[currentband++].SetDescription("BI");
-        return imgout;
 	}
 
 	//! Auto cloud mask
