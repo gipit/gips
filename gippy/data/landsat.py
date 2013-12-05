@@ -55,24 +55,39 @@ class LandsatData(Data):
             'function': 'Ref',
             'atmcorr': False,
         }),
-        ('ind', {
-            'description': 'Atmospherically corrected common indices (NDVI,EVI,LSWI,NDSI,BI)',
-            'function': 'Indices',
-            'atmcorr': True,
-        }),
-        ('toaind', {
-            'description': 'Top of atmosphere common indices (NDVI,EVI,LSWI,NDSI,BI)',
-            'function': 'Indices',
-            'atmcorr': False,
-        }),
+        #('ind', {
+        #    'description': 'Atmospherically corrected common indices (NDVI,EVI,LSWI,NDSI,BI)',
+        #    'function': 'Indices',
+        #    'atmcorr': True,
+        #}),
+        #('toaind', {
+        #    'description': 'Top of atmosphere common indices (NDVI,EVI,LSWI,NDSI,BI)',
+        #    'function': 'Indices',
+        #    'atmcorr': False,
+        #}),
         ('ndvi', {
             'description': 'Atmospherically corrected NDVI',
             'function': 'NDVI',
             'atmcorr': True,
         }),
+        ('evi', {
+            'description': 'Atmospherically corrected EVI',
+            'function': 'EVI',
+            'atmcorr': True,
+        }),
         ('lswi', {
             'description': 'Atmospherically corrected LSWI',
             'function': 'LSWI',
+            'atmcorr': True,
+        }),
+        ('ndsi', {
+            'description': 'Atmospherically corrected NDSI',
+            'function': 'NDSI',
+            'atmcorr': True,
+        }),
+        ('ndti', {
+            'description': 'Atmospherically corrected NDSI',
+            'function': 'NDTI',
             'atmcorr': True,
         }),
         ('satvi', {
@@ -83,6 +98,11 @@ class LandsatData(Data):
         ('crc', {
             'description': 'Crop Residue Cover',
             'function': 'CRC',
+            'atmcorr': True,
+        }),
+        ('crcm', {
+            'description': 'Crop Residue Cover',
+            'function': 'CRCm',
             'atmcorr': True,
         }),
         ('isti', {
