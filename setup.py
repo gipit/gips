@@ -7,6 +7,10 @@ setup for GIP and gippy
 #from distutils.core import setup, Extension
 from setuptools import setup, Extension
 import os, glob, filecmp, shutil
+#os.environ['CC'] = 'g++';
+#os.environ['CXX'] = 'g++';
+#os.environ['CPP'] = 'g++';
+#os.environ['LDSHARED'] = 'g++';
 
 # Install GIP files
 def install_gip(install):
@@ -18,12 +22,14 @@ def install_gip(install):
         if not os.path.exists(b[1]) or not filecmp.cmp(b[0],b[1]): shutil.copy(b[0],b[1])
 
 gippy_module = Extension(name = '_gippylib',
+                    compiler='g++',
                     sources=['gippy/gippylib.i'],
                     swig_opts=['-c++', '-w509','-IGIP/gip'],
                     include_dirs=['GIP/gip'],
                     libraries=['gip','gdal','boost_system','boost_filesystem'],
                     library_dirs=['GIP/gip/bin/Release'], #'/usr/lib','/usr/local/lib'],
                     extra_compile_args=['-fPIC'],
+                    #extra_compile_args=['-fPIC -std=c++0x'],
                     ) 
 
 setup (name = 'gippy',
