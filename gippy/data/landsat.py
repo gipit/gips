@@ -86,7 +86,7 @@ class LandsatData(Data):
             'atmcorr': True,
         }),
         ('ndti', {
-            'description': 'Atmospherically corrected NDSI',
+            'description': 'Atmospherically corrected NDTI',
             'function': 'NDTI',
             'atmcorr': True,
         }),

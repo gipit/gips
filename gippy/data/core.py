@@ -135,7 +135,8 @@ class Data(object):
         self.process()
         if not os.path.exists(datadir): os.makedirs(datadir)
         datadir = os.path.abspath(datadir)
-        if len(res) == 1: res = [res,res]
+        if not hasattr(res, "__len__"): res = [res,res]
+        #elif len(res) == 1: res = [res[0],res[0]]
         if self.site is None:
             raise Exception("No site file supplied")
         for product in self.products:
