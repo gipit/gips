@@ -42,7 +42,7 @@ namespace gip {
 		:_Filename(filename) {
 		string format = Options::DefaultFormat();
 		//if (format == "GTiff" && datatype == GDT_Byte) options["COMPRESS"] = "JPEG";
-		if (format == "GTiff") options["COMPRESS"] = "LZW";
+		//if (format == "GTiff") options["COMPRESS"] = "LZW";
 		GDALDriver *driver = GetGDALDriverManager()->GetDriverByName(format.c_str());
 		// TODO check for null driver and create method
 		// Check extension

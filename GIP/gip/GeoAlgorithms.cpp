@@ -9,7 +9,6 @@
 #include <gip/GeoImageIO.h>
 #include <gip/gip_CImg.h>
 
-
 #include <gdal/ogrsf_frmts.h>
 #include <gdal/gdalwarper.h>
 
@@ -72,6 +71,32 @@ namespace gip {
 		return mask[0];
 	}
 
+	//! Calculate Radiance
+	GeoImage Rad(const GeoImage& img, string filename) {
+	    if (img[0].Units() != "radiance") {
+	        throw std::runtime_error("image not in radiance units");
+	    }
+        typedef float T;
+        GeoImageIO<T> imgIO(img);
+        GeoImageIO<T> imgoutIO(GeoImage(filename, img, GDT_Int16));
+        imgoutIO.SetNoData(-32768); // TODO - set nodata option
+        imgoutIO.SetGain(0.1);
+        CImg<T> cimg;
+        Colors colors = img.GetColors();
+        CImg<unsigned char> nodata;
+        for (unsigned int b=0;b<img.NumBands();b++) {
+            imgoutIO.SetColor(colors[b+1], b+1);
+            for (int iChunk=1; iChunk<=imgIO[b].NumChunks(); iChunk++) {
+                cimg = imgIO[b].Read(iChunk);
+                nodata = imgIO[b].NoDataMask(iChunk);
+                // only if nodata not same between input and output images
+                cimg_forXY(cimg,x,y) { if (nodata(x,y)) cimg(x,y) = imgoutIO[b].NoDataValue(); }
+                imgoutIO[b].Write(cimg,iChunk);
+            }
+        }
+        return imgoutIO;
+	}
+
     //! Calculate reflectance assuming read image is radiance
 	GeoImage Ref(const GeoImage& img, string filename) {
 	    if (img[0].Units() != "radiance") {
@@ -83,15 +108,15 @@ namespace gip {
         imgoutIO.SetNoData(-32768); // TODO - set nodata option
         CImg<float> cimg;
         CImg<unsigned char> nodata;
+        Colors colors = img.GetColors();
         for (unsigned int b=0;b<img.NumBands();b++) {
             if (img[b].Thermal()) imgoutIO[b].SetGain(0.01); else imgoutIO[b].SetGain(0.0001);
+            imgoutIO.SetColor(colors[b+1], b+1);
             for (int iChunk=1; iChunk<=img[b].NumChunks(); iChunk++) {
-                std::cout << "Chunk" << iChunk << std::endl;
                 cimg = imgIO[b].Ref(iChunk);
                 nodata = imgIO[b].NoDataMask(iChunk);
                 cimg_forXY(cimg,x,y) { if (nodata(x,y)) cimg(x,y) = imgoutIO[b].NoDataValue(); }
                 imgoutIO[b].Write(cimg,iChunk);
-                std::cout << "End chunk " << std::endl;
             }
         }
         return imgoutIO;
@@ -262,31 +287,7 @@ namespace gip {
         return imgout;
 	}
 
-	//! Calculate Radiance
-	GeoImage Rad(const GeoImage& img, string filename) {
-	    if (img[0].Units() != "radiance") {
-	        throw std::runtime_error("image not in radiance units");
-	    }
-        typedef float T;
-        GeoImageIO<T> imgIO(img);
-        GeoImageIO<T> imgoutIO(GeoImage(filename, img, GDT_Int16));
-        imgoutIO.SetNoData(-32768); // TODO - set nodata option
-        imgoutIO.SetGain(0.1);
-        CImg<T> cimg;
-        CImg<unsigned char> nodata;
-        for (unsigned int b=0;b<img.NumBands();b++) {
-            for (int iChunk=1; iChunk<=imgIO[b].NumChunks(); iChunk++) {
-                cimg = imgIO[b].Read(iChunk);
-                nodata = imgIO[b].NoDataMask(iChunk);
-                // only if nodata not same between input and output images
-                cimg_forXY(cimg,x,y) { if (nodata(x,y)) cimg(x,y) = imgoutIO[b].NoDataValue(); }
-                imgoutIO[b].Write(cimg,iChunk);
-            }
-        }
-        return imgoutIO;
-	}
-
-	void NDVI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"NDVI"}); }
+	void NDVI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, std::vector<std::string>({"NDVI"})); }
 	void EVI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"EVI"}); }
     void LSWI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"LSWI"}); }
     void NDSI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"NDSI"}); }
@@ -298,9 +299,9 @@ namespace gip {
 
 	//! Create multi-band image of various indices calculated from input
 	//GeoImage Indices(const GeoImage& ImageIn, string filename, bool ndvi, bool evi, bool lswi, bool ndsi, bool bi) {
-	/*void Indices(const GeoImage& ImageIn, string basename, std::initializer_list<std::string> list) {
-        Indices(ImageIn, basename, std::vector<std::string>(list));
-	}*/
+	//void Indices(const GeoImage& ImageIn, string basename, std::initializer_list<std::string> list) {
+    //    Indices(ImageIn, basename, std::vector<std::string>(list));
+    //}
 
     void Indices(const GeoImage& ImageIn, string basename, std::vector<std::string> products) {
         GeoImageIO<float> imgin(ImageIn);
@@ -324,6 +325,7 @@ namespace gip {
         colors["NDSI"] = {"SWIR1","GREEN"};
         colors["BI"] = {"BLUE","NIR"};
         colors["SATVI"] = {"SWIR1","RED"};
+        // Tillage indices
         colors["NDTI"] = {"SWIR2","SWIR1"};
         colors["CRC"] = {"SWIR1","SWIR2","BLUE"};
         colors["CRCM"] = {"SWIR1","SWIR2","GREEN"};
@@ -373,18 +375,19 @@ namespace gip {
                 } else if (*iprod == "SATVI") {
                     float L(0.5);
                     cimgout = (((1.0+L)*(swir1 - red)).div(swir1+red+L)) - (0.5*swir2);
+                // Tillage indices
                 } else if (*iprod == "NDTI") {
-                    cimgout = (swir2-swir1).div(swir2+swir2);
+                    cimgout = (swir2-swir1).div(swir2+swir1);
                 } else if (*iprod == "CRC") {
                     cimgout = (swir1-blue).div(swir2+blue);
                 } else if (*iprod == "CRCM") {
-                    cimgout = (swir1-blue).div(swir2+blue);
+                    cimgout = (swir1-green).div(swir2+green);
                 } else if (*iprod == "ISTI") {
                     cimgout = swir2.div(swir1);
                 }
                 if (Options::Verbose() > 2) std::cout << "Getting mask" << std::endl;
-                cimgmask = imgin.NoDataMask(iChunk, colors[*iprod]);
                 // TODO don't read mask again...create here
+                cimgmask = imgin.NoDataMask(iChunk, colors[*iprod]);
                 cimg_forXY(cimgout,x,y) if (cimgmask(x,y) == 1) cimgout(x,y) = nodataout;
                 imagesout[*iprod].Write(cimgout,iChunk);
             }
