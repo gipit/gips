@@ -484,4 +484,9 @@ class LandsatData(Data):
             image.SetColor(bandmeta['color'],i+1)
         return image
 
+    @classmethod
+    def add_subparsers(cls, parser):
+        p = parser.add_parser('cloudmask', help='Create cloud masks', parents=[cls.args_inventory()], 
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
 def main(): datamain(LandsatData)
