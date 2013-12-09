@@ -196,6 +196,22 @@ class Data(object):
         if len(self.tiles) == 0:
             raise Exception('No valid data found')
 
+    @staticmethod
+    def args_inventory():
+        parser = argparse.ArgumentParser(add_help=False, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        group = parser.add_argument_group('inventory arguments')
+        group.add_argument('-s','--site',help='Vector file for region of interest', default=None)
+        group.add_argument('-t','--tiles', nargs='*', help='Tile designations', default=None)
+        group.add_argument('-d','--dates',help='Range of dates (YYYY-MM-DD,YYYY-MM-DD)')
+        group.add_argument('--days',help='Include data within these days of year (doy1,doy2)',default=None)
+        group.add_argument('-p','--products', nargs='*', help='Process/filter these products') #default=False)
+        group.add_argument('-v','--verbose',help='Verbosity - 0: quiet, 1: normal, 2: debug', default=1, type=int)
+        return parser
+
+    @staticmethod
+    def add_subparsers(parser):
+        return parser
+
     def __str__(self):
         return self.sensor + ': ' + str(self.date)
 
@@ -405,17 +421,10 @@ def main(dataclass):
     parser0 = argparse.ArgumentParser(description='%s Data Utility' % dataclass.name, formatter_class=argparse.RawTextHelpFormatter)
     subparser = parser0.add_subparsers(dest='command')
 
-    invparser = argparse.ArgumentParser(add_help=False, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    group = invparser.add_argument_group('inventory arguments')
-    group.add_argument('-s','--site',help='Vector file for region of interest', default=None)
-    group.add_argument('-t','--tiles', nargs='*', help='Tile designations', default=None)
-    group.add_argument('-d','--dates',help='Range of dates (YYYY-MM-DD,YYYY-MM-DD)')
-    group.add_argument('--days',help='Include data within these days of year (doy1,doy2)',default=None)
-    group.add_argument('-p','--products', nargs='*', help='Process/filter these products') #default=False)
-    group.add_argument('-v','--verbose',help='Verbosity - 0: quiet, 1: normal, 2: debug', default=1, type=int)
+    invparser = dataclass.args_inventory()
 
     # Help
-    parser = subparser.add_parser('help',help='Print extended help', parents=[invparser], formatter_class=dhf)
+    parser = subparser.add_parser('help',help='Print extended help', formatter_class=dhf)
 
     # Inventory
     parser = subparser.add_parser('inventory',help='Get Inventory', parents=[invparser], formatter_class=dhf)
@@ -442,6 +451,8 @@ def main(dataclass):
 
     # Misc
     parser_archive = subparser.add_parser('archive',help='Move files from current directory to data archive')
+
+    dataclass.add_subparsers(subparser)
 
     # Pull in dataclass options here
     #dataparser = subparser.add_parser('data',help='', parents=[invparser],formatter_class=dhf)
