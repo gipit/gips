@@ -72,6 +72,7 @@ namespace gip {
 	}
 
 	//! Calculate Radiance
+	// TODO - combine with Copy/Process
 	GeoImage Rad(const GeoImage& img, string filename) {
 	    if (img[0].Units() != "radiance") {
 	        throw std::runtime_error("image not in radiance units");
@@ -81,6 +82,7 @@ namespace gip {
         GeoImageIO<T> imgoutIO(GeoImage(filename, img, GDT_Int16));
         imgoutIO.SetNoData(-32768); // TODO - set nodata option
         imgoutIO.SetGain(0.1);
+        imgoutIO.SetUnits("radiance");
         CImg<T> cimg;
         Colors colors = img.GetColors();
         CImg<unsigned char> nodata;
@@ -99,13 +101,14 @@ namespace gip {
 
     //! Calculate reflectance assuming read image is radiance
 	GeoImage Ref(const GeoImage& img, string filename) {
-	    if (img[0].Units() != "radiance") {
-	        throw std::runtime_error("image not in radiance units (required to calculate reflectance)");
+	    if ((img[0].Units() != "radiance") && (img[0].Units() != "reflectance")) {
+	        throw std::runtime_error("image not in compatible units for reflectance");
 	    }
 	    typedef float t;
         GeoImageIO<t> imgIO(img);
         GeoImageIO<t> imgoutIO(GeoImage(filename, img, GDT_Int16));
         imgoutIO.SetNoData(-32768); // TODO - set nodata option
+        imgoutIO.SetUnits("reflectance");
         CImg<float> cimg;
         CImg<unsigned char> nodata;
         Colors colors = img.GetColors();
@@ -128,6 +131,7 @@ namespace gip {
         imgIO.PruneToRGB();
         GeoImageIO<unsigned char> imgoutIO(GeoImage(filename, imgIO, GDT_Byte));
         imgoutIO.SetNoData(0);
+        imgoutIO.SetUnits("other");
         CImg<float> stats, cimg;
         CImg<unsigned char> mask;
         for (unsigned int b=0;b<imgIO.NumBands();b++) {
@@ -291,6 +295,7 @@ namespace gip {
 	void EVI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"EVI"}); }
     void LSWI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"LSWI"}); }
     void NDSI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"NDSI"}); }
+    void BI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"BI"}); }
     void SATVI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"SATVI"}); }
     void NDTI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"NDTI"}); }
     void CRC(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"CRC"}); }
@@ -314,6 +319,7 @@ namespace gip {
             imagesout[*iprod] = GeoImageIO<float>(GeoImage(basename, imgin, GDT_Int16, 1));
             imagesout[*iprod].SetNoData(nodataout);
             imagesout[*iprod].SetGain(0.0001);
+            imagesout[*iprod].SetUnits("other");
             imagesout[*iprod][0].SetDescription(*iprod);
         }
         if (imagesout.size() == 0) throw std::runtime_error("No indices selected for calculation!");
@@ -394,7 +400,7 @@ namespace gip {
         }
 	}
 
-	//! Auto cloud mask
+	//! Auto cloud mask - toaref input
 	GeoImage AutoCloud(const GeoImage& image, string filename, int cheight, float minred, float maxtemp, float maxndvi, int morph) {
 	    typedef float outtype;
         GeoImageIO<float> imgin(image);
@@ -407,7 +413,7 @@ namespace gip {
         // need to add overlap
         for (int iChunk=1; iChunk<=image[0].NumChunks(); iChunk++) {
 
-            red = imgin["Red"].Ref(iChunk);
+            red = imgin["RED"].Ref(iChunk);
             temp = imgin["LWIR"].Ref(iChunk);
             nir = imgin["NIR"].Ref(iChunk);
             ndvi = (nir-red).div(nir+red);
@@ -424,6 +430,78 @@ namespace gip {
             cout << "stats " << endl;
             for (int i=0;i<12;i++) cout << stats(i) << " ";
             cout << endl;*/
+        }
+        return imgout;
+	}
+
+	//! ACCA (Automatic Cloud Cover Assessment)
+	GeoImage ACCA(const GeoImage& img, string filename) {
+        GeoImageIO<float> imgin(img);
+
+        float th_red(0.08);
+        float th_ndsi(0.7);
+        float th_temp(7);
+        float th_comp(225);
+        float th_nirred(2.0);
+        float th_nirgreen(2.0);
+        float th_nirswir1(1.0);
+        float th_warm(210);
+
+        float nodataout = 0;
+        GeoImageIO<unsigned char> imgout(GeoImage(filename, imgin, GDT_Byte, 3));
+        imgout.SetNoData(nodataout);
+        imgout.SetUnits("other");
+
+        CImg<float> red, green, nir, swir1, temp, ndsi, b56comp;
+        CImg<unsigned char> nonclouds, ambclouds, clouds, mask;
+
+        for (int iChunk=1; iChunk<=imgin[0].NumChunks(); iChunk++) {
+            red = imgin["RED"].Ref(iChunk);
+            green = imgin["GREEN"].Ref(iChunk);
+            nir = imgin["NIR"].Ref(iChunk);
+            swir1 = imgin["SWIR1"].Ref(iChunk);
+            temp = imgin["LWIR"].Ref(iChunk);
+
+            mask = imgin.NoDataMask(iChunk, {"RED","GREEN","NIR","SWIR1","LWIR"});
+
+            ndsi = (green - swir1).div(green + swir1);
+            b56comp = (1.0 - swir1).mul(temp);
+
+            // Pass one
+
+            nonclouds =
+                // Filter1
+                (red.get_threshold(th_red)^=1).mul(
+                // Filter2
+                ndsi.get_threshold(th_ndsi).mul(
+                // Filter3
+                temp.get_threshold(th_temp)));
+
+            ambclouds =
+                (nonclouds^=1).mul(
+                // Filter4
+                b56comp.get_threshold(th_comp).mul(
+                // Filter5
+                nir.get_div(red).threshold(th_nirred).mul(
+                // Filter6
+                nir.get_div(green).threshold(th_nirgreen).mul(
+                // Filter7
+                (nir.get_div(swir1).threshold(th_nirswir1)^=1) ))));
+
+            clouds =
+                (ambclouds^=1).mul(
+                // Filter8
+                b56comp.threshold(th_warm) + 1);
+
+            cimg_forXY(mask,x,y) if (mask(x,y) == 1) {
+                nonclouds(x,y) = 0;
+                ambclouds(x,y) = 0;
+                clouds(x,y) = 0;
+            }
+
+            imgout[0].Write(clouds,iChunk);
+            imgout[1].Write(ambclouds,iChunk);
+            imgout[2].Write(nonclouds,iChunk);
         }
         return imgout;
 	}
@@ -449,8 +527,8 @@ namespace gip {
         int wloc(0), lloc(0);
 
         for (int iChunk=1; iChunk<=image[0].NumChunks(); iChunk++) {
-            red = imgin["Red"].Ref(iChunk);
-            green = imgin["Green"].Ref(iChunk);
+            red = imgin["RED"].Ref(iChunk);
+            green = imgin["GREEN"].Ref(iChunk);
             nir = imgin["NIR"].Ref(iChunk);
             swir1 = imgin["SWIR1"].Ref(iChunk);
             swir2 = imgin["SWIR2"].Ref(iChunk);
@@ -460,8 +538,8 @@ namespace gip {
             //shadowmask = nir.draw_fill(nir.width()/2,nir.height()/2,)
             ndvi = (nir-red).div(nir+red);
             ndsi = (green-swir1).div(green+swir1);
-            redsatmask = imgin["Red"].SaturationMask(iChunk);
-            greensatmask = imgin["Green"].SaturationMask(iChunk);
+            redsatmask = imgin["RED"].SaturationMask(iChunk);
+            greensatmask = imgin["GREEN"].SaturationMask(iChunk);
             white = imgin.Whiteness(iChunk);
             vprob = red;
 
@@ -524,7 +602,7 @@ namespace gip {
         double Tlo(zlo*lstddev + lmean);
         double Thi(zhi*lstddev + lmean);
 
-        if (Options::Verbose() > 0) {
+        if (Options::Verbose() > 1) {
             cout << "Running fmask in " << image[0].NumChunks() << " chunks with tolerance of " << tolerance << endl;
             cout << "Temperature stats:" << endl;
             cout << "  Water: " << wmean << " s = " << wstddev << endl;
@@ -559,7 +637,7 @@ namespace gip {
         CImg<double> stats = probout[0].ComputeStats();
         float lthresh( zhi*stats(3) + stats(2) + 0.2 + tol );
 
-        if (Options::Verbose() > 0) {
+        if (Options::Verbose() > 1) {
             std::cout << "Cloud probability thresholds:" << std::endl;
             std::cout << "  Over Water = " << wthresh << std::endl;
             std::cout << "  Over Land = " << lthresh << std::endl;

@@ -38,11 +38,16 @@ namespace gip {
     void EVI(const GeoImage&, std::string);
     void LSWI(const GeoImage&, std::string);
     void NDSI(const GeoImage&, std::string);
+    void BI(const GeoImage&, std::string);
     void SATVI(const GeoImage&, std::string);
+
     void NDTI(const GeoImage&, std::string);
     void CRC(const GeoImage&, std::string);
     void CRCm(const GeoImage&, std::string);
     void iSTI(const GeoImage&, std::string);
+
+    //! Create cloudmask using ACCA
+    GeoImage ACCA(const GeoImage&, std::string);
 
 	//! Create new file with AutoCloud algorithm
 	GeoImage AutoCloud(const GeoImage&, std::string, int=4000, float=0.2, float=14, float=0.2, int=20);

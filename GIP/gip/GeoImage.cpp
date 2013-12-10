@@ -152,6 +152,7 @@ namespace gip {
 			// Load Bands
 			for (b=0;b<bandnums.size(); b++) {
 				_RasterBands.push_back( GeoRaster(*this,bandnums[b]) );
+				SetColor(_RasterBands[b].Description(), bandnums[b]);
 			}
 		} else {
 			// Load Subdatasets as bands, assuming 1 band/subdataset

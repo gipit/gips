@@ -187,6 +187,11 @@ namespace gip {
 		//! Return reflectance (or temperature if thermal band)  (move to GeoRaster)
 		cimg_library::CImg<float> Ref(int chunk=0) const {
             cimg_library::CImg<float> cimg = Read(chunk);
+            if (Units() == "reflectance") {
+                return cimg;
+            } else if (Units() != "radiance") {
+                throw std::runtime_error("image not in compatible units for reflectance");
+            }
             if (Thermal()) {
                 cimg_for(cimg,ptr,float) *ptr = (_K2/log(_K1/(*ptr)+1)) - 273.15;
             } else {
