@@ -164,7 +164,10 @@ namespace gip {
 		GeoImage Process(std::string, GDALDataType = GDT_Unknown);
 
 		//! Adds a mask band (1 for valid) to every band in image
-		void AddMask(const GeoRaster& band) { for (unsigned int i=0;i<_RasterBands.size();i++) _RasterBands[i].AddMask(band); }
+		GeoImage& AddMask(const GeoRaster& band) {
+		    for (unsigned int i=0;i<_RasterBands.size();i++) _RasterBands[i].AddMask(band);
+		    return *this;
+        }
 		//! Clear all masks
 		void ClearMasks() { for (unsigned int i=0;i<_RasterBands.size();i++) _RasterBands[i].ClearMasks(); }
 
