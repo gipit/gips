@@ -8,10 +8,11 @@ using namespace std;
 namespace gip {
 
 	// Copy constructor
-	GeoRaster::GeoRaster(const GeoRaster& image)
+	GeoRaster::GeoRaster(const GeoRaster& image, GeoFunction func)
 		: GeoData(image), _GDALRasterBand(image._GDALRasterBand), _Masks(image._Masks), _NoData(image._NoData), //_ValidSize(image._ValidSize),
             _minDC(image._minDC), _maxDC(image._maxDC), _K1(image._K1), _K2(image._K2), _Esun(image._Esun),
             _Atmosphere(image._Atmosphere), _Functions(image._Functions) {
+        if (func.Function() != "") AddFunction(func);
 		//std::cout << Basename() << ": GeoRaster copy (" << this << ")" << std::endl;
 	}
 

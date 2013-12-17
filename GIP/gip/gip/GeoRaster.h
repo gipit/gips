@@ -24,6 +24,8 @@ namespace gip {
 
 	class GeoFunction {
 	public:
+        GeoFunction()
+            : _Function("") {}
 		GeoFunction(std::string f, double v)
 			: _Function(f), _dOperand(v) {
 		}
@@ -52,7 +54,7 @@ namespace gip {
 			LoadBand(bandnum);
 		}
 		//! Copy constructor
-		GeoRaster(const GeoRaster& image);
+		GeoRaster(const GeoRaster& image, GeoFunction func=GeoFunction());
 		// Copy and add new function
 		//GeoRaster(const GeoRaster& image, GeoFunction func);
 		//! Assignment Operator
@@ -214,20 +216,20 @@ namespace gip {
 
         // Logical functions
 		//! Greater than
-		GeoRaster operator>(double val) { return this->AddFunction(GeoFunction(">",val)); }
+		GeoRaster operator>(double val) { return GeoRaster(*this, GeoFunction(">",val)); }
 		//! Greater than or equal to
-		GeoRaster operator>=(double val) { return this->AddFunction(GeoFunction(">=",val)); }
+		GeoRaster operator>=(double val) { return GeoRaster(*this, GeoFunction(">=",val)); }
 		//! Less than
-		GeoRaster operator<(double val) { return this->AddFunction(GeoFunction("<",val)); }
+		GeoRaster operator<(double val) { return GeoRaster(*this, GeoFunction("<",val)); }
 		//! Less than or equal to
-		GeoRaster operator<=(double val) { return this->AddFunction(GeoFunction("<=",val)); }
+		GeoRaster operator<=(double val) { return GeoRaster(*this, GeoFunction("<=",val)); }
 		//! Equal to
-		GeoRaster operator==(double val) { return this->AddFunction(GeoFunction("==",val)); }
+		GeoRaster operator==(double val) { return GeoRaster(*this, GeoFunction("==",val)); }
 		// Basic math
 		//! Add constant to every pixel
-		GeoRaster operator+(double val) { return this->AddFunction(GeoFunction("+",val)); }
+		GeoRaster operator+(double val) { return GeoRaster(*this, GeoFunction("+",val)); }
 		//! Subtract constant from every pixel
-		GeoRaster operator-(double val) { return this->AddFunction(GeoFunction("-",val)); }
+		GeoRaster operator-(double val) { return GeoRaster(*this, GeoFunction("-",val)); }
 
         // Statistics - should these be stored?
 		//double Min() const { return (GetGDALStats())[0]; }
