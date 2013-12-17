@@ -7,17 +7,17 @@
 	<File name="CImg_152.h" open="0" top="0" tabpos="7">
 		<Cursor position="0" topLine="0" />
 	</File>
-	<File name="GeoAlgorithms.cpp" open="1" top="0" tabpos="8">
-		<Cursor position="5614" topLine="107" />
+	<File name="GeoAlgorithms.cpp" open="1" top="1" tabpos="9">
+		<Cursor position="21246" topLine="141" />
 	</File>
-	<File name="GeoData.cpp" open="0" top="0" tabpos="11">
+	<File name="GeoData.cpp" open="1" top="0" tabpos="11">
 		<Cursor position="4705" topLine="70" />
 	</File>
-	<File name="GeoImage.cpp" open="1" top="0" tabpos="7">
-		<Cursor position="3844" topLine="65" />
+	<File name="GeoImage.cpp" open="1" top="0" tabpos="8">
+		<Cursor position="2884" topLine="13" />
 	</File>
-	<File name="GeoRaster.cpp" open="1" top="0" tabpos="6">
-		<Cursor position="2123" topLine="2" />
+	<File name="GeoRaster.cpp" open="1" top="0" tabpos="7">
+		<Cursor position="839" topLine="2" />
 	</File>
 	<File name="GeoVector.cpp" open="0" top="0" tabpos="9">
 		<Cursor position="250" topLine="0" />
@@ -25,26 +25,26 @@
 	<File name="gip/Atmosphere.h" open="0" top="0" tabpos="1">
 		<Cursor position="1166" topLine="0" />
 	</File>
-	<File name="gip/Colors.h" open="0" top="0" tabpos="5">
-		<Cursor position="644" topLine="0" />
+	<File name="gip/Colors.h" open="1" top="0" tabpos="10">
+		<Cursor position="981" topLine="0" />
 	</File>
-	<File name="gip/GeoAlgorithms.h" open="0" top="0" tabpos="12">
-		<Cursor position="304" topLine="0" />
+	<File name="gip/GeoAlgorithms.h" open="1" top="0" tabpos="5">
+		<Cursor position="574" topLine="0" />
 	</File>
 	<File name="gip/GeoData.h" open="1" top="0" tabpos="4">
 		<Cursor position="915" topLine="12" />
 	</File>
 	<File name="gip/GeoImage.h" open="1" top="0" tabpos="3">
-		<Cursor position="4763" topLine="30" />
+		<Cursor position="7238" topLine="102" />
 	</File>
 	<File name="gip/GeoImageIO.h" open="1" top="0" tabpos="1">
-		<Cursor position="9454" topLine="0" />
+		<Cursor position="5842" topLine="122" />
 	</File>
 	<File name="gip/GeoRaster.h" open="1" top="0" tabpos="2">
-		<Cursor position="9038" topLine="170" />
+		<Cursor position="6455" topLine="157" />
 	</File>
-	<File name="gip/GeoRasterIO.h" open="1" top="1" tabpos="5">
-		<Cursor position="13280" topLine="209" />
+	<File name="gip/GeoRasterIO.h" open="1" top="0" tabpos="6">
+		<Cursor position="1300" topLine="0" />
 	</File>
 	<File name="gip/GeoVector.h" open="0" top="0" tabpos="7">
 		<Cursor position="787" topLine="0" />
