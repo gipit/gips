@@ -19,7 +19,7 @@ class CDLData(Data):
         'cdl': {'description': 'Crop Data Layer'}
     }
     _tiles_vector = 'usa_states'
-    _tiles_attribute = 'state_name'
+    _tiles_attribute = 'state_abbr'
     _legend_file = rootdir + '/CDL_Legend.csv'
     _legend = map(lambda x: x.lower(), Table(csvfile=_legend_file)['ClassName'])
 
