@@ -95,6 +95,8 @@ class LandsatData(Data):
             'function': 'SATVI',
             'atmcorr': True,
         }),
+
+        # Tillage
         ('crc', {
             'description': 'Crop Residue Cover',
             'function': 'CRC',
@@ -110,6 +112,13 @@ class LandsatData(Data):
             'function': 'iSTI',
             'atmcorr': True,
         }),        
+
+        # Other
+        ('acca', {
+            'description': 'ACCA Cloud Algorithm',
+            'function': 'ACCA',
+            'atmcorr': False,
+        }),
     ])
 
     @classmethod
