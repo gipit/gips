@@ -199,7 +199,7 @@ namespace gip {
             }
             return CImgToArr(GeoRasterIO<float>(*self).Read(chunk));
         }
-        GeoRaster& Write(PyObject* arr, int chunk) {
+        GeoRaster& Write(PyObject* arr, int chunk=0) {
             switch(((PyArrayObject*)arr)->descr->type_num) {
                 case NPY_UINT8: GeoRasterIO<unsigned char>(*self).Write(ArrToCImg<unsigned char>(arr), chunk); break;
                 case NPY_UINT16: GeoRasterIO<unsigned short>(*self).Write(ArrToCImg<unsigned short>(arr), chunk); break;
