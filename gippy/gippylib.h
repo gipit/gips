@@ -54,7 +54,7 @@
         if (cimg.spectrum() == 1) {
             numdim = 3;
             if (cimg.depth() == 1) numdim=2;
-        } 
+        }
         arr = PyArray_SimpleNew(numdim, &dims[4-numdim], typenum);
         //if (dims[0] == 1)
         //    arr = PyArray_SimpleNew(numdim-1,&dims[1], typenum);
@@ -174,7 +174,7 @@ namespace gip {
         }
     }
 
-    // This renaming should have worked, but didn't.  Used extend instead 
+    // This renaming should have worked, but didn't.  Used extend instead
     //%rename(__getitem__) operator[];
     //%rename(__assign__) GeoImage::operator=;
     //%rename(__assign__) GeoRaster::operator=;
@@ -184,7 +184,7 @@ namespace gip {
         GeoRaster __eq__(double val) {
             return self->operator==(val);
         }
-        PyObject* Read(int chunk) {
+        PyObject* Read(int chunk=0) {
             if (self->Gain() == 1.0 && self->Offset() == 0.0) {
                 switch(self->DataType()) {
                     case 1: return CImgToArr(GeoRasterIO<unsigned char>(*self).Read(chunk));
@@ -210,7 +210,7 @@ namespace gip {
                 case NPY_INT64: GeoRasterIO<int>(*self).Write(ArrToCImg<int>(arr), chunk); break;
                 case NPY_FLOAT32: GeoRasterIO<float>(*self).Write(ArrToCImg<float>(arr), chunk); break;
                 case NPY_FLOAT64: GeoRasterIO<double>(*self).Write(ArrToCImg<double>(arr), chunk); break;
-                default: 
+                default:
                     throw(std::exception());
             }
             return *self;
@@ -233,7 +233,7 @@ namespace gip {
             self->operator[](col) = raster;
             return self->operator[](col);
         }
-        PyObject* Read(int chunk) {
+        PyObject* Read(int chunk=0) {
             // Only looks at first band for gain and offset
             if ((*self)[0].Gain() == 1.0 && (*self)[0].Offset() == 0.0) {
                 switch(self->DataType()) {
