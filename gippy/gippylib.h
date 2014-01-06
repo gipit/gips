@@ -14,6 +14,9 @@
     #include "gip/GeoRasterIO.h"
     #include "gip/GeoImageIO.h"
 
+    #include <boost/geometry/geometry.hpp>
+    #include <boost/geometry/geometries/point_xy.hpp>
+
     using namespace gip;
 
     namespace gip {
@@ -136,8 +139,6 @@ namespace std {
 %include "gip/Colors.h"
 // TODO - Not sure this really needs to be wrapped
 %include "gip/Atmosphere.h"
-//%include "gip/GeoRasterIO.h"
-//%include "gip/GeoImageIO.h"
 
 // TODO - improve enums.  C++0x scoped enums ?
 enum GDALDataType { GDT_Unknown, GDT_Byte, GDT_UInt16, GDT_Int16, GDT_UInt32, GDT_Int32,
@@ -173,11 +174,6 @@ namespace gip {
             return self->Colors::operator[](col);
         }
     }
-
-    // This renaming should have worked, but didn't.  Used extend instead
-    //%rename(__getitem__) operator[];
-    //%rename(__assign__) GeoImage::operator=;
-    //%rename(__assign__) GeoRaster::operator=;
 
     %extend GeoRaster {
         // Processing functions
@@ -251,23 +247,6 @@ namespace gip {
         }
     }
 
-    // These are no longer needed, since GeoImage and GeoRaster have
-    // wrapper functions to the GeoImageIO and GeoRasterIO functions
-    /*
-    %template(GeoRaster_byte) gip::GeoRasterIO<unsigned char>;
-    %template(GeoRaster_int16) gip::GeoRasterIO<short int>;
-    %template(GeoRaster_int32) gip::GeoRasterIO<int>;
-    %template(GeoRaster_int64) gip::GeoRasterIO<long>;
-    %template(GeoRaster_float) gip::GeoRasterIO<float>;
-    %template(GeoRaster_double) gip::GeoRasterIO<double>;
-
-    %template(GeoImage_byte) gip::GeoImageIO<unsigned char>;
-    %template(GeoImage_int16) gip::GeoImageIO<short int>;
-    %template(GeoImage_int32) gip::GeoImageIO<int>;
-    %template(GeoImage_int64) gip::GeoImageIO<long>;
-    %template(GeoImage_float) gip::GeoImageIO<float>;
-    %template(GeoImage_double) gip::GeoImageIO<double>;
-    */
 }
 
 
