@@ -38,7 +38,8 @@ namespace gip {
 			point p2 = chunk.max_corner();
 			int width = p2.x()-p1.x()+1;
 			int height = p2.y()-p1.y()+1;
-			//std::cout << Basename() << " reading " << boost::geometry::dsv(p1) << boost::geometry::dsv(p2) << " w=" << width << " h=" << height << std::endl;
+			//if (Options::Verbose() > 3)
+            //    std::cout << Basename() << " reading " << boost::geometry::dsv(p1) << boost::geometry::dsv(p2) << " w=" << width << " h=" << height << std::endl;
 			T* ptrPixels = new T[width*height];
 			// casting away const, safe because this is a read-only const_cast<GDALRasterBand*>
 			CPLErr err = _GDALRasterBand->RasterIO(GF_Read, p1.x(), p1.y(), width, height, ptrPixels, width, height, this->Type(), 0, 0);
@@ -89,13 +90,13 @@ namespace gip {
 			if (_Masks.size() > 0) {
 			    if (Options::Verbose() > 1)
                     std::cout << Basename() << ": Applying " << _Masks.size() << " masks" << std::endl;
-                GeoRasterIO<unsigned char> mask(_Masks[0]);
-                CImg<unsigned char> cmask(mask.Read(chunknum));
+                GeoRasterIO<float> mask(_Masks[0]);
+                CImg<float> cmask(mask.Read(chunknum));
                 for (unsigned int i=1; i<_Masks.size(); i++) {
-                    mask = GeoRasterIO<unsigned char>(_Masks[i]);
+                    mask = GeoRasterIO<float>(_Masks[i]);
                     cmask.mul(mask.Read(chunknum));
                 }
-                img.mul(cmask);
+                //img.mul(cmask);
                 cimg_forXY(img,x,y) {
                     if (cmask(x,y) != 1) img(x,y) = NoDataValue();
                 }
