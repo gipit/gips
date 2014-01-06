@@ -120,12 +120,12 @@ class Data(object):
         for t in remove_tiles: tiles.pop(t,None)
         return tiles
 
-    def open(self, product=''):
+    def open(self, product='', update=True):
         """ Open and return final product GeoImage """
         if product != '':
-            return gippy.GeoImage(self.products[product])
+            return gippy.GeoImage(self.products[product], update)
         elif len(self.products) == 1:
-            return gippy.GeoImage(self.products[self.products.keys()[0]])
+            return gippy.GeoImage(self.products[self.products.keys()[0]], update)
         else:
             # return filename of a tile from self.tiles ?
             raise Exception('No product provided')
