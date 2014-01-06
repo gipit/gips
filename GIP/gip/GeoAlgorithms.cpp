@@ -375,7 +375,7 @@ namespace gip {
                 } else if (*iprod == "LSWI") {
                     cimgout = (nir-swir1).div(nir+swir1);
                 } else if (*iprod == "NDSI") {
-                    cimgout = (swir1-green).div(swir1+green);
+                    cimgout = (green-swir1).div(green+swir1);
                 } else if (*iprod == "BI") {
                     cimgout = 0.5*(blue+nir);
                 } else if (*iprod == "SATVI") {
@@ -471,11 +471,11 @@ namespace gip {
 
             nonclouds =
                 // Filter1
-                (red.get_threshold(th_red)^=1).mul(
+                (red.get_threshold(th_red)^=1);// |=
                 // Filter2
-                ndsi.get_threshold(th_ndsi).mul(
+                //ndsi.get_threshold(th_ndsi) |=
                 // Filter3
-                temp.get_threshold(th_temp)));
+                //temp.get_threshold(th_temp);
 
             ambclouds =
                 (nonclouds^=1).mul(
@@ -503,6 +503,9 @@ namespace gip {
             imgout[1].Write(ambclouds,iChunk);
             imgout[2].Write(nonclouds,iChunk);
         }
+        imgout[0].SetDescription("clouds");
+        imgout[1].SetDescription("ambclouds");
+        imgout[2].SetDescription("nonclouds");
         return imgout;
 	}
 
