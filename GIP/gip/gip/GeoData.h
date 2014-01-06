@@ -46,7 +46,7 @@ namespace gip {
 		//! Return data type
 		virtual GDALDataType DataType() const { return GDT_Unknown; }
 		//! Return size of data type (in bytes)
-		int DataTypeSize() const;
+		//int DataTypeSize() const;
 
 		//! Get GDALDataset object - use cautiously
 		GDALDataset* GetGDALDataset() const { return _GDALDataset.get(); }
