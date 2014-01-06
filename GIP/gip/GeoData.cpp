@@ -84,7 +84,7 @@ namespace gip {
 	}
 
     // Data type size
-	int GeoData::DataTypeSize() const {
+	/*int GeoData::DataTypeSize() const {
         switch(DataType()) {
             case 1: return sizeof(unsigned char);
             case 2: return sizeof(unsigned short);
@@ -95,7 +95,7 @@ namespace gip {
             case 7: return sizeof(double);
             default: throw(std::exception());
         }
-	}
+	}*/
 
     // Using GDALDatasets GeoTransform get Geo-located coordinates
 	point GeoData::GeoLoc(float xloc, float yloc) const {
@@ -138,7 +138,7 @@ namespace gip {
 
 	//! Break up image into smaller size pieces, each of ChunkSize
 	void GeoData::Chunk() const {
-        unsigned int rows = floor( (ChunkSize()*1024*1024) / DataTypeSize() / XSize() );
+        unsigned int rows = floor( ( Options::ChunkSize() *1024*1024) / sizeof(double) / XSize() );
 		rows = rows > YSize() ? YSize() : rows;
 		int numchunks = ceil( YSize()/(float)rows );
 		//std::vector<bbox> Chunks;
@@ -151,7 +151,7 @@ namespace gip {
 		}
 		if (Options::Verbose() > 3) {
 		    int i(0);
-		    std::cout << "Chunked " << Basename() << " into " << _Chunks.size() << " chunks (" << ChunkSize() << " MB each)"<< std::endl;
+		    std::cout << "Chunked " << Basename() << " into " << _Chunks.size() << " chunks (" << Options::ChunkSize() << " MB max each)"<< std::endl;
             for (std::vector<bbox>::const_iterator iChunk=_Chunks.begin(); iChunk!=_Chunks.end(); iChunk++)
                 std::cout << "  Chunk " << i++ << ": " << boost::geometry::dsv(*iChunk) << std::endl;
 		}

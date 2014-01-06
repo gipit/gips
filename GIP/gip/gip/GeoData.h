@@ -101,11 +101,6 @@ namespace gip {
 
 		//! Break up image into chunks
 		void Chunk() const;
-
-    private:
-        //! Return chunk size
-		int ChunkSize() const { return Options::ChunkSize(); }
-
 	}; //class GeoData
 
 } // namespace gip
