@@ -1,4 +1,5 @@
 %module gippylib
+%feature("autodoc", "1");
 %{
     #define SWIG_FILE_WITH_INIT
     //#include "gip/Colors.h"
@@ -180,6 +181,9 @@ namespace gip {
         GeoRaster __eq__(double val) {
             return self->operator==(val);
         }
+		%feature("docstring",
+				 "PyObject returned is a numpy.array.\n"
+				 "Enjoy!\n ");
         PyObject* Read(int chunk=0) {
             if (self->Gain() == 1.0 && self->Offset() == 0.0) {
                 switch(self->DataType()) {
@@ -195,6 +199,9 @@ namespace gip {
             }
             return CImgToArr(GeoRasterIO<float>(*self).Read(chunk));
         }
+		%feature("docstring",
+				 "PyObject passed in is a numpy.array.\n"
+				 "Comply!\n ");
         GeoRaster& Write(PyObject* arr, int chunk=0) {
             switch(((PyArrayObject*)arr)->descr->type_num) {
                 case NPY_UINT8: GeoRasterIO<unsigned char>(*self).Write(ArrToCImg<unsigned char>(arr), chunk); break;
@@ -229,6 +236,9 @@ namespace gip {
             self->operator[](col) = raster;
             return self->operator[](col);
         }
+		%feature("docstring",
+				 "PyObject returned is a numpy.array.\n"
+				 "Enjoy!\n ");
         PyObject* Read(int chunk=0) {
             // Only looks at first band for gain and offset
             if ((*self)[0].Gain() == 1.0 && (*self)[0].Offset() == 0.0) {
