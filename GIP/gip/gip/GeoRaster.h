@@ -169,6 +169,16 @@ namespace gip {
 				default: return -1.79E308;
             }
 		}
+		//! Copy all meta data from another raster
+		GeoRaster& CopyMeta(const GeoRaster& img) {
+            SetDescription(img.Description());
+            SetUnits(img.Units());
+            SetGain(img.Gain());
+            SetOffset(img.Offset());
+            SetNoData(img.NoDataValue());
+            //_GDALRasterBand->SetMetadata(img._GDALRasterBand->GetMetadata());
+            return *this;
+		}
 		// Set NoDataValue to a default based on datatype of band
 		/*GeoRaster& SetNoData() {
 		    //std::cout << "SetNoData" << std::endl;

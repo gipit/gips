@@ -170,10 +170,8 @@ namespace gip {
         GeoImage imgout(filename, xsize, ysize, bsz, dtype);
         imgout.CopyMeta(imgs[0]);
         imgout.CopyColorTable(imgs[0]);
-        for (unsigned int b=0;b<bsz;b++) imgout[b].CopyMeta(imgs[0][bsz]);
+        for (unsigned int b=0;b<bsz;b++) imgout[b].CopyMeta(imgs[0][b]);
 
-        double nodata(imgs[0][0].NoDataValue());
-        imgout.SetNoData(nodata);
         double affine[6];
         affine[0] = extent.MinX;
         affine[1] = xres;
@@ -254,8 +252,8 @@ namespace gip {
         for (unsigned int b=0;b<bsz;b++) {
             psWarpOptions->panSrcBands[b] = b+1;
             psWarpOptions->panDstBands[b] = b+1;
-            psWarpOptions->padfSrcNoDataReal[b] = nodata;
-            psWarpOptions->padfDstNoDataReal[b] = nodata;
+            psWarpOptions->padfSrcNoDataReal[b] = imgs[0][b].NoDataValue();
+            psWarpOptions->padfDstNoDataReal[b] = imgout[b].NoDataValue();
             psWarpOptions->padfSrcNoDataImag[b] = 0.0;
             psWarpOptions->padfDstNoDataImag[b] = 0.0;
         }
