@@ -238,6 +238,8 @@ namespace gip {
 		//double StdDev() const { return (GetGDALStats())[3]; }
         cimg_library::CImg<float> ComputeStats(bool RAW=false) const;
 
+        cimg_library::CImg<long> Histogram(int bins=100) const;
+
         // TODO - If RAW then can use GDAL Statistics, but compare speeds
 		// Retrieve Statistics
 		/*cimg_library::CImg<double> GetGDALStats() const {

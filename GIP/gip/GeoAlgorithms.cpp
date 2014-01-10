@@ -64,7 +64,7 @@ namespace gip {
             //        imgout &= Pbands[b].NoDataMask( Pbands[b].Read(*iChunk) );
 			//}
 			//validpixels += imgout.sum();
-			imgout = imageIO.NoDataMask(iChunk)^=1;
+			imgout = imageIO.NoDataMask(iChunk);
 			mask0.Write(imgout,iChunk);
 		}
 		//mask[0].SetValidSize(validpixels);
@@ -92,7 +92,7 @@ namespace gip {
                 cimg = imgIO[b].Read(iChunk);
                 nodata = imgIO[b].NoDataMask(iChunk);
                 // only if nodata not same between input and output images
-                cimg_forXY(cimg,x,y) { if (nodata(x,y)) cimg(x,y) = imgoutIO[b].NoDataValue(); }
+                cimg_forXY(cimg,x,y) { if (!nodata(x,y)) cimg(x,y) = imgoutIO[b].NoDataValue(); }
                 imgoutIO[b].Write(cimg,iChunk);
             }
         }
@@ -118,7 +118,7 @@ namespace gip {
             for (int iChunk=1; iChunk<=img[b].NumChunks(); iChunk++) {
                 cimg = imgIO[b].Ref(iChunk);
                 nodata = imgIO[b].NoDataMask(iChunk);
-                cimg_forXY(cimg,x,y) { if (nodata(x,y)) cimg(x,y) = imgoutIO[b].NoDataValue(); }
+                cimg_forXY(cimg,x,y) { if (!nodata(x,y)) cimg(x,y) = imgoutIO[b].NoDataValue(); }
                 imgoutIO[b].Write(cimg,iChunk);
             }
         }
@@ -143,7 +143,7 @@ namespace gip {
                 mask = imgIO[b].NoDataMask(iChunk);
                 ((cimg-=lo)*=(255.0/(hi-lo))).max(0.0).min(255.0);
                 //cimg_printstats(cimg,"after stretch");
-                cimg_forXY(cimg,x,y) { if (mask(x,y)) cimg(x,y) = imgoutIO[b].NoDataValue(); }
+                cimg_forXY(cimg,x,y) { if (!mask(x,y)) cimg(x,y) = imgoutIO[b].NoDataValue(); }
                 imgoutIO[b].Write(CImg<unsigned char>().assign(cimg.round()),iChunk);
             }
         }
@@ -157,7 +157,7 @@ namespace gip {
         vector<GeoImage> imgs;
         vector<std::string>::const_iterator iimgs;
         for (iimgs=imgnames.begin();iimgs!=imgnames.end();iimgs++) imgs.push_back(GeoImage(*iimgs));
-        int bsz = imgs[0].NumBands();
+        unsigned int bsz = imgs[0].NumBands();
         GDALDataType dtype = imgs[0].DataType();
 
 	    // Create output file based on input vector
@@ -250,13 +250,13 @@ namespace gip {
         psWarpOptions->padfSrcNoDataImag = (double *) CPLMalloc(sizeof(double) * psWarpOptions->nBandCount );
         psWarpOptions->padfDstNoDataReal = (double *) CPLMalloc(sizeof(double) * psWarpOptions->nBandCount );
         psWarpOptions->padfDstNoDataImag = (double *) CPLMalloc(sizeof(double) * psWarpOptions->nBandCount );
-        for (int i=0;i<bsz;i++) {
-            psWarpOptions->panSrcBands[i] = i+1;
-            psWarpOptions->panDstBands[i] = i+1;
-            psWarpOptions->padfSrcNoDataReal[i] = nodata;
-            psWarpOptions->padfDstNoDataReal[i] = nodata;
-            psWarpOptions->padfSrcNoDataImag[i] = 0.0;
-            psWarpOptions->padfDstNoDataImag[i] = 0.0;
+        for (unsigned int b=0;b<bsz;b++) {
+            psWarpOptions->panSrcBands[b] = b+1;
+            psWarpOptions->panDstBands[b] = b+1;
+            psWarpOptions->padfSrcNoDataReal[b] = nodata;
+            psWarpOptions->padfDstNoDataReal[b] = nodata;
+            psWarpOptions->padfSrcNoDataImag[b] = 0.0;
+            psWarpOptions->padfDstNoDataImag[b] = 0.0;
         }
         if (Options::Verbose() > 2)
             psWarpOptions->pfnProgress = GDALTermProgress;
@@ -394,7 +394,7 @@ namespace gip {
                 if (Options::Verbose() > 2) std::cout << "Getting mask" << std::endl;
                 // TODO don't read mask again...create here
                 cimgmask = imgin.NoDataMask(iChunk, colors[*iprod]);
-                cimg_forXY(cimgout,x,y) if (cimgmask(x,y) == 1) cimgout(x,y) = nodataout;
+                cimg_forXY(cimgout,x,y) if (!cimgmask(x,y)) cimgout(x,y) = nodataout;
                 imagesout[*iprod].Write(cimgout,iChunk);
             }
         }
@@ -440,21 +440,25 @@ namespace gip {
 
         float th_red(0.08);
         float th_ndsi(0.7);
-        float th_temp(7);
+        float th_temp(27);
         float th_comp(225);
         float th_nirred(2.0);
         float th_nirgreen(2.0);
         float th_nirswir1(1.0);
         float th_warm(210);
 
-        float nodataout = 0;
         GeoImageIO<unsigned char> imgout(GeoImage(filename, imgin, GDT_Byte, 3));
-        imgout.SetNoData(nodataout);
+        imgout.SetNoData(0);
         imgout.SetUnits("other");
+        imgout[0].SetDescription("clouds");
+        imgout[1].SetDescription("ambclouds");
+        imgout[2].SetDescription("nonclouds");
 
         CImg<float> red, green, nir, swir1, temp, ndsi, b56comp;
         CImg<unsigned char> nonclouds, ambclouds, clouds, mask;
+        float cloudsum(0);
 
+        if (Options::Verbose()) cout << img.Basename() << " - ACCA" << endl;
         for (int iChunk=1; iChunk<=imgin[0].NumChunks(); iChunk++) {
             red = imgin["RED"].Ref(iChunk);
             green = imgin["GREEN"].Ref(iChunk);
@@ -465,47 +469,54 @@ namespace gip {
             mask = imgin.NoDataMask(iChunk, {"RED","GREEN","NIR","SWIR1","LWIR"});
 
             ndsi = (green - swir1).div(green + swir1);
-            b56comp = (1.0 - swir1).mul(temp);
+            b56comp = (1.0 - swir1).mul(temp + 273.15);
 
             // Pass one
-
             nonclouds =
                 // Filter1
-                (red.get_threshold(th_red)^=1);// |=
+                (red.get_threshold(th_red)^=1) |=
                 // Filter2
-                //ndsi.get_threshold(th_ndsi) |=
+                ndsi.get_threshold(th_ndsi) |=
                 // Filter3
-                //temp.get_threshold(th_temp);
+                temp.get_threshold(th_temp);
 
             ambclouds =
-                (nonclouds^=1).mul(
+                (nonclouds^1).mul(
                 // Filter4
-                b56comp.get_threshold(th_comp).mul(
+                b56comp.get_threshold(th_comp) |=
                 // Filter5
-                nir.get_div(red).threshold(th_nirred).mul(
+                nir.get_div(red).threshold(th_nirred) |=
                 // Filter6
-                nir.get_div(green).threshold(th_nirgreen).mul(
+                nir.get_div(green).threshold(th_nirgreen) |=
                 // Filter7
-                (nir.get_div(swir1).threshold(th_nirswir1)^=1) ))));
+                (nir.get_div(swir1).threshold(th_nirswir1)^=1) );
 
             clouds =
-                (ambclouds^=1).mul(
-                // Filter8
-                b56comp.threshold(th_warm) + 1);
+                (nonclouds + ambclouds);
 
-            cimg_forXY(mask,x,y) if (mask(x,y) == 1) {
-                nonclouds(x,y) = 0;
-                ambclouds(x,y) = 0;
-                clouds(x,y) = 0;
-            }
+                // Filter8 - warm/cold
+                //b56comp.threshold(th_warm) + 1);
+
+            clouds.mul(mask);
+            ambclouds.mul(mask);
+
+            cloudsum += clouds.sum();
 
             imgout[0].Write(clouds,iChunk);
             imgout[1].Write(ambclouds,iChunk);
-            imgout[2].Write(nonclouds,iChunk);
+            //imgout[2].Write(nonclouds,iChunk);
+            if (Options::Verbose() > 3) std::cout << "Processed chunk " << iChunk << " of " << imgin[0].NumChunks() << std::endl;
         }
-        imgout[0].SetDescription("clouds");
-        imgout[1].SetDescription("ambclouds");
-        imgout[2].SetDescription("nonclouds");
+        // Cloud statistics
+        float cloudcover = cloudsum / (float)imgin.Size();
+        CImg<float> stats = imgin["LWIR"].AddMask(imgout[0]).ComputeStats();
+        // get cloud stats: min, max, mean, stddev, skewness
+        if (Options::Verbose() > 1) {
+            cout.precision(4);
+            cout << "   Cloud Cover = " << cloudcover*100 << "%" << endl;
+            cout << "   Cloud stats (min,max,mean,sd) = " << stats(0) << ", " << stats(1) << ", " << stats(2) << ", " << stats(3) << endl;
+        }
+
         return imgout;
 	}
 
@@ -536,7 +547,7 @@ namespace gip {
             swir1 = imgin["SWIR1"].Ref(iChunk);
             swir2 = imgin["SWIR2"].Ref(iChunk);
             BT = imgin["LWIR"].Ref(iChunk);
-            nodatamask = imgin.NoDataMask(iChunk)^=1;
+            nodatamask = imgin.NoDataMask(iChunk);
             // floodfill....seems bad way
             //shadowmask = nir.draw_fill(nir.width()/2,nir.height()/2,)
             ndvi = (nir-red).div(nir+red);
@@ -628,7 +639,7 @@ namespace gip {
             lprob = ((Thi + 4-BT)/=(Thi+4-(Tlo-4))).mul( vprob );
             //1 - imgin.NDVI(*iChunk).abs().max(imgin.NDSI(*iChunk).abs()).max(imgin.Whiteness(*iChunk).abs()) );
 
-            cimg_forXY(nodatamask,x,y) if (nodatamask(x,y) == 1) lprob(x,y) = nodata;
+            cimg_forXY(nodatamask,x,y) if (!nodatamask(x,y)) lprob(x,y) = nodata;
 
             // Cloud probability over water
             probout[0].Write( lprob, iChunk);
@@ -678,7 +689,7 @@ namespace gip {
             mask.erode(erode_elem).dilate(dilate_elem);
             mask.dilate(dilate_elem);
 
-            cimg_forXY(nodatamask,x,y) if (nodatamask(x,y) == 1) mask(x,y) = 0;
+            cimg_forXY(nodatamask,x,y) if (!nodatamask(x,y)) mask(x,y) = 0;
             imgout[0].Write(mask, iChunk);
         }
 
@@ -749,7 +760,7 @@ namespace gip {
                 CImg<double> stats;
                 cimg_forXY(C_img,x,y) { // Loop through image
                     // Calculate distance between this pixel and all classes
-                    if (!C_mask(x,y)) {
+                    if (C_mask(x,y)) {
                         Pixel = C_img.get_crop(x,y,0,0,x,y,0,C_img.spectrum()-1).unroll('x');
                         cimg_forY(ClassMeans,cls) {
                             ThisClass = ClassMeans.get_row(cls);

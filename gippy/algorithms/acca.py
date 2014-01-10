@@ -4,7 +4,7 @@ import argparse
 import gippy
 
 def add_options(subparser,parents=[]):
-	parser = subparser.add_parser('acca',help='ACCA (Automatic Cloud Cove Assessment)',parents=parents,
+	parser = subparser.add_parser('acca',help='ACCA (Automatic Cloud Cover Assessment)',parents=parents,
 		formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 	#group = parser.add_argument_group('algorithm arguments')
 	#group.add_argument('--tolerance', help='Tolerance (1-5). Higher tolerance means fewer clouds', default=3, type=int)

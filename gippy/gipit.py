@@ -29,7 +29,7 @@ def main():
     #parser.add_argument('-m','--mask', help='Mask to apply', required=True)
 
     # TODO - automate reading in all algorithms in gippy.algorithms
-    algs = ['kmeans','thresh','acca']
+    algs = ['kmeans','thresh','acca','acloud','fmask']
     for a in algs:
         exec('import gippy.algorithms.%s as %s' % (a, a))
         eval('%s.add_options(subparser,[gparser,oparser])' % a)

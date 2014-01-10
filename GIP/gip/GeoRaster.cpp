@@ -77,17 +77,42 @@ namespace gip {
 
     //! Compute stats
     cimg_library::CImg<float> GeoRaster::ComputeStats(bool RAW) const {
-        switch (DataType()) {
-            case GDT_Byte: return GeoRasterIO<unsigned char>(*this).ComputeStats(RAW);
-            case GDT_UInt16: return GeoRasterIO<unsigned short>(*this).ComputeStats(RAW);
-            case GDT_Int16: return GeoRasterIO<short>(*this).ComputeStats(RAW);
-            case GDT_UInt32: return GeoRasterIO<unsigned int>(*this).ComputeStats(RAW);
-            case GDT_Int32: return GeoRasterIO<int>(*this).ComputeStats(RAW);
-            case GDT_Float32: return GeoRasterIO<float>(*this).ComputeStats(RAW);
-            case GDT_Float64: return GeoRasterIO<double>(*this).ComputeStats(RAW);
-            default: return GeoRasterIO<unsigned char>(*this).ComputeStats(RAW);
+        CImg<float> stats;
+        /*switch (DataType()) {
+            case GDT_Byte: stats = GeoRasterIO<unsigned char>(*this).ComputeStats(RAW);
+            case GDT_UInt16: stats = GeoRasterIO<unsigned short>(*this).ComputeStats(RAW);
+            case GDT_Int16: stats = GeoRasterIO<short>(*this).ComputeStats(RAW);
+            case GDT_UInt32: stats = GeoRasterIO<unsigned int>(*this).ComputeStats(RAW);
+            case GDT_Int32: stats = GeoRasterIO<int>(*this).ComputeStats(RAW);
+            case GDT_Float32: stats = GeoRasterIO<float>(*this).ComputeStats(RAW);
+            case GDT_Float64: stats = GeoRasterIO<double>(*this).ComputeStats(RAW);
+            default: stats = GeoRasterIO<unsigned char>(*this).ComputeStats(RAW);
             // TODO - remove default. This should throw exception
+        }*/
+        stats = GeoRasterIO<double>(*this).ComputeStats(RAW);
+        if (Options::Verbose() > 1) {
+            cout << Basename() << " stats: " << stats(0);
+            for (int i=1;i<4;i++) cout << ", " << stats(i);
         }
+        return stats;
+    }
+
+    //! Compute histogram
+    cimg_library::CImg<long> GeoRaster::Histogram(int bins) const {
+        CImg<double> cimg;
+        CImg<float> stats = ComputeStats();
+        CImg<long> hist(bins,1,1,1,0);
+        float nodata = NoData();
+        GeoRasterIO<double> img(GeoRasterIO<double>(*this));
+        //CImg<long> hist = GeoRasterIO<double>(*this).Read(chunknum).get_histogram(bins); //, stats(0), stats(1));
+        for (int iChunk=1; iChunk<=NumChunks(); iChunk++) {
+            cimg = img.Read(iChunk);
+            cimg_for(cimg,ptr,double) {
+                if (*ptr != nodata) hist[(unsigned int)((*ptr-stats(0)*bins/(stats(1)-stats(0))))]++;
+            }
+        }
+        if (Options::Verbose() > 3) hist.display_graph(0,3);
+        return hist;
     }
 
 } // namespace gip

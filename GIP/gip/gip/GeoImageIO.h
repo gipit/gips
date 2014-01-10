@@ -85,7 +85,7 @@ namespace gip {
 		CImg<unsigned char> NoDataMask(int chunk=0, std::vector<std::string> bands=std::vector<std::string>()) const {
 		    unsigned int c;
 		    CImg<T> cube = Read(chunk, true);
-		    CImg<unsigned char> mask(cube.width(),cube.height(),1,1,0);
+		    CImg<unsigned char> mask(cube.width(),cube.height(),1,1,1);
 		    std::vector<int> ibands;
 		    std::vector<int>::const_iterator b;
 		    if (bands.size() == 0) {
@@ -102,7 +102,7 @@ namespace gip {
             }*/
             cimg_forXY(cube,x,y) {
                 for (std::vector<int>::const_iterator i=ibands.begin(); i!=ibands.end(); i++) {
-                    if ( (*this)[*i].NoData() && (cube(x,y,*i) == (*this)[*i].NoDataValue())) mask(x,y) = 1;
+                    if ( (*this)[*i].NoData() && (cube(x,y,*i) == (*this)[*i].NoDataValue())) mask(x,y) = 0;
                 }
             }
             return mask;
