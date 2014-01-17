@@ -150,7 +150,7 @@ namespace gip {
         CImg<float> stats, cimg;
         CImg<unsigned char> mask;
         for (unsigned int b=0;b<imgIO.NumBands();b++) {
-            stats = imgIO[b].ComputeStats(true);
+            stats = imgIO[b].ComputeStats();
             float lo = std::max(stats(2) - 3*stats(3), stats(0)-1);
             float hi = std::min(stats(2) + 3*stats(3), stats(1));
             for (int iChunk=1; iChunk<=imgIO[b].NumChunks(); iChunk++) {
@@ -525,7 +525,7 @@ namespace gip {
         }
         // Cloud statistics
         float cloudcover = cloudsum / scenesize;
-        CImg<float> tstats = imgin["LWIR"].AddMask(imgout[0]).ComputeStats();
+        CImg<float> tstats = imgin["LWIR"].AddMask(imgout[0]).ComputeStats(true);
         if (Options::Verbose() > 1) {
             cout.precision(4);
             cout << "   Cloud Cover = " << cloudcover*100 << "%" << endl;
@@ -546,9 +546,9 @@ namespace gip {
                 th1 += shift;
             }
             imgin["LWIR"].ClearMasks();
-            CImg<float> cold_stats = imgin["LWIR"].AddMask(imgout[1]).AddMask(imgin["LWIR"] < th0).ComputeStats();
+            CImg<float> cold_stats = imgin["LWIR"].AddMask(imgout[1]).AddMask(imgin["LWIR"] < th0).ComputeStats(true);
             imgin["LWIR"].ClearMasks();
-            CImg<float> warm_stats = imgin["LWIR"].AddMask(imgout[1]).AddMask(imgin["LWIR"] < th1).AddMask(imgin["LWIR"] > th0).ComputeStats();
+            CImg<float> warm_stats = imgin["LWIR"].AddMask(imgout[1]).AddMask(imgin["LWIR"] < th1).AddMask(imgin["LWIR"] > th0).ComputeStats(true);
             imgin["LWIR"].ClearMasks();
             if (Options::Verbose() > 1) {
                 //cout << "Percentiles = " << th0 << ", " << th1 << endl;

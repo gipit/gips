@@ -40,16 +40,16 @@ namespace gip {
 	}
 
     //! Process passed raster band into this raster band
-    GeoRaster& GeoRaster::Process(const GeoRaster& img, bool RAW) {
+    GeoRaster& GeoRaster::Process(const GeoRaster& img) {
         switch (DataType()) {
-            case GDT_Byte: return GeoRasterIO<unsigned char>(*this).Process(img, RAW);
-            case GDT_UInt16: return GeoRasterIO<unsigned short>(*this).Process(img, RAW);
-            case GDT_Int16: return GeoRasterIO<short>(*this).Process(img, RAW);
-            case GDT_UInt32: return GeoRasterIO<unsigned int>(*this).Process(img, RAW);
-            case GDT_Int32: return GeoRasterIO<int>(*this).Process(img, RAW);
-            case GDT_Float32: return GeoRasterIO<float>(*this).Process(img, RAW);
-            case GDT_Float64: return GeoRasterIO<double>(*this).Process(img, RAW);
-            default: return GeoRasterIO<unsigned char>(*this).Process(img, RAW);
+            case GDT_Byte: return GeoRasterIO<unsigned char>(*this).Process(img);
+            case GDT_UInt16: return GeoRasterIO<unsigned short>(*this).Process(img);
+            case GDT_Int16: return GeoRasterIO<short>(*this).Process(img);
+            case GDT_UInt32: return GeoRasterIO<unsigned int>(*this).Process(img);
+            case GDT_Int32: return GeoRasterIO<int>(*this).Process(img);
+            case GDT_Float32: return GeoRasterIO<float>(*this).Process(img);
+            case GDT_Float64: return GeoRasterIO<double>(*this).Process(img);
+            default: return GeoRasterIO<unsigned char>(*this).Process(img);
             // TODO - remove default. This should throw exception
         }
     }
@@ -80,7 +80,7 @@ namespace gip {
 	}
 
     //! Compute stats
-    cimg_library::CImg<float> GeoRaster::ComputeStats(bool RAW) const {
+    cimg_library::CImg<float> GeoRaster::ComputeStats(bool REF) const {
         if (_ValidStats) return _Stats;
 
         using cimg_library::CImg;
@@ -90,7 +90,9 @@ namespace gip {
         double total(0);
         GeoRasterIO<double> img(*this);
         for (int iChunk=1; iChunk<=NumChunks(); iChunk++) {
-            cimg = img.Read(iChunk, RAW);
+            if (REF)
+                cimg = img.Ref(iChunk);
+            else cimg = img.Read(iChunk);
             cimg_for(cimg,ptr,double) {
                 if (*ptr != NoDataValue()) {
                     total += *ptr;
@@ -105,7 +107,9 @@ namespace gip {
         total = 0;
         double total3(0);
         for (int iChunk=1; iChunk<=NumChunks(); iChunk++) {
-            cimg = img.Read(iChunk, RAW);
+            if (REF)
+                cimg = img.Ref(iChunk);
+            else cimg = img.Read(iChunk);
             cimg_for(cimg,ptr,double) {
                 if (*ptr != NoDataValue()) {
                     val = *ptr-mean;
@@ -135,12 +139,6 @@ namespace gip {
         int ind(1);
         while(hist[ind] < p) ind++;
         float xind( (p-hist[ind-1])/(hist[ind]-hist[ind-1]) );
-        /*cout << p << endl;
-        cout << interval << endl;
-        cout << ind << endl;
-        cout << hist[ind-1] << endl;
-        cout << hist[ind] << endl;
-        cout << xind << endl;*/
         return xaxis.linear_atX(ind-1+xind);
     }
 

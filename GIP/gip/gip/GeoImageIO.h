@@ -67,12 +67,22 @@ namespace gip {
         }
 
 		//! \name File I/O
-		//! Read chunk, across all bands
-		cimg_library::CImg<T> Read(int chunk=0, bool RAW=false) const {
+		//! Read raw chunk, across all bands
+		cimg_library::CImg<T> ReadRaw(int chunk=0) const { //, bool RAW=false) const {
 			cimg_library::CImgList<T> images;
 			typename std::vector< GeoRasterIO<T> >::const_iterator iBand;
 			for (iBand=_RasterIOBands.begin();iBand!=_RasterIOBands.end();iBand++) {
-				images.insert( iBand->Read(chunk, RAW) );
+				images.insert( iBand->ReadRaw(chunk) );
+			}
+			//return images.get_append('c','p');
+			return images.get_append('v','p');
+		}
+		//! Read chunk, across all bands
+		cimg_library::CImg<T> Read(int chunk=0) const { //, bool RAW=false) const {
+			cimg_library::CImgList<T> images;
+			typename std::vector< GeoRasterIO<T> >::const_iterator iBand;
+			for (iBand=_RasterIOBands.begin();iBand!=_RasterIOBands.end();iBand++) {
+				images.insert( iBand->Read(chunk) );
 			}
 			//return images.get_append('c','p');
 			return images.get_append('v','p');
@@ -83,12 +93,12 @@ namespace gip {
         //}
 
 		//! Write cube across all bands
-		GeoImageIO& Write(const CImg<T> img, int chunk=0, bool BadValCheck=false) {
+		GeoImageIO& Write(const CImg<T> img, int chunk=0) { //, bool BadValCheck=false) {
 			typename std::vector< GeoRasterIO<T> >::iterator iBand;
 			int i(0);
 			for (iBand=_RasterIOBands.begin();iBand!=_RasterIOBands.end();iBand++) {
 				CImg<T> tmp = img.get_channel(i++);
-				iBand->Write(tmp, chunk, BadValCheck);
+				iBand->Write(tmp, chunk); //, BadValCheck);
 			}
 			return *this;
 		}
@@ -105,7 +115,7 @@ namespace gip {
 		//! NoData mask (all bands).  1's where it is good data
 		CImg<unsigned char> NoDataMask(int chunk=0, std::vector<std::string> bands=std::vector<std::string>()) const {
 		    unsigned int c;
-		    CImg<T> cube = Read(chunk, true);
+		    CImg<T> cube = ReadRaw(chunk);
 		    CImg<unsigned char> mask(cube.width(),cube.height(),1,1,1);
 		    std::vector<int> ibands;
 		    std::vector<int>::const_iterator b;
@@ -171,9 +181,9 @@ namespace gip {
 
         CImg<float> Whiteness(int chunk=0) const {
             // RAW or RADIANCE ?
-            CImg<float> red = operator[]("Red").Read(chunk, true);
-            CImg<float> green = operator[]("Green").Read(chunk, true);
-            CImg<float> blue = operator[]("Blue").Read(chunk, true);
+            CImg<float> red = operator[]("Red").ReadRaw(chunk);
+            CImg<float> green = operator[]("Green").ReadRaw(chunk);
+            CImg<float> blue = operator[]("Blue").ReadRaw(chunk);
             CImg<float> white(red.width(),red.height());
             float mu;
             cimg_forXY(white,x,y) {
