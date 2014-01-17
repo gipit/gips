@@ -37,13 +37,34 @@ namespace gip {
 
 		//! \name Band Operations
 		//! Get raster band (0-based index)
-		GeoRasterIO<T> operator[](int band) { return GeoRasterIO<T>(GeoImage::operator[](band)); }
+		//GeoRasterIO<T> operator[](int band) { return GeoRasterIO<T>(GeoImage::operator[](band)); }
 		//! Get raster band, const version
-		const GeoRasterIO<T> operator[](int band) const { return GeoRasterIO<T>(GeoImage::operator[](band)); }
+		//const GeoRasterIO<T> operator[](int band) const { return GeoRasterIO<T>(GeoImage::operator[](band)); }
 		//! Get raster band by color
-		GeoRasterIO<T> operator[](std::string col) { return GeoRasterIO<T>(GeoImage::operator[](col)); }
+		//GeoRasterIO<T> operator[](std::string col) { return GeoRasterIO<T>(GeoImage::operator[](col)); }
 		//! Get raster band by color, const version
-		const GeoRasterIO<T> operator[](std::string col) const { return GeoRasterIO<T>(GeoImage::operator[](col)); }
+		//const GeoRasterIO<T> operator[](std::string col) const { return GeoRasterIO<T>(GeoImage::operator[](col)); }
+
+        //! Get raster band (0-based index)
+		GeoRasterIO<T>& operator[](int band) { return _RasterIOBands[band]; }
+		//! Get raster band, const version
+		const GeoRasterIO<T>& operator[](int band) const { return _RasterIOBands[band]; }
+		//! Get raster band by color
+		GeoRasterIO<T>& operator[](std::string col) {
+			// Call const version
+			return const_cast<GeoRasterIO<T>&>(static_cast<const GeoImageIO<T>&>(*this)[col]);
+        }
+		//! Get raster band by color, const version
+		const GeoRasterIO<T>& operator[](std::string col) const {
+            int index(_Colors[col]);
+            if (index > 0)
+                return _RasterIOBands[index-1];
+            else {
+                // TODO - fix this - can't return NULL reference...?
+                //std::cout << "No band of that color, returning band 0" << std::endl;
+                throw std::out_of_range ("No band of color "+col);
+            }
+        }
 
 		//! \name File I/O
 		//! Read chunk, across all bands

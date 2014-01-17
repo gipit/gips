@@ -44,6 +44,21 @@ namespace gip {
 	typedef boost::geometry::model::d2::point_xy<float> point;
 	typedef boost::geometry::model::box<point> bbox;
 
+	void test(const GeoImage& img) {
+	    cout << img.Info() << endl;
+	    cout << img[0].Info() << endl;
+
+        GeoImageIO<float> img0(img);
+
+	    img0[0] > 5;
+	    cout << img0.Info() << endl;
+	    cout << img.Info() << endl;
+	    img0[0] = img0[0] > 5;
+	    cout << img0.Info() << endl;
+	    cout << img.Info() << endl;
+
+	}
+
     //! Create mask based on NoData values for all bands
 	GeoRaster CreateMask(const GeoImage& image, string filename) {
 		typedef float T;
@@ -444,18 +459,18 @@ namespace gip {
         float th_nirred(2.0);
         float th_nirgreen(2.0);
         float th_nirswir1(1.0);
-        float th_warm(210);
+        //float th_warm(210);
 
         GeoImageIO<unsigned char> imgout(GeoImage(filename, imgin, GDT_Byte, 3));
         imgout.SetNoData(0);
         imgout.SetUnits("other");
         imgout[0].SetDescription("clouds");
         imgout[1].SetDescription("ambclouds");
-        imgout[2].SetDescription("nonclouds");
+        imgout[2].SetDescription("pass1");
 
         CImg<float> red, green, nir, swir1, temp, ndsi, b56comp;
         CImg<unsigned char> nonclouds, ambclouds, clouds, mask;
-        float cloudsum(0);
+        float cloudsum(0), scenesize(0);
 
         if (Options::Verbose()) cout << img.Basename() << " - ACCA" << endl;
         for (int iChunk=1; iChunk<=imgin[0].NumChunks(); iChunk++) {
@@ -471,7 +486,7 @@ namespace gip {
             b56comp = (1.0 - swir1).mul(temp + 273.15);
 
             // Pass one
-            nonclouds =
+            nonclouds = // 1's where they are non-clouds
                 // Filter1
                 (red.get_threshold(th_red)^=1) |=
                 // Filter2
@@ -491,31 +506,83 @@ namespace gip {
                 (nir.get_div(swir1).threshold(th_nirswir1)^=1) );
 
             clouds =
-                (nonclouds + ambclouds);
+                (nonclouds + ambclouds)^=1;
 
                 // Filter8 - warm/cold
                 //b56comp.threshold(th_warm) + 1);
 
+            nonclouds.mul(mask);
             clouds.mul(mask);
             ambclouds.mul(mask);
 
             cloudsum += clouds.sum();
+            scenesize += mask.sum();
 
-            imgout[0].Write(clouds,iChunk);
+            imgout[2].Write(clouds,iChunk);
             imgout[1].Write(ambclouds,iChunk);
-            //imgout[2].Write(nonclouds,iChunk);
+            imgout[0].Write(nonclouds,iChunk);
             if (Options::Verbose() > 3) std::cout << "Processed chunk " << iChunk << " of " << imgin[0].NumChunks() << std::endl;
         }
         // Cloud statistics
-        float cloudcover = cloudsum / (float)imgin.Size();
-        CImg<float> stats = imgin["LWIR"].AddMask(imgout[0]).ComputeStats();
-        // get cloud stats: min, max, mean, stddev, skewness
+        float cloudcover = cloudsum / scenesize;
+        CImg<float> tstats = imgin["LWIR"].AddMask(imgout[0]).ComputeStats();
         if (Options::Verbose() > 1) {
             cout.precision(4);
             cout << "   Cloud Cover = " << cloudcover*100 << "%" << endl;
-            cout << "   Cloud stats (min,max,mean,sd) = " << stats(0) << ", " << stats(1) << ", " << stats(2) << ", " << stats(3) << endl;
+            cimg_print(tstats, "Cloud stats(min,max,mean,sd,skew,count)");
         }
 
+        // Pass 2 (thermal processing)
+        if ((cloudcover > 0.04) && (tstats(2) < 22.0)) {
+            float th0 = imgin["LWIR"].Percentile(83.5);
+            float th1 = imgin["LWIR"].Percentile(97.5);
+            if (tstats[4] > 0) {
+                float th2 = imgin["LWIR"].Percentile(98.75);
+                float shift(0);
+                shift = tstats[3] * ((tstats[4] > 1.0) ? 1.0 : tstats[4]);
+                //cout << "Percentiles = " << th0 << ", " << th1 << ", " << th2 << ", " << shift << endl;
+                if (th2-th1 < shift) shift = th2-th1;
+                th0 += shift;
+                th1 += shift;
+            }
+            imgin["LWIR"].ClearMasks();
+            CImg<float> cold_stats = imgin["LWIR"].AddMask(imgout[1]).AddMask(imgin["LWIR"] < th0).ComputeStats();
+            imgin["LWIR"].ClearMasks();
+            CImg<float> warm_stats = imgin["LWIR"].AddMask(imgout[1]).AddMask(imgin["LWIR"] < th1).AddMask(imgin["LWIR"] > th0).ComputeStats();
+            imgin["LWIR"].ClearMasks();
+            if (Options::Verbose() > 1) {
+                //cout << "Percentiles = " << th0 << ", " << th1 << endl;
+                cimg_print(cold_stats, "Cold Cloud stats(min,max,mean,sd,skew,count)");
+                cimg_print(warm_stats, "Warm Cloud stats(min,max,mean,sd,skew,count)");
+            }
+            bool addclouds(true);
+            if (((warm_stats(5)/scenesize) < 0.4) && (warm_stats(2) < 22)) {
+                if (Options::Verbose() > 2) cout << "Accepting warm clouds" << endl;
+                imgout[1].AddMask(imgin["LWIR"] < th1).AddMask(imgin["LWIR"] > th0);
+            } else if (((cold_stats(5)/scenesize) < 0.4) && (cold_stats(2) < 22)) {
+                if (Options::Verbose() > 2) cout << "Accepting cold clouds" << endl;
+                imgout[1].AddMask(imgin["LWIR"] < th0);
+            } else {
+                if (Options::Verbose() > 2) cout << "Rejecting all ambiguous clouds" << endl;
+                addclouds = false;
+            }
+            //int esize(5);
+            //CImg<int> selem(esize,esize,1,1,1);
+            // 3x3 filter of 1's for majority filter
+            CImg<int> filter(3,3,1,1, 1);
+            for (int iChunk=1; iChunk<=imgin[0].NumChunks(); iChunk++) {
+                clouds = imgout[2].Read(iChunk);
+                if (addclouds) clouds += imgout[1].Read(iChunk);
+                // Majority filter
+                clouds = (clouds + clouds.get_convolve(filter).threshold(5)).threshold(1);
+                //clouds.erode(selem).dilate(selem);
+                // Inverse and multiply by mask
+                imgout[0].Write(clouds,iChunk);
+            }
+        } else {
+            for (int iChunk=1; iChunk<=imgin[0].NumChunks(); iChunk++)
+                imgout[0].Write(imgout[2].Read(iChunk),iChunk);
+        }
         return imgout;
 	}
 

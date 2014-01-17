@@ -56,7 +56,7 @@ namespace gip {
                 }
                 // apply atmosphere if there is one (which would data is radiance units) TODO - check units
                 if (Atmosphere()) {
-                    if (Options::Verbose() > 3) std::cout << Basename() << ": applying atmosphere" << std::endl;
+                    if (Options::Verbose() > 3 && chunknum < 2) std::cout << Basename() << ": applying atmosphere" << std::endl;
                     double e = (Thermal()) ? 0.95 : 1;  // For thermal band, currently water only
                     img = (img - (_Atmosphere.Lu() + (1-e)*_Atmosphere.Ld())) / (_Atmosphere.t() * e);
                     updatenodata = true;
@@ -66,7 +66,7 @@ namespace gip {
 			// Apply Processing functions - TODO - should these apply if RAW ?
 			std::vector<GeoFunction>::const_iterator iFunc;
 			for (iFunc=_Functions.begin();iFunc!=_Functions.end();iFunc++) {
-			    if (Options::Verbose() > 3)
+			    if (Options::Verbose() > 3 && chunknum < 2)
                     std::cout << Basename() << ": Applying function " << iFunc->Function() << " " << iFunc->Operand() << std::endl;
 				if (iFunc->Function() == ">") {
 					img.threshold(iFunc->Operand(),false,true);
@@ -88,7 +88,7 @@ namespace gip {
 			}
 			// Apply all masks
 			if (_Masks.size() > 0) {
-			    if (Options::Verbose() > 3)
+			    if (Options::Verbose() > 3 && chunknum < 2)
                     std::cout << Basename() << ": Applying " << _Masks.size() << " masks" << std::endl;
                 GeoRasterIO<float> mask(_Masks[0]);
                 CImg<float> cmask(mask.Read(chunknum));
@@ -132,13 +132,14 @@ namespace gip {
 			if (!RAW && (Gain() != 1.0 || Offset() != 0.0)) {
                 cimg_for(img,ptr,T) if (*ptr != NoDataValue()) *ptr = (*ptr-Offset())/Gain();
 			}
-            if (Options::Verbose() > 3)
-                std::cout << Basename() << ": Writing with gain " << Gain() << " and offset " << Offset() << std::endl;
+            if (Options::Verbose() > 3 && chunknum < 2)
+                std::cout << Basename() << ": Writing (" << Gain() << "x +" << Offset() << std::endl;
 			/*if (BadValCheck) {
 				cimg_for(img,ptr,T) if ( std::isinf(*ptr) || std::isnan(*ptr) ) *ptr = NoDataValue();
 			}*/
 			CPLErr err = _GDALRasterBand->RasterIO(GF_Write, p1.x(), p1.y(), width, height, img.data(), width, height, this->Type(), 0, 0);
 			if (err != CE_None) std::cout << "Error writing " << Filename() << ": " << CPLGetLastErrorMsg() << std::endl;
+			_ValidStats = false;
 			return *this;
 		}
 
@@ -203,7 +204,7 @@ namespace gip {
 		}
 
 		//! Calculate stats
-		cimg_library::CImg<float> ComputeStats(bool RAW=false) {
+		/*cimg_library::CImg<float> ComputeStats(bool RAW=false) {
 		    using cimg_library::CImg;
 		    CImg<T> cimg;
 		    T min(MaxValue()), max(MinValue());
@@ -231,7 +232,7 @@ namespace gip {
             float stdev = sqrt(total/count);
             CImg<float> stats(4,1,1,1,(float)min,(float)max,mean,stdev);
             return stats;
-		}
+		}*/
 
 		// Normalized difference algorithm (NDVI, NDWI, etc)
 		/*GeoRasterIO& NormDiff(const GeoRaster& band1, const GeoRaster& band2, std::string desc) {

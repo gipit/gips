@@ -14,6 +14,9 @@
 
 namespace gip {
 
+    //! Test function
+    void test(const GeoImage&);
+
     //! Create a mask of NoData values
 	GeoRaster CreateMask(const GeoImage&, std::string);
 

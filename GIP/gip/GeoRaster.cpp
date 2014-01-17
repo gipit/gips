@@ -9,7 +9,7 @@ namespace gip {
 
 	// Copy constructor
 	GeoRaster::GeoRaster(const GeoRaster& image, GeoFunction func)
-		: GeoData(image), _GDALRasterBand(image._GDALRasterBand), _Masks(image._Masks), _NoData(image._NoData), //_ValidSize(image._ValidSize),
+		: GeoData(image), _GDALRasterBand(image._GDALRasterBand), _Masks(image._Masks), _NoData(image._NoData), _ValidStats(image._ValidStats), _Stats(image._Stats), //_ValidSize(image._ValidSize),
             _minDC(image._minDC), _maxDC(image._maxDC), _K1(image._K1), _K2(image._K2), _Esun(image._Esun),
             _Atmosphere(image._Atmosphere), _Functions(image._Functions) {
         if (func.Function() != "") AddFunction(func);
@@ -25,6 +25,8 @@ namespace gip {
 		_GDALRasterBand = image._GDALRasterBand;
 		_Masks = image._Masks;
 		_NoData = image._NoData;
+		_ValidStats = image._ValidStats;
+		_Stats = image._Stats;
 		//_ValidSize = image._ValidSize;
 		_minDC = image._minDC;
 		_maxDC = image._maxDC;
@@ -56,8 +58,8 @@ namespace gip {
 		std::stringstream info;
 		//info << _GeoImage->Basename() << " - b" << _GDALRasterBand->GetBand() << ":" << endl;
 		info << XSize() << " x " << YSize() << " " << DataType() << ": " << Description();
-		info << " (GeoData: " << _GDALDataset.use_count() << " " << _GDALDataset << ")";
-		info << " RasterBand &" << _GDALRasterBand << endl;
+		//info << " (GeoData: " << _GDALDataset.use_count() << " " << _GDALDataset << ")";
+		//info << " RasterBand &" << _GDALRasterBand << endl;
         info << "\t\tGain = " << Gain() << ", Offset = " << Offset(); //<< ", Units = " << Units();
         if (_NoData)
 			info << ", NoData = " << NoDataValue() << endl;
@@ -70,6 +72,8 @@ namespace gip {
         for (unsigned int i=0;i<_Functions.size();i++) {
         	info << "\t\t\t" << _Functions[i].Function() << " " << _Functions[i].Operand() << endl;
         }
+        if (!_Masks.empty()) info << "\tMasks:" << endl;
+        for (unsigned int i=0;i<_Masks.size();i++) info << "\t\t\t" << _Masks[i].Info() << endl;
 		//_GeoImage->GetGDALDataset()->Reference(); int ref = _GeoImage->GetGDALDataset()->Dereference();
 		//info << "  GDALDataset: " << _GDALDataset.use_count() << " (&" << _GDALDataset << ")" << endl;
         return info.str();
@@ -77,41 +81,89 @@ namespace gip {
 
     //! Compute stats
     cimg_library::CImg<float> GeoRaster::ComputeStats(bool RAW) const {
-        CImg<float> stats;
-        /*switch (DataType()) {
-            case GDT_Byte: stats = GeoRasterIO<unsigned char>(*this).ComputeStats(RAW);
-            case GDT_UInt16: stats = GeoRasterIO<unsigned short>(*this).ComputeStats(RAW);
-            case GDT_Int16: stats = GeoRasterIO<short>(*this).ComputeStats(RAW);
-            case GDT_UInt32: stats = GeoRasterIO<unsigned int>(*this).ComputeStats(RAW);
-            case GDT_Int32: stats = GeoRasterIO<int>(*this).ComputeStats(RAW);
-            case GDT_Float32: stats = GeoRasterIO<float>(*this).ComputeStats(RAW);
-            case GDT_Float64: stats = GeoRasterIO<double>(*this).ComputeStats(RAW);
-            default: stats = GeoRasterIO<unsigned char>(*this).ComputeStats(RAW);
-            // TODO - remove default. This should throw exception
-        }*/
-        stats = GeoRasterIO<double>(*this).ComputeStats(RAW);
-        if (Options::Verbose() > 1) {
-            cout << Basename() << " stats: " << stats(0);
-            for (int i=1;i<4;i++) cout << ", " << stats(i);
+        if (_ValidStats) return _Stats;
+
+        using cimg_library::CImg;
+        CImg<double> cimg;
+        double min(MaxValue()), max(MinValue());
+        double count(0);
+        double total(0);
+        GeoRasterIO<double> img(*this);
+        for (int iChunk=1; iChunk<=NumChunks(); iChunk++) {
+            cimg = img.Read(iChunk, RAW);
+            cimg_for(cimg,ptr,double) {
+                if (*ptr != NoDataValue()) {
+                    total += *ptr;
+                    count++;
+                    if (*ptr > max) max = *ptr;
+                    if (*ptr < min) min = *ptr;
+                }
+            }
         }
-        return stats;
+        float mean = total/count;
+        float val;
+        total = 0;
+        double total3(0);
+        for (int iChunk=1; iChunk<=NumChunks(); iChunk++) {
+            cimg = img.Read(iChunk, RAW);
+            cimg_for(cimg,ptr,double) {
+                if (*ptr != NoDataValue()) {
+                    val = *ptr-mean;
+                    total += (val*val);
+                    total3 += (val*val*val);
+                }
+            }
+        }
+        float var = total/count;
+        float stdev = sqrt(var);
+        float skew = (total3/count)/sqrt(var*var*var);
+        _Stats = CImg<float>(6,1,1,1,(float)min,(float)max,mean,stdev,skew,count);
+        _ValidStats = true;
+
+        return _Stats;
+    }
+
+    float GeoRaster::Percentile(float p) const {
+        CImg<float> stats = ComputeStats();
+        unsigned int bins(100);
+        CImg<float> hist = Histogram(bins,true) * 100;
+        CImg<float> xaxis(bins);
+        float interval( (stats(1)-stats(0))/((float)bins-1) );
+        for (unsigned int i=0;i<bins;i++) xaxis[i] = stats(0) + i * interval;
+        if (p == 0) return stats(0);
+        if (p == 99) return stats(1);
+        int ind(1);
+        while(hist[ind] < p) ind++;
+        float xind( (p-hist[ind-1])/(hist[ind]-hist[ind-1]) );
+        /*cout << p << endl;
+        cout << interval << endl;
+        cout << ind << endl;
+        cout << hist[ind-1] << endl;
+        cout << hist[ind] << endl;
+        cout << xind << endl;*/
+        return xaxis.linear_atX(ind-1+xind);
     }
 
     //! Compute histogram
-    cimg_library::CImg<long> GeoRaster::Histogram(int bins) const {
+    cimg_library::CImg<float> GeoRaster::Histogram(int bins, bool cumulative) const {
         CImg<double> cimg;
         CImg<float> stats = ComputeStats();
-        CImg<long> hist(bins,1,1,1,0);
-        float nodata = NoData();
-        GeoRasterIO<double> img(GeoRasterIO<double>(*this));
-        //CImg<long> hist = GeoRasterIO<double>(*this).Read(chunknum).get_histogram(bins); //, stats(0), stats(1));
+        CImg<float> hist(bins,1,1,1,0);
+        long numpixels(0);
+        float nodata = NoDataValue();
+        GeoRasterIO<double> img(*this);
         for (int iChunk=1; iChunk<=NumChunks(); iChunk++) {
             cimg = img.Read(iChunk);
             cimg_for(cimg,ptr,double) {
-                if (*ptr != nodata) hist[(unsigned int)((*ptr-stats(0)*bins/(stats(1)-stats(0))))]++;
+                if (*ptr != nodata) {
+                    hist[(unsigned int)( (*ptr-stats(0))*bins / (stats(1)-stats(0)) )]++;
+                    numpixels++;
+                }
             }
         }
-        if (Options::Verbose() > 3) hist.display_graph(0,3);
+        hist/=numpixels;
+        if (cumulative) for (int i=1;i<bins;i++) hist[i] += hist[i-1];
+        //if (Options::Verbose() > 3) hist.display_graph(0,3,1,"Pixel Value",stats(0),stats(1));
         return hist;
     }
 

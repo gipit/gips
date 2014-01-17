@@ -48,7 +48,7 @@ namespace gip {
 		//! \name Constructors/Destructors
 		//! Constructor for new band
 		GeoRaster(const GeoData& geodata, int bandnum=1)
-            : GeoData(geodata), _NoData(false), //_ValidSize(0),
+            : GeoData(geodata), _NoData(false), _ValidStats(false), //_ValidSize(0),
             _minDC(1), _maxDC(255), _K1(0), _K2(0), _Esun(0),
             _Atmosphere() {
 			LoadBand(bandnum);
@@ -63,6 +63,7 @@ namespace gip {
 		~GeoRaster() {}
 
 		//! \name File Information
+		std::string Basename() const { return GeoData::Basename() + "[" + Description() + "]"; }
 		//! Band X Size
 		unsigned int XSize() const { return _GDALRasterBand->GetXSize(); }
 		//! Band Y Size
@@ -217,12 +218,28 @@ namespace gip {
         GeoRaster& Process(const GeoRaster&, bool RAW=false);
 
         //! Adds a mask band (1 for valid), applied on read
-        GeoRaster& AddMask(const GeoRaster& band) { _Masks.push_back(band); return *this; }
+        GeoRaster& AddMask(const GeoRaster& band) {
+            _ValidStats = false;
+            _Masks.push_back(band);
+            return *this;
+        }
         //! Remove all masks from band
-		GeoRaster& ClearMasks() { _Masks.clear(); return *this; }
+		GeoRaster& ClearMasks() {
+		    if (!_Masks.empty()) _ValidStats = false;
+            _Masks.clear();
+            return *this;
+        }
 
-        GeoRaster& AddFunction(GeoFunction func) { _Functions.push_back(func); return *this; }
-        GeoRaster& ClearFunctions() { _Functions.clear(); return *this; }
+        GeoRaster& AddFunction(GeoFunction func) {
+            _ValidStats = false;
+            _Functions.push_back(func);
+            return *this;
+        }
+        GeoRaster& ClearFunctions() {
+            if (!_Functions.empty()) _ValidStats = false;
+            _Functions.clear();
+            return *this;
+        }
 
         // Logical functions
 		//! Greater than
@@ -248,7 +265,9 @@ namespace gip {
 		//double StdDev() const { return (GetGDALStats())[3]; }
         cimg_library::CImg<float> ComputeStats(bool RAW=false) const;
 
-        cimg_library::CImg<long> Histogram(int bins=100) const;
+        cimg_library::CImg<float> Histogram(int bins=100, bool cumulative=false) const;
+
+        float Percentile(float p) const;
 
         // TODO - If RAW then can use GDAL Statistics, but compare speeds
 		// Retrieve Statistics
@@ -283,6 +302,11 @@ namespace gip {
 
 		//! Bool if nodata value is used
 		bool _NoData;
+
+		//! Valid Stats Flag
+		mutable bool _ValidStats;
+        //! Statistics
+		mutable CImg<double> _Stats;
 
 		//! Number of valid pixels
 		//long _ValidSize;

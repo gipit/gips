@@ -18,11 +18,12 @@ def main():
     oparser = argparse.ArgumentParser(add_help=False)
     group = oparser.add_argument_group('Output file options')
     group.add_argument('--format', help='Output format', default='GTiff')
+    #group.add_argument('-s','--suffix',help='Append suffix to filename for output', default='_algname')
 
     # ALGORITHMS
     #parser = subparser.add_parser('CreateMask',help='Create valid pixel mask based on all bands', parents=[gparser,oparser], formatter_class=dhf)
     #group = parser.add_argument_group('algorithm arguments')
-    #group.add_argument('-s','--suffix',help='Append suffix to filename for output', default='_mask')
+    
     #parser = subparser.add_parser('FixBadPixels',help='Replace Inf/NaN results with NoData value', parents=[gparser], formatter_class=hformat)
    
     #parser = subparser.add_parser('ApplyMask', help='Apply Mask to existing image', parents=gparser, formatter_class=hformat)
@@ -41,8 +42,9 @@ def main():
     for f in args.files:
         start = datetime.datetime.now()
         fbase,ext = os.path.splitext(os.path.basename(f))
-        fout = fbase + '_' + args.command
-        imgout = eval('%s.process(gippy.GeoImage(f), fout, **args.__dict__)' % args.command)
+        #if args.suffix == '_algname': args.suffix = '_' + args.command
+        #fout = fbase + '_' + args.suffix
+        imgout = eval('%s.process(f, **args.__dict__)' % args.command)
         #if args.command == 'CreateMask':
         #    fout = fbase + args.suffix # + ext
         #    exec("gippy.CreateMask(gippy.GeoImage('%s'),'%s')" % (f,fout))
