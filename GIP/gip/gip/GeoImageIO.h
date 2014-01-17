@@ -102,7 +102,7 @@ namespace gip {
 			return images;
 		}*/
 
-		//! NoData mask (all bands)
+		//! NoData mask (all bands).  1's where it is good data
 		CImg<unsigned char> NoDataMask(int chunk=0, std::vector<std::string> bands=std::vector<std::string>()) const {
 		    unsigned int c;
 		    CImg<T> cube = Read(chunk, true);

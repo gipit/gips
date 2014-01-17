@@ -179,10 +179,10 @@ namespace gip {
 		cimg_library::CImg<unsigned char> NoDataMask(int chunk=0) const {
 		    using cimg_library::CImg;
 		    CImg<T> img = Read(chunk, true);  // this reads raw
-		    CImg<unsigned char> mask(img.width(),img.height(),1,1,0);
+		    CImg<unsigned char> mask(img.width(),img.height(),1,1,1);
 		    if (!NoData()) return mask;
 		    T nodataval = NoDataValue();
-            cimg_forXY(img,x,y) if (img(x,y) == nodataval) mask(x,y) = 1;
+            cimg_forXY(img,x,y) if (img(x,y) == nodataval) mask(x,y) = 0;
             return mask;
 		}
 
