@@ -47,18 +47,37 @@ namespace gip {
                 throw std::runtime_error(err.str());
             }
             CImg<T> img(ptrPixels,width,height);
+
+ 			// Apply all masks
+			if (_Masks.size() > 0) {
+			    if (Options::Verbose() > 3 && (chunk.min_corner().y()==0))
+                    std::cout << Basename() << ": Applying " << _Masks.size() << " masks" << std::endl;
+                GeoRasterIO<float> mask(_Masks[0]);
+                CImg<float> cmask(mask.Read(chunk));
+                for (unsigned int i=1; i<_Masks.size(); i++) {
+                    mask = GeoRasterIO<float>(_Masks[i]);
+                    cmask.mul(mask.Read(chunk));
+                }
+                cimg_forXY(img,x,y) {
+                    if (cmask(x,y) != 1) img(x,y) = NoDataValue();
+                }
+			}
+
             delete ptrPixels;
             return img;
 		}
 
 		//! Retrieve a piece of the image as a CImg
 		cimg_library::CImg<T> Read(int chunknum=0) const {
-		    bbox chunk;
 		    if (chunknum == 0) {
-                chunk = bbox(point(0,0),point(XSize()-1,YSize()-1));
+                return Read( bbox(point(0,0),point(XSize()-1,YSize()-1)) );
 		    } else {
-                chunk = _Chunks[chunknum-1];
+		        return Read( _Chunks[chunknum-1] );
 		    }
+		}
+
+		//! Retrieve a piece of the image as a CImg
+		cimg_library::CImg<T> Read(bbox chunk) const {
 		    using cimg_library::CImg;
 
 			/*point p1 = chunk.min_corner();
@@ -85,16 +104,30 @@ namespace gip {
             }
             // apply atmosphere if there is one (which would data is radiance units) TODO - check units
             if (Atmosphere()) {
-                if (Options::Verbose() > 3 && chunknum < 2) std::cout << Basename() << ": applying atmosphere" << std::endl;
+                if (Options::Verbose() > 3 && (chunk.min_corner().y()==0))
+                    std::cout << Basename() << ": applying atmosphere" << std::endl;
                 double e = (Thermal()) ? 0.95 : 1;  // For thermal band, currently water only
                 img = (img - (_Atmosphere.Lu() + (1-e)*_Atmosphere.Ld())) / (_Atmosphere.t() * e);
+                updatenodata = true;
+            }
+
+            // Convert to reflectance
+            if ((Units() == "radiance") && (_UnitsOut == "reflectance")) {
+                if (Options::Verbose() > 3 && (chunk.min_corner().y()==0))
+                    std::cout << Basename() << ": converting radiance to reflectance" << std::endl;
+                if (Thermal()) {
+                    cimg_for(img,ptr,T) *ptr = (_K2/log(_K1/(*ptr)+1)) - 273.15;
+                } else {
+                    float normrad = Atmosphere() ? (1.0/_Atmosphere.Ld()) : (1.0/_Esun);
+                    cimg_for(img,ptr,T) *ptr = *ptr * normrad;
+                }
                 updatenodata = true;
             }
 
 			// Apply Processing functions
 			std::vector<GeoFunction>::const_iterator iFunc;
 			for (iFunc=_Functions.begin();iFunc!=_Functions.end();iFunc++) {
-			    if (Options::Verbose() > 3 && chunknum < 2)
+			    if (Options::Verbose() > 3 && (chunk.min_corner().y()==0))
                     std::cout << Basename() << ": Applying function " << iFunc->Function() << " " << iFunc->Operand() << std::endl;
 				if (iFunc->Function() == ">") {
 					img.threshold(iFunc->Operand(),false,true);
@@ -114,22 +147,7 @@ namespace gip {
 				}
 				updatenodata = true;
 			}
-			// Apply all masks
-			if (_Masks.size() > 0) {
-			    if (Options::Verbose() > 3 && chunknum < 2)
-                    std::cout << Basename() << ": Applying " << _Masks.size() << " masks" << std::endl;
-                GeoRasterIO<float> mask(_Masks[0]);
-                CImg<float> cmask(mask.Read(chunknum));
-                for (unsigned int i=1; i<_Masks.size(); i++) {
-                    mask = GeoRasterIO<float>(_Masks[i]);
-                    cmask.mul(mask.Read(chunknum));
-                }
-                //img.mul(cmask);
-                cimg_forXY(img,x,y) {
-                    if (cmask(x,y) != 1) img(x,y) = NoDataValue();
-                }
-                updatenodata = true;
-			}
+
 			// If processing was applied update NoData values where needed
 			if (NoData() && updatenodata) {
                 cimg_forXY(img,x,y) {
@@ -227,23 +245,6 @@ namespace gip {
 		    T nodataval = NoDataValue();
             cimg_forXY(img,x,y) if (img(x,y) == nodataval) mask(x,y) = 0;
             return mask;
-		}
-
-		//! Return reflectance (or temperature if thermal band)  (move to GeoRaster)
-		cimg_library::CImg<float> Ref(int chunk=0) const {
-            cimg_library::CImg<float> cimg = Read(chunk);
-            if (Units() == "reflectance") {
-                return cimg;
-            } else if (Units() != "radiance") {
-                throw std::runtime_error("image not in compatible units for reflectance");
-            }
-            if (Thermal()) {
-                cimg_for(cimg,ptr,float) *ptr = (_K2/log(_K1/(*ptr)+1)) - 273.15;
-            } else {
-                float normrad = Atmosphere() ? (1.0/_Atmosphere.Ld()) : (1.0/_Esun);
-                cimg_for(cimg,ptr,float) *ptr = *ptr * normrad;
-            }
-            return cimg;
 		}
 
 		// Normalized difference algorithm (NDVI, NDWI, etc)

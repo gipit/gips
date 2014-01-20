@@ -119,7 +119,7 @@ namespace gip {
 		    CImg<unsigned char> mask(cube.width(),cube.height(),1,1,1);
 		    std::vector<int> ibands;
 		    std::vector<int>::const_iterator b;
-		    if (bands.size() == 0) {
+		    if (bands.empty()) {
 		        for (c=0; c<NumBands(); c++) ibands.push_back(c);
             } else {
                 for (std::vector<std::string>::const_iterator i=bands.begin(); i!=bands.end(); i++) {
@@ -158,26 +158,6 @@ namespace gip {
                 & green.threshold(th_green) & temp.threshold(th_temp,false,true)^=1;
             return mask;
 		}
-
-        //! Return a mask of water (and possibley clear-sky pixels)
-		CImg<bool> WaterMask(int chunk=0) const {
-            CImg<float> red( operator[]("Red").Ref(chunk) );
-            CImg<float> nir( operator[]("NIR").Ref(chunk) );
-            CImg<float> ndvi = (nir-red).get_div(nir+red);
-            CImg<bool> mask(red.width(),red.height(),1,1,false);
-            cimg_forXY(mask,x,y) {
-                if ( ((ndvi(x,y) < 0.01) && (nir(x,y) < 0.11)) || ((ndvi(x,y) < 0.1) && (nir(x,y) < 0.05)) ) mask(x,y) = true;
-            }
-            return mask;
-		}
-
-        //! Return haze mask
-        CImg<bool> HazeMask(int chunk=0) const {
-            CImg<float> red( operator[]("Red").Ref(chunk) );
-            CImg<float> blue( operator[]("Blue").Ref(chunk) );
-            CImg<bool> mask( (blue - 0.5*red - 0.08).threshold(0.0) );
-            return mask;
-        }
 
         CImg<float> Whiteness(int chunk=0) const {
             // RAW or RADIANCE ?

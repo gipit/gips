@@ -10,7 +10,7 @@ namespace gip {
 	// Copy constructor
 	GeoRaster::GeoRaster(const GeoRaster& image, GeoFunction func)
 		: GeoData(image), _GDALRasterBand(image._GDALRasterBand), _Masks(image._Masks), _NoData(image._NoData), _ValidStats(image._ValidStats), _Stats(image._Stats), //_ValidSize(image._ValidSize),
-            _minDC(image._minDC), _maxDC(image._maxDC), _K1(image._K1), _K2(image._K2), _Esun(image._Esun),
+            _UnitsOut(image._UnitsOut), _minDC(image._minDC), _maxDC(image._maxDC), _K1(image._K1), _K2(image._K2), _Esun(image._Esun),
             _Atmosphere(image._Atmosphere), _Functions(image._Functions) {
         if (func.Function() != "") AddFunction(func);
 		//std::cout << Basename() << ": GeoRaster copy (" << this << ")" << std::endl;
@@ -27,6 +27,7 @@ namespace gip {
 		_NoData = image._NoData;
 		_ValidStats = image._ValidStats;
 		_Stats = image._Stats;
+		_UnitsOut = image._UnitsOut;
 		//_ValidSize = image._ValidSize;
 		_minDC = image._minDC;
 		_maxDC = image._maxDC;
@@ -80,19 +81,18 @@ namespace gip {
 	}
 
     //! Compute stats
-    cimg_library::CImg<float> GeoRaster::ComputeStats(bool REF) const {
+    cimg_library::CImg<float> GeoRaster::ComputeStats() const {
+        using cimg_library::CImg;
+
         if (_ValidStats) return _Stats;
 
-        using cimg_library::CImg;
-        CImg<double> cimg;
-        double min(MaxValue()), max(MinValue());
-        double count(0);
-        double total(0);
         GeoRasterIO<double> img(*this);
+        CImg<double> cimg;
+        double count(0), total(0), val;
+        double min(MaxValue()), max(MinValue());
+
         for (int iChunk=1; iChunk<=NumChunks(); iChunk++) {
-            if (REF)
-                cimg = img.Ref(iChunk);
-            else cimg = img.Read(iChunk);
+            cimg = img.Read(iChunk);
             cimg_for(cimg,ptr,double) {
                 if (*ptr != NoDataValue()) {
                     total += *ptr;
@@ -103,13 +103,10 @@ namespace gip {
             }
         }
         float mean = total/count;
-        float val;
         total = 0;
         double total3(0);
         for (int iChunk=1; iChunk<=NumChunks(); iChunk++) {
-            if (REF)
-                cimg = img.Ref(iChunk);
-            else cimg = img.Read(iChunk);
+            cimg = img.Read(iChunk);
             cimg_for(cimg,ptr,double) {
                 if (*ptr != NoDataValue()) {
                     val = *ptr-mean;
