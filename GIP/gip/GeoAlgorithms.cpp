@@ -401,7 +401,7 @@ namespace gip {
                     cimgout = (((1.0+L)*(swir1 - red)).div(swir1+red+L)) - (0.5*swir2);
                 // Tillage indices
                 } else if (*iprod == "NDTI") {
-                    cimgout = (swir2-swir1).div(swir2+swir1);
+                    cimgout = (swir1-swir2).div(swir1+swir2);
                 } else if (*iprod == "CRC") {
                     cimgout = (swir1-blue).div(swir2+blue);
                 } else if (*iprod == "CRCM") {
