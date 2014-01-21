@@ -539,7 +539,7 @@ namespace gip {
 
         // Pass 2 (thermal processing)
         bool addclouds(false);
-        if ((cloudcover > 0.04) && (tstats(2) < 22.0)) {
+        if ((cloudcover > 0.004) && (tstats(2) < 22.0)) {
             float th0 = imgin["LWIR"].Percentile(83.5);
             float th1 = imgin["LWIR"].Percentile(97.5);
             if (tstats[4] > 0) {
@@ -571,7 +571,7 @@ namespace gip {
                 } else
                     if (Options::Verbose() > 2) cout << "Rejecting all ambiguous clouds" << endl;
             }
-        }
+        } else imgin["LWIR"].ClearMasks();
 
         //int esize(5);
         //CImg<int> selem(esize,esize,1,1,1);
@@ -586,6 +586,7 @@ namespace gip {
             imgout[1].Write(clouds,iChunk);
             // Inverse and multiply by nodata mask to get good data mask
             imgout[0].Write((clouds^=1).mul(imgin.NoDataMask(iChunk)), iChunk);
+            //imgout[0].Write(clouds^=1, iChunk);
         }
 
         return imgout;
