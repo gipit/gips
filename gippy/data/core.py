@@ -348,7 +348,7 @@ class DataInventory(object):
             for data in self.data[date]:
                 for t in data.tiles:
                     for p in data.tiles[t]['products']:
-                        link( data.tiles[t]['products'][p], hard )
+                        if not p == 'raw': link( data.tiles[t]['products'][p], hard )
 
     def printcalendar(self,md=False, products=False):
         """ print calendar for raw original datafiles """
@@ -401,18 +401,18 @@ class DataInventory(object):
 
 def link(f,hard=False):
     """ Create link to file in current directory """
-    faux = f + '.aux.xml'
+    #faux = f + '.aux.xml'
     if hard:
         try:
             os.link(f,os.path.basename(f))
-            os.link(faux,os.path.basename(faux))
+            #os.link(faux,os.path.basename(faux))
         except:
             pass
     else: 
         try:
             os.symlink(f,os.path.basename(f))
-            if os.path.isfile(faux):
-                os.symlink(faux,os.path.basename(faux))
+            #if os.path.isfile(faux):
+            #    os.symlink(faux,os.path.basename(faux))
         except:
             pass
 
