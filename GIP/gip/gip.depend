@@ -349,7 +349,7 @@
 	<gip/Options.h>
 	<gip/Utils.h>
 
-1385502577 source:/home/mhanson/work/gip.git/GIP/gip/GeoAlgorithms.cpp
+1389906213 source:/home/mhanson/work/gip.git/GIP/gip/GeoAlgorithms.cpp
 	<gip/GeoAlgorithms.h>
 	<gip/GeoImageIO.h>
 	<gip/gip_CImg.h>
@@ -366,17 +366,18 @@
 	<map>
 	<string>
 
-1384888878 /home/mhanson/work/gip.git/GIP/gip//gip/GeoAlgorithms.h
+1389889870 /home/mhanson/work/gip.git/GIP/gip//gip/GeoAlgorithms.h
 	<gip/GeoImage.h>
 	<gip/GeoRaster.h>
+	<initializer_list>
 
-1385566994 /home/mhanson/work/gip.git/GIP/gip//gip/GeoImage.h
+1389800749 /home/mhanson/work/gip.git/GIP/gip//gip/GeoImage.h
 	<gip/Colors.h>
 	<gip/GeoData.h>
 	<gip/GeoRaster.h>
 	<gip/GeoRasterIO.h>
 
-1385567081 /home/mhanson/work/gip.git/GIP/gip//gip/GeoData.h
+1389045266 /home/mhanson/work/gip.git/GIP/gip//gip/GeoData.h
 	<vector>
 	<string>
 	<gdal/gdal_priv.h>
@@ -392,7 +393,7 @@
 	<sstream>
 	<string>
 
-1384976569 /home/mhanson/work/gip.git/GIP/gip//gip/GeoRaster.h
+1389980188 /home/mhanson/work/gip.git/GIP/gip//gip/GeoRaster.h
 	<boost/filesystem.hpp>
 	<boost/geometry/geometry.hpp>
 	<boost/geometry/geometries/point_xy.hpp>
@@ -403,7 +404,7 @@
 	<iomanip>
 	<boost/algorithm/string.hpp>
 
-1384537953 /home/mhanson/work/gip.git/GIP/gip//gip/gip_CImg.h
+1389813028 /home/mhanson/work/gip.git/GIP/gip//gip/gip_CImg.h
 	<CImg.h>
 
 1382714769 /home/mhanson/work/gip.git/GIP/gip//CImg.h
@@ -457,22 +458,22 @@
 
 1382714769 /home/mhanson/work/gip.git/GIP/gip//gip/Atmosphere.h
 
-1385503888 /home/mhanson/work/gip.git/GIP/gip//gip/GeoRasterIO.h
+1389979743 /home/mhanson/work/gip.git/GIP/gip//gip/GeoRasterIO.h
 	<exception>
 	<gip/GeoRaster.h>
 	<cmath>
 	<iostream>
 
-1385490338 /home/mhanson/work/gip.git/GIP/gip//gip/GeoImageIO.h
+1389979929 /home/mhanson/work/gip.git/GIP/gip//gip/GeoImageIO.h
 	<gip/GeoImage.h>
 	<gip/GeoRasterIO.h>
 
-1385566962 source:/home/mhanson/work/gip.git/GIP/gip/GeoData.cpp
+1389041527 source:/home/mhanson/work/gip.git/GIP/gip/GeoData.cpp
 	<gip/GeoData.h>
 	<boost/make_shared.hpp>
 	<iostream>
 
-1385485223 source:/home/mhanson/work/gip.git/GIP/gip/GeoImage.cpp
+1389979987 source:/home/mhanson/work/gip.git/GIP/gip/GeoImage.cpp
 	<gip/GeoImage.h>
 	<gip/GeoRaster.h>
 

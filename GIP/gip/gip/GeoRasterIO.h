@@ -25,16 +25,62 @@ namespace gip {
 		~GeoRasterIO() {}
 
 		//! \name File I/O
+		//! Read raw chunk
+		cimg_library::CImg<T> ReadRaw(int chunknum=0) const {
+            if (chunknum == 0)
+                return ReadRaw( bbox(point(0,0),point(XSize()-1,YSize()-1)) );
+            else
+                return ReadRaw( _Chunks[chunknum-1] );
+		}
+
+        //! Read raw chunk given bounding box
+		cimg_library::CImg<T> ReadRaw(bbox chunk) const {
+            point p1(chunk.min_corner());
+            point p2(chunk.max_corner());
+            int width(p2.x()-p1.x()+1);
+            int height(p2.y()-p1.y()+1);
+            T* ptrPixels = new T[width*height];
+            CPLErr err = _GDALRasterBand->RasterIO(GF_Read, p1.x(), p1.y(), width, height, ptrPixels, width, height, this->Type(), 0, 0);
+            if (err != CE_None) {
+                std::stringstream err;
+                err << "error reading " << CPLGetLastErrorMsg();
+                throw std::runtime_error(err.str());
+            }
+            CImg<T> img(ptrPixels,width,height);
+
+ 			// Apply all masks
+			if (_Masks.size() > 0) {
+			    if (Options::Verbose() > 3 && (chunk.min_corner().y()==0))
+                    std::cout << Basename() << ": Applying " << _Masks.size() << " masks" << std::endl;
+                GeoRasterIO<float> mask(_Masks[0]);
+                CImg<float> cmask(mask.Read(chunk));
+                for (unsigned int i=1; i<_Masks.size(); i++) {
+                    mask = GeoRasterIO<float>(_Masks[i]);
+                    cmask.mul(mask.Read(chunk));
+                }
+                cimg_forXY(img,x,y) {
+                    if (cmask(x,y) != 1) img(x,y) = NoDataValue();
+                }
+			}
+
+            delete ptrPixels;
+            return img;
+		}
+
 		//! Retrieve a piece of the image as a CImg
-		cimg_library::CImg<T> Read(int chunknum=0, bool RAW=false) const {
-		    bbox chunk;
+		cimg_library::CImg<T> Read(int chunknum=0) const {
 		    if (chunknum == 0) {
-                chunk = bbox(point(0,0),point(XSize()-1,YSize()-1));
+                return Read( bbox(point(0,0),point(XSize()-1,YSize()-1)) );
 		    } else {
-                chunk = _Chunks[chunknum-1];
+		        return Read( _Chunks[chunknum-1] );
 		    }
+		}
+
+		//! Retrieve a piece of the image as a CImg
+		cimg_library::CImg<T> Read(bbox chunk) const {
 		    using cimg_library::CImg;
-			point p1 = chunk.min_corner();
+
+			/*point p1 = chunk.min_corner();
 			point p2 = chunk.max_corner();
 			int width = p2.x()-p1.x()+1;
 			int height = p2.y()-p1.y()+1;
@@ -45,28 +91,43 @@ namespace gip {
 			CPLErr err = _GDALRasterBand->RasterIO(GF_Read, p1.x(), p1.y(), width, height, ptrPixels, width, height, this->Type(), 0, 0);
 			if (err != CE_None) std::cout << "Error reading " << Filename() << ": " << CPLGetLastErrorMsg() << std::endl;
 			CImg<T> img(ptrPixels, width, height);
+			CImg<T> imgorig(img);*/
+
+			CImg<T> img(ReadRaw(chunk));
 			CImg<T> imgorig(img);
 
 			bool updatenodata = false;
 			// Convert data to radiance (if not raw requested)
-			if (!RAW) {
-                if (Gain() != 1.0 || Offset() != 0.0) {
-                    img = Gain() * (img-_minDC) + Offset();
-                    updatenodata = true;
-                }
-                // apply atmosphere if there is one (which would data is radiance units) TODO - check units
-                if (Atmosphere()) {
-                    if (Options::Verbose() > 3 && chunknum < 2) std::cout << Basename() << ": applying atmosphere" << std::endl;
-                    double e = (Thermal()) ? 0.95 : 1;  // For thermal band, currently water only
-                    img = (img - (_Atmosphere.Lu() + (1-e)*_Atmosphere.Ld())) / (_Atmosphere.t() * e);
-                    updatenodata = true;
-                }
-			}
+            if (Gain() != 1.0 || Offset() != 0.0) {
+                img = Gain() * (img-_minDC) + Offset();
+                updatenodata = true;
+            }
+            // apply atmosphere if there is one (which would data is radiance units) TODO - check units
+            if (Atmosphere()) {
+                if (Options::Verbose() > 3 && (chunk.min_corner().y()==0))
+                    std::cout << Basename() << ": applying atmosphere" << std::endl;
+                double e = (Thermal()) ? 0.95 : 1;  // For thermal band, currently water only
+                img = (img - (_Atmosphere.Lu() + (1-e)*_Atmosphere.Ld())) / (_Atmosphere.t() * e);
+                updatenodata = true;
+            }
 
-			// Apply Processing functions - TODO - should these apply if RAW ?
+            // Convert to reflectance
+            if ((Units() == "radiance") && (_UnitsOut == "reflectance")) {
+                if (Options::Verbose() > 3 && (chunk.min_corner().y()==0))
+                    std::cout << Basename() << ": converting radiance to reflectance" << std::endl;
+                if (Thermal()) {
+                    cimg_for(img,ptr,T) *ptr = (_K2/log(_K1/(*ptr)+1)) - 273.15;
+                } else {
+                    float normrad = Atmosphere() ? (1.0/_Atmosphere.Ld()) : (1.0/_Esun);
+                    cimg_for(img,ptr,T) *ptr = *ptr * normrad;
+                }
+                updatenodata = true;
+            }
+
+			// Apply Processing functions
 			std::vector<GeoFunction>::const_iterator iFunc;
 			for (iFunc=_Functions.begin();iFunc!=_Functions.end();iFunc++) {
-			    if (Options::Verbose() > 3 && chunknum < 2)
+			    if (Options::Verbose() > 3 && (chunk.min_corner().y()==0))
                     std::cout << Basename() << ": Applying function " << iFunc->Function() << " " << iFunc->Operand() << std::endl;
 				if (iFunc->Function() == ">") {
 					img.threshold(iFunc->Operand(),false,true);
@@ -86,29 +147,13 @@ namespace gip {
 				}
 				updatenodata = true;
 			}
-			// Apply all masks
-			if (_Masks.size() > 0) {
-			    if (Options::Verbose() > 3 && chunknum < 2)
-                    std::cout << Basename() << ": Applying " << _Masks.size() << " masks" << std::endl;
-                GeoRasterIO<float> mask(_Masks[0]);
-                CImg<float> cmask(mask.Read(chunknum));
-                for (unsigned int i=1; i<_Masks.size(); i++) {
-                    mask = GeoRasterIO<float>(_Masks[i]);
-                    cmask.mul(mask.Read(chunknum));
-                }
-                //img.mul(cmask);
-                cimg_forXY(img,x,y) {
-                    if (cmask(x,y) != 1) img(x,y) = NoDataValue();
-                }
-                updatenodata = true;
-			}
+
 			// If processing was applied update NoData values where needed
 			if (NoData() && updatenodata) {
                 cimg_forXY(img,x,y) {
                     if (imgorig(x,y) == NoDataValue()) img(x,y) = NoDataValue();
                 }
 			}
-			delete ptrPixels;
 			return img;
 		}
 
@@ -116,39 +161,55 @@ namespace gip {
         //    return Write(img, chunknum, RAW);
 		//}
 
+        //! Write raw CImg to file
+        GeoRasterIO<T>& WriteRaw(cimg_library::CImg<T> img, int chunknum=0) {
+            if (chunknum == 0)
+                return WriteRaw(img, bbox(point(0,0),point(XSize()-1,YSize()-1)) );
+            else
+                return WriteRaw(img, _Chunks[chunknum-1] );
+		}
+
+		//! Write raw CImg to file
+		GeoRasterIO<T>& WriteRaw(cimg_library::CImg<T> img, bbox chunk) {
+            point p1(chunk.min_corner());
+            point p2(chunk.max_corner());
+            int width(p2.x()-p1.x()+1);
+            int height(p2.y()-p1.y()+1);
+			CPLErr err = _GDALRasterBand->RasterIO(GF_Write, p1.x(), p1.y(), width, height, img.data(), width, height, this->Type(), 0, 0);
+            if (err != CE_None) {
+                std::stringstream err;
+                err << "error writing " << CPLGetLastErrorMsg();
+                throw std::runtime_error(err.str());
+            }
+			_ValidStats = false;
+			return *this;
+		}
+
 		//! Write a Cimg to the file
-		GeoRasterIO<T>& Write(cimg_library::CImg<T> img, int chunknum=0, bool RAW=false) { //, bool BadValCheck=false) {
+		GeoRasterIO<T>& Write(cimg_library::CImg<T> img, int chunknum=0) {
 		    bbox chunk;
 		    if (chunknum == 0) {
                 chunk = bbox(point(0,0),point(XSize()-1,YSize()-1));
 		    } else {
                 chunk = _Chunks[chunknum-1];
 		    }
-			point p1 = chunk.min_corner();
-			point p2 = chunk.max_corner();
-			int width = p2.x()-p1.x()+1;
-			int height = p2.y()-p1.y()+1;
-			// This the right place for this??
-			if (!RAW && (Gain() != 1.0 || Offset() != 0.0)) {
+            if (Gain() != 1.0 || Offset() != 0.0) {
                 cimg_for(img,ptr,T) if (*ptr != NoDataValue()) *ptr = (*ptr-Offset())/Gain();
 			}
-            if (Options::Verbose() > 3 && chunknum < 2)
-                std::cout << Basename() << ": Writing (" << Gain() << "x +" << Offset() << std::endl;
+            if (Options::Verbose() > 3 && (chunk.min_corner().y()==0))
+                std::cout << Basename() << ": Writing (" << Gain() << "x +" << Offset() << ")" << std::endl;
 			/*if (BadValCheck) {
 				cimg_for(img,ptr,T) if ( std::isinf(*ptr) || std::isnan(*ptr) ) *ptr = NoDataValue();
 			}*/
-			CPLErr err = _GDALRasterBand->RasterIO(GF_Write, p1.x(), p1.y(), width, height, img.data(), width, height, this->Type(), 0, 0);
-			if (err != CE_None) std::cout << "Error writing " << Filename() << ": " << CPLGetLastErrorMsg() << std::endl;
-			_ValidStats = false;
-			return *this;
+            return WriteRaw(img,chunk);
 		}
 
 		//! Process input band into this
-		GeoRasterIO<T>& Process(const GeoRaster& raster, bool RAW=false) {
+		GeoRasterIO<T>& Process(const GeoRaster& raster) {
 		    using cimg_library::CImg;
 		    GeoRasterIO<double> rasterIO(raster);
             for (int iChunk=1; iChunk<=NumChunks(); iChunk++) {
-                    CImg<double> cimg = rasterIO.Read(iChunk, RAW);
+                    CImg<double> cimg = rasterIO.Read(iChunk);
                     //CImg<unsigned char> mask;
                     //if (Gain() != 1.0 || Offset() != 0.0) {
                     //    (cimg-=Offset())/=Gain();
@@ -156,7 +217,7 @@ namespace gip {
                     //    cimg_forXY(cimg,x,y) { if (mask(x,y)) cimg(x,y) = NoDataValue(); }
                     //}
                     //WriteChunk(CImg<T>().assign(cimg.round()),*iChunk, RAW);
-                    Write(CImg<T>().assign(cimg),iChunk, RAW);
+                    Write(CImg<T>().assign(cimg),iChunk); //, RAW);
             }
             // Copy relevant metadata
             GDALRasterBand* band = raster.GetGDALRasterBand();
@@ -171,68 +232,20 @@ namespace gip {
 
         //! Get Saturation mask
 		cimg_library::CImg<bool> SaturationMask(int chunk=0) const {
-		    cimg_library::CImg<float> band(Read(chunk, true));
+		    cimg_library::CImg<float> band(ReadRaw(chunk));
 		    return band.threshold(_maxDC);
 		}
 
 		//! NoData mask
 		cimg_library::CImg<unsigned char> NoDataMask(int chunk=0) const {
 		    using cimg_library::CImg;
-		    CImg<T> img = Read(chunk, true);  // this reads raw
+		    CImg<T> img = ReadRaw(chunk);
 		    CImg<unsigned char> mask(img.width(),img.height(),1,1,1);
 		    if (!NoData()) return mask;
 		    T nodataval = NoDataValue();
             cimg_forXY(img,x,y) if (img(x,y) == nodataval) mask(x,y) = 0;
             return mask;
 		}
-
-		//! Return reflectance (or temperature if thermal band)  (move to GeoRaster)
-		cimg_library::CImg<float> Ref(int chunk=0) const {
-            cimg_library::CImg<float> cimg = Read(chunk);
-            if (Units() == "reflectance") {
-                return cimg;
-            } else if (Units() != "radiance") {
-                throw std::runtime_error("image not in compatible units for reflectance");
-            }
-            if (Thermal()) {
-                cimg_for(cimg,ptr,float) *ptr = (_K2/log(_K1/(*ptr)+1)) - 273.15;
-            } else {
-                float normrad = Atmosphere() ? (1.0/_Atmosphere.Ld()) : (1.0/_Esun);
-                cimg_for(cimg,ptr,float) *ptr = *ptr * normrad;
-            }
-            return cimg;
-		}
-
-		//! Calculate stats
-		/*cimg_library::CImg<float> ComputeStats(bool RAW=false) {
-		    using cimg_library::CImg;
-		    CImg<T> cimg;
-		    T min(MaxValue()), max(MinValue());
-		    long count(0);
-		    double total(0);
-            for (int iChunk=1; iChunk<=NumChunks(); iChunk++) {
-                cimg = Read(iChunk, RAW);
-                cimg_for(cimg,ptr,T) {
-                    if (*ptr != NoDataValue()) {
-                        total += *ptr;
-                        count++;
-                        if (*ptr > max) max = *ptr;
-                        if (*ptr < min) min = *ptr;
-                    }
-                }
-            }
-            float mean = total/count;
-            total = 0;
-            for (int iChunk=1; iChunk<=NumChunks(); iChunk++) {
-                cimg = Read(iChunk, RAW);
-                cimg_for(cimg,ptr,T) {
-                    if (*ptr != NoDataValue()) total += (*ptr - mean)*(*ptr - mean);
-                }
-            }
-            float stdev = sqrt(total/count);
-            CImg<float> stats(4,1,1,1,(float)min,(float)max,mean,stdev);
-            return stats;
-		}*/
 
 		// Normalized difference algorithm (NDVI, NDWI, etc)
 		/*GeoRasterIO& NormDiff(const GeoRaster& band1, const GeoRaster& band2, std::string desc) {

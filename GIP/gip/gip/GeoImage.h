@@ -152,6 +152,8 @@ namespace gip {
         void SetOffset(float offset) { for (unsigned int i=0;i<_RasterBands.size();i++) _RasterBands[i].SetOffset(offset); }
         //! Set  for all bands
         void SetUnits(std::string units) { for (unsigned int i=0;i<_RasterBands.size();i++) _RasterBands[i].SetUnits(units); }
+        //! Set UnitsOut for all bands
+        void SetUnitsOut(std::string units) const { for (unsigned int i=0;i<_RasterBands.size();i++) _RasterBands[i].SetUnitsOut(units); }
         //! Clear atmosphere from all bands
         void ClearAtmosphere() { for(unsigned int i=0;i<_RasterBands.size();i++) _RasterBands[i].ClearAtmosphere(); }
 		//! Set NoData for all bands
@@ -161,7 +163,7 @@ namespace gip {
 
 		//! \name Processing functions
         //! Process band into new file (copy and apply processing functions)
-		GeoImage Process(std::string, GDALDataType = GDT_Unknown);
+		//GeoImage Process(std::string, GDALDataType = GDT_Unknown);
 
 		//! Adds a mask band (1 for valid) to every band in image
 		GeoImage& AddMask(const GeoRaster& band) {

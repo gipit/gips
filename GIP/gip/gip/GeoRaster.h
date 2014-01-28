@@ -48,7 +48,7 @@ namespace gip {
 		//! \name Constructors/Destructors
 		//! Constructor for new band
 		GeoRaster(const GeoData& geodata, int bandnum=1)
-            : GeoData(geodata), _NoData(false), _ValidStats(false), //_ValidSize(0),
+            : GeoData(geodata), _NoData(false), _ValidStats(false), _UnitsOut(""),
             _minDC(1), _maxDC(255), _K1(0), _K2(0), _Esun(0),
             _Atmosphere() {
 			LoadBand(bandnum);
@@ -121,6 +121,8 @@ namespace gip {
 		float Offset() const { return _GDALRasterBand->GetOffset(); }
 		//! Set Unit type
 		GeoRaster& SetUnits(std::string units) { _GDALRasterBand->SetUnitType(units.c_str()); return *this; }
+		//! Set units out
+		void SetUnitsOut(std::string units) const { _UnitsOut = units; } //return *this; }
 		//! Set gain
 		GeoRaster& SetGain(float gain) { _GDALRasterBand->SetScale(gain); return *this; }
 		//! Set offset
@@ -194,6 +196,7 @@ namespace gip {
 		}*/
 
         //! \name Calibration and atmospheric functions
+
 		//! Is this a thermal sensor band?
 		bool Thermal() const { if (_K1*_K2 == 0) return false; else return true; }
 		//! Set thermal band, calling wth no arguments will clear thermal band status
@@ -215,7 +218,7 @@ namespace gip {
 
         //! \name Processing functions
         //! Copy raster band into this raster
-        GeoRaster& Process(const GeoRaster&, bool RAW=false);
+        GeoRaster& Process(const GeoRaster&);
 
         //! Adds a mask band (1 for valid), applied on read
         GeoRaster& AddMask(const GeoRaster& band) {
@@ -263,27 +266,17 @@ namespace gip {
 		//double Max() const { return (GetGDALStats())[1]; }
 		//double Mean() const { return (GetGDALStats())[2]; }
 		//double StdDev() const { return (GetGDALStats())[3]; }
-        cimg_library::CImg<float> ComputeStats(bool RAW=false) const;
+        cimg_library::CImg<float> ComputeStats() const;
 
         cimg_library::CImg<float> Histogram(int bins=100, bool cumulative=false) const;
 
         float Percentile(float p) const;
 
         // TODO - If RAW then can use GDAL Statistics, but compare speeds
-		// Retrieve Statistics
-		/*cimg_library::CImg<double> GetGDALStats() const {
-			double min, max, mean, stddev;
-			_GDALRasterBand->GetStatistics(false, true, &min, &max, &mean, &stddev);
-			cimg_library::CImg<double> stats(4);
-			stats(0) = min;
-			stats(1) = max;
-			stats(2) = mean;
-			stats(3) = stddev;
-			return stats;
-		}*/
 		// Compute Statistics
 		/*cimg_library::CImg<double> ComputeGDALStats() const {
 			double min, max, mean, stddev;
+			_GDALRasterBand->GetStatistics(false, true, &min, &max, &mean, &stddev);
 			_GDALRasterBand->ComputeStatistics(false, &min, &max, &mean, &stddev, NULL, NULL);
 			cimg_library::CImg<double> stats(4);
 			stats(0) = min;
@@ -307,6 +300,8 @@ namespace gip {
 		mutable bool _ValidStats;
         //! Statistics
 		mutable CImg<double> _Stats;
+
+		mutable std::string _UnitsOut;
 
 		//! Number of valid pixels
 		//long _ValidSize;

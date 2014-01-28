@@ -92,6 +92,7 @@ namespace gip {
 	    if (img[0].Units() != "radiance") {
 	        throw std::runtime_error("image not in radiance units");
 	    }
+	    img.SetUnitsOut("radiance");
         typedef float T;
         GeoImageIO<T> imgIO(img);
         GeoImageIO<T> imgoutIO(GeoImage(filename, img, GDT_Int16));
@@ -119,6 +120,7 @@ namespace gip {
 	    if ((img[0].Units() != "radiance") && (img[0].Units() != "reflectance")) {
 	        throw std::runtime_error("image not in compatible units for reflectance");
 	    }
+	    img.SetUnitsOut("reflectance");
 	    typedef float t;
         GeoImageIO<t> imgIO(img);
         GeoImageIO<t> imgoutIO(GeoImage(filename, img, GDT_Int16));
@@ -131,7 +133,7 @@ namespace gip {
             if (img[b].Thermal()) imgoutIO[b].SetGain(0.01); else imgoutIO[b].SetGain(0.0001);
             imgoutIO.SetColor(colors[b+1], b+1);
             for (int iChunk=1; iChunk<=img[b].NumChunks(); iChunk++) {
-                cimg = imgIO[b].Ref(iChunk);
+                cimg = imgIO[b].Read(iChunk);
                 nodata = imgIO[b].NoDataMask(iChunk);
                 cimg_forXY(cimg,x,y) { if (!nodata(x,y)) cimg(x,y) = imgoutIO[b].NoDataValue(); }
                 imgoutIO[b].Write(cimg,iChunk);
@@ -142,6 +144,7 @@ namespace gip {
 
     //! Generate 3-band RGB image scaled to 1 byte for easy viewing
     GeoImage RGB(const GeoImage& img, string filename) {
+        img.SetUnitsOut("reflectance");
         GeoImageIO<float> imgIO(img);
         imgIO.PruneToRGB();
         GeoImageIO<unsigned char> imgoutIO(GeoImage(filename, imgIO, GDT_Byte));
@@ -150,7 +153,7 @@ namespace gip {
         CImg<float> stats, cimg;
         CImg<unsigned char> mask;
         for (unsigned int b=0;b<imgIO.NumBands();b++) {
-            stats = imgIO[b].ComputeStats(true);
+            stats = imgIO[b].ComputeStats();
             float lo = std::max(stats(2) - 3*stats(3), stats(0)-1);
             float hi = std::min(stats(2) + 3*stats(3), stats(1));
             for (int iChunk=1; iChunk<=imgIO[b].NumChunks(); iChunk++) {
@@ -323,6 +326,7 @@ namespace gip {
     //}
 
     void Indices(const GeoImage& ImageIn, string basename, std::vector<std::string> products) {
+        ImageIn.SetUnitsOut("reflectance");
         GeoImageIO<float> imgin(ImageIn);
 		float nodataout = -32768;
 
@@ -367,12 +371,12 @@ namespace gip {
         // need to add overlap
         for (int iChunk=1; iChunk<=ImageIn[0].NumChunks(); iChunk++) {
             for (isstr=used_colors.begin();isstr!=used_colors.end();isstr++) {
-                if (*isstr == "RED") red = imgin["RED"].Ref(iChunk);
-                else if (*isstr == "GREEN") green = imgin["GREEN"].Ref(iChunk);
-                else if (*isstr == "BLUE") blue = imgin["BLUE"].Ref(iChunk);
-                else if (*isstr == "NIR") nir = imgin["NIR"].Ref(iChunk);
-                else if (*isstr == "SWIR1") swir1 = imgin["SWIR1"].Ref(iChunk);
-                else if (*isstr == "SWIR2") swir2 = imgin["SWIR2"].Ref(iChunk);
+                if (*isstr == "RED") red = imgin["RED"].Read(iChunk);
+                else if (*isstr == "GREEN") green = imgin["GREEN"].Read(iChunk);
+                else if (*isstr == "BLUE") blue = imgin["BLUE"].Read(iChunk);
+                else if (*isstr == "NIR") nir = imgin["NIR"].Read(iChunk);
+                else if (*isstr == "SWIR1") swir1 = imgin["SWIR1"].Read(iChunk);
+                else if (*isstr == "SWIR2") swir2 = imgin["SWIR2"].Read(iChunk);
             }
             if (Options::Verbose() > 2) {
                 std::cout << "Colors used: ";
@@ -397,7 +401,7 @@ namespace gip {
                     cimgout = (((1.0+L)*(swir1 - red)).div(swir1+red+L)) - (0.5*swir2);
                 // Tillage indices
                 } else if (*iprod == "NDTI") {
-                    cimgout = (swir2-swir1).div(swir2+swir1);
+                    cimgout = (swir1-swir2).div(swir1+swir2);
                 } else if (*iprod == "CRC") {
                     cimgout = (swir1-blue).div(swir2+blue);
                 } else if (*iprod == "CRCM") {
@@ -415,7 +419,7 @@ namespace gip {
 	}
 
 	//! Auto cloud mask - toaref input
-	GeoImage AutoCloud(const GeoImage& image, string filename, int cheight, float minred, float maxtemp, float maxndvi, int morph) {
+	/*GeoImage AutoCloud(const GeoImage& image, string filename, int cheight, float minred, float maxtemp, float maxndvi, int morph) {
 	    typedef float outtype;
         GeoImageIO<float> imgin(image);
         GeoImageIO<outtype> imgout(GeoImage(filename, image, GDT_Byte, 1));
@@ -440,16 +444,17 @@ namespace gip {
             if (morph != 0) mask.dilate(morph);
 
             imgout[0].Write(mask,iChunk);
-            /*CImg<double> stats = img.get_stats();
-            cout << "stats " << endl;
-            for (int i=0;i<12;i++) cout << stats(i) << " ";
-            cout << endl;*/
+            //CImg<double> stats = img.get_stats();
+            //cout << "stats " << endl;
+            //for (int i=0;i<12;i++) cout << stats(i) << " ";
+            //cout << endl;
         }
         return imgout;
-	}
+	}*/
 
-	//! ACCA (Automatic Cloud Cover Assessment)
+	//! ACCA (Automatic Cloud Cover Assessment) takes in TOA Reflectance and temperature
 	GeoImage ACCA(const GeoImage& img, string filename) {
+	    img.SetUnitsOut("reflectance");
         GeoImageIO<float> imgin(img);
 
         float th_red(0.08);
@@ -464,8 +469,8 @@ namespace gip {
         GeoImageIO<unsigned char> imgout(GeoImage(filename, imgin, GDT_Byte, 3));
         imgout.SetNoData(0);
         imgout.SetUnits("other");
-        imgout[0].SetDescription("clouds");
-        imgout[1].SetDescription("ambclouds");
+        imgout[0].SetDescription("datamask");
+        imgout[1].SetDescription("pass2");
         imgout[2].SetDescription("pass1");
 
         CImg<float> red, green, nir, swir1, temp, ndsi, b56comp;
@@ -474,11 +479,11 @@ namespace gip {
 
         if (Options::Verbose()) cout << img.Basename() << " - ACCA" << endl;
         for (int iChunk=1; iChunk<=imgin[0].NumChunks(); iChunk++) {
-            red = imgin["RED"].Ref(iChunk);
-            green = imgin["GREEN"].Ref(iChunk);
-            nir = imgin["NIR"].Ref(iChunk);
-            swir1 = imgin["SWIR1"].Ref(iChunk);
-            temp = imgin["LWIR"].Ref(iChunk);
+            red = imgin["RED"].Read(iChunk);
+            green = imgin["GREEN"].Read(iChunk);
+            nir = imgin["NIR"].Read(iChunk);
+            swir1 = imgin["SWIR1"].Read(iChunk);
+            temp = imgin["LWIR"].Read(iChunk);
 
             mask = imgin.NoDataMask(iChunk, {"RED","GREEN","NIR","SWIR1","LWIR"});
 
@@ -511,7 +516,7 @@ namespace gip {
                 // Filter8 - warm/cold
                 //b56comp.threshold(th_warm) + 1);
 
-            nonclouds.mul(mask);
+            //nonclouds.mul(mask);
             clouds.mul(mask);
             ambclouds.mul(mask);
 
@@ -520,12 +525,12 @@ namespace gip {
 
             imgout[2].Write(clouds,iChunk);
             imgout[1].Write(ambclouds,iChunk);
-            imgout[0].Write(nonclouds,iChunk);
+            //imgout[0].Write(nonclouds,iChunk);
             if (Options::Verbose() > 3) std::cout << "Processed chunk " << iChunk << " of " << imgin[0].NumChunks() << std::endl;
         }
         // Cloud statistics
         float cloudcover = cloudsum / scenesize;
-        CImg<float> tstats = imgin["LWIR"].AddMask(imgout[0]).ComputeStats();
+        CImg<float> tstats = imgin["LWIR"].AddMask(imgout[2]).ComputeStats();
         if (Options::Verbose() > 1) {
             cout.precision(4);
             cout << "   Cloud Cover = " << cloudcover*100 << "%" << endl;
@@ -533,7 +538,8 @@ namespace gip {
         }
 
         // Pass 2 (thermal processing)
-        if ((cloudcover > 0.04) && (tstats(2) < 22.0)) {
+        bool addclouds(false);
+        if ((cloudcover > 0.004) && (tstats(2) < 22.0)) {
             float th0 = imgin["LWIR"].Percentile(83.5);
             float th1 = imgin["LWIR"].Percentile(97.5);
             if (tstats[4] > 0) {
@@ -546,48 +552,49 @@ namespace gip {
                 th1 += shift;
             }
             imgin["LWIR"].ClearMasks();
-            CImg<float> cold_stats = imgin["LWIR"].AddMask(imgout[1]).AddMask(imgin["LWIR"] < th0).ComputeStats();
-            imgin["LWIR"].ClearMasks();
             CImg<float> warm_stats = imgin["LWIR"].AddMask(imgout[1]).AddMask(imgin["LWIR"] < th1).AddMask(imgin["LWIR"] > th0).ComputeStats();
+            if (Options::Verbose() > 1) cimg_print(warm_stats, "Warm Cloud stats(min,max,mean,sd,skew,count)");
             imgin["LWIR"].ClearMasks();
-            if (Options::Verbose() > 1) {
-                //cout << "Percentiles = " << th0 << ", " << th1 << endl;
-                cimg_print(cold_stats, "Cold Cloud stats(min,max,mean,sd,skew,count)");
-                cimg_print(warm_stats, "Warm Cloud stats(min,max,mean,sd,skew,count)");
-            }
-            bool addclouds(true);
             if (((warm_stats(5)/scenesize) < 0.4) && (warm_stats(2) < 22)) {
                 if (Options::Verbose() > 2) cout << "Accepting warm clouds" << endl;
                 imgout[1].AddMask(imgin["LWIR"] < th1).AddMask(imgin["LWIR"] > th0);
-            } else if (((cold_stats(5)/scenesize) < 0.4) && (cold_stats(2) < 22)) {
-                if (Options::Verbose() > 2) cout << "Accepting cold clouds" << endl;
-                imgout[1].AddMask(imgin["LWIR"] < th0);
+                addclouds = true;
             } else {
-                if (Options::Verbose() > 2) cout << "Rejecting all ambiguous clouds" << endl;
-                addclouds = false;
+                // Cold clouds
+                CImg<float> cold_stats = imgin["LWIR"].AddMask(imgout[1]).AddMask(imgin["LWIR"] < th0).ComputeStats();
+                if (Options::Verbose() > 1) cimg_print(cold_stats, "Cold Cloud stats(min,max,mean,sd,skew,count)");
+                imgin["LWIR"].ClearMasks();
+                if (((cold_stats(5)/scenesize) < 0.4) && (cold_stats(2) < 22)) {
+                    if (Options::Verbose() > 2) cout << "Accepting cold clouds" << endl;
+                    imgout[1].AddMask(imgin["LWIR"] < th0);
+                    addclouds = true;
+                } else
+                    if (Options::Verbose() > 2) cout << "Rejecting all ambiguous clouds" << endl;
             }
-            //int esize(5);
-            //CImg<int> selem(esize,esize,1,1,1);
-            // 3x3 filter of 1's for majority filter
-            CImg<int> filter(3,3,1,1, 1);
-            for (int iChunk=1; iChunk<=imgin[0].NumChunks(); iChunk++) {
-                clouds = imgout[2].Read(iChunk);
-                if (addclouds) clouds += imgout[1].Read(iChunk);
-                // Majority filter
-                clouds = (clouds + clouds.get_convolve(filter).threshold(5)).threshold(1);
-                //clouds.erode(selem).dilate(selem);
-                // Inverse and multiply by mask
-                imgout[0].Write(clouds,iChunk);
-            }
-        } else {
-            for (int iChunk=1; iChunk<=imgin[0].NumChunks(); iChunk++)
-                imgout[0].Write(imgout[2].Read(iChunk),iChunk);
+        } else imgin["LWIR"].ClearMasks();
+
+        //int esize(5);
+        //CImg<int> selem(esize,esize,1,1,1);
+        // 3x3 filter of 1's for majority filter
+        CImg<int> filter(3,3,1,1, 1);
+        for (int iChunk=1; iChunk<=imgin[0].NumChunks(); iChunk++) {
+            clouds = imgout[2].Read(iChunk);
+            if (addclouds) clouds += imgout[1].Read(iChunk);
+            // Majority filter
+            clouds = (clouds + clouds.get_convolve(filter).threshold(5)).threshold(1);
+            //clouds.erode(selem).dilate(selem);
+            imgout[1].Write(clouds,iChunk);
+            // Inverse and multiply by nodata mask to get good data mask
+            imgout[0].Write((clouds^=1).mul(imgin.NoDataMask(iChunk)), iChunk);
+            //imgout[0].Write(clouds^=1, iChunk);
         }
+
         return imgout;
 	}
 
     //! Fmask cloud mask
     GeoImage Fmask(const GeoImage& image, string filename, int tolerance, int dilate) {
+        image.SetUnitsOut("reflectance");
         GeoImageIO<float> imgin(image);
 
         // Output masks
@@ -600,19 +607,20 @@ namespace gip {
         probout.SetNoData(nodata);
 
         CImg<unsigned char> mask, wmask, lmask, nodatamask, redsatmask, greensatmask;
-        CImg<float> red, nir, green, swir1, swir2, BT, ndvi, ndsi, white, vprob;
+        CImg<float> red, nir, green, blue, swir1, swir2, BT, ndvi, ndsi, white, vprob;
         float _ndvi, _ndsi;
         //int cloudpixels(0);
         CImg<double> wstats(image.Size()), lstats(image.Size());
         int wloc(0), lloc(0);
 
         for (int iChunk=1; iChunk<=image[0].NumChunks(); iChunk++) {
-            red = imgin["RED"].Ref(iChunk);
-            green = imgin["GREEN"].Ref(iChunk);
-            nir = imgin["NIR"].Ref(iChunk);
-            swir1 = imgin["SWIR1"].Ref(iChunk);
-            swir2 = imgin["SWIR2"].Ref(iChunk);
-            BT = imgin["LWIR"].Ref(iChunk);
+            blue = imgin["BLUE"].Read(iChunk);
+            red = imgin["RED"].Read(iChunk);
+            green = imgin["GREEN"].Read(iChunk);
+            nir = imgin["NIR"].Read(iChunk);
+            swir1 = imgin["SWIR1"].Read(iChunk);
+            swir2 = imgin["SWIR2"].Read(iChunk);
+            BT = imgin["LWIR"].Read(iChunk);
             nodatamask = imgin.NoDataMask(iChunk);
             // floodfill....seems bad way
             //shadowmask = nir.draw_fill(nir.width()/2,nir.height()/2,)
@@ -639,14 +647,18 @@ namespace gip {
                 & ndvi.threshold(0.8,false,true)^=1
                 // NDSI
                 & ndsi.threshold(0.8,false,true)^=1
-                & imgin.HazeMask(iChunk)
+                // HazeMask
+                & (blue - 0.5*red - 0.08).threshold(0.0)
                 & imgin.Whiteness(iChunk).threshold(0.7,false,true)^=1
                 & nir.div(swir1).threshold(0.75);
 
             //cloudpixels += mask.sum();
 
             // Water and land masks
-            wmask = imgin.WaterMask(iChunk);
+            CImg<bool> wmask(red.width(),red.height(),1,1,false);
+            cimg_forXY(wmask,x,y) {
+                if ( ((ndvi(x,y) < 0.01) && (nir(x,y) < 0.11)) || ((ndvi(x,y) < 0.1) && (nir(x,y) < 0.05)) ) wmask(x,y) = true;
+            }
             imgout[0].Write(mask, iChunk);
             imgout[1].Write(wmask, iChunk);
 
@@ -696,7 +708,7 @@ namespace gip {
         CImg<float> wprob, lprob;
         for (int iChunk=1; iChunk<=image[0].NumChunks(); iChunk++) {
             // Cloud over Water prob
-            BT = imgin["LWIR"].Ref(iChunk);
+            BT = imgin["LWIR"].Read(iChunk);
             nodatamask = imgin.NoDataMask(iChunk);
 
             vprob = probout[0].Read(iChunk);
@@ -734,8 +746,8 @@ namespace gip {
             wmask = imgout[1].Read(iChunk);
 
             nodatamask = imgin.NoDataMask(iChunk);
-            BT = imgin["LWIR"].Ref(iChunk);
-            swir1 = imgin["SWIR1"].Ref(iChunk);
+            BT = imgin["LWIR"].Read(iChunk);
+            swir1 = imgin["SWIR1"].Read(iChunk);
 
             // temp probability x brightness probability
             wprob = ((Twater - BT)/=4.0).mul( swir1.min(0.11)/=0.11 );

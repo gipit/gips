@@ -52,8 +52,8 @@ namespace gip {
     //! Create cloudmask using ACCA
     GeoImage ACCA(const GeoImage&, std::string);
 
-	//! Create new file with AutoCloud algorithm
-	GeoImage AutoCloud(const GeoImage&, std::string, int=4000, float=0.2, float=14, float=0.2, int=20);
+	// Create new file with AutoCloud algorithm
+	//GeoImage AutoCloud(const GeoImage&, std::string, int=4000, float=0.2, float=14, float=0.2, int=20);
 
 	//! Create new file with a basic cloud mask
 	GeoImage Fmask(const GeoImage&, std::string, int=3, int=5);
