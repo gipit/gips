@@ -12,6 +12,7 @@ from pdb import set_trace
 
 class CDLData(Data):
     """ A CDL (Crop Data Layer) object """
+    name = "CDL"
     sensors = {'cdl': 'CDL'}
     sensor = 'cdl'
     rootdir = '/titan/data/CDL'
@@ -34,7 +35,7 @@ class CDLData(Data):
         """ Get filename for specified tile. Return (path,basename,filename,sensor) """
         filename = glob.glob(os.path.join(cls.rootdir, tile, 'CDL_%s_*.tif' % date.strftime('%Y')))
         path, basename = os.path.split(filename[0])
-        return {'path': path, 'basename': basename, 'sensor': 'cdl', 'products': {'raw':filename[0],'cdl':filename[0]}} 
+        return {'path': path, 'basename': basename, 'sensor': 'cdl', 'products': {'raw':filename[0],'cdl':filename[0]}}
 
     @classmethod
     def path(cls, tile='', date=''):
