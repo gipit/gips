@@ -2,7 +2,7 @@
 
 import os, sys
 import argparse
-import ogr 
+import ogr
 import datetime
 import glob
 from shapely.wkb import loads
@@ -84,7 +84,7 @@ class Data(object):
         """ All possible sensor names """
         return sorted(cls.sensors.values())
 
-    @classmethod 
+    @classmethod
     def get_tiles_vector(cls):
         """ Get GeoVector of sensor grid """
         return gippy.GeoVector("PG:dbname=geodata host=congo port=5432 user=ags", layer=cls._tiles_vector)
@@ -108,7 +108,7 @@ class Data(object):
         while feat is not None:
             tgeom = loads(feat.GetGeometryRef().ExportToWkb())
             area = geom.intersection(tgeom).area
-            if area != 0: 
+            if area != 0:
                 tile = str(feat.GetField(fldindex))
                 # TODO - THIS IS LANDSAT SPECIFIC !
                 if len(tile) == 5: tile = '0' + tile
@@ -227,11 +227,11 @@ class DataInventory(object):
         'bright blue':     '1;34',
         'bright purple':   '1;35',
         'bright cyan':     '1;36',
-        'red':             '0;31', 
-        'green':           '0;32', 
-        'blue':            '0;34',     
-        'cyan':            '0;36',     
-        'yellow':          '0;33', 
+        'red':             '0;31',
+        'green':           '0;32',
+        'blue':            '0;34',
+        'cyan':            '0;36',
+        'yellow':          '0;33',
         'purple':          '0;35',
     }
 
@@ -258,7 +258,7 @@ class DataInventory(object):
         return [k for k in sorted(self.data)]
 
     @property
-    def numdates(self): 
+    def numdates(self):
         """ Get number of dates """
         return len(self.data)
 
@@ -275,7 +275,7 @@ class DataInventory(object):
     #    """ Get list of all sensors """
     #    return [self._colorize(k, self._colors[k]) for k in sorted(self._colors)]
 
-    def _colorize(self,txt,color): 
+    def _colorize(self,txt,color):
         return "\033["+self._colorcodes[color]+'m' + txt + "\033[0m"
 
     def AddData(self, dataclass, products=None, **kwargs):
@@ -302,12 +302,12 @@ class DataInventory(object):
                 self.data[date] = [ dat ]
                 self.numfiles = self.numfiles + len(dat.tiles)
             except: pass
-        
+
     def temporal_extent(self, dates, days):
         """ Temporal extent (define self.dates and self.days) """
         if dates is None: dates='1984,2050'
         self.start_date,self.end_date = dateparse.range(dates)
-        if days: 
+        if days:
             days = days.split(',')
         else: days = (1,366)
         self.start_day,self.end_day = ( int(days[0]), int(days[1]) )
@@ -319,7 +319,7 @@ class DataInventory(object):
         for date in self.dates:
             for data in self.data[date]:
                 data.process(overwrite, suffix, overviews)
-                # TODO - add completed product(s) to inventory         
+                # TODO - add completed product(s) to inventory
         VerboseOut('Completed processing')
 
     def project(self, res=None, datadir='gipdata'):
@@ -355,7 +355,7 @@ class DataInventory(object):
         #import calendar
         #cal = calendar.TextCalendar()
         oldyear = ''
-        for date in self.dates:        
+        for date in self.dates:
             if md:
                 daystr = str(date.month) + '-' + str(date.day)
             else:
@@ -391,11 +391,11 @@ class DataInventory(object):
         for i,s in enumerate(sensors):
             print self._colorize(s, self._colororder[i])
             #print self._colorize(self.dataclass.sensors[s], self._colororder[s])
-        
+
     def __str__(self):
         if self.numfiles != 0:
-            s = "Data Inventory: %s files on %s dates" % (self.numfiles,self.numdates)
-        else: 
+            s = "%s Data Inventory: %s files on %s dates" % (self.dataclass.name, self.numfiles, self.numdates)
+        else:
             s = 'Data Inventory: No matching files'
         return s
 
@@ -408,7 +408,7 @@ def link(f,hard=False):
             os.link(faux,os.path.basename(faux))
         except:
             pass
-    else: 
+    else:
         try:
             os.symlink(f,os.path.basename(f))
             if os.path.isfile(faux):
@@ -461,7 +461,7 @@ def main(dataclass):
     if args.command == 'help':
         parser0.print_help()
         print '\navailable products:'
-        for key,val in dataclass._products.items(): 
+        for key,val in dataclass._products.items():
             print '    {:<20}{:<100}'.format(key, val['description'])
         exit(1)
 
@@ -483,7 +483,7 @@ def main(dataclass):
         if args.products is None:
             inv.printcalendar(args.md)
         else: inv.printcalendar(args.md,True)
-        
+
     elif args.command == 'link':
         inv.createlinks(args.hard)
 
