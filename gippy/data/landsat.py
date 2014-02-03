@@ -95,6 +95,16 @@ class LandsatData(Data):
             'function': 'SATVI',
             'atmcorr': True,
         }),
+        ('toabi', {
+            'description': 'TOA BI',
+            'function': 'BI',
+            'atmcorr': False,
+        }),
+        ('toandvi', {
+            'description': 'TOA NDVI',
+            'function': 'NDVI',
+            'atmcorr': False,
+        }),
 
         # Tillage
         ('crc', {
@@ -202,7 +212,7 @@ class LandsatData(Data):
         if numadded != len(fnames):
             print '%s files not added to archive' % (len(fnames)-numadded)
 
-    def process(self, overwrite=False, suffix='', overviews=False):
+    def process(self, overwrite=False, suffix=''): # , overviews=False):
         """ Make sure all products exist for all tiles, process if necessary """
         for tile, data in self.tiles.items():
             if suffix != '' and suffix[:1] != '_': suffix = '_' + suffix
@@ -251,7 +261,7 @@ class LandsatData(Data):
                             print 'Error creating product %s for %s: %s' % (product,fname,e)
                             VerboseOut(traceback.format_exc(),2)
 
-                        if overviews: imgout.AddOverviews()
+                        #if overviews: imgout.AddOverviews()
                         #fname = imgout.Filename()
                         imgout = None
                         dur = datetime.datetime.now() - start
@@ -493,9 +503,9 @@ class LandsatData(Data):
             image.SetColor(bandmeta['color'],i+1)
         return image
 
-    @classmethod
-    def add_subparsers(cls, parser):
-        p = parser.add_parser('cloudmask', help='Create cloud masks', parents=[cls.args_inventory()], 
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    #@classmethod
+    #def add_subparsers(cls, parser):
+    #    p = parser.add_parser('cloudmask', help='Create cloud masks', parents=[cls.args_inventory()], 
+    #        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
 def main(): datamain(LandsatData)
