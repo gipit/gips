@@ -90,7 +90,7 @@ class Data(object):
         return gippy.GeoVector("PG:dbname=geodata host=congo port=5432 user=ags", layer=cls._tiles_vector)
 
     @classmethod
-    def vector2tiles(cls, vector, mincoverage=5):
+    def vector2tiles(cls, vector, mincoverage=0.0):
         """ Return matching tiles and coverage % for provided vector """
         import osr
         geom = vector.union()
@@ -112,12 +112,12 @@ class Data(object):
                 tile = str(feat.GetField(fldindex))
                 # TODO - THIS IS LANDSAT SPECIFIC !
                 if len(tile) == 5: tile = '0' + tile
-                tiles[tile] = area/geom.area
+                tiles[tile] = (area/geom.area, area/tgeom.area)
             feat = tlayer.GetNextFeature()
         remove_tiles = []
         for t in tiles:
-            if tiles[t] < mincoverage/100.0: remove_tiles.append(t)
-        for t in remove_tiles: tiles.pop(t,None)
+            if tiles[t][0] < mincoverage/100.0: remove_tiles.append(t)
+        for t in remove_t[0]iles: tiles.pop(t,None)
         return tiles
 
     def open(self, product='', update=True):
@@ -165,7 +165,7 @@ class Data(object):
             self.tile_coverage = self.vector2tiles(gippy.GeoVector(site))
             self.tiles = self.tile_coverage.keys()
         else:
-            self.tile_coverage = dict((t,1) for t in self.find_tiles())
+            self.tile_coverage = dict((t,(1,1)) for t in self.find_tiles())
         self.date = date
         # Create tile and product dictionaries for use by child class
         self.tiles = {}
@@ -383,8 +383,9 @@ class DataInventory(object):
         self.legend()
         print self
         if self.site is not None:
-            print 'Tile Coverage:'
-            for t in sorted(self.tiles): print '%s: %2.0f%%' % (t,self.tiles[t]*100)
+            print '{:^8}{:>14}{:>14}'.format('Tile','% Coverage','% Tile Used')
+            for t in sorted(self.tiles): 
+                print "{:>8}{:>11.1f}%{:>11.1f}%".format(t,self.tiles[t][0]*100,self.tiles[t][1]*100)
 
     def legend(self):
         sensors = sorted(self.dataclass.sensors.values())
