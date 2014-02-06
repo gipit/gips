@@ -28,6 +28,7 @@ class LandsatData(Data):
     rootdir = '/titan/data/landsat/tiles'
     _tiles_vector = 'landsat_wrs'
     _tiles_attribute = 'pr'
+    _pattern = 'L*.tar.gz'
 
     _products = OrderedDict([
         ('rgb', {
@@ -131,29 +132,26 @@ class LandsatData(Data):
         }),
     ])
 
-    @classmethod
-    def find_products(cls, tile, date, products):
+    def find_products(self, tile):
         """ Get filename info for specified tile """
-        filename = glob.glob(os.path.join(cls.rootdir, tile, date.strftime('%Y%j'), '*.tar.gz'))
+        filename = glob.glob(os.path.join(cls.rootdir, tile, self.date.strftime('%Y%j'), '*.tar.gz'))
         if len(filename) == 0:
             raise Exception('No files found')
         elif len(filename) > 1:
-            print 'More than 1 file found for same tile/date!'
             raise Exception('More than 1 file found for same tile/date')
         filename = filename[0]
         path,basename = os.path.split(filename)
         basename = basename[:-12]
         sensor = basename[0:3]
 
-        tiledata = { 'path': path, 'basename': basename, 'sensor': sensor }
+        self.tiles[tile] { 'path': path, 'basename': basename, 'sensor': sensor }
         prod = {'raw': filename}
-        for p in products:
+        for p in self.products:
             fnames = glob.glob( os.path.join(path,'*_%s*.tif' % p) )
             for f in fnames:
                 prodname = os.path.splitext(os.path.split(f)[1][len(basename)+1:])[0]
                 prod[ prodname ] = f
-        tiledata['products'] = prod
-        return tiledata
+        self.tiles[tile]['products'] = prod
 
     @classmethod
     def filter(cls, tile, filename, maxclouds=100):
@@ -168,10 +166,8 @@ class LandsatData(Data):
     @classmethod
     def archive(cls, path=''):
         """ Move landsat files from current directory to archive location """
-        if (dir == ''):
-            fnames = glob.glob('L*.tar.gz')
-        else:
-            fnames = glob.glob(os.path.join(path, 'L*.tar.gz'))
+        fnames = glob.glob(os.path.join(path,cls.pattern))
+
         numadded = 0
         for f in fnames:
             pathrow = f[3:9]
@@ -440,6 +436,12 @@ class LandsatData(Data):
             'clouds': clouds
         }
         return self.tiles[tile]['metadata']
+
+    def opentile(self, tile, product=''):
+        """ Open and return tile/product GeoImage """
+        if product != '':
+            return gippy.GeoImage()
+          
 
     def _readraw(self,tile,bandnums=[]):
         """ Read in Landsat bands using original tar.gz file """

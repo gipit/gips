@@ -31,12 +31,19 @@ class Data(object):
     @classmethod
     def find_dates(cls, tile):
         """ Get list of dates for a tile """
-        return [datetime.datetime.strptime(os.path.basename(d),'%Y%j').date() for d in os.listdir(cls.path(tile))]
+        return [datetime.datetime.strptime(os.path.basename(d),'%Y%j').date() for d in os.listdir( os.path.join(cls.rootdir,tile) )]
 
-    @classmethod
-    def find_products(cls, tile, date, products):
-        """ Find all products for specified tile dictionary. Create tile dictionary containing:
-             path - path to files/products
+    #@classmethod
+    #def path(cls,tile): #,date=''):
+    #    """ Path to tile directory (assuming tiledir/datedir structure """
+    #    if date == '':
+    #        return os.path.join(cls.rootdir, tile)
+    #    else:
+    #        return os.path.join(cls.rootdir, tile, date)
+
+    def find_products(self, tile): #, date, products):
+        """ Find given products for specified tile (on this date and desired sensors). Create tile dictionary containing:
+             path - full path to files/products
              basename - base/root name of this tile/date
              products - dictionary of product name and filename
              sensor - name of sensor
@@ -50,14 +57,6 @@ class Data(object):
         return True
 
     @classmethod
-    def path(cls,tile,date=''):
-        """ Path to date or tile directory (assuming tiledir/datedir structure """
-        if date == '':
-            return os.path.join(cls.rootdir, tile)
-        else:
-            return os.path.join(cls.rootdir, tile, date)
-
-    @classmethod
     def fetch(cls):
         """ Download data and add to archive """
         raise Exception("Fetch not implemented for %s" % cls.name)
@@ -65,12 +64,63 @@ class Data(object):
     @classmethod
     def archive(cls, path=''):
         """ Move files from directory to archive location """
+        fnames = glob.glob(os.path.join(path,cls.pattern))
+
+        numadded = 0
+        for f in fnames:
+            # LANDSAT SPECIFIC
+            pathrow = f[3:9]
+            year = f[9:13]
+            doy = f[13:16]
+            path = os.path.join(cls.rootdir,pathrow,year+doy)
+
+            # Make directory
+            try:
+                #pass
+                os.makedirs(path)
+            except OSError as exc: # Python >2.5
+                if exc.errno == errno.EEXIST and os.path.isdir(path):
+                    #print 'Directory already exists'
+                    pass
+                else:
+                    raise Exception('Unable to make product directory %s' % path)
+
+            # Move file
+            try:
+                newf = os.path.join(path,f)
+                if not os.path.exists(newf):
+                    # Check for older versions
+                    existing_files = glob.glob(os.path.join(path,'*tar.gz'))
+                    if len(existing_files) > 0:
+                        print 'Other version of %s already exist:' % f
+                        for ef in existing_files: print '\t%s' % ef
+                    shutil.move(f,newf)
+                    #print f, ' -> ',path
+                    numadded = numadded + 1
+            except shutil.Error as err:
+                print err
+                print f, ' -> problem archiving file'
+                #raise Exception('shutils error %s' % err)
+                #if exc.errno == errno.EEXIST:
+                #    print f, ' removed, already in archive'
+        print '%s files added to archive' % numadded
+        if numadded != len(fnames):
+            print '%s files not added to archive' % (len(fnames)-numadded)        
         raise Exception("Archive not implemented for %s" % cls.name)
         pass
 
     def process(self):
         """ Make sure all products exist and process if needed """
         pass
+
+    def opentile(self, tile, product=''):
+        if product != '':
+            return gippy.GeoImage(self.products[product])
+        elif len(self.products) == 1:
+            return gippy.GeoImage(self.products[self.products.keys()[0]])
+        else:
+            # return filename of a tile from self.tiles ?
+            raise Exception('Invalid product %s' % product)
 
     ##########################################################################
     # Child classes should not generally have to override anything below here
@@ -118,7 +168,7 @@ class Data(object):
         for t in tiles:
             if tiles[t][0] < mincoverage/100.0: remove_tiles.append(t)
         for t in remove_t[0]iles: tiles.pop(t,None)
-        return tiles
+        return tiles      
 
     def open(self, product='', update=True):
         """ Open and return final product GeoImage """
@@ -149,24 +199,23 @@ class Data(object):
                     print 'Projected and cropped %s files -> %s in %s' % (len(filenames),imgout.Basename(),datetime.datetime.now() - start)
                 self.products[product] = filename
 
-    def __init__(self, site=None, tiles=None, date=None, products=None, **kwargs):
+    def __init__(self, site=None, tiles=None, date=None, products=None, sensors=None, **kwargs):
         """ Locate data matching vector location (or tiles) and date
         self.tile_coverage - dictionary of tile id and % coverage with site
         self.tiles - dictionary of tile id and a tile dictionary (see next)
-        self.tiles[tile] - dictionary of tile data
+        self.tiles[tile] - dictionary of tile data {path, baename, sensor, products}
         self.products - dictionary of product name and final product filename
         """
         self.site = site
         # Calculate spatial extent
         if tiles is not None:
             self.tile_coverage = dict((t,1) for t in tiles)
-            self.tiles = tiles
         elif site is not None:
             self.tile_coverage = self.vector2tiles(gippy.GeoVector(site))
-            self.tiles = self.tile_coverage.keys()
         else:
             self.tile_coverage = dict((t,(1,1)) for t in self.find_tiles())
         self.date = date
+
         # Create tile and product dictionaries for use by child class
         self.tiles = {}
         for t in self.tile_coverage.keys(): self.tiles[t] = {}
@@ -174,27 +223,27 @@ class Data(object):
         if len(products) == 0: products = self._products.keys()
         self.products = {}
         for p in products: self.products[p] = ''
-        # For each tile locate files
+
+        # For each tile locate files/products
+        if sensors is None: sensors = self.sensors.keys()
+        self.sensors = self.sensors[sensors]
+
+        # Find products
         empty_tiles = []
         for t in self.tiles:
             try:
-                self.tiles[t] = self.find_products(t,date,products)
-                self.sensor = self.tiles[t]['sensor']
-                #print self.tiles[t]
+                self.find_products(t)
             except Exception,e:
-                #print 'Error: %s' % (e)
-                #VerboseOut(traceback.format_exc(), 3)
                 empty_tiles.append(t)
                 continue
-
             # Custom filter based on dataclass
             #good = self.filter(t,filename, **kwargs)
             #if good == False:
             #    empty_tiles.append(t)
 
+        self.sensor = self.tiles[self.tiles.keys()[0]]['sensor']
         for t in empty_tiles: self.tiles.pop(t,None)
-        if len(self.tiles) == 0:
-            raise Exception('No valid data found')
+        if len(self.tiles) == 0: raise Exception('No valid data found')
 
     @staticmethod
     def args_inventory():
