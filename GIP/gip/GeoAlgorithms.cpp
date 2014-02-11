@@ -377,6 +377,7 @@ namespace gip {
         colors["CRC"] = {"SWIR1","SWIR2","BLUE"};
         colors["CRCM"] = {"SWIR1","SWIR2","GREEN"};
         colors["ISTI"] = {"SWIR1","SWIR2"};
+        colors["STI"] = {"SWIR1","SWIR2"};
 
         // Figure out what colors are needed
         std::set< string > used_colors;
