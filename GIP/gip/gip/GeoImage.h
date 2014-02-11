@@ -163,7 +163,7 @@ namespace gip {
 
 		//! \name Processing functions
         //! Process band into new file (copy and apply processing functions)
-		//GeoImage Process(std::string, GDALDataType = GDT_Unknown);
+		GeoImage Process(std::string, GDALDataType = GDT_Unknown);
 
 		//! Adds a mask band (1 for valid) to every band in image
 		GeoImage& AddMask(const GeoRaster& band) {

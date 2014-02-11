@@ -74,8 +74,8 @@ namespace gip {
 	GeoImage& GeoImage::AddBand(const GeoRaster& band) { //, unsigned int bandnum) {
 		//if ((bandnum == 0) || (bandnum > _RasterBands.size())) bandnum = _RasterBands.size();
 		//_RasterBands.insert(_RasterBands.begin()+bandnum-1, band);
-
 		_RasterBands.push_back(band);
+        SetColor(band.Description(),_RasterBands.size());
 		return *this;
 	}
     // Remove a band
@@ -98,16 +98,18 @@ namespace gip {
     }
 
 	// Copy input file into new output file
-	/*GeoImage GeoImage::Process(string filename, GDALDataType datatype) {
+	GeoImage GeoImage::Process(string filename, GDALDataType datatype) {
 	    // TODO: if not supplied base output datatype on units?
 	    if (datatype == GDT_Unknown) datatype = this->DataType();
 		GeoImage imgout(filename, *this, datatype);
-        for (unsigned int i=0; i<imgout.NumBands(); i++) imgout[i].Process((*this)[i], true);
+        for (unsigned int i=0; i<imgout.NumBands(); i++) {
+            imgout[i].Process((*this)[i]);
+        }
 		Colors colors = this->GetColors();
 		for (unsigned int i=0;i<this->NumBands();i++) imgout.SetColor(colors[i+1], i+1);
 		imgout.CopyColorTable(*this);
 		return imgout;
-	}*/
+	}
 
 	// Replaces all Inf or NaN pixels with NoDataValue
 	GeoImage& GeoImage::FixBadPixels() {
