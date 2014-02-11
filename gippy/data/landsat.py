@@ -16,7 +16,7 @@ from collections import OrderedDict
 import gippy
 from gippy.atmosphere import atmosphere
 
-from gippy.data.core import Data, DataInventory, VerboseOut, FileToList
+from gippy.data.core import Data, DataInventory, VerboseOut, File2List
 
 from pdb import set_trace
 
@@ -241,7 +241,7 @@ class LandsatData(Data):
     def _readmeta(self, tile):
         """ Read in Landsat MTL (metadata) file """
         filename = self.tiles[tile]['products']['raw']
-        mtlfilename = self.extract(filename)
+        mtlfilename = self.extracthdr(filename)
 
         VerboseOut('reading %s' % mtlfilename, 3)
         # Read MTL file
@@ -398,17 +398,11 @@ class LandsatData(Data):
 
         # Extract desired files from tarfile
         filename = tiledata['products']['raw']
-        if tarfile.is_tarfile(filename):
-            tfile = tarfile.open(filename)
-        else:
-            raise Exception('%s not a valid landsat tar file' % os.path.basename(filename))
-            return
+        index = self.extract(filename)
 
         filenames = []
         for b in bandnums:
             fname = tiledata['metadata']['filenames'][b-1]
-            if not os.path.exists(fname):
-                tfile.extract(fname,tiledata['path'])
             filenames.append(os.path.join(tiledata['path'],fname))
 
         if gippy.Options.Verbose() > 2:
