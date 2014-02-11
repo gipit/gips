@@ -51,6 +51,7 @@ namespace gip {
     void CRC(const GeoImage&, std::string);
     void CRCm(const GeoImage&, std::string);
     void iSTI(const GeoImage&, std::string);
+    void STI(const GeoImage&, std::string);
 
     //! Create cloudmask using ACCA
     GeoImage ACCA(const GeoImage&, std::string);
