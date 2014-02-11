@@ -36,7 +36,7 @@ class LandsatData(Data):
             'atmcorr': False,
         }),
         ('rad', {
-            'description': 'Surface leaving radiance', 
+            'description': 'Surface leaving radiance',
             'function': 'Rad',
             'atmcorr': True,
         }),
@@ -121,7 +121,12 @@ class LandsatData(Data):
             'description': 'Inverse Standard Tillage Index',
             'function': 'iSTI',
             'atmcorr': True,
-        }),        
+        }),
+        ('sti', {
+            'description': 'Standard Tillage Index',
+            'function': 'STI',
+            'atmcorr': True,
+        }),
 
         # Other
         ('acca', {
@@ -164,7 +169,7 @@ class LandsatData(Data):
             if meta['clouds'] > maxclouds:
                 return False
         return True
-        
+
     @classmethod
     def archive(cls, path=''):
         """ Move landsat files from current directory to archive location """
@@ -274,7 +279,7 @@ class LandsatData(Data):
                 img = None
                 # cleanup directory
                 try:
-                    for bname in data['metadata']['filenames']: 
+                    for bname in data['metadata']['filenames']:
                         files = glob.glob(os.path.join(data['path'],bname)+'*')
                         for f in files: os.remove(f)
                     shutil.rmtree(os.path.join(dirname,'modtran'))
@@ -347,14 +352,14 @@ class LandsatData(Data):
             colors = ["COASTAL","BLUE","GREEN","RED","NIR","SWIR1","SWIR2","CIRRUS"] #,"LWIR1","LWIR2"]
             bandlocs = [0.443, 0.4825, 0.5625, 0.655, 0.865, 1.610, 2.2, 1.375] #, 10.8, 12.0]
             bandwidths = [0.01, 0.0325, 0.0375, 0.025, 0.02, 0.05, 0.1, 0.015] #, 0.5, 0.5]
-            E = [2638.35, 2031.08, 1821.09, 2075.48, 1272.96, 246.94, 90.61, 369.36] #, 0, 0] 
+            E = [2638.35, 2031.08, 1821.09, 2075.48, 1272.96, 246.94, 90.61, 369.36] #, 0, 0]
             K1 = [0, 0, 0, 0, 0, 0, 0, 0] #774.89, 480.89]
             K2 = [0, 0, 0, 0, 0, 0, 0, 0] #1321.08, 1201.14]
             oldbands = bands
         else:
             raise Exception('Landsat%s? not recognized' % id)
 
-        # Process MTL text - replace old metadata tags with new 
+        # Process MTL text - replace old metadata tags with new
         # NOTE This is not comprehensive, there may be others
         text = text.replace('ACQUISITION_DATE','DATE_ACQUIRED')
         text = text.replace('SCENE_CENTER_SCAN_TIME','SCENE_CENTER_TIME')
@@ -379,16 +384,16 @@ class LandsatData(Data):
                 if key != "GROUP" and key !="END_GROUP": mtl[key] = item
 
         # Extract useful metadata
-        lats = ( float(mtl['CORNER_UL_LAT_PRODUCT']), float(mtl['CORNER_UR_LAT_PRODUCT']), 
+        lats = ( float(mtl['CORNER_UL_LAT_PRODUCT']), float(mtl['CORNER_UR_LAT_PRODUCT']),
                 float(mtl['CORNER_LL_LAT_PRODUCT']), float(mtl['CORNER_LR_LAT_PRODUCT']))
-        lons = ( float(mtl['CORNER_UL_LON_PRODUCT']), float(mtl['CORNER_UR_LON_PRODUCT']), 
+        lons = ( float(mtl['CORNER_UL_LON_PRODUCT']), float(mtl['CORNER_UR_LON_PRODUCT']),
             float(mtl['CORNER_LL_LON_PRODUCT']), float(mtl['CORNER_LR_LON_PRODUCT']))
         lat = (min(lats) + max(lats))/2.0
         lon = (min(lons) + max(lons))/2.0
-        dt = datetime.datetime.strptime(mtl['DATE_ACQUIRED'] + ' ' + 
+        dt = datetime.datetime.strptime(mtl['DATE_ACQUIRED'] + ' ' +
             mtl['SCENE_CENTER_TIME'][:-2],'%Y-%m-%d %H:%M:%S.%f')
         seconds = (dt.second + dt.microsecond/1000000.)/3600.
-        dectime = dt.hour + dt.minute/60.0 + seconds  
+        dectime = dt.hour + dt.minute/60.0 + seconds
         try:
             clouds = float(mtl['CLOUD_COVER'])
         except: clouds = 0
@@ -425,14 +430,14 @@ class LandsatData(Data):
 
         _datetime = {
             'datetime': dt,
-            'JulianDay': (dt - datetime.datetime(dt.year,1,1)).days + 1, 
+            'JulianDay': (dt - datetime.datetime(dt.year,1,1)).days + 1,
             'DecimalTime': dectime,
         }
 
         # TODO - now that metadata part of LandsatData object some of these keys not needed
         self.tiles[tile]['metadata'] = {
             'sensor': 'Landsat'+str(id),
-            'metafilename': mtlfilename, 
+            'metafilename': mtlfilename,
             'filenames': filenames,
             'geometry': _geometry,
             'datetime': _datetime,
@@ -448,11 +453,11 @@ class LandsatData(Data):
 
         tiledata = self.tiles[tile]
 
-        if len(bandnums) != 0: 
+        if len(bandnums) != 0:
             bandnums = numpy.array(bandnums)
         else:
             bandnums = numpy.arange(0,len(tiledata['metadata']['bands'])) + 1
-        
+
         # Extract desired files from tarfile
         filename = tiledata['products']['raw']
         if tarfile.is_tarfile(filename):
@@ -505,7 +510,7 @@ class LandsatData(Data):
 
     #@classmethod
     #def add_subparsers(cls, parser):
-    #    p = parser.add_parser('cloudmask', help='Create cloud masks', parents=[cls.args_inventory()], 
+    #    p = parser.add_parser('cloudmask', help='Create cloud masks', parents=[cls.args_inventory()],
     #        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
 def main(): datamain(LandsatData)
