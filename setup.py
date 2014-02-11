@@ -48,6 +48,7 @@ setup (name = 'gippy',
             # Data scripts TODO - auto find and add
             'landsat = gippy.data.landsat:main',
             'cdl = gippy.data.cdl:main',
+            'sar = gippy.data.sar:main',
         ],
     },
     #cmdclass = {"install_gip": install_gip},
