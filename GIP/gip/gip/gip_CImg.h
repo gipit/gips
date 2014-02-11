@@ -3,7 +3,7 @@
 
 //#define cimg_debug 0
 #define cimg_verbosity 1
-//#define cimg_display 0
+#define cimg_display 0
 
 #include <CImg.h>
 
