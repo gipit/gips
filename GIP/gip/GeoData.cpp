@@ -25,6 +25,9 @@ namespace gip {
     // Open existing file
 	GeoData::GeoData(string filename, bool Update) : _Filename(filename) {
 		GDALAccess access = Update ? GA_Update : GA_ReadOnly;
+		if (access == GA_ReadOnly)
+            CPLSetConfigOption("GDAL_PAM_ENABLED","NO");
+        else CPLSetConfigOption("GDAL_PAM_ENABLED",NULL);
 		GDALDataset* ds = (GDALDataset*)GDALOpenShared(_Filename.string().c_str(), access);
 		// Check if Update access not supported
 		if (ds == NULL && CPLGetLastErrorNo() == 6)
