@@ -8,7 +8,7 @@ import re
 import datetime
 import shutil
 import numpy
-import tarfile
+
 from copy import deepcopy
 import traceback
 from collections import OrderedDict
@@ -16,8 +16,7 @@ from collections import OrderedDict
 import gippy
 from gippy.atmosphere import atmosphere
 
-from gippy.data.core import Data, DataInventory, VerboseOut
-from gippy.data.core import main as datamain
+from gippy.data.core import Data, DataInventory, VerboseOut, FileToList
 
 from pdb import set_trace
 
@@ -25,10 +24,12 @@ class LandsatData(Data):
     """ Represents a single date and temporal extent along with (existing) product variations (raw, ref, toaref, ind, ndvi, etc) """
     name = 'Landsat'
     sensors = {'LT4': 'Landsat 4', 'LT5': 'Landsat 5', 'LE7': 'Landsat 7', 'LC8': 'Landsat 8'}
-    rootdir = '/titan/data/landsat/tiles'
+    _rootdir = '/titan/data/landsat/tiles'
     _tiles_vector = 'landsat_wrs'
     _tiles_attribute = 'pr'
     _pattern = 'L*.tar.gz'
+    _prodpattern = '*.tif'
+    _metapattern = 'MTL.txt'
 
     _products = OrderedDict([
         ('rgb', {
@@ -132,86 +133,37 @@ class LandsatData(Data):
         }),
     ])
 
-    def find_products(self, tile):
-        """ Get filename info for specified tile """
-        filename = glob.glob(os.path.join(cls.rootdir, tile, self.date.strftime('%Y%j'), '*.tar.gz'))
-        if len(filename) == 0:
-            raise Exception('No files found')
-        elif len(filename) > 1:
-            raise Exception('More than 1 file found for same tile/date')
-        filename = filename[0]
-        path,basename = os.path.split(filename)
-        basename = basename[:-12]
-        sensor = basename[0:3]
-
-        self.tiles[tile] { 'path': path, 'basename': basename, 'sensor': sensor }
-        prod = {'raw': filename}
-        for p in self.products:
-            fnames = glob.glob( os.path.join(path,'*_%s*.tif' % p) )
-            for f in fnames:
-                prodname = os.path.splitext(os.path.split(f)[1][len(basename)+1:])[0]
-                prod[ prodname ] = f
-        self.tiles[tile]['products'] = prod
-
     @classmethod
-    def filter(cls, tile, filename, maxclouds=100):
+    def inspect(cls, filename):
+        """ Inspect a single file and get some metadata
+                path - full path to files/products
+                basename - base/root name of this tile/date
+                products - dictionary of product name and filename
+                sensor - name of sensor
+        """
+        path,basename = os.path.split(filename)
+        tile = basename[3:9]
+        year = basename[9:13]
+        doy = basename[13:16]
+        return {
+            'tile': tile,
+            'basename': basename[:-12],
+            'sensor': basename[0:3],
+            'path':os.path.join(cls._rootdir,tile,year+doy)
+        }
+
+    def filter(self, tile, maxclouds=100):
         """ Check if tile passes filter """
-        # TODO - remove filename parameter
         if maxclouds < 100:
-            meta = cls._readmeta(tile,filename=filename)
+            meta = cls._readmeta(tile)
             if meta['clouds'] > maxclouds:
                 return False
         return True
-        
-    @classmethod
-    def archive(cls, path=''):
-        """ Move landsat files from current directory to archive location """
-        fnames = glob.glob(os.path.join(path,cls.pattern))
-
-        numadded = 0
-        for f in fnames:
-            pathrow = f[3:9]
-            year = f[9:13]
-            doy = f[13:16]
-            path = os.path.join(cls.rootdir,pathrow,year+doy)
-
-            # Make directory
-            try:
-                #pass
-                os.makedirs(path)
-            except OSError as exc: # Python >2.5
-                if exc.errno == errno.EEXIST and os.path.isdir(path):
-                    #print 'Directory already exists'
-                    pass
-                else:
-                    raise Exception('Unable to make product directory %s' % path)
-
-            # Move file
-            try:
-                newf = os.path.join(path,f)
-                if not os.path.exists(newf):
-                    # Check for older versions
-                    existing_files = glob.glob(os.path.join(path,'*tar.gz'))
-                    if len(existing_files) > 0:
-                        print 'Other version of %s already exist:' % f
-                        for ef in existing_files: print '\t%s' % ef
-                    shutil.move(f,newf)
-                    #print f, ' -> ',path
-                    numadded = numadded + 1
-            except shutil.Error as err:
-                print err
-                print f, ' -> problem archiving file'
-                #raise Exception('shutils error %s' % err)
-                #if exc.errno == errno.EEXIST:
-                #    print f, ' removed, already in archive'
-        print '%s files added to archive' % numadded
-        if numadded != len(fnames):
-            print '%s files not added to archive' % (len(fnames)-numadded)
 
     def process(self, overwrite=False, suffix=''): # , overviews=False):
         """ Make sure all products exist for all tiles, process if necessary """
+        if suffix != '' and suffix[:1] != '_': suffix = '_' + suffix
         for tile, data in self.tiles.items():
-            if suffix != '' and suffix[:1] != '_': suffix = '_' + suffix
             fout_base = os.path.join(data['path'], data['basename'] + '_')
             fouts = {}
             runatm = False
@@ -281,26 +233,10 @@ class LandsatData(Data):
         if res is None: res=[30,30]
         super(LandsatData, self).project(res=res, datadir=datadir)
 
-    def _readmeta(self, tile, filename=None):
+    def _readmeta(self, tile):
         """ Read in Landsat MTL (metadata) file """
-        if filename is None:
-            filename = self.tiles[tile]['products']['raw']
-        mtlfilename = glob.glob(os.path.join(os.path.dirname(filename),'*MTL.txt'))
-
-        if len(mtlfilename) == 0:
-            # Extract MTL file
-            if tarfile.is_tarfile(filename):
-                tfile = tarfile.open(filename)
-            else:
-                raise Exception('Not a valid landsat tar file')
-            try:
-                mtl = ([f for f in tfile.getnames() if "MTL.txt" in f])[0]
-            except:
-                raise Exception(': possibly an (unsupported) NLAPS processed file')
-            tfile.extract(mtl,os.path.dirname(filename))
-            mtlfilename = os.path.join(os.path.dirname(filename),mtl)
-        else:
-            mtlfilename = mtlfilename[0]
+        filename = self.tiles[tile]['products']['raw']
+        mtlfilename = self.extract(filename)
 
         VerboseOut('reading %s' % mtlfilename, 3)
         # Read MTL file
@@ -510,4 +446,4 @@ class LandsatData(Data):
     #    p = parser.add_parser('cloudmask', help='Create cloud masks', parents=[cls.args_inventory()], 
     #        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-def main(): datamain(LandsatData)
+def main(): LandsatData.main()
