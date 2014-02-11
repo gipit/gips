@@ -142,6 +142,28 @@ namespace gip {
         return imgoutIO;
 	}
 
+	//! Calculate radar backscatter for all bands
+	GeoImage SigmaNought(const GeoImage& img, string filename) {
+	    GeoImageIO<float> imgIO(img);
+	    GeoImageIO<float> imgoutIO(GeoImage(filename, img, GDT_Float32));
+	    imgoutIO.SetNoData(-32768);
+	    imgoutIO.SetUnits("other");
+	    CImg<float> cimg;
+	    CImg<unsigned char> nodata;
+	    Colors colors = img.GetColors();
+        for (unsigned int b=0;b<img.NumBands();b++) {
+            imgoutIO.SetColor(colors[b+1], b+1);
+            for (int iChunk=1; iChunk<=img[b].NumChunks(); iChunk++) {
+                cimg = imgIO[b].Read(iChunk);
+                cimg = cimg.pow(2).log10() * 10 + (-83.0);
+                nodata = imgIO[b].NoDataMask(iChunk);
+                cimg_forXY(cimg,x,y) { if (!nodata(x,y)) cimg(x,y) = imgoutIO[b].NoDataValue(); }
+                imgoutIO[b].Write(cimg,iChunk);
+            }
+        }
+        return imgoutIO;
+	}
+
     //! Generate 3-band RGB image scaled to 1 byte for easy viewing
     GeoImage RGB(const GeoImage& img, string filename) {
         img.SetUnitsOut("reflectance");
