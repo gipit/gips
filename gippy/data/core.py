@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os, sys
+import shutil, errno
 import argparse
 import ogr
 import datetime
@@ -8,6 +9,7 @@ import glob
 from shapely.wkb import loads
 from shapely.geometry import shape
 import traceback
+import tarfile
 import gippy
 import agspy.utils.dateparse as dateparse
 from pdb import set_trace
@@ -15,103 +17,79 @@ from pdb import set_trace
 def VerboseOut(txt, level=1):
     if gippy.Options.Verbose() >= level: print txt
 
+def File2List(filename):
+    f = open(filename)
+    txt = f.readlines()
+    txt2 = []
+    for t in txt: txt2.append( t.rstrip('\n') )
+    return txt2
+
 class Data(object):
     """ Base class for data objects """
     name = ''
     sensors = {}
-    rootdir = ''
+    _rootdir = ''
     _tiles_vector = ''
     _tiles_attribute = ''
 
     @classmethod
-    def find_tiles(cls):
-        """ Get list of all available tiles """
-        return os.listdir(cls.rootdir)
+    def inspect(cls, filename):
+        """ Inspect a single file and get some metadata - Needs to be overridden by child
+                path - full path to files/products
+                basename - base/root name of this tile/date
+                products - dictionary of product name and filename
+                sensor - name of sensor
+        """    
+        return {'tile':'', 'basename':'', 'sensor':'', 'path': ''}
 
-    @classmethod
-    def find_dates(cls, tile):
-        """ Get list of dates for a tile """
-        return [datetime.datetime.strptime(os.path.basename(d),'%Y%j').date() for d in os.listdir( os.path.join(cls.rootdir,tile) )]
-
-    #@classmethod
-    #def path(cls,tile): #,date=''):
-    #    """ Path to tile directory (assuming tiledir/datedir structure """
-    #    if date == '':
-    #        return os.path.join(cls.rootdir, tile)
-    #    else:
-    #        return os.path.join(cls.rootdir, tile, date)
-
-    def find_products(self, tile): #, date, products):
-        """ Find given products for specified tile (on this date and desired sensors). Create tile dictionary containing:
-             path - full path to files/products
-             basename - base/root name of this tile/date
-             products - dictionary of product name and filename
-             sensor - name of sensor
-        """
-        return {'path': '', 'basename': '', 'sensor': '', 'products': {} }
-
-    @classmethod
-    def filter(cls, tile, filename):
-        """ Check if tile passes filter """
-        # TODO - remove filename parameter
-        return True
+    def find(self, tile):
+        """ Find all data for given tile and date, save in self.tiles dictionary """
+        filename = self.find_data(tile)
+        # find products - does this need to be split off?
+        meta = self.inspect(filename)
+        files = glob.glob(os.path.join(meta['path'],meta['basename']+self._prodpattern))
+        products = {'raw': filename}
+        for f in files:
+            fname,ext = os.path.splitext(os.path.split(f)[1])
+            products[ fname[len(meta['basename'])+1:]  ] = f
+        meta['products'] = products
+        self.tiles[tile] = meta
 
     @classmethod
     def fetch(cls):
         """ Download data and add to archive """
         raise Exception("Fetch not implemented for %s" % cls.name)
 
-    @classmethod
-    def archive(cls, path=''):
-        """ Move files from directory to archive location """
-        fnames = glob.glob(os.path.join(path,cls.pattern))
-
-        numadded = 0
-        for f in fnames:
-            # LANDSAT SPECIFIC
-            pathrow = f[3:9]
-            year = f[9:13]
-            doy = f[13:16]
-            path = os.path.join(cls.rootdir,pathrow,year+doy)
-
-            # Make directory
-            try:
-                #pass
-                os.makedirs(path)
-            except OSError as exc: # Python >2.5
-                if exc.errno == errno.EEXIST and os.path.isdir(path):
-                    #print 'Directory already exists'
-                    pass
-                else:
-                    raise Exception('Unable to make product directory %s' % path)
-
-            # Move file
-            try:
-                newf = os.path.join(path,f)
-                if not os.path.exists(newf):
-                    # Check for older versions
-                    existing_files = glob.glob(os.path.join(path,'*tar.gz'))
-                    if len(existing_files) > 0:
-                        print 'Other version of %s already exist:' % f
-                        for ef in existing_files: print '\t%s' % ef
-                    shutil.move(f,newf)
-                    #print f, ' -> ',path
-                    numadded = numadded + 1
-            except shutil.Error as err:
-                print err
-                print f, ' -> problem archiving file'
-                #raise Exception('shutils error %s' % err)
-                #if exc.errno == errno.EEXIST:
-                #    print f, ' removed, already in archive'
-        print '%s files added to archive' % numadded
-        if numadded != len(fnames):
-            print '%s files not added to archive' % (len(fnames)-numadded)        
-        raise Exception("Archive not implemented for %s" % cls.name)
-        pass
-
-    def process(self):
+    def process(self, overwrite=False, suffix=''):
         """ Make sure all products exist and process if needed """
         pass
+
+    def filter(self, tile, **kwargs):
+        """ Check if tile passes filter """
+        return True
+
+    ##########################################################################
+    # Override these functions if not using a tile/date directory structure
+    ##########################################################################
+    def find_data(self, tile):
+        """ Find raw/original data for this tile and date """
+        filename = glob.glob(os.path.join(self._rootdir, tile, self.date.strftime('%Y%j'), self._pattern))
+        if len(filename) == 0:
+            raise Exception('No files found')
+        elif len(filename) > 1:
+            raise Exception('More than 1 file found for same tile/date')
+        filename = filename[0]
+        return filename
+
+    @classmethod
+    def find_tiles(cls):
+        """ Get list of all available tiles """
+        return os.listdir(cls._rootdir)
+
+    @classmethod
+    def find_dates(cls, tile):
+        """ Get list of dates available for a tile """
+        return [datetime.datetime.strptime(os.path.basename(d),'%Y%j').date() for d in os.listdir( os.path.join(cls._rootdir,tile) )]
 
     def opentile(self, tile, product=''):
         if product != '':
@@ -167,8 +145,83 @@ class Data(object):
         remove_tiles = []
         for t in tiles:
             if tiles[t][0] < mincoverage/100.0: remove_tiles.append(t)
-        for t in remove_t[0]iles: tiles.pop(t,None)
+        for t in remove_tiles: tiles.pop(t,None)
         return tiles      
+
+    @classmethod
+    def archive(cls, path=''):
+        """ Move files from directory to archive location """
+        start = datetime.datetime.now()
+        fnames = glob.glob(os.path.join(path,cls._pattern))
+
+        numadded = 0
+        for f in fnames:
+            meta = cls.inspect(f)
+            path = meta['path']       
+            # Make directory
+            try:
+                os.makedirs(path)
+            except OSError as exc: # Python >2.5
+                if exc.errno == errno.EEXIST and os.path.isdir(path):
+                    pass
+                else:
+                    raise Exception('Unable to make data directory %s' % path)
+
+            # Move file
+            try:
+                newf = os.path.join(path,f)
+                if not os.path.exists(newf):
+                    # Check for older versions
+                    existing_files = glob.glob(os.path.join(path,cls._pattern))
+                    if len(existing_files) > 0:
+                        print 'Other version of %s already exist:' % f
+                        for ef in existing_files: print '\t%s' % ef
+                    shutil.move(f,newf)
+                    #print f, ' -> ',path
+                    numadded = numadded + 1
+            except shutil.Error as err:
+                VerboseOut("Problem archiving file %s" % f)
+        # Summarize
+        VerboseOut( '%s files added to archive in %s' % (numadded, datetime.datetime.now()-start) )
+        if numadded != len(fnames):
+            VerboseOut( '%s files not added to archive in %s' % (len(fnames)-numadded) )
+
+    """def tar_index(self,tile):
+        #Get names from tarfile
+        filename = self.tiles[tile]['products']['raw']
+        if tarfile.is_tarfile(filename):
+            tfile = tarfile.open(filename)
+        else:
+            raise Exception('%s is not a valid tar file' % os.path.basename(filename))
+        return [f for f in tfile.getnames() if cls._metapattern not in f]
+    """
+
+    @classmethod
+    def extracthdr(cls,filename):
+        """ extract metadata header file """
+        if tarfile.is_tarfile(filename):
+            tfile = tarfile.open(filename)
+        else: raise Exception('%s is not a valid tar file' % filename)
+        index = tfile.getnames()
+        dirname = os.path.dirname(filename)
+        # need error handling
+        hdrfname = ([f for f in index if cls._metapattern in f])[0]
+        hdrfname2 = os.path.join(dirname,hdrfname)
+        if not os.path.exists(os.path.join(dirname,hdrfname2)):
+            tfile.extract(hdrfname,dirname)
+        return hdrfname2
+
+    @classmethod
+    def extract(cls,filename):
+        """ Extract data from original datafile, if tarfile """
+        if tarfile.is_tarfile(filename):
+            tfile = tarfile.open(filename)
+        else: raise Exception('%s is not a valid tar file' % filename)
+        index = tfile.getnames()
+        dirname = os.path.dirname(filename)
+        datindex = ([f for f in index if cls._metapattern not in f])
+        tfile.extractall(dirname)
+        return datindex
 
     def open(self, product='', update=True):
         """ Open and return final product GeoImage """
@@ -216,33 +269,39 @@ class Data(object):
             self.tile_coverage = dict((t,(1,1)) for t in self.find_tiles())
         self.date = date
 
+        VerboseOut("Locating matching data for %s" % self.date, 3)
+
         # Create tile and product dictionaries for use by child class
         self.tiles = {}
         for t in self.tile_coverage.keys(): self.tiles[t] = {}
         if products is None: products = self._products.keys()
         if len(products) == 0: products = self._products.keys()
+
         self.products = {}
         for p in products: self.products[p] = ''
 
+
         # For each tile locate files/products
         if sensors is None: sensors = self.sensors.keys()
-        self.sensors = self.sensors[sensors]
+        self.used_sensors = {s: self.sensors.get(s,None) for s in sensors}
+
+        VerboseOut('Finding products for %s tiles ' % (len(self.tiles)),3)
 
         # Find products
         empty_tiles = []
         for t in self.tiles:
             try:
-                self.find_products(t)
+                self.find(t)
             except Exception,e:
                 empty_tiles.append(t)
+                VerboseOut('Discarding tile %s: %s' % (t,traceback.format_exc()), 4)
                 continue
             # Custom filter based on dataclass
             #good = self.filter(t,filename, **kwargs)
             #if good == False:
             #    empty_tiles.append(t)
-
-        self.sensor = self.tiles[self.tiles.keys()[0]]['sensor']
         for t in empty_tiles: self.tiles.pop(t,None)
+        self.sensor = self.tiles[self.tiles.keys()[0]]['sensor']
         if len(self.tiles) == 0: raise Exception('No valid data found')
 
     @staticmethod
@@ -263,6 +322,91 @@ class Data(object):
 
     def __str__(self):
         return self.sensor + ': ' + str(self.date)
+
+    @classmethod
+    def main(cls):
+        dhf = argparse.ArgumentDefaultsHelpFormatter
+        parser0 = argparse.ArgumentParser(description='%s Data Utility' % cls.name, formatter_class=argparse.RawTextHelpFormatter)
+        subparser = parser0.add_subparsers(dest='command')
+
+        invparser = cls.args_inventory()
+
+        # Help
+        parser = subparser.add_parser('help',help='Print extended help', formatter_class=dhf)
+
+        # Inventory
+        parser = subparser.add_parser('inventory',help='Get Inventory', parents=[invparser], formatter_class=dhf)
+        parser.add_argument('--md',help='Show dates using MM-DD',action='store_true',default=False)
+
+        # Processing
+        parser = subparser.add_parser('process',help='Process scenes', parents=[invparser],formatter_class=dhf)
+        group = parser.add_argument_group('Processing Options')
+        group.add_argument('--overwrite', help='Overwrite output files if they exist', default=False, action='store_true')
+        group.add_argument('--suffix', help='Append string to end of filename (before extension)',default='')
+        #group.add_argument('--nooverviews', help='Do not add overviews to output', default=False, action='store_true')
+        #pparser.add_argument('--link', help='Create links in current directory to output', default=False, action='store_true')
+        #pparser.add_argument('--multi', help='Use multiple processors', default=False, action='store_true')
+
+        # Project
+        parser = subparser.add_parser('project',help='Create project', parents=[invparser], formatter_class=dhf)
+        group = parser.add_argument_group('Project options')
+        group.add_argument('--res',nargs=2,help='Resolution of output rasters', default=[30,30], type=float)
+        group.add_argument('--datadir', help='Directory to save project files', default='gipdata')
+
+        # Links
+        parser = subparser.add_parser('link',help='Link to Products', parents=[invparser], formatter_class=dhf)
+        parser.add_argument('--hard',help='Create hard links instead of symbolic', default=False,action='store_true')
+
+        # Misc
+        parser_archive = subparser.add_parser('archive',help='Move files from current directory to data archive')
+
+        cls.add_subparsers(subparser)
+
+        # Pull in cls options here
+        #dataparser = subparser.add_parser('data',help='', parents=[invparser],formatter_class=dhf)
+
+        args = parser0.parse_args()
+        if args.command == 'help':
+            parser0.print_help()
+            print '\navailable products:'
+            for key,val in cls._products.items():
+                print '    {:<20}{:<100}'.format(key, val['description'])
+            exit(1)
+
+        if args.command == 'archive':
+            cls.archive()
+            exit(1)
+
+        gippy.Options.SetVerbose(args.verbose)
+        gippy.Options.SetChunkSize(256.0)   # replace with option
+
+        try:
+            inv = cls.inventory(site=args.site, dates=args.dates, days=args.days, tiles=args.tiles, products=args.products)
+        except Exception,e:
+            print 'Error getting inventory: %s' % (e)
+            VerboseOut(traceback.format_exc(), 3)
+            exit(1)
+
+        if args.command == 'inventory':
+            if args.products is None:
+                inv.printcalendar(args.md)
+            else: inv.printcalendar(args.md,True)
+
+        elif args.command == 'link':
+            inv.createlinks(args.hard)
+
+        elif args.command == 'process':
+            try:
+                #merrafname = fetchmerra(meta['datetime'])
+                inv.process(overwrite=args.overwrite,suffix=args.suffix) #, nooverviews=args.nooverviews)
+            except Exception,e:
+                print 'Error processing: %s' % e
+                VerboseOut(traceback.format_exc(), 3)
+
+        elif args.command == 'project': inv.project(args.res, datadir=args.datadir)
+
+        else:
+            print 'Command %s not recognized' % cmd
 
 
 class DataInventory(object):
@@ -289,6 +433,9 @@ class DataInventory(object):
         self.site = site
         self.tiles = tiles
         self.temporal_extent(dates, days)
+        self.data = {}
+        if products is None: products = ['']
+        self.products = products
         self.AddData(dataclass, products=products, **kwargs)
 
     def __getitem__(self,date):
@@ -330,7 +477,8 @@ class DataInventory(object):
     def AddData(self, dataclass, products=None, **kwargs):
         """ Add additional data to this inventory (usually from different sensors """
         if self.tiles is None and self.site is None:
-            raise Exception('No shapefile or tiles provided for inventory')
+            self.tiles = dataclass.find_tiles()
+            #raise Exception('No shapefile or tiles provided for inventory')
         if self.tiles is None and self.site is not None:
             self.tiles = dataclass.vector2tiles(gippy.GeoVector(self.site))
         # get all potential matching dates for tiles
@@ -342,15 +490,17 @@ class DataInventory(object):
                     day = int(date.strftime('%j'))
                     if (self.start_date <= date <= self.end_date) and (self.start_day <= day <= self.end_day):
                         if date not in dates: dates.append(date)
-            except: pass
+            except: 
+                pass
+
         self.numfiles = 0
-        self.data = {}
         for date in sorted(dates):
             try:
                 dat = dataclass(site=self.site, tiles=self.tiles, date=date, products=products, **kwargs)
                 self.data[date] = [ dat ]
                 self.numfiles = self.numfiles + len(dat.tiles)
-            except: pass
+            except: 
+                VerboseOut(traceback.format_exc(),4)
 
     def temporal_extent(self, dates, days):
         """ Temporal extent (define self.dates and self.days) """
@@ -361,13 +511,13 @@ class DataInventory(object):
         else: days = (1,366)
         self.start_day,self.end_day = ( int(days[0]), int(days[1]) )
 
-    def process(self, overwrite=False, suffix='', overviews=False):
+    def process(self, overwrite=False, suffix=''): #, overviews=False):
         """ Process all data in inventory """
         VerboseOut('Requested %s products for %s files' % (len(self.products), self.numfiles))
         # TODO only process if don't exist
         for date in self.dates:
             for data in self.data[date]:
-                data.process(overwrite, suffix, overviews)
+                data.process(overwrite, suffix)
                 # TODO - add completed product(s) to inventory
         VerboseOut('Completed processing')
 
@@ -449,6 +599,8 @@ class DataInventory(object):
             s = 'Data Inventory: No matching files'
         return s
 
+
+
 def link(f,hard=False):
     """ Create link to file in current directory """
     #faux = f + '.aux.xml'
@@ -466,86 +618,4 @@ def link(f,hard=False):
         except:
             pass
 
-def main(dataclass):
-    dhf = argparse.ArgumentDefaultsHelpFormatter
-    parser0 = argparse.ArgumentParser(description='%s Data Utility' % dataclass.name, formatter_class=argparse.RawTextHelpFormatter)
-    subparser = parser0.add_subparsers(dest='command')
 
-    invparser = dataclass.args_inventory()
-
-    # Help
-    parser = subparser.add_parser('help',help='Print extended help', formatter_class=dhf)
-
-    # Inventory
-    parser = subparser.add_parser('inventory',help='Get Inventory', parents=[invparser], formatter_class=dhf)
-    parser.add_argument('--md',help='Show dates using MM-DD',action='store_true',default=False)
-
-    # Processing
-    parser = subparser.add_parser('process',help='Process scenes', parents=[invparser],formatter_class=dhf)
-    group = parser.add_argument_group('Processing Options')
-    group.add_argument('--overwrite', help='Overwrite output files if they exist', default=False, action='store_true')
-    group.add_argument('--suffix', help='Append string to end of filename (before extension)',default='')
-    #group.add_argument('--nooverviews', help='Do not add overviews to output', default=False, action='store_true')
-    #pparser.add_argument('--link', help='Create links in current directory to output', default=False, action='store_true')
-    #pparser.add_argument('--multi', help='Use multiple processors', default=False, action='store_true')
-
-    # Project
-    parser = subparser.add_parser('project',help='Create project', parents=[invparser], formatter_class=dhf)
-    group = parser.add_argument_group('Project options')
-    group.add_argument('--res',nargs=2,help='Resolution of output rasters', default=[30,30], type=float)
-    group.add_argument('--datadir', help='Directory to save project files', default='gipdata')
-
-    # Links
-    parser = subparser.add_parser('link',help='Link to Products', parents=[invparser], formatter_class=dhf)
-    parser.add_argument('--hard',help='Create hard links instead of symbolic', default=False,action='store_true')
-
-    # Misc
-    parser_archive = subparser.add_parser('archive',help='Move files from current directory to data archive')
-
-    dataclass.add_subparsers(subparser)
-
-    # Pull in dataclass options here
-    #dataparser = subparser.add_parser('data',help='', parents=[invparser],formatter_class=dhf)
-
-    args = parser0.parse_args()
-    if args.command == 'help':
-        parser0.print_help()
-        print '\navailable products:'
-        for key,val in dataclass._products.items():
-            print '    {:<20}{:<100}'.format(key, val['description'])
-        exit(1)
-
-    if args.command == 'archive':
-        dataclass.archive()
-        exit(1)
-
-    gippy.Options.SetVerbose(args.verbose)
-    gippy.Options.SetChunkSize(256.0)   # replace with option
-
-    try:
-        inv = dataclass.inventory(site=args.site, dates=args.dates, days=args.days, tiles=args.tiles, products=args.products)
-    except Exception,e:
-        print 'Error getting inventory: %s' % (e)
-        VerboseOut(traceback.format_exc(), 3)
-        exit(1)
-
-    if args.command == 'inventory':
-        if args.products is None:
-            inv.printcalendar(args.md)
-        else: inv.printcalendar(args.md,True)
-
-    elif args.command == 'link':
-        inv.createlinks(args.hard)
-
-    elif args.command == 'process':
-        try:
-            #merrafname = fetchmerra(meta['datetime'])
-            inv.process(overwrite=args.overwrite,suffix=args.suffix) #, nooverviews=args.nooverviews)
-        except Exception,e:
-            print 'Error processing: %s' % e
-            VerboseOut(traceback.format_exc(), 3)
-
-    elif args.command == 'project': inv.project(args.res, datadir=args.datadir)
-
-    else:
-        print 'Command %s not recognized' % cmd
