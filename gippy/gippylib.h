@@ -21,7 +21,9 @@
     using namespace gip;
 
     namespace gip {
-        void reg() { GDALAllRegister(); }
+        void reg() { 
+            GDALAllRegister(); 
+        }
     }
 
     template<typename T> int numpytype() {
