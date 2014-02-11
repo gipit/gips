@@ -340,6 +340,7 @@ namespace gip {
     void CRC(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"CRC"}); }
     void CRCm(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"CRCM"}); }
     void iSTI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"ISTI"}); }
+    void STI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"STI"}); }
 
 	//! Create multi-band image of various indices calculated from input
 	//GeoImage Indices(const GeoImage& ImageIn, string filename, bool ndvi, bool evi, bool lswi, bool ndsi, bool bi) {
@@ -430,6 +431,8 @@ namespace gip {
                     cimgout = (swir1-green).div(swir2+green);
                 } else if (*iprod == "ISTI") {
                     cimgout = swir2.div(swir1);
+                } else if (*iprod == "STI") {
+                    cimgout = swir1.div(swir2);
                 }
                 if (Options::Verbose() > 2) std::cout << "Getting mask" << std::endl;
                 // TODO don't read mask again...create here
