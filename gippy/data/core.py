@@ -30,7 +30,12 @@ class Data(object):
     sensors = {}
     _rootdir = ''
     _tiles_vector = ''
-    _tiles_attribute = ''
+    _pattern = ''
+    _prodpattern = '*.tif'
+    _metapattern = ''
+    _products = OrderedDict([
+
+    ])
 
     @classmethod
     def inspect(cls, filename):
@@ -67,6 +72,12 @@ class Data(object):
     def filter(self, tile, **kwargs):
         """ Check if tile passes filter """
         return True
+
+    @classmethod
+    def feature2tile(cls,feature):
+        """ Get tile designaation from a geospatial feature (i.e. a row) """
+        fldindex = feature.GetFieldIndex("tile")
+        return str(feature.GetField(fldindex))
 
     ##########################################################################
     # Override these functions if not using a tile/date directory structure
@@ -115,7 +126,11 @@ class Data(object):
     @classmethod
     def get_tiles_vector(cls):
         """ Get GeoVector of sensor grid """
-        return gippy.GeoVector("PG:dbname=geodata host=congo port=5432 user=ags", layer=cls._tiles_vector)
+        if os.path.isfile(cls._tiles_vector):
+            tiles = gippy.GeoVector(cls._tiles_vector)
+        else:
+            tiles = gippy.GeoVector("PG:dbname=geodata host=congo port=5432 user=ags", layer=cls._tiles_vector)
+        return tiles
 
     @classmethod
     def vector2tiles(cls, vector, mincoverage=0.0):
@@ -132,14 +147,12 @@ class Data(object):
         tiles = {}
         tlayer.ResetReading()
         feat = tlayer.GetNextFeature()
-        fldindex = feat.GetFieldIndex(cls._tiles_attribute)
+        #fldindex = feat.GetFieldIndex(cls._tiles_attribute)
         while feat is not None:
             tgeom = loads(feat.GetGeometryRef().ExportToWkb())
             area = geom.intersection(tgeom).area
             if area != 0:
-                tile = str(feat.GetField(fldindex))
-                # TODO - THIS IS LANDSAT SPECIFIC !
-                if len(tile) == 5: tile = '0' + tile
+                tile = cls.feature2tile(feat)
                 tiles[tile] = (area/geom.area, area/tgeom.area)
             feat = tlayer.GetNextFeature()
         remove_tiles = []
@@ -219,7 +232,7 @@ class Data(object):
         else: raise Exception('%s is not a valid tar file' % filename)
         index = tfile.getnames()
         dirname = os.path.dirname(filename)
-        datindex = ([f for f in index if cls._metapattern not in f])
+        datindex = ([os.path.join(dirname,f) for f in index if cls._metapattern not in f])
         tfile.extractall(dirname)
         return datindex
 
@@ -410,7 +423,7 @@ class Data(object):
 
 
 class DataInventory(object):
-    """ Base class for data inventories """
+    """ Manager class for data inventories """
     # redo color, combine into ordered dictionary
     _colororder = ['bright yellow', 'bright red', 'bright green', 'bright blue']
     _colorcodes = {
@@ -441,13 +454,6 @@ class DataInventory(object):
     def __getitem__(self,date):
         return self.data[date]
 
-    #def filenames(self,product):
-    #    """ Return dictionary (date keys) of filenames for given sensor and product if supplied """
-    #    filenames = {}
-    #    for date in self.dates:
-    #        filenames[date] = self.data[date][0].filename(product)
-    #    return filenames
-
     @property
     def dates(self):
         """ Get sorted list of dates """
@@ -465,11 +471,6 @@ class DataInventory(object):
         for i in range(1,len(self.dates)):
             img.AddBand(self.data[self.dates[i]][0].open(product=product)[0])
         return img
-
-    #@property
-    #def sensor_names(self):
-    #    """ Get list of all sensors """
-    #    return [self._colorize(k, self._colors[k]) for k in sorted(self._colors)]
 
     def _colorize(self,txt,color):
         return "\033["+self._colorcodes[color]+'m' + txt + "\033[0m"
@@ -599,8 +600,6 @@ class DataInventory(object):
             s = 'Data Inventory: No matching files'
         return s
 
-
-
 def link(f,hard=False):
     """ Create link to file in current directory """
     #faux = f + '.aux.xml'
@@ -617,5 +616,3 @@ def link(f,hard=False):
             #    os.symlink(faux,os.path.basename(faux))
         except:
             pass
-
-

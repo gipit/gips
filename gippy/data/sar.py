@@ -14,19 +14,16 @@ from collections import OrderedDict
 class SARData(Data):
     """ Represents a single date and temporal extent along with (existing) product variations """
     name = 'SAR'
-    sensors = {'A1':'PALSAR', 'J1':'JERS-1'}
+    sensors = {'A1FB':'PALSAR FineBeam', 'A1WB':'PALSAR WideBeam', 'J1FB':'JERS-1 FineBeam'}
     _rootdir = '/titan/data/SAR/tiles'
+    _tiles_vector = '/titan/data/SAR/tiles.shp'
     _pattern = 'KC_*.tar.gz'
     _prodpattern = '*.tif'
     _metapattern = '.hdr'
     _products = OrderedDict([
-        ('ScanSAR', {
-            'description': 'ScanSAR Mosaics',
+        ('sign', {
+            'description': 'Sigma nought (radar backscatter coefficient)',
         }),
-        ('FB', {
-            'description': 'FineBeam Mosaics',
-        })
-
     ])
 
     @classmethod
@@ -47,9 +44,25 @@ class SARData(Data):
         return {
             'tile': tile, 
             'basename': bname,
-            'sensor': basename[-9:-7],
+            'sensor': basename[-9:-7] + basename[-15:-13],
             'path': os.path.join(cls._rootdir,tile,date.strftime('%Y%j'))
         }
+
+    @classmethod
+    def feature2tile(cls,feature):
+        """ Get tile designaation from a geospatial feature (i.e. a row) """
+        fldindex_lat = feature.GetFieldIndex("lat")
+        fldindex_lon = feature.GetFieldIndex("lon")
+        lat = abs(int(feature.GetField(fldindex_lat)+0.5))
+        lon = abs(int(feature.GetField(fldindex_lon)-0.5))
+        if lat < 0:
+            lat_h = 'S'
+        else: lat_h = 'N'
+        if lon < 0:
+            lon_h = 'S'
+        else: lon_h = 'N'
+        tile = lat_h + str(lat).zfill(2) + lon_h + str(lon).zfill(3)
+        return tile
 
     @classmethod
     def archive(cls, path=''):
@@ -75,18 +88,19 @@ class SARData(Data):
             lat = [ min(lat), max(lat) ]
             lon = [ float(hdr[13]), float(hdr[15]) ]
             lon = [ min(lon), max(lon)]
-            res = [ (lon[1]-lon[0])/(size[0]-1), -(lat[1]-lat[0])/(size[1]-1) ]
+            res = [ (lon[1]-lon[0])/(size[0]-1), (lat[1]-lat[0])/(size[1]-1) ]
             envihdr = ['ENVI','samples = %s' % size[0], 'lines = %s' % size[1],
                 'bands = 1','header offset = 0','file type = ENVI Standard','data type = 2',
                 'interleave = bsq', 'sensor type = Unknown', 'byte order = 0',
                 'coordinate system string = ' + proj,
-                'map info = {Geographic Lat/Lon, 1, 1, %s, %s, %s, %s}' % (lon[0], lat[0], res[0], res[1]) ]
+                'data ignore value = 0',
+                'map info = {Geographic Lat/Lon, 1, 1, %s, %s, %s, %s}' % (lon[0], lat[1], res[0], res[1]) ]
             bandfiles = []
             bands = ["HH","HV"]
             for fname in datafiles:
-                f = open(os.path.join(data['path'],fname+'.hdr'),'w')
+                f = open(fname+'.hdr','w')
                 f.write('\n'.join(envihdr)+'\n')
-                f.write('band names = {%s}' % fname[len(data['basename'])+1:])
+                f.write('band names = {%s}' % fname[len(os.path.join(data['path'],data['basename']))+1:])
                 f.close()
                 if fname[-2:] in bands: bandfiles.append(os.path.join(data['path'],fname))
 
@@ -98,5 +112,11 @@ class SARData(Data):
             data['products']['sign'] = imgout.Filename()
 
             # Clean up
+            for df in datafiles:
+                files = glob.glob(df+'*')
+                for f in files:
+                    try:
+                        os.remove(f)
+                    except: pass
 
 def main(): SARData.main()
