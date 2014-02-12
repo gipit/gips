@@ -30,13 +30,13 @@ class Data(object):
     sensors = {}
     _rootdir = ''
     _datedir = '%Y%j'
-    _tiles_vector = ''
     _pattern = ''
     _prodpattern = '*.tif'
     _metapattern = ''
+    _tiles_vector = ''
+    _tiles_attribute = 'tile'
     _products = {}
     
-
     @classmethod
     def inspect(cls, filename):
         """ Inspect a single file and get some metadata - Needs to be overridden by child
@@ -76,7 +76,7 @@ class Data(object):
     @classmethod
     def feature2tile(cls,feature):
         """ Get tile designaation from a geospatial feature (i.e. a row) """
-        fldindex = feature.GetFieldIndex("tile")
+        fldindex = feature.GetFieldIndex(cls._tiles_attribute)
         return str(feature.GetField(fldindex))
 
     ##########################################################################
@@ -86,11 +86,10 @@ class Data(object):
         """ Find raw/original data for this tile and date """
         filename = glob.glob(os.path.join(self._rootdir, tile, self.date.strftime(self._datedir), self._pattern))
         if len(filename) == 0:
-            raise Exception('No files found')
+            raise Exception('No data for this tile/date')
         elif len(filename) > 1:
             raise Exception('More than 1 file found for same tile/date')
-        filename = filename[0]
-        return filename
+        return filename[0]
 
     @classmethod
     def find_tiles(cls):
