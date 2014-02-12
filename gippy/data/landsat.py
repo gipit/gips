@@ -26,6 +26,7 @@ class LandsatData(Data):
     sensors = {'LT4': 'Landsat 4', 'LT5': 'Landsat 5', 'LE7': 'Landsat 7', 'LC8': 'Landsat 8'}
     _rootdir = '/titan/data/landsat/tiles'
     _tiles_vector = 'landsat_wrs'
+    _tiles_attribute = 'pr'
     _pattern = 'L*.tar.gz'
     _prodpattern = '*.tif'
     _metapattern = 'MTL.txt'
@@ -166,9 +167,8 @@ class LandsatData(Data):
 
     @classmethod
     def feature2tile(cls,feature):
-        fldindex = feature.GetFieldIndex('pr')
-        tile = str(feature.GetField(fldindex)).zfill(6)
-        return tile
+        tile = super(LandsatData, cls).feature2tile(feature)
+        return tile.zfill(6)
 
     def process(self, overwrite=False, suffix=''): # , overviews=False):
         """ Make sure all products exist for all tiles, process if necessary """
