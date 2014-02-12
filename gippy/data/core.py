@@ -29,13 +29,13 @@ class Data(object):
     name = ''
     sensors = {}
     _rootdir = ''
+    _datedir = '%Y%j'
     _tiles_vector = ''
     _pattern = ''
     _prodpattern = '*.tif'
     _metapattern = ''
-    _products = OrderedDict([
-
-    ])
+    _products = {}
+    
 
     @classmethod
     def inspect(cls, filename):
@@ -84,7 +84,7 @@ class Data(object):
     ##########################################################################
     def find_data(self, tile):
         """ Find raw/original data for this tile and date """
-        filename = glob.glob(os.path.join(self._rootdir, tile, self.date.strftime('%Y%j'), self._pattern))
+        filename = glob.glob(os.path.join(self._rootdir, tile, self.date.strftime(self._datedir), self._pattern))
         if len(filename) == 0:
             raise Exception('No files found')
         elif len(filename) > 1:
@@ -100,7 +100,8 @@ class Data(object):
     @classmethod
     def find_dates(cls, tile):
         """ Get list of dates available for a tile """
-        return [datetime.datetime.strptime(os.path.basename(d),'%Y%j').date() for d in os.listdir( os.path.join(cls._rootdir,tile) )]
+        #set_trace()
+        return [datetime.datetime.strptime(os.path.basename(d),cls._datedir).date() for d in os.listdir( os.path.join(cls._rootdir,tile) )]
 
     def opentile(self, tile, product=''):
         if product != '':
@@ -187,8 +188,8 @@ class Data(object):
                     # Check for older versions
                     existing_files = glob.glob(os.path.join(path,cls._pattern))
                     if len(existing_files) > 0:
-                        print 'Other version of %s already exist:' % f
-                        for ef in existing_files: print '\t%s' % ef
+                        print 'Other version of %s already exist:' % os.path.basename(f)
+                        for ef in existing_files: print '\t%s' % os.path.basename(ef)
                     shutil.move(f,newf)
                     #print f, ' -> ',path
                     numadded = numadded + 1

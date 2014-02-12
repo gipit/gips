@@ -14,8 +14,14 @@ from collections import OrderedDict
 class SARData(Data):
     """ Represents a single date and temporal extent along with (existing) product variations """
     name = 'SAR'
-    sensors = {'A1FB':'PALSAR FineBeam', 'A1WB':'PALSAR WideBeam', 'J1FB':'JERS-1 FineBeam'}
+    sensors = {
+        'AFBS':'PALSAR FineBeam Single Polarization',
+        'AFBD':'PALSAR FineBeam Dual Polarization',
+        'AWB1':'PALSAR WideBeam (ScanSAR Short Mode)',
+        'JFBS':'JERS-1 FineBeam Single Polarization'
+    }
     _rootdir = '/titan/data/SAR/tiles'
+    _datedir = '%Y'
     _tiles_vector = '/titan/data/SAR/tiles.shp'
     _pattern = 'KC_*.tar.gz'
     _prodpattern = '*.tif'
@@ -31,10 +37,11 @@ class SARData(Data):
         """ Inspect a single file and get some metadata """
         path, basename = os.path.split(filename)
         # extract metadata file
-        metafilename = os.path.join(path,cls.extracthdr(filename))
-        datestr = File2List(metafilename)[-2]
+        meta = File2List( os.path.join(path,cls.extracthdr(filename)) )
         tile = basename[10:17]
-        date = datetime.datetime.strptime(datestr, '%Y%m%d')
+        datestr = meta[2].zfill(4)
+        if datestr == '0000': datestr = '1996'
+        date = datetime.datetime.strptime(datestr, '%Y')
 
         tfile = tarfile.open(filename)
         filenames = tfile.getnames()
@@ -44,8 +51,10 @@ class SARData(Data):
         return {
             'tile': tile, 
             'basename': bname,
-            'sensor': basename[-9:-7] + basename[-15:-13],
-            'path': os.path.join(cls._rootdir,tile,date.strftime('%Y%j'))
+            'sensor': basename[-9:-8] + basename[-15:-12],
+            'path': os.path.join(cls._rootdir,tile,date.strftime('%Y')),
+            'res': float(meta[7]),
+            'CF': float(meta[21])
         }
 
     @classmethod
@@ -111,6 +120,7 @@ class SARData(Data):
             imgout = gippy.SigmaNought(img, os.path.join(data['path'],data['basename']+'_sign') )
             data['products']['sign'] = imgout.Filename()
 
+            return
             # Clean up
             for df in datafiles:
                 files = glob.glob(df+'*')
