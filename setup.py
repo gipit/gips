@@ -22,7 +22,7 @@ def install_gip(install):
         if not os.path.exists(b[1]) or not filecmp.cmp(b[0],b[1]): shutil.copy(b[0],b[1])
 
 gippy_module = Extension(name = '_gippylib',
-                    compiler='g++',
+                    #compiler='g++',
                     sources=['gippy/gippylib.i'],
                     swig_opts=['-c++', '-w509','-IGIP/gip'],
                     include_dirs=['GIP/gip'],
