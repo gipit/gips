@@ -32,6 +32,46 @@ class SARData(Data):
         }),
     ])
 
+    _cycledates = {
+        7:  '20-Oct-06',
+        8:  '05-Dec-06',
+        9:  '20-Jan-07',
+        10: '07-Mar-07',
+        11: '22-Apr-07',
+        12: '07-Jun-07',
+        13: '23-Jul-07',
+        14: '07-Sep-07',
+        15: '23-Oct-07',
+        16: '08-Dec-07',
+        17: '23-Jan-08',
+        18: '09-Mar-08',
+        19: '24-Apr-08',
+        20: '09-Jun-08',
+        21: '25-Jul-08',
+        22: '09-Sep-08',
+        23: '25-Oct-08',
+        24: '10-Dec-08',
+        25: '25-Jan-09',
+        26: '12-Mar-09',
+        27: '27-Apr-09',
+        28: '12-Jun-09',
+        29: '28-Jul-09',
+        30: '12-Sep-09',
+        31: '28-Oct-09',
+        32: '13-Dec-09',
+        33: '28-Jan-10',
+        34: '15-Mar-10',
+        35: '30-Apr-10',
+        36: '15-Jun-10',
+        37: '31-Jul-10',
+        38: '15-Sep-10',
+        39: '31-Oct-10',
+        40: '16-Dec-10',
+        41: '31-Jan-11',
+        42: '18-Mar-11',
+        43: '03-May-11'
+    }
+
     @classmethod
     def inspect(cls, filename):
         """ Inspect a single file and get some metadata """
@@ -39,9 +79,12 @@ class SARData(Data):
         # extract metadata file
         meta = File2List( os.path.join(path,cls.extracthdr(filename)) )
         tile = basename[10:17]
-        datestr = meta[2].zfill(4)
-        if datestr == '0000': datestr = '1996'
-        date = datetime.datetime.strptime(datestr, '%Y')
+        if basename[7] == 'Y':
+            datestr = meta[2].zfill(4)
+            if datestr == '0000': datestr = '1996'
+            date = datetime.datetime.strptime(datestr, '%Y')
+        else:
+            date = datetime.datetime.strptime(cls._cycledates[int(meta[2])],'%d-%b-%y')
 
         tfile = tarfile.open(filename)
         filenames = tfile.getnames()
