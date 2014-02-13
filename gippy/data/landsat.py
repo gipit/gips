@@ -140,108 +140,18 @@ class LandsatData(Data):
 
     @classmethod
     def inspect(cls, filename):
-        """ Inspect a single file and get some metadata
-                path - full path to files/products
-                basename - base/root name of this tile/date
-                products - dictionary of product name and filename
-                sensor - name of sensor
-        """
+        """ Inspect a single file and get some metadata """
         path,basename = os.path.split(filename)
         tile = basename[3:9]
         year = basename[9:13]
         doy = basename[13:16]
         return {
             'tile': tile,
+            'date': datetime.datetime.strptime(year+day,"%Y%j"),
             'basename': basename[:-12],
             'sensor': basename[0:3],
             'path':os.path.join(cls._rootdir,tile,year+doy)
         }
-
-    def filter(self, tile, maxclouds=100):
-        """ Check if tile passes filter """
-        if maxclouds < 100:
-            meta = cls._readmeta(tile)
-            if meta['clouds'] > maxclouds:
-                return False
-        return True
-
-    @classmethod
-    def feature2tile(cls,feature):
-        tile = super(LandsatData, cls).feature2tile(feature)
-        return tile.zfill(6)
-
-    def process(self, overwrite=False, suffix=''): # , overviews=False):
-        """ Make sure all products exist for all tiles, process if necessary """
-        if suffix != '' and suffix[:1] != '_': suffix = '_' + suffix
-        for tile, data in self.tiles.items():
-            fout_base = os.path.join(data['path'], data['basename'] + '_')
-            fouts = {}
-            runatm = False
-            # generate all product names and check if already existing
-            for product in self.products:
-                if self._products[product]['atmcorr']: runatm = True
-                if product not in self._products.keys():
-                    raise Exception('Product %s not recognized' % product)
-                fout = fout_base + product + suffix
-                if len(glob.glob(fout+'.*')) == 0 or overwrite: fouts[product] = fout
-
-            if len(fouts) > 0:
-                start = datetime.datetime.now()
-                try:
-                    # TODO - If only doing temp then don't waste time with other bands
-                    img = self._readraw(tile)
-                except Exception,e:
-                    print 'Error reading data %s' % data['products']['raw']
-                    VerboseOut('%s %s' % (data['basename'],e), 2)
-                    VerboseOut(traceback.format_exc(), 3)
-                    return
-                if runatm: atmospheres = [atmosphere(i,data['metadata']) for i in range(1,img.NumBands()+1)]
-                VerboseOut('%s: read in %s' % (data['basename'],datetime.datetime.now() - start))
-
-                for product,fname in fouts.iteritems():
-                    try:
-                        start = datetime.datetime.now()
-
-                        if (self._products[product]['atmcorr']):
-                            for i in range(0,img.NumBands()):
-                                b = img[i]
-                                b.SetAtmosphere(atmospheres[i])
-                                img[i] = b
-                            VerboseOut('atmospherically correcting',2)
-                        else:
-                            img.ClearAtmosphere()
-
-                        try:
-                            fcall = 'gippy.%s(img, fname)' % self._products[product]['function']
-                            VerboseOut(fcall,2)
-                            imgout = eval(fcall)
-                        except Exception,e:
-                            print 'Error creating product %s for %s: %s' % (product,fname,e)
-                            VerboseOut(traceback.format_exc(),2)
-
-                        #if overviews: imgout.AddOverviews()
-                        #fname = imgout.Filename()
-                        imgout = None
-                        dur = datetime.datetime.now() - start
-                        data['products'][product] = fname
-                        VerboseOut(' -> %s: processed in %s' % (os.path.basename(fname),dur))
-                    except Exception,e:
-                        print 'Error processing %s' % fname
-                        VerboseOut('%s %s' % (data['basename'],e),2)
-                        VerboseOut(traceback.format_exc(), 3)
-                img = None
-                # cleanup directory
-                try:
-                    for bname in data['metadata']['filenames']:
-                        files = glob.glob(os.path.join(data['path'],bname)+'*')
-                        for f in files: os.remove(f)
-                    shutil.rmtree(os.path.join(dirname,'modtran'))
-                except: pass
-
-    def project(self, res=[30,30], datadir='data_landsat'):
-        """ Create reprojected, mosaiced images for this site and date """
-        if res is None: res=[30,30]
-        super(LandsatData, self).project(res=res, datadir=datadir)
 
     def _readmeta(self, tile):
         """ Read in Landsat MTL (metadata) file """
@@ -383,11 +293,91 @@ class LandsatData(Data):
         }
         return self.tiles[tile]['metadata']
 
-    def opentile(self, tile, product=''):
-        """ Open and return tile/product GeoImage """
-        if product != '':
-            return gippy.GeoImage()
-          
+    def process(self, overwrite=False, suffix=''): # , overviews=False):
+        """ Make sure all products exist for all tiles, process if necessary """
+        if suffix != '' and suffix[:1] != '_': suffix = '_' + suffix
+        for tile, data in self.tiles.items():
+            fout_base = os.path.join(data['path'], data['basename'] + '_')
+            fouts = {}
+            runatm = False
+            # generate all product names and check if already existing
+            for product in self.products:
+                if self._products[product]['atmcorr']: runatm = True
+                if product not in self._products.keys():
+                    raise Exception('Product %s not recognized' % product)
+                fout = fout_base + product + suffix
+                if len(glob.glob(fout+'.*')) == 0 or overwrite: fouts[product] = fout
+
+            if len(fouts) > 0:
+                start = datetime.datetime.now()
+                try:
+                    # TODO - If only doing temp then don't waste time with other bands
+                    img = self._readraw(tile)
+                except Exception,e:
+                    print 'Error reading data %s' % data['products']['raw']
+                    VerboseOut('%s %s' % (data['basename'],e), 2)
+                    VerboseOut(traceback.format_exc(), 3)
+                    return
+                if runatm: atmospheres = [atmosphere(i,data['metadata']) for i in range(1,img.NumBands()+1)]
+                VerboseOut('%s: read in %s' % (data['basename'],datetime.datetime.now() - start))
+
+                for product,fname in fouts.iteritems():
+                    try:
+                        start = datetime.datetime.now()
+
+                        if (self._products[product]['atmcorr']):
+                            for i in range(0,img.NumBands()):
+                                b = img[i]
+                                b.SetAtmosphere(atmospheres[i])
+                                img[i] = b
+                            VerboseOut('atmospherically correcting',2)
+                        else:
+                            img.ClearAtmosphere()
+
+                        try:
+                            fcall = 'gippy.%s(img, fname)' % self._products[product]['function']
+                            VerboseOut(fcall,2)
+                            imgout = eval(fcall)
+                        except Exception,e:
+                            print 'Error creating product %s for %s: %s' % (product,fname,e)
+                            VerboseOut(traceback.format_exc(),2)
+
+                        #if overviews: imgout.AddOverviews()
+                        #fname = imgout.Filename()
+                        imgout = None
+                        dur = datetime.datetime.now() - start
+                        data['products'][product] = fname
+                        VerboseOut(' -> %s: processed in %s' % (os.path.basename(fname),dur))
+                    except Exception,e:
+                        print 'Error processing %s' % fname
+                        VerboseOut('%s %s' % (data['basename'],e),2)
+                        VerboseOut(traceback.format_exc(), 3)
+                img = None
+                # cleanup directory
+                try:
+                    for bname in data['metadata']['filenames']:
+                        files = glob.glob(os.path.join(data['path'],bname)+'*')
+                        for f in files: os.remove(f)
+                    shutil.rmtree(os.path.join(dirname,'modtran'))
+                except: pass
+
+    def filter(self, tile, maxclouds=100):
+        """ Check if tile passes filter """
+        if maxclouds < 100:
+            meta = cls._readmeta(tile)
+            if meta['clouds'] > maxclouds:
+                return False
+        return True
+
+    @classmethod
+    def feature2tile(cls,feature):
+        tile = super(LandsatData, cls).feature2tile(feature)
+        return tile.zfill(6)
+
+    def project(self, res=[30,30], datadir='data_landsat'):
+        """ Create reprojected, mosaiced images for this site and date """
+        if res is None: res=[30,30]
+        super(LandsatData, self).project(res=res, datadir=datadir)
 
     def _readraw(self,tile,bandnums=[]):
         """ Read in Landsat bands using original tar.gz file """

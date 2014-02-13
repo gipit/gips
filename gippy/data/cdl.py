@@ -15,12 +15,10 @@ class CDLData(Data):
     name = "CDL"
     sensors = {'cdl': 'CDL'}
     _rootdir = '/titan/data/CDL/tiles'
-    _datedir = ''
+    _datedir = '%Y'
     _pattern = 'CDL*.tif'
-
     _tiles_vector = 'usa_states'
     _tiles_attribute = 'state_name'
-
     _products = {
         'cdl': {'description': 'Crop Data Layer'}
     }
@@ -29,29 +27,26 @@ class CDLData(Data):
 
     @classmethod
     def inspect(cls, filename):
+        bname = os.path.basename(filename)
         path = os.path.dirname(filename)
         tile = os.path.basename(path)
-        set_trace()
         return {
-            'tile': tile, 
-            'basename': os.path.basename(filename)[0:9],
+            'tile': '', 
+            'date': datetime.datetime.strftime(bname[4:8],cls._datedir)
+            'basename': bname[0:9],
+            'path': '',
             'sensor': 'cdl',
-            'path': os.path.join(cls._rootdir,tile)
         }
 
-    @classmethod
-    def archive(cls, path=''):
-        raise Exception('Archive not supported')
-
-    def find(self, tile):
-        """ Find all data for given tile and date, save in self.tiles dictionary """
-        filename = self.find_data(tile)
-        meta = self.inspect(filename)
+    def find_data(self, tile):
+        """ Find all data for given tile, save in self.tiles dictionary """
+        filename = self.find_original(tile)
+        meta = self.meta(filename)
         products = {'raw': filename}
         meta['products'] = products
         self.tiles[tile] = meta
 
-    def find_data(self, tile):
+    def find_original(self, tile):
         filename = glob.glob(os.path.join(self._rootdir, tile, 'CDL_%s_*.tif' % self.date.strftime('%Y')))
         if len(filename) == 0:
             raise Exception('No data for this tile/date')
@@ -64,6 +59,10 @@ class CDLData(Data):
         """ Get list of dates for tile """
         files = glob.glob(os.path.join(cls._rootdir,tile,'CDL*.tif'))
         return [datetime.datetime.strptime(os.path.basename(f)[4:8],'%Y').date() for f in files]
+
+    @classmethod
+    def archive(cls, path=''):
+        raise Exception('Archive not supported')
 
     @classmethod
     def get_code(cls, cropname):

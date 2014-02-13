@@ -21,7 +21,7 @@ class SARData(Data):
         'JFBS':'JERS-1 FineBeam Single Polarization'
     }
     _rootdir = '/titan/data/SAR/tiles'
-    _datedir = '%Y'
+    _datedir = '%Y%j'
     _tiles_vector = '/titan/data/SAR/tiles.shp'
     _pattern = 'KC_*.tar.gz'
     _prodpattern = '*.tif'
@@ -90,38 +90,21 @@ class SARData(Data):
         filenames = tfile.getnames()
         for f in filenames: 
             if f[-4:] == 'date': bname = f[:-5]
-
         return {
             'tile': tile, 
+            'date': date
             'basename': bname,
-            'sensor': basename[-9:-8] + basename[-15:-12],
             'path': os.path.join(cls._rootdir,tile,date.strftime('%Y')),
-            'res': float(meta[7]),
+            'sensor': basename[-9:-8] + basename[-15:-12],
+            # add additional since reading header file anyway
+            'res': float(meta[7])
             'CF': float(meta[21])
         }
 
-    @classmethod
-    def feature2tile(cls,feature):
-        """ Get tile designaation from a geospatial feature (i.e. a row) """
-        fldindex_lat = feature.GetFieldIndex("lat")
-        fldindex_lon = feature.GetFieldIndex("lon")
-        lat = abs(int(feature.GetField(fldindex_lat)+0.5))
-        lon = abs(int(feature.GetField(fldindex_lon)-0.5))
-        if lat < 0:
-            lat_h = 'S'
-        else: lat_h = 'N'
-        if lon < 0:
-            lon_h = 'S'
-        else: lon_h = 'N'
-        tile = lat_h + str(lat).zfill(2) + lon_h + str(lon).zfill(3)
-        return tile
-
-    @classmethod
-    def archive(cls, path=''):
-        super(SARData, cls).archive(path=path)
-        # remove leftover header files
-        hdrfiles = glob.glob( os.path.join(path,'*'+cls._metapattern) )
-        for f in hdrfiles: os.remove(f)
+    #def meta(self, tile):
+    #    filename = self.tiles[tile]['products']['raw']
+    #    meta = self.inspect(filename)
+    #    return meta
 
     def process(self, overwrite=False, suffix=''):
         """ Make sure all files have been pre-processed """
@@ -160,6 +143,7 @@ class SARData(Data):
             img = gippy.GeoImage(bandfiles[0],False)
             del bandfiles[0]
             for f in bandfiles: img.AddBand(gippy.GeoImage(f,False)[0])
+            
             imgout = gippy.SigmaNought(img, os.path.join(data['path'],data['basename']+'_sign') )
             data['products']['sign'] = imgout.Filename()
 
@@ -171,5 +155,28 @@ class SARData(Data):
                     try:
                         os.remove(f)
                     except: pass
+
+    @classmethod
+    def feature2tile(cls,feature):
+        """ Get tile designaation from a geospatial feature (i.e. a row) """
+        fldindex_lat = feature.GetFieldIndex("lat")
+        fldindex_lon = feature.GetFieldIndex("lon")
+        lat = abs(int(feature.GetField(fldindex_lat)+0.5))
+        lon = abs(int(feature.GetField(fldindex_lon)-0.5))
+        if lat < 0:
+            lat_h = 'S'
+        else: lat_h = 'N'
+        if lon < 0:
+            lon_h = 'S'
+        else: lon_h = 'N'
+        tile = lat_h + str(lat).zfill(2) + lon_h + str(lon).zfill(3)
+        return tile
+
+    @classmethod
+    def archive(cls, path=''):
+        super(SARData, cls).archive(path=path)
+        # remove leftover header files
+        hdrfiles = glob.glob( os.path.join(path,'*'+cls._metapattern) )
+        for f in hdrfiles: os.remove(f)
 
 def main(): SARData.main()
