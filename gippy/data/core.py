@@ -62,6 +62,7 @@ class Data(object):
     def find_data(self, tile):
         """ Find all data for tile, save in self.tiles dictionary """
         filename = self.find_original(tile)
+        if filename == '': return {}
         info = self.inspect(filename)
         files = glob.glob(os.path.join(info['path'],info['basename']+self._prodpattern))
         products = {'raw': filename}
@@ -69,7 +70,7 @@ class Data(object):
             fname,ext = os.path.splitext(os.path.split(f)[1])
             products[ fname[len(info['basename'])+1:]  ] = f
         info['products'] = products
-        self.tiles[tile] = info
+        return info
 
     def meta(self, tile):
         """ Retrieve metadata for this tile """
@@ -104,7 +105,8 @@ class Data(object):
         """ Find raw/original data for this tile """
         filename = glob.glob(os.path.join(self._rootdir, tile, self.date.strftime(self._datedir), self._pattern))
         if len(filename) == 0:
-            raise Exception('No data for this tile/date')
+            #raise Exception('No data for this tile/date')
+            return ''
         elif len(filename) > 1:
             raise Exception('More than 1 file found for same tile/date')
         return filename[0]
@@ -117,7 +119,10 @@ class Data(object):
     @classmethod
     def find_dates(cls, tile):
         """ Get list of dates available for a tile """
-        return [datetime.datetime.strptime(os.path.basename(d),cls._datedir).date() for d in os.listdir( os.path.join(cls._rootdir,tile) )]
+        tdir = os.path.join(cls._rootdir,tile)
+        if os.path.exists(tdir):
+            return [datetime.datetime.strptime(os.path.basename(d),cls._datedir).date() for d in os.listdir( os.path.join(cls._rootdir,tile) )]
+        else: return []
 
     # currerntly not used
     def opentile(self, tile, product=''):
@@ -300,11 +305,10 @@ class Data(object):
             self.tile_coverage = dict((t,(1,1)) for t in self.find_tiles())
         self.date = date
 
-        VerboseOut("Locating matching data for %s" % self.date, 3)
+        #VerboseOut("Locating matching data for %s" % self.date, 3)
 
-        # Create tile and product dictionaries for use by child class
+        # Create product dictionaries for use by child class
         self.tiles = {}
-        for t in self.tile_coverage.keys(): self.tiles[t] = {}
         if products is None: products = self._products.keys()
         if len(products) == 0: products = self._products.keys()
 
@@ -315,22 +319,18 @@ class Data(object):
         if sensors is None: sensors = self.sensors.keys()
         self.used_sensors = {s: self.sensors.get(s,None) for s in sensors}
 
-        VerboseOut('Finding products for %s tiles ' % (len(self.tiles)),3)
+        #VerboseOut('Finding products for %s tiles ' % (len(self.tile_coverage)),3)
 
         # Find products
-        empty_tiles = []
-        for t in self.tiles:
-            try:
-                self.find_data(t)
-            except Exception,e:
-                empty_tiles.append(t)
-                VerboseOut('Discarding tile %s: %s' % (t,traceback.format_exc()), 4)
-                continue
+        for t in self.tile_coverage.keys():
+            tile = self.find_data(t)
             # Custom filter based on dataclass
             #good = self.filter(t,filename, **kwargs)
             #if good == False:
             #    empty_tiles.append(t)
-        for t in empty_tiles: self.tiles.pop(t,None)
+            if any(tile):
+                self.tiles[t] = tile
+
         self.sensor = self.tiles[self.tiles.keys()[0]]['sensor']
         if len(self.tiles) == 0: raise Exception('No valid data found')
 
@@ -509,7 +509,7 @@ class DataInventory(object):
                     if (self.start_date <= date <= self.end_date) and (self.start_day <= day <= self.end_day):
                         if date not in dates: dates.append(date)
             except: 
-                pass
+                VerboseOut(traceback.format_exc(),4)
 
         self.numfiles = 0
         for date in sorted(dates):

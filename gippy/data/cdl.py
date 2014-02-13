@@ -32,7 +32,7 @@ class CDLData(Data):
         tile = os.path.basename(path)
         return {
             'tile': '', 
-            'date': datetime.datetime.strftime(bname[4:8],cls._datedir)
+            'date': datetime.datetime.strptime(bname[4:8],cls._datedir),
             'basename': bname[0:9],
             'path': '',
             'sensor': 'cdl',
@@ -41,7 +41,7 @@ class CDLData(Data):
     def find_data(self, tile):
         """ Find all data for given tile, save in self.tiles dictionary """
         filename = self.find_original(tile)
-        meta = self.meta(filename)
+        meta = self.inspect(filename)
         products = {'raw': filename}
         meta['products'] = products
         self.tiles[tile] = meta

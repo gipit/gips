@@ -92,12 +92,12 @@ class SARData(Data):
             if f[-4:] == 'date': bname = f[:-5]
         return {
             'tile': tile, 
-            'date': date
+            'date': date,
             'basename': bname,
             'path': os.path.join(cls._rootdir,tile,date.strftime('%Y')),
             'sensor': basename[-9:-8] + basename[-15:-12],
             # add additional since reading header file anyway
-            'res': float(meta[7])
+            'res': float(meta[7]),
             'CF': float(meta[21])
         }
 
@@ -143,7 +143,7 @@ class SARData(Data):
             img = gippy.GeoImage(bandfiles[0],False)
             del bandfiles[0]
             for f in bandfiles: img.AddBand(gippy.GeoImage(f,False)[0])
-            
+
             imgout = gippy.SigmaNought(img, os.path.join(data['path'],data['basename']+'_sign') )
             data['products']['sign'] = imgout.Filename()
 

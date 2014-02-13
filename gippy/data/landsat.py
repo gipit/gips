@@ -147,7 +147,7 @@ class LandsatData(Data):
         doy = basename[13:16]
         return {
             'tile': tile,
-            'date': datetime.datetime.strptime(year+day,"%Y%j"),
+            'date': datetime.datetime.strptime(year+doy,"%Y%j"),
             'basename': basename[:-12],
             'sensor': basename[0:3],
             'path':os.path.join(cls._rootdir,tile,year+doy)
