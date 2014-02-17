@@ -146,7 +146,8 @@ namespace gip {
 	GeoImage SigmaNought(const GeoImage& img, string filename) {
 	    GeoImageIO<float> imgIO(img);
 	    GeoImageIO<float> imgoutIO(GeoImage(filename, img, GDT_Float32));
-	    imgoutIO.SetNoData(-32768);
+	    float nodataval = -32768;
+	    imgoutIO.SetNoData(nodataval);
 	    img.SetUnitsOut("other");
 	    imgoutIO.SetUnits("other");
 	    CImg<float> cimg;
@@ -158,7 +159,7 @@ namespace gip {
                 cimg = imgIO[b].Read(iChunk);
                 cimg = cimg.pow(2).log10() * 10 + (-83.0);
                 nodata = imgIO[b].NoDataMask(iChunk);
-                cimg_forXY(cimg,x,y) { if (!nodata(x,y)) cimg(x,y) = imgoutIO[b].NoDataValue(); }
+                cimg_forXY(cimg,x,y) { if (!nodata(x,y)) cimg(x,y) = nodataval; }
                 imgoutIO[b].Write(cimg,iChunk);
                 //imgoutIO[b].Write(nodata,iChunk);
             }

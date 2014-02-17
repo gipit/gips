@@ -40,19 +40,18 @@ class CDLData(Data):
 
     def find_data(self, tile):
         """ Find all data for given tile, save in self.tiles dictionary """
-        filename = self.find_original(tile)
-        meta = self.inspect(filename)
-        products = {'raw': filename}
-        meta['products'] = products
-        self.tiles[tile] = meta
-
-    def find_original(self, tile):
-        filename = glob.glob(os.path.join(self._rootdir, tile, 'CDL_%s_*.tif' % self.date.strftime('%Y')))
-        if len(filename) == 0:
-            raise Exception('No data for this tile/date')
-        elif len(filename) > 1:
+        filename = self.find_raw(tile)
+        if len(filename) == 0: return {}
+        if len(filename) > 1:
             raise Exception('More than 1 file found for same tile/date')
-        return filename[0]
+
+        meta = self.inspect(filename[0])
+        #meta['raw'] = filename[0]
+        meta['products'] = {'cdl':filename[0]}
+        return meta
+
+    def find_raw(self, tile):
+        return glob.glob(os.path.join(self._rootdir, tile, 'CDL_%s_*.tif' % self.date.strftime('%Y')))
 
     @classmethod
     def find_dates(cls, tile):

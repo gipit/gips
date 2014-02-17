@@ -24,6 +24,19 @@ def File2List(filename):
     for t in txt: txt2.append( t.rstrip('\n') )
     return txt2
 
+def List2File(lst,filename):
+    f = open(filename,'w')
+    f.write('\n'.join(lst)+'\n')
+    f.close()
+
+def RemoveFiles(filenames):
+    for f in filenames:
+        try:
+            os.remove(f)
+        except OSError as e:
+            if e.errno != errno.ENOENT: raise
+            continue
+
 class Data(object):
     """ Base class for data objects """
     # name of this dataset
@@ -61,11 +74,16 @@ class Data(object):
 
     def find_data(self, tile):
         """ Find all data for tile, save in self.tiles dictionary """
-        filename = self.find_original(tile)
-        if filename == '': return {}
-        info = self.inspect(filename)
+        # find original tar.gz file
+        filenames = self.find_raw(tile)
+        if len(filenames) == 0: return {}
+        if len(filenames) > 1:
+            raise Exception('More than 1 file found for same tile/date')
+
+        info = self.inspect(filenames[0])
         files = glob.glob(os.path.join(info['path'],info['basename']+self._prodpattern))
-        products = {'raw': filename}
+        info['raw'] = filenames[0]
+        products = {}
         for f in files:
             fname,ext = os.path.splitext(os.path.split(f)[1])
             products[ fname[len(info['basename'])+1:]  ] = f
@@ -74,7 +92,7 @@ class Data(object):
 
     def meta(self, tile):
         """ Retrieve metadata for this tile """
-        filename = self.tiles[tile]['products']['raw']
+        filename = self.tiles[tile]['raw']
         meta = self.inspect(filename)
         # add additional metadata to dictionary
         return meta
@@ -101,15 +119,9 @@ class Data(object):
     ##########################################################################
     # Override these functions if not using a tile/date directory structure
     ##########################################################################
-    def find_original(self, tile):
+    def find_raw(self, tile):
         """ Find raw/original data for this tile """
-        filename = glob.glob(os.path.join(self._rootdir, tile, self.date.strftime(self._datedir), self._pattern))
-        if len(filename) == 0:
-            #raise Exception('No data for this tile/date')
-            return ''
-        elif len(filename) > 1:
-            raise Exception('More than 1 file found for same tile/date')
-        return filename[0]
+        return glob.glob(os.path.join(self._rootdir, tile, self.date.strftime(self._datedir), self._pattern))
 
     @classmethod
     def find_tiles(cls):
@@ -185,7 +197,7 @@ class Data(object):
         return tiles      
 
     @classmethod
-    def archive(cls, path=''):
+    def archive(cls, path='', link=True):
         """ Move files from directory to archive location """
         start = datetime.datetime.now()
         fnames = glob.glob(os.path.join(path,cls._pattern))
@@ -193,27 +205,31 @@ class Data(object):
         numadded = 0
         for f in fnames:
             meta = cls.inspect(f)
-            path = meta['path']       
+            datapath = meta['path']       
             # Make directory
             try:
-                os.makedirs(path)
+                os.makedirs(datapath)
             except OSError as exc: # Python >2.5
-                if exc.errno == errno.EEXIST and os.path.isdir(path):
+                if exc.errno == errno.EEXIST and os.path.isdir(datapath):
                     pass
                 else:
-                    raise Exception('Unable to make data directory %s' % path)
+                    raise Exception('Unable to make data directory %s' % datapath)
 
-            # Move file
+            # Move or link file
             try:
-                newf = os.path.join(path,f)
+                newf = os.path.join(datapath,f)
                 if not os.path.exists(newf):
                     # Check for older versions
-                    existing_files = glob.glob(os.path.join(path,cls._pattern))
+                    existing_files = glob.glob(os.path.join(datapath,cls._pattern))
                     if len(existing_files) > 0:
                         print 'Other version of %s already exist:' % os.path.basename(f)
                         for ef in existing_files: print '\t%s' % os.path.basename(ef)
-                    shutil.move(f,newf)
-                    #print f, ' -> ',path
+                    if link:
+                        os.symlink(os.path.abspath(f),newf)
+                    else:
+                        #shutil.move(os.path.abspath(f),newf)
+                        os.link(os.path.abspath(f),newf)
+                    VerboseOut(f + ' -> ' + newf ,2)
                     numadded = numadded + 1
             except shutil.Error as err:
                 VerboseOut("Problem archiving file %s" % f)
@@ -248,16 +264,22 @@ class Data(object):
         return hdrfname2
 
     @classmethod
-    def extract(cls,filename):
+    def extractdata(cls,filename):
         """ Extract data from original datafile, if tarfile """
         if tarfile.is_tarfile(filename):
             tfile = tarfile.open(filename)
         else: raise Exception('%s is not a valid tar file' % filename)
         index = tfile.getnames()
         dirname = os.path.dirname(filename)
-        datindex = ([os.path.join(dirname,f) for f in index if cls._metapattern not in f])
+        datafiles = []
         tfile.extractall(dirname)
-        return datindex
+        for f in index:
+            if cls._metapattern in f: 
+                hdrfile = os.path.join(dirname,f)
+            else: datafiles.append(os.path.join(dirname,f))
+            # make sure file is readable and writable
+            os.chmod(os.path.join(dirname,f),0664)
+        return {'headerfile': hdrfile, 'datafiles': datafiles}
 
     def open(self, product='', update=True):
         """ Open and return final product GeoImage """
@@ -388,7 +410,9 @@ class Data(object):
         parser.add_argument('--hard',help='Create hard links instead of symbolic', default=False,action='store_true')
 
         # Misc
-        parser_archive = subparser.add_parser('archive',help='Move files from current directory to data archive')
+        parser = subparser.add_parser('archive',help='Move files from current directory to data archive')
+        parser.add_argument('--link',help='Create symbolic links instead of moving', default=False,action='store_true')
+        parser.add_argument('-v','--verbose',help='Verbosity - 0: quiet, 1: normal, 2: debug', default=1, type=int)
 
         cls.add_subparsers(subparser)
 
@@ -403,12 +427,12 @@ class Data(object):
                 print '    {:<20}{:<100}'.format(key, val['description'])
             exit(1)
 
-        if args.command == 'archive':
-            cls.archive()
-            exit(1)
-
         gippy.Options.SetVerbose(args.verbose)
         gippy.Options.SetChunkSize(256.0)   # replace with option
+
+        if args.command == 'archive':
+            cls.archive(link=args.link)
+            exit(1)
 
         try:
             inv = cls.inventory(site=args.site, dates=args.dates, days=args.days, tiles=args.tiles, products=args.products)
@@ -442,7 +466,7 @@ class Data(object):
 class DataInventory(object):
     """ Manager class for data inventories """
     # redo color, combine into ordered dictionary
-    _colororder = ['bright yellow', 'bright red', 'bright green', 'bright blue']
+    _colororder = ['purple', 'bright red', 'bright green', 'bright blue']
     _colorcodes = {
         'bright yellow':   '1;33',
         'bright red':      '1;31',
@@ -554,7 +578,7 @@ class DataInventory(object):
         for data in self.data[date]:
             for t in data.tiles:
                 for p in data.tiles[t]['products']:
-                    if not p == 'raw': prods.append(p)
+                    prods.append(p)
                 #for prod in data.products.keys(): prods.append(prod)
         #set_trace()
         return sorted(set(prods))
@@ -565,7 +589,7 @@ class DataInventory(object):
             for data in self.data[date]:
                 for t in data.tiles:
                     for p in data.tiles[t]['products']:
-                        if not p == 'raw': link( data.tiles[t]['products'][p], hard )
+                        link( data.tiles[t]['products'][p], hard )
 
     def printcalendar(self,md=False, products=False):
         """ print calendar for raw original datafiles """

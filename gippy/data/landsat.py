@@ -155,7 +155,7 @@ class LandsatData(Data):
 
     def _readmeta(self, tile):
         """ Read in Landsat MTL (metadata) file """
-        filename = self.tiles[tile]['products']['raw']
+        filename = self.tiles[tile]['raw']
         mtlfilename = self.extracthdr(filename)
 
         VerboseOut('reading %s' % mtlfilename, 3)
@@ -314,7 +314,7 @@ class LandsatData(Data):
                     # TODO - If only doing temp then don't waste time with other bands
                     img = self._readraw(tile)
                 except Exception,e:
-                    print 'Error reading data %s' % data['products']['raw']
+                    print 'Error reading data %s' % data['raw']
                     VerboseOut('%s %s' % (data['basename'],e), 2)
                     VerboseOut(traceback.format_exc(), 3)
                     return
@@ -392,8 +392,8 @@ class LandsatData(Data):
             bandnums = numpy.arange(0,len(tiledata['metadata']['bands'])) + 1
 
         # Extract desired files from tarfile
-        filename = tiledata['products']['raw']
-        index = self.extract(filename)
+        filename = tiledata['raw']
+        index = self.extractdata(filename)
 
         filenames = []
         for b in bandnums:
