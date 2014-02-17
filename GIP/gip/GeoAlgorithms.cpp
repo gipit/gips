@@ -147,6 +147,7 @@ namespace gip {
 	    GeoImageIO<float> imgIO(img);
 	    GeoImageIO<float> imgoutIO(GeoImage(filename, img, GDT_Float32));
 	    imgoutIO.SetNoData(-32768);
+	    img.SetUnitsOut("other");
 	    imgoutIO.SetUnits("other");
 	    CImg<float> cimg;
 	    CImg<unsigned char> nodata;
@@ -159,6 +160,7 @@ namespace gip {
                 nodata = imgIO[b].NoDataMask(iChunk);
                 cimg_forXY(cimg,x,y) { if (!nodata(x,y)) cimg(x,y) = imgoutIO[b].NoDataValue(); }
                 imgoutIO[b].Write(cimg,iChunk);
+                //imgoutIO[b].Write(nodata,iChunk);
             }
         }
         return imgoutIO;

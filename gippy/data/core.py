@@ -26,39 +26,58 @@ def File2List(filename):
 
 class Data(object):
     """ Base class for data objects """
+    # name of this dataset
     name = ''
+    # dictionary of codes and full names of all sensors
     sensors = {}
+    # root directory to data
     _rootdir = ''
+    # Format code of date directories in repository
+    _datedir = '%Y%j'
+    # pattern of original raw data file
+    _pattern = ''
+    # pattern of created products
+    _prodpattern = '*.tif'
+    # pattern of a metadata or header file
+    _metapattern = ''
+    # shapefile name or PostGIS layer name describing sensor tiles
     _tiles_vector = ''
-    _tiles_attribute = ''
-
+    # column name in _tiles_vector holding tile designation
+    _tiles_attribute = 'tile'
+    # dictionary of available products for this dataset
+    _products = {}
+    
     @classmethod
     def inspect(cls, filename):
-        """ Inspect a single file and get some metadata - Needs to be overridden by child
-                path - full path to files/products
+        """ Inspect a single file and derive some info (for archiving) - Needs to be overridden by child
+                tile - tile designation
+                date - full date
                 basename - base/root name of this tile/date
-                products - dictionary of product name and filename
+                path - full path to files/products
                 sensor - name of sensor
+                products - dictionary of product name and filename
         """    
-        return {'tile':'', 'basename':'', 'sensor':'', 'path': ''}
+        return {'tile':'', 'date': '', 'basename':'', 'path':'', 'sensor': ''}
 
-    def find(self, tile):
-        """ Find all data for given tile and date, save in self.tiles dictionary """
-        filename = self.find_data(tile)
-        # find products - does this need to be split off?
-        meta = self.inspect(filename)
-        files = glob.glob(os.path.join(meta['path'],meta['basename']+self._prodpattern))
+    def find_data(self, tile):
+        """ Find all data for tile, save in self.tiles dictionary """
+        filename = self.find_original(tile)
+        if filename == '': return {}
+        info = self.inspect(filename)
+        files = glob.glob(os.path.join(info['path'],info['basename']+self._prodpattern))
         products = {'raw': filename}
         for f in files:
             fname,ext = os.path.splitext(os.path.split(f)[1])
-            products[ fname[len(meta['basename'])+1:]  ] = f
-        meta['products'] = products
-        self.tiles[tile] = meta
+            products[ fname[len(info['basename'])+1:]  ] = f
+        info['products'] = products
+        return info
 
-    @classmethod
-    def fetch(cls):
-        """ Download data and add to archive """
-        raise Exception("Fetch not implemented for %s" % cls.name)
+    def meta(self, tile):
+        """ Retrieve metadata for this tile """
+        filename = self.tiles[tile]['products']['raw']
+        meta = self.inspect(filename)
+        # add additional metadata to dictionary
+        return meta
 
     def process(self, overwrite=False, suffix=''):
         """ Make sure all products exist and process if needed """
@@ -68,18 +87,29 @@ class Data(object):
         """ Check if tile passes filter """
         return True
 
+    @classmethod
+    def feature2tile(cls,feature):
+        """ Get tile designaation from a geospatial feature (i.e. a row) """
+        fldindex = feature.GetFieldIndex(cls._tiles_attribute)
+        return str(feature.GetField(fldindex))
+
+    @classmethod
+    def fetch(cls):
+        """ Download data and add to archive """
+        raise Exception("Fetch not implemented for %s" % cls.name)
+
     ##########################################################################
     # Override these functions if not using a tile/date directory structure
     ##########################################################################
-    def find_data(self, tile):
-        """ Find raw/original data for this tile and date """
-        filename = glob.glob(os.path.join(self._rootdir, tile, self.date.strftime('%Y%j'), self._pattern))
+    def find_original(self, tile):
+        """ Find raw/original data for this tile """
+        filename = glob.glob(os.path.join(self._rootdir, tile, self.date.strftime(self._datedir), self._pattern))
         if len(filename) == 0:
-            raise Exception('No files found')
+            #raise Exception('No data for this tile/date')
+            return ''
         elif len(filename) > 1:
             raise Exception('More than 1 file found for same tile/date')
-        filename = filename[0]
-        return filename
+        return filename[0]
 
     @classmethod
     def find_tiles(cls):
@@ -89,8 +119,12 @@ class Data(object):
     @classmethod
     def find_dates(cls, tile):
         """ Get list of dates available for a tile """
-        return [datetime.datetime.strptime(os.path.basename(d),'%Y%j').date() for d in os.listdir( os.path.join(cls._rootdir,tile) )]
+        tdir = os.path.join(cls._rootdir,tile)
+        if os.path.exists(tdir):
+            return [datetime.datetime.strptime(os.path.basename(d),cls._datedir).date() for d in os.listdir( os.path.join(cls._rootdir,tile) )]
+        else: return []
 
+    # currerntly not used
     def opentile(self, tile, product=''):
         if product != '':
             return gippy.GeoImage(self.products[product])
@@ -115,7 +149,11 @@ class Data(object):
     @classmethod
     def get_tiles_vector(cls):
         """ Get GeoVector of sensor grid """
-        return gippy.GeoVector("PG:dbname=geodata host=congo port=5432 user=ags", layer=cls._tiles_vector)
+        if os.path.isfile(cls._tiles_vector):
+            tiles = gippy.GeoVector(cls._tiles_vector)
+        else:
+            tiles = gippy.GeoVector("PG:dbname=geodata host=congo port=5432 user=ags", layer=cls._tiles_vector)
+        return tiles
 
     @classmethod
     def vector2tiles(cls, vector, mincoverage=0.0):
@@ -132,14 +170,12 @@ class Data(object):
         tiles = {}
         tlayer.ResetReading()
         feat = tlayer.GetNextFeature()
-        fldindex = feat.GetFieldIndex(cls._tiles_attribute)
+        #fldindex = feat.GetFieldIndex(cls._tiles_attribute)
         while feat is not None:
             tgeom = loads(feat.GetGeometryRef().ExportToWkb())
             area = geom.intersection(tgeom).area
             if area != 0:
-                tile = str(feat.GetField(fldindex))
-                # TODO - THIS IS LANDSAT SPECIFIC !
-                if len(tile) == 5: tile = '0' + tile
+                tile = cls.feature2tile(feat)
                 tiles[tile] = (area/geom.area, area/tgeom.area)
             feat = tlayer.GetNextFeature()
         remove_tiles = []
@@ -174,8 +210,8 @@ class Data(object):
                     # Check for older versions
                     existing_files = glob.glob(os.path.join(path,cls._pattern))
                     if len(existing_files) > 0:
-                        print 'Other version of %s already exist:' % f
-                        for ef in existing_files: print '\t%s' % ef
+                        print 'Other version of %s already exist:' % os.path.basename(f)
+                        for ef in existing_files: print '\t%s' % os.path.basename(ef)
                     shutil.move(f,newf)
                     #print f, ' -> ',path
                     numadded = numadded + 1
@@ -219,7 +255,7 @@ class Data(object):
         else: raise Exception('%s is not a valid tar file' % filename)
         index = tfile.getnames()
         dirname = os.path.dirname(filename)
-        datindex = ([f for f in index if cls._metapattern not in f])
+        datindex = ([os.path.join(dirname,f) for f in index if cls._metapattern not in f])
         tfile.extractall(dirname)
         return datindex
 
@@ -269,38 +305,32 @@ class Data(object):
             self.tile_coverage = dict((t,(1,1)) for t in self.find_tiles())
         self.date = date
 
-        VerboseOut("Locating matching data for %s" % self.date, 3)
+        #VerboseOut("Locating matching data for %s" % self.date, 3)
 
-        # Create tile and product dictionaries for use by child class
+        # Create product dictionaries for use by child class
         self.tiles = {}
-        for t in self.tile_coverage.keys(): self.tiles[t] = {}
         if products is None: products = self._products.keys()
         if len(products) == 0: products = self._products.keys()
 
         self.products = {}
         for p in products: self.products[p] = ''
 
-
         # For each tile locate files/products
         if sensors is None: sensors = self.sensors.keys()
         self.used_sensors = {s: self.sensors.get(s,None) for s in sensors}
 
-        VerboseOut('Finding products for %s tiles ' % (len(self.tiles)),3)
+        #VerboseOut('Finding products for %s tiles ' % (len(self.tile_coverage)),3)
 
         # Find products
-        empty_tiles = []
-        for t in self.tiles:
-            try:
-                self.find(t)
-            except Exception,e:
-                empty_tiles.append(t)
-                VerboseOut('Discarding tile %s: %s' % (t,traceback.format_exc()), 4)
-                continue
+        for t in self.tile_coverage.keys():
+            tile = self.find_data(t)
             # Custom filter based on dataclass
             #good = self.filter(t,filename, **kwargs)
             #if good == False:
             #    empty_tiles.append(t)
-        for t in empty_tiles: self.tiles.pop(t,None)
+            if any(tile):
+                self.tiles[t] = tile
+
         self.sensor = self.tiles[self.tiles.keys()[0]]['sensor']
         if len(self.tiles) == 0: raise Exception('No valid data found')
 
@@ -410,7 +440,7 @@ class Data(object):
 
 
 class DataInventory(object):
-    """ Base class for data inventories """
+    """ Manager class for data inventories """
     # redo color, combine into ordered dictionary
     _colororder = ['bright yellow', 'bright red', 'bright green', 'bright blue']
     _colorcodes = {
@@ -441,13 +471,6 @@ class DataInventory(object):
     def __getitem__(self,date):
         return self.data[date]
 
-    #def filenames(self,product):
-    #    """ Return dictionary (date keys) of filenames for given sensor and product if supplied """
-    #    filenames = {}
-    #    for date in self.dates:
-    #        filenames[date] = self.data[date][0].filename(product)
-    #    return filenames
-
     @property
     def dates(self):
         """ Get sorted list of dates """
@@ -465,11 +488,6 @@ class DataInventory(object):
         for i in range(1,len(self.dates)):
             img.AddBand(self.data[self.dates[i]][0].open(product=product)[0])
         return img
-
-    #@property
-    #def sensor_names(self):
-    #    """ Get list of all sensors """
-    #    return [self._colorize(k, self._colors[k]) for k in sorted(self._colors)]
 
     def _colorize(self,txt,color):
         return "\033["+self._colorcodes[color]+'m' + txt + "\033[0m"
@@ -491,7 +509,7 @@ class DataInventory(object):
                     if (self.start_date <= date <= self.end_date) and (self.start_day <= day <= self.end_day):
                         if date not in dates: dates.append(date)
             except: 
-                pass
+                VerboseOut(traceback.format_exc(),4)
 
         self.numfiles = 0
         for date in sorted(dates):
@@ -599,8 +617,6 @@ class DataInventory(object):
             s = 'Data Inventory: No matching files'
         return s
 
-
-
 def link(f,hard=False):
     """ Create link to file in current directory """
     #faux = f + '.aux.xml'
@@ -617,5 +633,3 @@ def link(f,hard=False):
             #    os.symlink(faux,os.path.basename(faux))
         except:
             pass
-
-
