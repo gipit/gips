@@ -143,7 +143,7 @@ namespace gip {
 	}
 
 	//! Calculate radar backscatter for all bands
-	GeoImage SigmaNought(const GeoImage& img, string filename) {
+	GeoImage SigmaNought(const GeoImage& img, string filename, float CF) {
 	    GeoImageIO<float> imgIO(img);
 	    GeoImageIO<float> imgoutIO(GeoImage(filename, img, GDT_Float32));
 	    float nodataval = -32768;
@@ -157,7 +157,7 @@ namespace gip {
             imgoutIO.SetColor(colors[b+1], b+1);
             for (int iChunk=1; iChunk<=img[b].NumChunks(); iChunk++) {
                 cimg = imgIO[b].Read(iChunk);
-                cimg = cimg.pow(2).log10() * 10 + (-83.0);
+                cimg = cimg.pow(2).log10() * 10 + CF;
                 nodata = imgIO[b].NoDataMask(iChunk);
                 cimg_forXY(cimg,x,y) { if (!nodata(x,y)) cimg(x,y) = nodataval; }
                 imgoutIO[b].Write(cimg,iChunk);
