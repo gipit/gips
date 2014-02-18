@@ -62,37 +62,40 @@ class Data(object):
     
     @classmethod
     def inspect(cls, filename):
-        """ Inspect a single file and derive some info (for archiving) - Needs to be overridden by child
-                tile - tile designation
-                date - full date
-                basename - base/root name of this tile/date
-                path - full path to files/products
-                sensor - name of sensor
-                products - dictionary of product name and filename
-        """    
-        return {'tile':'', 'date': '', 'basename':'', 'path':'', 'sensor': ''}
+        """ Inspect a single file and derive some info (for archiving) - Needs to be overridden by child """
+        return {
+            'filename':'',  # full filename
+            'datafiles':[], # if filename is archive, index of datafiles in archive
+            'tile':'',      # tile designation
+            'date': '',     # full date
+            'basename':'',  # base/root name of this tile/date (used for product naming)
+            'path':'',      # full path to files/products
+            'sensor': '',   # sensor code (key used in cls.sensors dictionary)
+            'products':{}   # dictionary {'product name': filename}
+    }
 
     def find_data(self, tile):
         """ Find all data for tile, save in self.tiles dictionary """
-        # find original tar.gz file
+        # find original datafile
         filenames = self.find_raw(tile)
         if len(filenames) == 0: return {}
         if len(filenames) > 1:
             raise Exception('More than 1 file found for same tile/date')
-
         info = self.inspect(filenames[0])
+
+        # find additional products named basename_product
         files = glob.glob(os.path.join(info['path'],info['basename']+self._prodpattern))
-        info['raw'] = filenames[0]
         products = {}
         for f in files:
             fname,ext = os.path.splitext(os.path.split(f)[1])
             products[ fname[len(info['basename'])+1:]  ] = f
+        # extend info['products'] instead of replace ?
         info['products'] = products
         return info
 
     def meta(self, tile):
         """ Retrieve metadata for this tile """
-        filename = self.tiles[tile]['raw']
+        filename = self.tiles[tile]['filename']
         meta = self.inspect(filename)
         # add additional metadata to dictionary
         return meta
@@ -136,7 +139,7 @@ class Data(object):
             return [datetime.datetime.strptime(os.path.basename(d),cls._datedir).date() for d in os.listdir( os.path.join(cls._rootdir,tile) )]
         else: return []
 
-    # currerntly not used
+    # currently not used
     def opentile(self, tile, product=''):
         if product != '':
             return gippy.GeoImage(self.products[product])
@@ -209,9 +212,10 @@ class Data(object):
 
         numadded = 0
         for f in fnames:
-            meta = cls.inspect(f)
-            # if problem with inspection, move to quarantine
-            if not any(meta):
+            try:
+                meta = cls.inspect(f)
+            except:
+                # if problem with inspection, move to quarantine
                 os.link(os.path.abspath(f),os.path.join(qdir,f))
                 VerboseOut('%s: problem with file, creating quarantine link' % f)
                 continue
@@ -250,7 +254,7 @@ class Data(object):
 
     """def tar_index(self,tile):
         #Get names from tarfile
-        filename = self.tiles[tile]['products']['raw']
+        filename = self.tiles[tile]['products']['filename']
         if tarfile.is_tarfile(filename):
             tfile = tarfile.open(filename)
         else:
@@ -631,8 +635,11 @@ class DataInventory(object):
                 sys.stdout.write('\n ')
             oldyear = date.year
         sys.stdout.write('\n')
-        self.legend()
-        print self
+        if self.numfiles != 0:
+            self.legend()
+            VerboseOut("%s Data Inventory: %s files on %s dates" % (self.dataclass.name, self.numfiles, self.numdates))
+        else:
+            VerboseOut('Data Inventory: No matching files')
         if self.site is not None:
             print '{:^8}{:>14}{:>14}'.format('Tile','% Coverage','% Tile Used')
             for t in sorted(self.tiles): 
@@ -643,13 +650,6 @@ class DataInventory(object):
         for i,s in enumerate(sensors):
             print self._colorize(s, self._colororder[i])
             #print self._colorize(self.dataclass.sensors[s], self._colororder[s])
-
-    def __str__(self):
-        if self.numfiles != 0:
-            s = "%s Data Inventory: %s files on %s dates" % (self.dataclass.name, self.numfiles, self.numdates)
-        else:
-            s = 'Data Inventory: No matching files'
-        return s
 
 def link(f,hard=False):
     """ Create link to file in current directory """

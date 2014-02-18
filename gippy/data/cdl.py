@@ -29,26 +29,26 @@ class CDLData(Data):
     def inspect(cls, filename):
         bname = os.path.basename(filename)
         path = os.path.dirname(filename)
+        # not implemented for archive purposes
         tile = os.path.basename(path)
         return {
+            'filename': filename,
+            'datafiles': [],
             'tile': '', 
             'date': datetime.datetime.strptime(bname[4:8],cls._datedir),
             'basename': bname[0:9],
             'path': '',
             'sensor': 'cdl',
+            'products': {'cdl':filename}
         }
 
     def find_data(self, tile):
-        """ Find all data for given tile, save in self.tiles dictionary """
+        """ Find all data/products for given tile, save in self.tiles dictionary """
         filename = self.find_raw(tile)
         if len(filename) == 0: return {}
         if len(filename) > 1:
             raise Exception('More than 1 file found for same tile/date')
-
-        meta = self.inspect(filename[0])
-        #meta['raw'] = filename[0]
-        meta['products'] = {'cdl':filename[0]}
-        return meta
+        return self.inspect(filename[0])
 
     def find_raw(self, tile):
         return glob.glob(os.path.join(self._rootdir, tile, 'CDL_%s_*.tif' % self.date.strftime('%Y')))

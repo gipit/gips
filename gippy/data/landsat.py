@@ -146,16 +146,18 @@ class LandsatData(Data):
         year = basename[9:13]
         doy = basename[13:16]
         return {
+            'filename': filename,
+            'datafiles': [],    # not needed for inspect, populate in meta()
             'tile': tile,
             'date': datetime.datetime.strptime(year+doy,"%Y%j"),
             'basename': basename[:-12],
-            'sensor': basename[0:3],
-            'path':os.path.join(cls._rootdir,tile,year+doy)
+            'path':os.path.join(cls._rootdir,tile,year+doy),
+            'sensor': basename[0:3]
         }
 
     def _readmeta(self, tile):
         """ Read in Landsat MTL (metadata) file """
-        filename = self.tiles[tile]['raw']
+        filename = self.tiles[tile]['filename']
         mtlfilename = self.extracthdr(filename)
 
         VerboseOut('reading %s' % mtlfilename, 3)
@@ -314,7 +316,7 @@ class LandsatData(Data):
                     # TODO - If only doing temp then don't waste time with other bands
                     img = self._readraw(tile)
                 except Exception,e:
-                    print 'Error reading data %s' % data['raw']
+                    print 'Error reading data %s' % data['filename']
                     VerboseOut('%s %s' % (data['basename'],e), 2)
                     VerboseOut(traceback.format_exc(), 3)
                     return
@@ -392,7 +394,7 @@ class LandsatData(Data):
             bandnums = numpy.arange(0,len(tiledata['metadata']['bands'])) + 1
 
         # Extract desired files from tarfile
-        filename = tiledata['raw']
+        filename = tiledata['filename']
         index = self.extractdata(filename)
 
         filenames = []

@@ -88,10 +88,15 @@ class SARData(Data):
         """ Inspect a single file and get some basic info """
         path, fname = os.path.split(filename)
         tile = fname[10:17]
-
+        #start = datetime.datetime.now()
         # read date
-        tfile = tarfile.open(filename)
-        datafiles = tfile.getnames()
+        indexfile = os.path.join(path,fname+'.index')
+        if os.path.exists(indexfile):
+            datafiles = File2List(indexfile)
+        else:            
+            tfile = tarfile.open(filename)
+            datafiles = tfile.getnames()
+            List2File(datafiles,indexfile)
         for f in datafiles: 
             if f[-3:] == 'hdr': 
                 hdrfile = f
@@ -102,7 +107,7 @@ class SARData(Data):
         # Check if inspecting a file in the repository
         if cls._rootdir in path:
             date = datetime.datetime.strptime(os.path.basename(path),cls._datedir).date()
-            #VerboseOut('Date from repository = '+str(date),3)
+            VerboseOut('Date from repository = '+str(date),2)
         else:
             # extract header and date image
             tfile.extract(hdrfile,path)
@@ -123,24 +128,30 @@ class SARData(Data):
         if fname[7] == 'C':
             cdate = datetime.datetime.strptime(cls._cycledates[int(fname[8:10])],'%d-%b-%y').date()
             if not (cdate <= date <= (cdate + datetime.timedelta(days=45))):
-                print '%s: Date %s outside of cycle range (%s)' % (fname, str(date),str(cdate))
-                return {}
+                raise Exception('%s: Date %s outside of cycle range (%s)' % (fname, str(date),str(cdate)))
+        #VerboseOut('%s: inspect %s' % (fname,datetime.datetime.now()-start), 4)
 
         return {
             'filename': filename,
+            'datafiles': datafiles,
             'tile': tile, 
             'date': date,
             'basename': bname,
             'path': os.path.join(cls._rootdir,tile,date.strftime(cls._datedir)),
             'sensor': fname[-9:-8] + fname[-15:-12],
+            # unique to SARData
+            'hdrfile': hdrfile
         }
 
     def meta(self, tile):
         """ Get metadata for this tile """
-        filename = self.tiles[tile]['raw']
+        filename = self.tiles[tile]['filename']
         meta = self.inspect(filename)
-        hdrfile = cls.extracthdr(filename)
-        meta.update( _meta(filename) ) 
+        # add info from headerfile
+        tfile = tarfile.open(meta['filename'])
+        if not os.path.exists(os.path.join(meta['path'],meta['hdrfile'])):
+            tfile.extract(meta['hdrfile'],path)
+        meta.update( _meta(meta['hdrfile']) ) 
         return meta
 
     @classmethod
@@ -222,15 +233,15 @@ class SARData(Data):
         """ Get tile designaation from a geospatial feature (i.e. a row) """
         fldindex_lat = feature.GetFieldIndex("lat")
         fldindex_lon = feature.GetFieldIndex("lon")
-        lat = abs(int(feature.GetField(fldindex_lat)+0.5))
-        lon = abs(int(feature.GetField(fldindex_lon)-0.5))
+        lat = int(feature.GetField(fldindex_lat)+0.5)
+        lon = int(feature.GetField(fldindex_lon)-0.5)
         if lat < 0:
             lat_h = 'S'
         else: lat_h = 'N'
         if lon < 0:
-            lon_h = 'S'
-        else: lon_h = 'N'
-        tile = lat_h + str(lat).zfill(2) + lon_h + str(lon).zfill(3)
+            lon_h = 'W'
+        else: lon_h = 'E'
+        tile = lat_h + str(abs(lat)).zfill(2) + lon_h + str(abs(lon)).zfill(3)
         return tile
 
 def main(): SARData.main()
