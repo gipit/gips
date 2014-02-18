@@ -113,7 +113,8 @@ class SARData(Data):
             os.chmod(os.path.join(path,datefile),0664)
             # Write ENVI header for date image
             List2File(meta['envihdr'],datefile+'.hdr')
-            dateimg = gippy.GeoImage(datefile,False)
+            dateimg = gippy.GeoImage(datefile)
+            dateimg.SetNoData(0)
             stats = dateimg[0].ComputeStats()[0]
             date = cls._launchdate[fname[-9]] + datetime.timedelta(days=int(stats[0]))
             RemoveFiles([hdrfile,datefile,datefile+'.hdr'])
@@ -122,7 +123,8 @@ class SARData(Data):
         if fname[7] == 'C':
             cdate = datetime.datetime.strptime(cls._cycledates[int(fname[8:10])],'%d-%b-%y').date()
             if not (cdate <= date <= (cdate + datetime.timedelta(days=45))):
-                print 'Date %s outside of cycle range (%s)' % (str(date),str(cdate))
+                print '%s: Date %s outside of cycle range (%s)' % (fname, str(date),str(cdate))
+                return {}
 
         return {
             'filename': filename,
