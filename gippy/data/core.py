@@ -490,7 +490,7 @@ class Data(object):
 class DataInventory(object):
     """ Manager class for data inventories """
     # redo color, combine into ordered dictionary
-    _colororder = ['purple', 'bright red', 'bright green', 'bright blue']
+    _colororder = ['purple', 'bright red', 'bright green', 'bright blue','bright purple']
     _colorcodes = {
         'bright yellow':   '1;33',
         'bright red':      '1;31',
