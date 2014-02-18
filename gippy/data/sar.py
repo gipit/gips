@@ -22,12 +22,12 @@ class SARData(Data):
         'AWB1':'PALSAR WideBeam (ScanSAR Short Mode)',
         'JFBS':'JERS-1 FineBeam Single Polarization'
     }
-
+    _defaultresolution = [0.000834028356964,0.000834028356964]
     _rootdir = '/titan/data/SAR/tiles'
     #_datedir = '%Y%j'
     _tiles_vector = '/titan/data/SAR/tiles.shp'
     _pattern = 'KC_*.tar.gz'
-    _prodpattern = '*.tif'
+    _prodpattern = '*'
     _metapattern = '.hdr'
     _products = OrderedDict([
         ('sign', {

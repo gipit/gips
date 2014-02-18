@@ -43,6 +43,9 @@ class Data(object):
     name = ''
     # dictionary of codes and full names of all sensors
     sensors = {}
+    # best resolution of data (default used in Data.project)
+    _defaultresolution = [30.0,30.0]
+
     # root directory to data
     _rootdir = ''
     # Format code of date directories in repository
@@ -84,7 +87,13 @@ class Data(object):
         info = self.inspect(filenames[0])
 
         # find additional products named basename_product
+        # TODO replace with regular expressions
         files = glob.glob(os.path.join(info['path'],info['basename']+self._prodpattern))
+        files2 = []
+        for f in files:
+            ext = os.path.splitext(f)[1]
+            if ext != '.hdr' and ext != '.xml': files2.append(f)
+        files = files2
         products = {}
         for f in files:
             fname,ext = os.path.splitext(os.path.split(f)[1])
@@ -305,11 +314,12 @@ class Data(object):
             # return filename of a tile from self.tiles ?
             raise Exception('No product provided')
 
-    def project(self, res, datadir='gipdata'):
+    def project(self, res=None, datadir='gipdata'):
         """ Create image of final product (reprojected/mosaiced) """
         self.process()
         if not os.path.exists(datadir): os.makedirs(datadir)
         datadir = os.path.abspath(datadir)
+        if res is None: res = self._defaultresolution
         if not hasattr(res, "__len__"): res = [res,res]
         #elif len(res) == 1: res = [res[0],res[0]]
         if self.site is None:
@@ -416,7 +426,7 @@ class Data(object):
         # Project
         parser = subparser.add_parser('project',help='Create project', parents=[invparser], formatter_class=dhf)
         group = parser.add_argument_group('Project options')
-        group.add_argument('--res',nargs=2,help='Resolution of output rasters', default=[30,30], type=float)
+        group.add_argument('--res',nargs=2,help='Resolution of output rasters', default=None, type=float)
         group.add_argument('--datadir', help='Directory to save project files', default='gipdata')
 
         # Links

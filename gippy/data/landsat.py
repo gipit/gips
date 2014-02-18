@@ -30,6 +30,7 @@ class LandsatData(Data):
     _pattern = 'L*.tar.gz'
     _prodpattern = '*.tif'
     _metapattern = 'MTL.txt'
+    _defaultresolution = [30.0, 30.0]
 
     _products = OrderedDict([
         ('rgb', {

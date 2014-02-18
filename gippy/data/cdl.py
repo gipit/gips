@@ -14,6 +14,7 @@ class CDLData(Data):
     """ A CDL (Crop Data Layer) object """
     name = "CDL"
     sensors = {'cdl': 'CDL'}
+    _defaultresolution = [30.0,30.0]
     _rootdir = '/titan/data/CDL/tiles'
     _datedir = '%Y'
     _pattern = 'CDL*.tif'
