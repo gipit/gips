@@ -201,10 +201,20 @@ class Data(object):
         """ Move files from directory to archive location """
         start = datetime.datetime.now()
         fnames = glob.glob(os.path.join(path,cls._pattern))
+        qdir = os.path.join(cls._rootdir,'../quarantine')
+        try:
+            os.makedirs(qdir)
+        except:
+            pass
 
         numadded = 0
         for f in fnames:
             meta = cls.inspect(f)
+            # if problem with inspection, move to quarantine
+            if not any(meta):
+                os.link(os.path.abspath(f),os.path.join(qdir,f))
+                VerboseOut('%s: problem with file, creating quarantine link' % f)
+                continue
             datapath = meta['path']       
             # Make directory
             try:
@@ -236,7 +246,7 @@ class Data(object):
         # Summarize
         VerboseOut( '%s files added to archive in %s' % (numadded, datetime.datetime.now()-start) )
         if numadded != len(fnames):
-            VerboseOut( '%s files not added to archive in %s' % (len(fnames)-numadded) )
+            VerboseOut( '%s files not added to archive' % (len(fnames)-numadded) )
 
     """def tar_index(self,tile):
         #Get names from tarfile
