@@ -28,7 +28,7 @@ namespace gip {
 	GeoImage Ref(const GeoImage&, std::string);
 
     //! Calculate sigma naught (radar backscatter coefficient)
-    GeoImage SigmaNought(const GeoImage&, std::string);
+    GeoImage SigmaNought(const GeoImage&, std::string, float);
 
 	//! Stretch image into byte
 	GeoImage RGB(const GeoImage&, std::string);
