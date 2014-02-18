@@ -107,7 +107,7 @@ class SARData(Data):
         # Check if inspecting a file in the repository
         if cls._rootdir in path:
             date = datetime.datetime.strptime(os.path.basename(path),cls._datedir).date()
-            VerboseOut('Date from repository = '+str(date),2)
+            VerboseOut('Date from repository = '+str(date),4)
         else:
             # extract header and date image
             tfile.extract(hdrfile,path)
@@ -149,9 +149,10 @@ class SARData(Data):
         meta = self.inspect(filename)
         # add info from headerfile
         tfile = tarfile.open(meta['filename'])
-        if not os.path.exists(os.path.join(meta['path'],meta['hdrfile'])):
-            tfile.extract(meta['hdrfile'],path)
-        meta.update( _meta(meta['hdrfile']) ) 
+        hdrfile = os.path.join(meta['path'],meta['hdrfile'])
+        if not os.path.exists(hdrfile):
+            tfile.extract(meta['hdrfile'],meta['path'])
+        meta.update( self._meta(hdrfile) ) 
         return meta
 
     @classmethod
@@ -186,6 +187,7 @@ class SARData(Data):
         meta = cls._meta(index['headerfile'])
         toc = {}
         for fname in index['datafiles']:
+            #if not os.path.exists(fname+'.hdr'):
             bandname = os.path.basename(fname)[len(info['basename'])+1:]
             envihdr = copy.deepcopy(meta['envihdr'])
             if bandname in ['mask','linci']: envihdr[6] = 'data type = 1'
@@ -194,38 +196,39 @@ class SARData(Data):
             toc[bandname] = fname
         return toc
 
-    #def opentile(self, tile, product=''):
+    def opentile(self, tile, product='sign'):
+        products = self.tiles[tile]['products']
+        if product == 'sign':
+            bands = [b for b in self._databands if b in products]
+            img = gippy.GeoImage(products[bands[0]]) 
+            del bands[0]
+            for b in bands: img.AddBand(gippy.GeoImage(products[b])[0])
+            img.SetNoData(0)
+            mask = gippy.GeoImage(products['mask'],False)
+            img.AddMask(mask[0] == 255)
+            return img
+        return None
 
     def process(self, overwrite=False, suffix=''):
         """ Make sure all files have been pre-processed """
         if suffix != '' and suffix[:1] != '_': suffix = '_' + suffix
-        for tile, data in self.tiles.items():
+        for tile, info in self.tiles.items():
+            # extract data from archive
+            toc = self.extractdata(info)
+            info['products'].update(toc)
 
-            toc = self.extractdata(data)
-            data['products']['date'] = toc['date']
-
+            meta = self.meta(tile)
             if 'sign' in self.products:
-                existing_bands = []
-                for b in self._databands:
-                    if b in toc:  existing_bands.append(b)
-
-                img = gippy.GeoImage(toc[existing_bands[0]])
-                del existing_bands[0]
-                for f in existing_bands: img.AddBand(gippy.GeoImage(toc[f])[0])
-
-                img.SetNoData(0)
-                mask = gippy.GeoImage(toc['mask'],False)
-                img.AddMask(mask[0] == 255)
-
-                # Process products
-                fout = os.path.join(data['path'],data['basename']+'_sign')
-                imgout = gippy.SigmaNought(img, fout)
-                data['products']['sign'] = imgout.Filename()
+                img = self.opentile(tile,'sign')
+                fout = os.path.join(meta['path'],meta['basename']+'_sign'+suffix)
+                imgout = gippy.SigmaNought(img, fout, meta['CF'])
+                info['products']['sign'] = imgout.Filename()
                 img = None
 
-            # Remove unused stuff
+            # Remove unused stuff - always leave date product
             for k in ['linci','mask'] + self._databands:
                 if k in toc: RemoveFiles([toc[k],toc[k]+'.hdr',toc[k]+'.aux.xml'])
+                if k in info['products']: del info['products'][k]
                     
 
     @classmethod

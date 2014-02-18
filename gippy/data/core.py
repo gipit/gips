@@ -180,7 +180,7 @@ class Data(object):
         return tiles
 
     @classmethod
-    def vector2tiles(cls, vector, mincoverage=0.0):
+    def vector2tiles(cls, vector, pcov=0.0, ptile=0.0):
         """ Return matching tiles and coverage % for provided vector """
         import osr
         geom = vector.union()
@@ -204,7 +204,8 @@ class Data(object):
             feat = tlayer.GetNextFeature()
         remove_tiles = []
         for t in tiles:
-            if tiles[t][0] < mincoverage/100.0: remove_tiles.append(t)
+            if (tiles[t][0] < pcov/100.0) or(tiles[t][1] < ptile/100.0): 
+                remove_tiles.append(t)
         for t in remove_tiles: tiles.pop(t,None)
         return tiles      
 
@@ -346,7 +347,7 @@ class Data(object):
         if tiles is not None:
             self.tile_coverage = dict((t,1) for t in tiles)
         elif site is not None:
-            self.tile_coverage = self.vector2tiles(gippy.GeoVector(site))
+            self.tile_coverage = self.vector2tiles(gippy.GeoVector(site),**kwargs)
         else:
             self.tile_coverage = dict((t,(1,1)) for t in self.find_tiles())
         self.date = date
@@ -388,8 +389,10 @@ class Data(object):
         group.add_argument('-t','--tiles', nargs='*', help='Tile designations', default=None)
         group.add_argument('-d','--dates',help='Range of dates (YYYY-MM-DD,YYYY-MM-DD)')
         group.add_argument('--days',help='Include data within these days of year (doy1,doy2)',default=None)
-        group.add_argument('-p','--products', nargs='*', help='Process/filter these products') #default=False)
+        group.add_argument('-p','--products', nargs='*', help='Process/filter these products', default=None)
         group.add_argument('-v','--verbose',help='Verbosity - 0: quiet, 1: normal, 2: debug', default=1, type=int)
+        group.add_argument('--%cov',dest='pcov',help='Threshold of %% coverage of tile over site', default=0, type=int)
+        group.add_argument('--%tile',dest='ptile',help='Threshold of %% tile used', default=0, type=int)
         return parser
 
     @staticmethod
@@ -457,18 +460,15 @@ class Data(object):
         if args.command == 'archive':
             cls.archive(link=args.link)
             exit(1)
-
         try:
-            inv = cls.inventory(site=args.site, dates=args.dates, days=args.days, tiles=args.tiles, products=args.products)
+            inv = cls.inventory(site=args.site, dates=args.dates, days=args.days, tiles=args.tiles, 
+                products=args.products, pcov=args.pcov, ptile=args.ptile)
         except Exception,e:
             print 'Error getting inventory: %s' % (e)
             VerboseOut(traceback.format_exc(), 3)
             exit(1)
 
-        if args.command == 'inventory':
-            if args.products is None:
-                inv.printcalendar(args.md)
-            else: inv.printcalendar(args.md,True)
+        if args.command == 'inventory': inv.printcalendar(args.md)
 
         elif args.command == 'link':
             inv.createlinks(args.hard)
@@ -512,9 +512,10 @@ class DataInventory(object):
         self.tiles = tiles
         self.temporal_extent(dates, days)
         self.data = {}
-        if products is None: products = ['']
+        if products is not None:
+            if len(products) == 0: products = dataclass._products.keys()
         self.products = products
-        self.AddData(dataclass, products=products, **kwargs)
+        self.AddData(dataclass, **kwargs)
 
     def __getitem__(self,date):
         return self.data[date]
@@ -540,15 +541,14 @@ class DataInventory(object):
     def _colorize(self,txt,color):
         return "\033["+self._colorcodes[color]+'m' + txt + "\033[0m"
 
-    def AddData(self, dataclass, products=None, **kwargs):
+    def AddData(self, dataclass, **kwargs):
         """ Add additional data to this inventory (usually from different sensors """
         if self.tiles is None and self.site is None:
             self.tiles = dataclass.find_tiles()
             #raise Exception('No shapefile or tiles provided for inventory')
         if self.tiles is None and self.site is not None:
-            self.tiles = dataclass.vector2tiles(gippy.GeoVector(self.site))
+            self.tiles = dataclass.vector2tiles(gippy.GeoVector(self.site),**kwargs)
         # get all potential matching dates for tiles
-        self.products = products
         dates = []
         for t in self.tiles:
             try:
@@ -562,7 +562,7 @@ class DataInventory(object):
         self.numfiles = 0
         for date in sorted(dates):
             try:
-                dat = dataclass(site=self.site, tiles=self.tiles, date=date, products=products, **kwargs)
+                dat = dataclass(site=self.site, tiles=self.tiles, date=date, products=self.products, **kwargs)
                 self.data[date] = [ dat ]
                 self.numfiles = self.numfiles + len(dat.tiles)
             except: 
@@ -615,11 +615,20 @@ class DataInventory(object):
                     for p in data.tiles[t]['products']:
                         link( data.tiles[t]['products'][p], hard )
 
-    def printcalendar(self,md=False, products=False):
+    def printcalendar(self,md=False):
         """ print calendar for raw original datafiles """
         #import calendar
         #cal = calendar.TextCalendar()
         oldyear = ''
+
+        print '%s INVENTORY' % self.dataclass.name
+
+        # print tile coverage
+        if self.site is not None:
+            print '{:^8}{:>14}{:>14}'.format('Tile','% Coverage','% Tile Used')
+            for t in sorted(self.tiles): 
+                print "{:>8}{:>11.1f}%{:>11.1f}%".format(t,self.tiles[t][0]*100,self.tiles[t][1]*100)
+        # print inventory
         for date in self.dates:
             if md:
                 daystr = str(date.month) + '-' + str(date.day)
@@ -631,15 +640,15 @@ class DataInventory(object):
                     daystr = '0' + daystr
             if date.year != oldyear:
                 sys.stdout.write('\n{:>5}: '.format(date.year))
-                if products: sys.stdout.write('\n ')
+                if self.products: sys.stdout.write('\n ')
             colors = {}
             for i,s in enumerate(self.dataclass.sensor_names()): colors[s] = self._colororder[i]
 
             for dat in self.data[date]:
                 sys.stdout.write(self._colorize('{:<6}'.format(daystr), colors[self.dataclass.sensors[dat.sensor]] ))
-            if products:
+            if self.products:
                 sys.stdout.write('        ')
-                prods = self.get_products(date)
+                prods = [p for p in self.get_products(date) if p in self.products]
                 for p in prods:
                     sys.stdout.write(self._colorize('{:<12}'.format(p), colors[self.dataclass.sensors[dat.sensor]] ))
                 sys.stdout.write('\n ')
@@ -647,13 +656,9 @@ class DataInventory(object):
         sys.stdout.write('\n')
         if self.numfiles != 0:
             self.legend()
-            VerboseOut("%s Data Inventory: %s files on %s dates" % (self.dataclass.name, self.numfiles, self.numdates))
+            VerboseOut("%s files on %s dates" % (self.numfiles, self.numdates))
         else:
-            VerboseOut('Data Inventory: No matching files')
-        if self.site is not None:
-            print '{:^8}{:>14}{:>14}'.format('Tile','% Coverage','% Tile Used')
-            for t in sorted(self.tiles): 
-                print "{:>8}{:>11.1f}%{:>11.1f}%".format(t,self.tiles[t][0]*100,self.tiles[t][1]*100)
+            VerboseOut('No matching files')
 
     def legend(self):
         sensors = sorted(self.dataclass.sensors.values())
