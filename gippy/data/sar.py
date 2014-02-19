@@ -5,6 +5,7 @@ import datetime
 import glob
 import tarfile
 import copy
+import numpy
 
 # move VerboseOut, File2List to utils or main gippy
 from gippy.data.core import Data, VerboseOut, File2List, List2File, RemoveFiles
@@ -23,7 +24,7 @@ class SARData(Data):
         'JFBS':'JERS-1 FineBeam Single Polarization'
     }
     _defaultresolution = [0.000834028356964,0.000834028356964]
-    _rootdir = '/titan/data/SAR/tiles'
+    _rootdir = '/titan/data/SAR/tiles.dev'
     #_datedir = '%Y%j'
     _tiles_vector = '/titan/data/SAR/tiles.shp'
     _pattern = 'KC_*.tar.gz'
@@ -107,9 +108,11 @@ class SARData(Data):
         # Check if inspecting a file in the repository
         if cls._rootdir in path:
             date = datetime.datetime.strptime(os.path.basename(path),cls._datedir).date()
-            VerboseOut('Date from repository = '+str(date),4)
+            dates = date
+            #VerboseOut('Date from repository = '+str(dates),4)
         else:
             # extract header and date image
+            tfile = tarfile.open(filename)
             tfile.extract(hdrfile,path)
             hdrfile = os.path.join(path,hdrfile)
             os.chmod(hdrfile,0664)
@@ -120,24 +123,33 @@ class SARData(Data):
             List2File(meta['envihdr'],datefile+'.hdr')
             dateimg = gippy.GeoImage(datefile)
             dateimg.SetNoData(0)
-            stats = dateimg[0].ComputeStats()[0]
-            date = cls._launchdate[fname[-9]] + datetime.timedelta(days=int(stats[0]))
+            dates = [cls._launchdate[fname[-9]] + datetime.timedelta(days=int(d)) for d in numpy.unique(dateimg.Read()) if d != 0]
+            if not dates: raise Exception('%s: no valid dates' % fname)
+            date = min(dates)
+            #stats = dateimg[0].ComputeStats()[0]
+            #date = cls._launchdate[fname[-9]] + datetime.timedelta(days=int(stats[0]))
             RemoveFiles([hdrfile,datefile,datefile+'.hdr'])
             #VerboseOut('Date from image: %s' % str(date),3) 
-        # If widebeam check cycle dates
-        if fname[7] == 'C':
-            cdate = datetime.datetime.strptime(cls._cycledates[int(fname[8:10])],'%d-%b-%y').date()
-            if not (cdate <= date <= (cdate + datetime.timedelta(days=45))):
-                raise Exception('%s: Date %s outside of cycle range (%s)' % (fname, str(date),str(cdate)))
-        #VerboseOut('%s: inspect %s' % (fname,datetime.datetime.now()-start), 4)
+            # If year provided check
+            if fname[7] == 'Y' and fname[8:10] != '00':
+                ydate = datetime.datetime.strptime(fname[8:10],'%y')
+                if date.year != ydate.year:
+                    raise Exception('%s: Date %s outside of expected year (%s)' % (fname, str(date),str(ydate)))
+            # If widebeam check cycle dates
+            if fname[7] == 'C':
+                cdate = datetime.datetime.strptime(cls._cycledates[int(fname[8:10])],'%d-%b-%y').date()
+                if not (cdate <= date <= (cdate + datetime.timedelta(days=45))):
+                    raise Exception('%s: Date %s outside of cycle range (%s)' % (fname, str(date),str(cdate)))
+            #VerboseOut('%s: inspect %s' % (fname,datetime.datetime.now()-start), 4)
 
         return {
             'filename': filename,
             'datafiles': datafiles,
             'tile': tile, 
-            'date': date,
+            'date': dates,
             'basename': bname,
-            'path': os.path.join(cls._rootdir,tile,date.strftime(cls._datedir)),
+            # remove this from other Data classes
+            'path': cls.path(tile,date), #os.path.join(cls._rootdir,tile,dates.strftime(cls._datedir)),
             'sensor': fname[-9:-8] + fname[-15:-12],
             # unique to SARData
             'hdrfile': hdrfile
@@ -145,8 +157,8 @@ class SARData(Data):
 
     def meta(self, tile):
         """ Get metadata for this tile """
-        filename = self.tiles[tile]['filename']
-        meta = self.inspect(filename)
+        #meta = self.inspect(filename)
+        meta = self.tiles[tile]
         # add info from headerfile
         tfile = tarfile.open(meta['filename'])
         hdrfile = os.path.join(meta['path'],meta['hdrfile'])
@@ -180,44 +192,61 @@ class SARData(Data):
         meta['CF'] = float(hdr[21])
         return meta
 
-    @classmethod
-    def extractdata(cls,info):
-        """ Extract and create ENVI files from original data """
-        index = super(SARData, cls).extractdata(filename=info['filename'])
-        meta = cls._meta(index['headerfile'])
-        toc = {}
-        for fname in index['datafiles']:
+    def _extract(self,tile):
+        meta = self.meta(tile)
+        path,bname = os.path.split(meta['filename'])
+        if tarfile.is_tarfile(meta['filename']):
+            tfile = tarfile.open(meta['filename'])
+        else: raise Exceptin('%s is not a valid tar file' % bname)
+        tfile.extractall(path)
+        prods = {}
+        for f in self.tiles[tile]['datafiles']:
+            filename = os.path.join(path,f)
+            try:
+                os.chmod(filename,0664)
+            except: pass
             #if not os.path.exists(fname+'.hdr'):
-            bandname = os.path.basename(fname)[len(info['basename'])+1:]
+            bandname = f[len(meta['basename'])+1:]
             envihdr = copy.deepcopy(meta['envihdr'])
             if bandname in ['mask','linci']: envihdr[6] = 'data type = 1'
             envihdr.append('band names={%s}' % bandname)
-            List2File(envihdr,fname+'.hdr') 
-            toc[bandname] = fname
-        return toc
+            List2File(envihdr,filename+'.hdr') 
+            prods[bandname] = filename
+        # update with available products
+        self.tiles[tile]['products'].update(prods)
 
     def processtile(self, tile, products):
         """ Make sure all products have been pre-processed """
-        # extract data from archive
-        toc = self.extractdata(self.tiles[tile])
-        self.tiles[tile]['products'].update(toc)
+        # is this needed? or is processtile not called if products empty
+        if len(products) == 0: return
+
+        # extract all data from archive
+        self._extract(tile)
+        meta = self.meta(tile)
 
         if 'sign' in products.keys():
-            products = self.tiles[tile]['products']
-            bands = [b for b in self._databands if b in products]
-            img = gippy.GeoImage(products[bands[0]]) 
+            avail = self.tiles[tile]['products']
+            bands = [b for b in self._databands if b in avail]
+            print avail
+            img = gippy.GeoImage(avail[bands[0]]) 
             del bands[0]
-            for b in bands: img.AddBand(gippy.GeoImage(products[b])[0])
+            for b in bands: img.AddBand(gippy.GeoImage(avail[b])[0])
             img.SetNoData(0)
-            mask = gippy.GeoImage(products['mask'],False)
+            mask = gippy.GeoImage(avail['mask'],False)
             img.AddMask(mask[0] == 255)
-            imgout = gippy.SigmaNought(img, fout, meta['CF'])
-            products['sign'] = imgout.Filename()
+            # apply date mask
+            dateimg = gippy.GeoImage(avail['date'],False)
+            dateday = (meta['date'] - self._launchdate[meta['sensor'][0]]).days
+            img.AddMask(dateimg[0] == dateday)
+            imgout = gippy.SigmaNought(img, products['sign'], meta['CF'])
+            avail['sign'] = imgout.Filename()
+            print self.tiles[tile]
 
         # Remove unused stuff - always leave date product
         for k in ['linci','mask'] + self._databands:
-            if k in toc: RemoveFiles([toc[k],toc[k]+'.hdr',toc[k]+'.aux.xml'])
-            if k in info['products']: del info['products'][k]
+            if k in self.tiles[tile]['products']:
+                #RemoveFiles([self.tiles[tile]['products'][k],self.tiles[tile]['products'][k]+'.hdr',self.tiles[tile]['products'][k]+'.aux.xml'])
+                del self.tiles[tile]['products'][k]
 
     @classmethod
     def feature2tile(cls,feature):
