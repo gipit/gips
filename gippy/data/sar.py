@@ -196,9 +196,14 @@ class SARData(Data):
             toc[bandname] = fname
         return toc
 
-    def opentile(self, tile, product='sign'):
-        products = self.tiles[tile]['products']
-        if product == 'sign':
+    def processtile(self, tile, products):
+        """ Make sure all products have been pre-processed """
+        # extract data from archive
+        toc = self.extractdata(self.tiles[tile])
+        self.tiles[tile]['products'].update(toc)
+
+        if 'sign' in products.keys():
+            products = self.tiles[tile]['products']
             bands = [b for b in self._databands if b in products]
             img = gippy.GeoImage(products[bands[0]]) 
             del bands[0]
@@ -206,34 +211,17 @@ class SARData(Data):
             img.SetNoData(0)
             mask = gippy.GeoImage(products['mask'],False)
             img.AddMask(mask[0] == 255)
-            return img
-        return None
+            imgout = gippy.SigmaNought(img, fout, meta['CF'])
+            products['sign'] = imgout.Filename()
 
-    def process(self, overwrite=False, suffix=''):
-        """ Make sure all files have been pre-processed """
-        if suffix != '' and suffix[:1] != '_': suffix = '_' + suffix
-        for tile, info in self.tiles.items():
-            # extract data from archive
-            toc = self.extractdata(info)
-            info['products'].update(toc)
-
-            meta = self.meta(tile)
-            if 'sign' in self.products:
-                img = self.opentile(tile,'sign')
-                fout = os.path.join(meta['path'],meta['basename']+'_sign'+suffix)
-                imgout = gippy.SigmaNought(img, fout, meta['CF'])
-                info['products']['sign'] = imgout.Filename()
-                img = None
-
-            # Remove unused stuff - always leave date product
-            for k in ['linci','mask'] + self._databands:
-                if k in toc: RemoveFiles([toc[k],toc[k]+'.hdr',toc[k]+'.aux.xml'])
-                if k in info['products']: del info['products'][k]
-                    
+        # Remove unused stuff - always leave date product
+        for k in ['linci','mask'] + self._databands:
+            if k in toc: RemoveFiles([toc[k],toc[k]+'.hdr',toc[k]+'.aux.xml'])
+            if k in info['products']: del info['products'][k]
 
     @classmethod
     def feature2tile(cls,feature):
-        """ Get tile designaation from a geospatial feature (i.e. a row) """
+        """ Get tile designation from a geospatial feature (i.e. a row) """
         fldindex_lat = feature.GetFieldIndex("lat")
         fldindex_lon = feature.GetFieldIndex("lon")
         lat = int(feature.GetField(fldindex_lat)+0.5)

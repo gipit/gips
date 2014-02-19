@@ -109,7 +109,7 @@ class Data(object):
         # add additional metadata to dictionary
         return meta
 
-    def process(self, overwrite=False, suffix=''):
+    def processtile(self,tile,products):
         """ Make sure all products exist and process if needed """
         pass
 
@@ -209,6 +209,19 @@ class Data(object):
         for t in remove_tiles: tiles.pop(t,None)
         return tiles      
 
+    def process(self, overwrite=False, suffix=''):
+        """ Determines what products need to be processed for each tile and calls processtile """
+        if suffix != '' and suffix[:1] != '_': suffix = '_' + suffix
+        for tile, info in self.tiles.items():
+            # Determine what needs to be processed
+            toprocess = {}
+            prods = [p for p in self.products if p in self._products.keys()]
+            for p in prods:
+                fout = os.path.join(info['path'],info['basename']+'_'+p+suffix)
+                # need to figure out extension properly
+                if len(glob.glob(fout+'*')) == 0 or overwrite: toprocess[p] = fout
+            self.processtile(tile,toprocess)
+
     @classmethod
     def archive(cls, path='', link=True):
         """ Move files from directory to archive location """
@@ -302,7 +315,10 @@ class Data(object):
                 hdrfile = os.path.join(dirname,f)
             else: datafiles.append(os.path.join(dirname,f))
             # make sure file is readable and writable
-            os.chmod(os.path.join(dirname,f),0664)
+            try:
+                os.chmod(os.path.join(dirname,f),0664)
+            except:
+                pass
         return {'headerfile': hdrfile, 'datafiles': datafiles}
 
     def open(self, product='', update=True):

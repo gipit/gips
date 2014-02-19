@@ -296,73 +296,59 @@ class LandsatData(Data):
         }
         return self.tiles[tile]['metadata']
 
-    def process(self, overwrite=False, suffix=''): # , overviews=False):
-        """ Make sure all products exist for all tiles, process if necessary """
-        if suffix != '' and suffix[:1] != '_': suffix = '_' + suffix
-        for tile, data in self.tiles.items():
-            fout_base = os.path.join(data['path'], data['basename'] + '_')
-            fouts = {}
-            runatm = False
-            # generate all product names and check if already existing
-            for product in self.products:
-                if self._products[product]['atmcorr']: runatm = True
-                if product not in self._products.keys():
-                    raise Exception('Product %s not recognized' % product)
-                fout = fout_base + product + suffix
-                if len(glob.glob(fout+'.*')) == 0 or overwrite: fouts[product] = fout
+    def processtile(self,tile,products):
+        start = datetime.datetime.now()
+        info = self.tiles[tile]
+        VerboseOut('%s: processing products' % tile)
+        VerboseOut(products)
+        try:
+            img = self._readraw(tile)
+        except Exception,e:
+            print 'Error reading data %s' % info['filename']
+            VerboseOut('%s %s' % (data['basename'],e), 2)
+            VerboseOut(traceback.format_exc(), 3)
 
-            if len(fouts) > 0:
+        #if self._products[p]['atmcorr']:
+        # running atmosphere automatically, for now
+        atmospheres = [atmosphere(i,self.tiles[tile]['metadata']) for i in range(1,img.NumBands()+1)]
+        VerboseOut('%s: read in %s' % (info['basename'],datetime.datetime.now() - start)) 
+
+        for p,fout in products.items():
+            try: 
                 start = datetime.datetime.now()
+                if (self._products[p]['atmcorr']):
+                    for i in range(0,img.NumBands()):
+                        b = img[i]
+                        b.SetAtmosphere(atmospheres[i])
+                        img[i] = b
+                        VerboseOut('atmospherically correcting',2)
+                else: img.ClearAtmosphere()
+
                 try:
-                    # TODO - If only doing temp then don't waste time with other bands
-                    img = self._readraw(tile)
+                    fcall = 'gippy.%s(img, fout)' % self._products[p]['function']
+                    VerboseOut(fcall,2)
+                    imgout = eval(fcall)
+                    #if overviews: imgout.AddOverviews()
+                    fname = imgout.Filename()
+                    info['products'][p] = fname
+                    imgout = None
+                    VerboseOut(' -> %s: processed in %s' % (os.path.basename(fname),datetime.datetime.now()-start))
                 except Exception,e:
-                    print 'Error reading data %s' % data['filename']
-                    VerboseOut('%s %s' % (data['basename'],e), 2)
-                    VerboseOut(traceback.format_exc(), 3)
-                    return
-                if runatm: atmospheres = [atmosphere(i,data['metadata']) for i in range(1,img.NumBands()+1)]
-                VerboseOut('%s: read in %s' % (data['basename'],datetime.datetime.now() - start))
+                    print 'Error creating product %s for %s: %s' % (p,info['filename'],e)
+                    VerboseOut(traceback.format_exc(),2)
 
-                for product,fname in fouts.iteritems():
-                    try:
-                        start = datetime.datetime.now()
+            except Exception,e:
+                VerboseOut('Error processing %s: %s' % (info['basename'],e))
+                VerboseOut(traceback.format_exc(), 3)
 
-                        if (self._products[product]['atmcorr']):
-                            for i in range(0,img.NumBands()):
-                                b = img[i]
-                                b.SetAtmosphere(atmospheres[i])
-                                img[i] = b
-                            VerboseOut('atmospherically correcting',2)
-                        else:
-                            img.ClearAtmosphere()
-
-                        try:
-                            fcall = 'gippy.%s(img, fname)' % self._products[product]['function']
-                            VerboseOut(fcall,2)
-                            imgout = eval(fcall)
-                        except Exception,e:
-                            print 'Error creating product %s for %s: %s' % (product,fname,e)
-                            VerboseOut(traceback.format_exc(),2)
-
-                        #if overviews: imgout.AddOverviews()
-                        #fname = imgout.Filename()
-                        imgout = None
-                        dur = datetime.datetime.now() - start
-                        data['products'][product] = fname
-                        VerboseOut(' -> %s: processed in %s' % (os.path.basename(fname),dur))
-                    except Exception,e:
-                        print 'Error processing %s' % fname
-                        VerboseOut('%s %s' % (data['basename'],e),2)
-                        VerboseOut(traceback.format_exc(), 3)
-                img = None
-                # cleanup directory
-                try:
-                    for bname in data['metadata']['filenames']:
-                        files = glob.glob(os.path.join(data['path'],bname)+'*')
-                        for f in files: os.remove(f)
-                    shutil.rmtree(os.path.join(dirname,'modtran'))
-                except: pass
+            img = None
+            # cleanup directory
+            try:
+            #    for bname self.tiles[tile]['datafiles']:
+            #        files = glob.glob(os.path.join(data['path'],bname)+'*')
+            #            for f in files: os.remove(f)
+                shutil.rmtree(os.path.join(info['path'],'modtran'))
+            except: pass
 
     def filter(self, tile, maxclouds=100):
         """ Check if tile passes filter """

@@ -54,6 +54,9 @@ class CDLData(Data):
     def find_raw(self, tile):
         return glob.glob(os.path.join(self._rootdir, tile, 'CDL_%s_*.tif' % self.date.strftime('%Y')))
 
+    def process(self,**kwargs):
+        pass
+    
     @classmethod
     def find_dates(cls, tile):
         """ Get list of dates for tile """
