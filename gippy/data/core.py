@@ -13,9 +13,13 @@ import tarfile
 import gippy
 import agspy.utils.dateparse as dateparse
 from pdb import set_trace
+import pprint
 
-def VerboseOut(txt, level=1):
-    if gippy.Options.Verbose() >= level: print txt
+def VerboseOut(obj, level=1):
+    if gippy.Options.Verbose() >= level: 
+        #pprint.PrettyPrinter().pprint(obj)
+        if not isinstance(obj,(list,tuple)): obj = [obj]
+        for o in obj: print o
 
 def File2List(filename):
     f = open(filename)
@@ -48,6 +52,7 @@ class Data(object):
 
     # root directory to data
     _rootdir = ''
+
     # Format code of date directories in repository
     _datedir = '%Y%j'
     # pattern of original raw data file
@@ -78,7 +83,7 @@ class Data(object):
     }
 
     def find_data(self, tile):
-        """ Find all data for tile, save in self.tiles dictionary """
+        """ Find all data for tile, add products dictionary to info dict from inspect function """
         # find original datafile
         filenames = self.find_raw(tile)
         if len(filenames) == 0: return {}
@@ -148,7 +153,11 @@ class Data(object):
             return [datetime.datetime.strptime(os.path.basename(d),cls._datedir).date() for d in os.listdir( os.path.join(cls._rootdir,tile) )]
         else: return []
 
-    # currently not used
+    @classmethod
+    def path(cls, tile, date):
+        """ Return path in repository for this tile and date """
+        return os.path.join(cls._rootdir, tile, date.strftime(cls._datedir))
+
     def opentile(self, tile, product=''):
         if product != '':
             return gippy.GeoImage(self.products[product])
@@ -220,6 +229,7 @@ class Data(object):
                 fout = os.path.join(info['path'],info['basename']+'_'+p+suffix)
                 # need to figure out extension properly
                 if len(glob.glob(fout+'*')) == 0 or overwrite: toprocess[p] = fout
+            VerboseOut(['Processing products for tile %s' % tile, toprocess],3)
             self.processtile(tile,toprocess)
 
     @classmethod
@@ -232,48 +242,56 @@ class Data(object):
             os.makedirs(qdir)
         except:
             pass
-
-        numadded = 0
+        numlinks = 0
+        numfiles = 0
         for f in fnames:
             try:
                 meta = cls.inspect(f)
-            except:
+            except Exception,e:
                 # if problem with inspection, move to quarantine
-                os.link(os.path.abspath(f),os.path.join(qdir,f))
-                VerboseOut('%s: problem with file, creating quarantine link' % f)
+                VerboseOut(traceback.format_exc(), 4)
+                qname = os.path.join(qdir,f)
+                if not os.path.exists(qname):
+                    os.link(os.path.abspath(f),os.path.join(qdir,f))
+                VerboseOut('%s -> quarantine (file error)' % f,2)
                 continue
-            datapath = meta['path']       
-            # Make directory
-            try:
-                os.makedirs(datapath)
-            except OSError as exc: # Python >2.5
-                if exc.errno == errno.EEXIST and os.path.isdir(datapath):
-                    pass
-                else:
-                    raise Exception('Unable to make data directory %s' % datapath)
-
-            # Move or link file
-            try:
-                newf = os.path.join(datapath,f)
-                if not os.path.exists(newf):
-                    # Check for older versions
-                    existing_files = glob.glob(os.path.join(datapath,cls._pattern))
-                    if len(existing_files) > 0:
-                        print 'Other version of %s already exist:' % os.path.basename(f)
-                        for ef in existing_files: print '\t%s' % os.path.basename(ef)
-                    if link:
-                        os.symlink(os.path.abspath(f),newf)
-                    else:
-                        #shutil.move(os.path.abspath(f),newf)
-                        os.link(os.path.abspath(f),newf)
-                    VerboseOut(f + ' -> ' + newf ,2)
-                    numadded = numadded + 1
-            except shutil.Error as err:
-                VerboseOut("Problem archiving file %s" % f)
+            if not hasattr(meta['date'],'__len__'): meta['date'] = [meta['date']]
+            for d in meta['date']:
+                added = cls._move2archive(tile=meta['tile'],date=d,filename=f)
+                numlinks = numlinks + added
+            numfiles = numfiles + added
         # Summarize
-        VerboseOut( '%s files added to archive in %s' % (numadded, datetime.datetime.now()-start) )
-        if numadded != len(fnames):
-            VerboseOut( '%s files not added to archive' % (len(fnames)-numadded) )
+        VerboseOut( '%s files (%s links) added to archive in %s' % (numfiles, numlinks, datetime.datetime.now()-start) )
+        if numfiles != len(fnames):
+            VerboseOut( '%s files not added to archive' % (len(fnames)-numfiles) )
+
+    @classmethod
+    def _move2archive(cls, tile, date, filename):
+        path = cls.path(tile, date)
+        try:
+            os.makedirs(path)
+        except OSError as exc: # Python >2.5
+            if exc.errno == errno.EEXIST and os.path.isdir(path):
+                pass
+            else:
+                raise Exception('Unable to make data directory %s' % path)
+        # Move or link file
+        origpath,fname = os.path.split(filename)
+        newfilename = os.path.join(path,fname)
+        if not os.path.exists(newfilename):
+            # Check for older versions
+            existing_files = glob.glob(os.path.join(path,cls._pattern))
+            if len(existing_files) > 0:
+                VerboseOut('Other version of %s already exists:' % fname,2)
+                for ef in existing_files: VerboseOut('\t%s' % os.path.basename(ef),2)
+            else:
+                os.link(os.path.abspath(filename),newfilename)
+                #shutil.move(os.path.abspath(f),newfilename)
+            VerboseOut(fname + ' -> ' + newfilename,2)
+            return 1
+        else:
+            VerboseOut('%s already in archive' % fname, 2)
+        return 0
 
     """def tar_index(self,tile):
         #Get names from tarfile
