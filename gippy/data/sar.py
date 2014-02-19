@@ -148,8 +148,6 @@ class SARData(Data):
             'tile': tile, 
             'date': dates,
             'basename': bname,
-            # remove this from other Data classes
-            'path': cls.path(tile,date), #os.path.join(cls._rootdir,tile,dates.strftime(cls._datedir)),
             'sensor': fname[-9:-8] + fname[-15:-12],
             # unique to SARData
             'hdrfile': hdrfile
@@ -161,9 +159,10 @@ class SARData(Data):
         meta = self.tiles[tile]
         # add info from headerfile
         tfile = tarfile.open(meta['filename'])
-        hdrfile = os.path.join(meta['path'],meta['hdrfile'])
+        path = self.path(meta['tile'],meta['date'])
+        hdrfile = os.path.join(path,meta['hdrfile'])
         if not os.path.exists(hdrfile):
-            tfile.extract(meta['hdrfile'],meta['path'])
+            tfile.extract(meta['hdrfile'],path)
         meta.update( self._meta(hdrfile) ) 
         return meta
 

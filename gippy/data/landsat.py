@@ -300,6 +300,7 @@ class LandsatData(Data):
     def processtile(self,tile,products):
         start = datetime.datetime.now()
         info = self.tiles[tile]
+        path = self.path(info['tile'],info['date'])
         try:
             img = self._readraw(tile)
         except Exception,e:
@@ -346,7 +347,7 @@ class LandsatData(Data):
             #    for bname self.tiles[tile]['datafiles']:
             #        files = glob.glob(os.path.join(data['path'],bname)+'*')
             #            for f in files: os.remove(f)
-                shutil.rmtree(os.path.join(info['path'],'modtran'))
+                shutil.rmtree(os.path.join(path,'modtran'))
             except: pass
 
     def filter(self, tile, maxclouds=100):

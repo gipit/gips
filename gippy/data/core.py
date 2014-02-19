@@ -77,7 +77,6 @@ class Data(object):
             'tile':'',      # tile designation
             'date': '',     # full date
             'basename':'',  # base/root name of this tile/date (used for product naming)
-            'path':'',      # full path to files/products
             'sensor': '',   # sensor code (key used in cls.sensors dictionary)
             'products':{}   # dictionary {'product name': filename}
     }
@@ -93,7 +92,8 @@ class Data(object):
 
         # find additional products named basename_product
         # TODO replace with regular expressions
-        files = glob.glob(os.path.join(info['path'],info['basename']+self._prodpattern))
+        path = self.path(info['tile'],info['date'])
+        files = glob.glob(os.path.join(path,info['basename']+self._prodpattern))
         files2 = []
         for f in files:
             ext = os.path.splitext(f)[1]
@@ -223,10 +223,11 @@ class Data(object):
         if suffix != '' and suffix[:1] != '_': suffix = '_' + suffix
         for tile, info in self.tiles.items():
             # Determine what needs to be processed
+            path = os.path.join(tile,info['date'])
             toprocess = {}
             prods = [p for p in self.products if p in self._products.keys()]
             for p in prods:
-                fout = os.path.join(info['path'],info['basename']+'_'+p+suffix)
+                fout = os.path.join(path,info['basename']+'_'+p+suffix)
                 # need to figure out extension properly
                 if len(glob.glob(fout+'*')) == 0 or overwrite: toprocess[p] = fout
             VerboseOut(['Processing products for tile %s' % tile, toprocess],3)

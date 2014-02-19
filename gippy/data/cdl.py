@@ -38,7 +38,6 @@ class CDLData(Data):
             'tile': '', 
             'date': datetime.datetime.strptime(bname[4:8],cls._datedir),
             'basename': bname[0:9],
-            'path': '',
             'sensor': 'cdl',
             'products': {'cdl':filename}
         }
