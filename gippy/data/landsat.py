@@ -28,6 +28,7 @@ class LandsatData(Data):
     _tiles_vector = 'landsat_wrs'
     _tiles_attribute = 'pr'
     _pattern = 'L*.tar.gz'
+    #_pattern = r'^L[TEC][4578].*\.tar\.gz$'
     _prodpattern = '*.tif'
     _metapattern = 'MTL.txt'
     _defaultresolution = [30.0, 30.0]
@@ -299,8 +300,6 @@ class LandsatData(Data):
     def processtile(self,tile,products):
         start = datetime.datetime.now()
         info = self.tiles[tile]
-        VerboseOut('%s: processing products' % tile)
-        VerboseOut(products)
         try:
             img = self._readraw(tile)
         except Exception,e:
