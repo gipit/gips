@@ -24,7 +24,7 @@ class SARData(Data):
         'JFBS':'JERS-1 FineBeam Single Polarization'
     }
     _defaultresolution = [0.000834028356964,0.000834028356964]
-    _rootdir = '/titan/data/SAR/tiles.dev'
+    _rootdir = '/titan/data/SAR/tiles'
     #_datedir = '%Y%j'
     _tiles_vector = '/titan/data/SAR/tiles.shp'
     _pattern = 'KC_*.tar.gz'
@@ -33,9 +33,6 @@ class SARData(Data):
     _products = OrderedDict([
         ('sign', {
             'description': 'Sigma nought (radar backscatter coefficient)',
-        }),
-        ('date', {
-            'description': 'Pixel observation dates (days since launch)',
         }),
     ])
 
@@ -126,8 +123,6 @@ class SARData(Data):
             dates = [cls._launchdate[fname[-9]] + datetime.timedelta(days=int(d)) for d in numpy.unique(dateimg.Read()) if d != 0]
             if not dates: raise Exception('%s: no valid dates' % fname)
             date = min(dates)
-            #stats = dateimg[0].ComputeStats()[0]
-            #date = cls._launchdate[fname[-9]] + datetime.timedelta(days=int(stats[0]))
             RemoveFiles([hdrfile,datefile,datefile+'.hdr'])
             #VerboseOut('Date from image: %s' % str(date),3) 
             # If year provided check
@@ -149,6 +144,7 @@ class SARData(Data):
             'date': dates,
             'basename': bname,
             'sensor': fname[-9:-8] + fname[-15:-12],
+            'products': {},
             # unique to SARData
             'hdrfile': hdrfile
         }
@@ -216,35 +212,31 @@ class SARData(Data):
 
     def processtile(self, tile, products):
         """ Make sure all products have been pre-processed """
-        # is this needed? or is processtile not called if products empty
-        if len(products) == 0: return
-
+        if len(products) == 0: raise Exception('Tile %s: No products specified' % tile)
         # extract all data from archive
         self._extract(tile)
         meta = self.meta(tile)
+        set_trace()
+        #if 'sign' in products.keys():
+        avail = self.tiles[tile]['products']
+        bands = [b for b in self._databands if b in avail]
+        img = gippy.GeoImage(avail[bands[0]]) 
+        del bands[0]
+        for b in bands: img.AddBand(gippy.GeoImage(avail[b])[0])
+        img.SetNoData(0)
+        mask = gippy.GeoImage(avail['mask'],False)
+        img.AddMask(mask[0] == 255)
+        # apply date mask
+        dateimg = gippy.GeoImage(avail['date'],False)
+        dateday = (meta['date'] - self._launchdate[meta['sensor'][0]]).days
+        img.AddMask(dateimg[0] == dateday)
+        imgout = gippy.SigmaNought(img, products['sign'], meta['CF'])
+        avail['sign'] = imgout.Filename()
 
-        if 'sign' in products.keys():
-            avail = self.tiles[tile]['products']
-            bands = [b for b in self._databands if b in avail]
-            print avail
-            img = gippy.GeoImage(avail[bands[0]]) 
-            del bands[0]
-            for b in bands: img.AddBand(gippy.GeoImage(avail[b])[0])
-            img.SetNoData(0)
-            mask = gippy.GeoImage(avail['mask'],False)
-            img.AddMask(mask[0] == 255)
-            # apply date mask
-            dateimg = gippy.GeoImage(avail['date'],False)
-            dateday = (meta['date'] - self._launchdate[meta['sensor'][0]]).days
-            img.AddMask(dateimg[0] == dateday)
-            imgout = gippy.SigmaNought(img, products['sign'], meta['CF'])
-            avail['sign'] = imgout.Filename()
-            print self.tiles[tile]
-
-        # Remove unused stuff - always leave date product
-        for k in ['linci','mask'] + self._databands:
+        # Remove unused stuff
+        for k in ['linci','mask','date'] + self._databands:
             if k in self.tiles[tile]['products']:
-                #RemoveFiles([self.tiles[tile]['products'][k],self.tiles[tile]['products'][k]+'.hdr',self.tiles[tile]['products'][k]+'.aux.xml'])
+                RemoveFiles([self.tiles[tile]['products'][k],self.tiles[tile]['products'][k]+'.hdr',self.tiles[tile]['products'][k]+'.aux.xml'])
                 del self.tiles[tile]['products'][k]
 
     @classmethod

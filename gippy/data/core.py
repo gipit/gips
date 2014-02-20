@@ -4,7 +4,7 @@ import os, sys
 import shutil, errno
 import argparse
 import ogr
-import datetime
+from datetime import datetime
 import glob
 from shapely.wkb import loads
 from shapely.geometry import shape
@@ -150,13 +150,13 @@ class Data(object):
         """ Get list of dates available for a tile """
         tdir = os.path.join(cls._rootdir,tile)
         if os.path.exists(tdir):
-            return [datetime.datetime.strptime(os.path.basename(d),cls._datedir).date() for d in os.listdir( os.path.join(cls._rootdir,tile) )]
+            return [datetime.strptime(os.path.basename(d),cls._datedir).date() for d in os.listdir( os.path.join(cls._rootdir,tile) )]
         else: return []
 
     @classmethod
     def path(cls, tile, date):
         """ Return path in repository for this tile and date """
-        return os.path.join(cls._rootdir, tile, date.strftime(cls._datedir))
+        return os.path.join(cls._rootdir, tile, str(date.strftime(cls._datedir)))
 
     def opentile(self, tile, product=''):
         if product != '':
@@ -171,13 +171,119 @@ class Data(object):
     # Child classes should not generally have to override anything below here
     ##########################################################################
     @classmethod
-    def inventory(cls,site=None, tiles=None, dates=None, days=None, products=None, **kwargs):
-        return DataInventory(cls, site, tiles, dates, days, products, **kwargs)
+    def inventory(cls, **kwargs): return DataInventory(cls, **kwargs)
 
     @classmethod
     def sensor_names(cls):
         """ All possible sensor names """
         return sorted(cls.sensors.values())
+
+    def open(self, product='', update=True):
+        """ Open and return final product GeoImage """
+        if product != '':
+            return gippy.GeoImage(self.products[product], update)
+        elif len(self.products) == 1:
+            return gippy.GeoImage(self.products[self.products.keys()[0]], update)
+        else:
+            # return filename of a tile from self.tiles ?
+            raise Exception('No product provided')
+
+    @classmethod
+    def archive(cls, path='', link=True):
+        """ Move files from directory to archive location """
+        start = datetime.now()
+        fnames = glob.glob(os.path.join(path,cls._pattern))
+        qdir = os.path.join(cls._rootdir,'../quarantine')
+        try:
+            os.makedirs(qdir)
+        except:
+            pass
+        numlinks = 0
+        numfiles = 0
+        for f in fnames:
+            try:
+                meta = cls.inspect(f)
+            except Exception,e:
+                # if problem with inspection, move to quarantine
+                VerboseOut(traceback.format_exc(), 4)
+                qname = os.path.join(qdir,f)
+                if not os.path.exists(qname):
+                    os.link(os.path.abspath(f),os.path.join(qdir,f))
+                VerboseOut('%s -> quarantine (file error)' % f,2)
+                continue
+            if not hasattr(meta['date'],'__len__'): meta['date'] = [meta['date']]
+            for d in meta['date']:
+                added = cls._move2archive(tile=meta['tile'],date=d,filename=f)
+                numlinks = numlinks + added
+            numfiles = numfiles + added
+        # Summarize
+        VerboseOut( '%s files (%s links) added to archive in %s' % (numfiles, numlinks, datetime.now()-start) )
+        if numfiles != len(fnames):
+            VerboseOut( '%s files not added to archive' % (len(fnames)-numfiles) )
+
+    @classmethod
+    def _move2archive(cls, tile, date, filename):
+        path = cls.path(tile, date)
+        try:
+            os.makedirs(path)
+        except OSError as exc: # Python >2.5
+            if exc.errno == errno.EEXIST and os.path.isdir(path):
+                pass
+            else:
+                raise Exception('Unable to make data directory %s' % path)
+        # Move or link file
+        origpath,fname = os.path.split(filename)
+        newfilename = os.path.join(path,fname)
+        if not os.path.exists(newfilename):
+            # Check for older versions
+            existing_files = glob.glob(os.path.join(path,cls._pattern))
+            if len(existing_files) > 0:
+                VerboseOut('Other version of %s already exists:' % fname,2)
+                for ef in existing_files: VerboseOut('\t%s' % os.path.basename(ef),2)
+            else:
+                os.link(os.path.abspath(filename),newfilename)
+                #shutil.move(os.path.abspath(f),newfilename)
+            VerboseOut(fname + ' -> ' + newfilename,2)
+            return 1
+        else:
+            VerboseOut('%s already in archive' % fname, 2)
+        return 0
+
+    def process(self, overwrite=False, suffix=''):
+        """ Determines what products need to be processed for each tile and calls processtile """
+        if suffix != '' and suffix[:1] != '_': suffix = '_' + suffix
+        for tile, info in self.tiles.items():
+            # Determine what needs to be processed
+            path = self.path(tile,info['date'])
+            toprocess = {}
+            prods = [p for p in self.products if p in self._products.keys()]
+            for p in prods:
+                fout = os.path.join(path,info['basename']+'_'+p+suffix)
+                # need to figure out extension properly
+                if len(glob.glob(fout+'*')) == 0 or overwrite: toprocess[p] = fout
+            if len(toprocess) != 0:
+                VerboseOut(['Processing products for tile %s' % tile, toprocess],3)
+                self.processtile(tile,toprocess)
+
+    def project(self, res=None, datadir='gipdata'):
+        """ Create image of final product (reprojected/mosaiced) """
+        self.process()
+        if not os.path.exists(datadir): os.makedirs(datadir)
+        datadir = os.path.abspath(datadir)
+        if res is None: res = self._defaultresolution
+        if not hasattr(res, "__len__"): res = [res,res]
+        #elif len(res) == 1: res = [res[0],res[0]]
+        if self.site is None:
+            raise Exception("No site file supplied")
+        for product in self.products:
+            if self.products[product] == '':
+                start = datetime.now()
+                filename = os.path.join(datadir, self.date.strftime('%Y%j') + '_%s_%s.tif' % (product,self.sensor))
+                if not os.path.exists(filename):
+                    filenames = [self.tiles[t]['products'][product] for t in self.tiles]
+                    imgout = gippy.CookieCutter(filenames, filename, self.site, res[0], res[1])
+                    VerboseOut('Projected and cropped %s files -> %s in %s' % (len(filenames),imgout.Basename(),datetime.now() - start))
+                self.products[product] = filename
 
     @classmethod
     def get_tiles_vector(cls):
@@ -216,93 +322,7 @@ class Data(object):
             if (tiles[t][0] < pcov/100.0) or(tiles[t][1] < ptile/100.0): 
                 remove_tiles.append(t)
         for t in remove_tiles: tiles.pop(t,None)
-        return tiles      
-
-    def process(self, overwrite=False, suffix=''):
-        """ Determines what products need to be processed for each tile and calls processtile """
-        if suffix != '' and suffix[:1] != '_': suffix = '_' + suffix
-        for tile, info in self.tiles.items():
-            # Determine what needs to be processed
-            path = os.path.join(tile,info['date'])
-            toprocess = {}
-            prods = [p for p in self.products if p in self._products.keys()]
-            for p in prods:
-                fout = os.path.join(path,info['basename']+'_'+p+suffix)
-                # need to figure out extension properly
-                if len(glob.glob(fout+'*')) == 0 or overwrite: toprocess[p] = fout
-            VerboseOut(['Processing products for tile %s' % tile, toprocess],3)
-            self.processtile(tile,toprocess)
-
-    @classmethod
-    def archive(cls, path='', link=True):
-        """ Move files from directory to archive location """
-        start = datetime.datetime.now()
-        fnames = glob.glob(os.path.join(path,cls._pattern))
-        qdir = os.path.join(cls._rootdir,'../quarantine')
-        try:
-            os.makedirs(qdir)
-        except:
-            pass
-        numlinks = 0
-        numfiles = 0
-        for f in fnames:
-            try:
-                meta = cls.inspect(f)
-            except Exception,e:
-                # if problem with inspection, move to quarantine
-                VerboseOut(traceback.format_exc(), 4)
-                qname = os.path.join(qdir,f)
-                if not os.path.exists(qname):
-                    os.link(os.path.abspath(f),os.path.join(qdir,f))
-                VerboseOut('%s -> quarantine (file error)' % f,2)
-                continue
-            if not hasattr(meta['date'],'__len__'): meta['date'] = [meta['date']]
-            for d in meta['date']:
-                added = cls._move2archive(tile=meta['tile'],date=d,filename=f)
-                numlinks = numlinks + added
-            numfiles = numfiles + added
-        # Summarize
-        VerboseOut( '%s files (%s links) added to archive in %s' % (numfiles, numlinks, datetime.datetime.now()-start) )
-        if numfiles != len(fnames):
-            VerboseOut( '%s files not added to archive' % (len(fnames)-numfiles) )
-
-    @classmethod
-    def _move2archive(cls, tile, date, filename):
-        path = cls.path(tile, date)
-        try:
-            os.makedirs(path)
-        except OSError as exc: # Python >2.5
-            if exc.errno == errno.EEXIST and os.path.isdir(path):
-                pass
-            else:
-                raise Exception('Unable to make data directory %s' % path)
-        # Move or link file
-        origpath,fname = os.path.split(filename)
-        newfilename = os.path.join(path,fname)
-        if not os.path.exists(newfilename):
-            # Check for older versions
-            existing_files = glob.glob(os.path.join(path,cls._pattern))
-            if len(existing_files) > 0:
-                VerboseOut('Other version of %s already exists:' % fname,2)
-                for ef in existing_files: VerboseOut('\t%s' % os.path.basename(ef),2)
-            else:
-                os.link(os.path.abspath(filename),newfilename)
-                #shutil.move(os.path.abspath(f),newfilename)
-            VerboseOut(fname + ' -> ' + newfilename,2)
-            return 1
-        else:
-            VerboseOut('%s already in archive' % fname, 2)
-        return 0
-
-    """def tar_index(self,tile):
-        #Get names from tarfile
-        filename = self.tiles[tile]['products']['filename']
-        if tarfile.is_tarfile(filename):
-            tfile = tarfile.open(filename)
-        else:
-            raise Exception('%s is not a valid tar file' % os.path.basename(filename))
-        return [f for f in tfile.getnames() if cls._metapattern not in f]
-    """
+        return tiles    
 
     @classmethod
     def extracthdr(cls,filename):
@@ -339,36 +359,6 @@ class Data(object):
             except:
                 pass
         return {'headerfile': hdrfile, 'datafiles': datafiles}
-
-    def open(self, product='', update=True):
-        """ Open and return final product GeoImage """
-        if product != '':
-            return gippy.GeoImage(self.products[product], update)
-        elif len(self.products) == 1:
-            return gippy.GeoImage(self.products[self.products.keys()[0]], update)
-        else:
-            # return filename of a tile from self.tiles ?
-            raise Exception('No product provided')
-
-    def project(self, res=None, datadir='gipdata'):
-        """ Create image of final product (reprojected/mosaiced) """
-        self.process()
-        if not os.path.exists(datadir): os.makedirs(datadir)
-        datadir = os.path.abspath(datadir)
-        if res is None: res = self._defaultresolution
-        if not hasattr(res, "__len__"): res = [res,res]
-        #elif len(res) == 1: res = [res[0],res[0]]
-        if self.site is None:
-            raise Exception("No site file supplied")
-        for product in self.products:
-            if self.products[product] == '':
-                start = datetime.datetime.now()
-                filename = os.path.join(datadir, self.date.strftime('%Y%j') + '_%s_%s.tif' % (product,self.sensor))
-                if not os.path.exists(filename):
-                    filenames = [self.tiles[t]['products'][product] for t in self.tiles]
-                    imgout = gippy.CookieCutter(filenames, filename, self.site, res[0], res[1])
-                    print 'Projected and cropped %s files -> %s in %s' % (len(filenames),imgout.Basename(),datetime.datetime.now() - start)
-                self.products[product] = filename
 
     def __init__(self, site=None, tiles=None, date=None, products=None, sensors=None, **kwargs):
         """ Locate data matching vector location (or tiles) and date
@@ -430,9 +420,9 @@ class Data(object):
         group.add_argument('--%tile',dest='ptile',help='Threshold of %% tile used', default=0, type=int)
         return parser
 
-    @staticmethod
-    def add_subparsers(parser):
-        return parser
+    #@staticmethod
+    #def add_subparsers(parser):
+    #    return parser
 
     def __str__(self):
         return self.sensor + ': ' + str(self.date)
@@ -476,7 +466,7 @@ class Data(object):
         parser.add_argument('--link',help='Create symbolic links instead of moving', default=False,action='store_true')
         parser.add_argument('-v','--verbose',help='Verbosity - 0: quiet, 1: normal, 2: debug', default=1, type=int)
 
-        cls.add_subparsers(subparser)
+        #cls.add_subparsers(subparser)
 
         # Pull in cls options here
         #dataparser = subparser.add_parser('data',help='', parents=[invparser],formatter_class=dhf)
@@ -492,34 +482,25 @@ class Data(object):
         gippy.Options.SetVerbose(args.verbose)
         gippy.Options.SetChunkSize(256.0)   # replace with option
 
-        if args.command == 'archive':
-            cls.archive(link=args.link)
-            exit(1)
         try:
+            if args.command == 'archive':
+                cls.archive(link=args.link)
+                exit(1)
             inv = cls.inventory(site=args.site, dates=args.dates, days=args.days, tiles=args.tiles, 
                 products=args.products, pcov=args.pcov, ptile=args.ptile)
-        except Exception,e:
-            print 'Error getting inventory: %s' % (e)
-            VerboseOut(traceback.format_exc(), 3)
-            exit(1)
-
-        if args.command == 'inventory': inv.printcalendar(args.md)
-
-        elif args.command == 'link':
-            inv.createlinks(args.hard)
-
-        elif args.command == 'process':
-            try:
-                #merrafname = fetchmerra(meta['datetime'])
+            if args.command == 'inventory': 
+                inv.printcalendar(args.md)
+            elif args.command == 'link':
+                inv.links(args.hard)
+            elif args.command == 'process':
                 inv.process(overwrite=args.overwrite,suffix=args.suffix) #, nooverviews=args.nooverviews)
-            except Exception,e:
-                print 'Error processing: %s' % e
-                VerboseOut(traceback.format_exc(), 3)
-
-        elif args.command == 'project': inv.project(args.res, datadir=args.datadir)
-
-        else:
-            print 'Command %s not recognized' % cmd
+            elif args.command == 'project': 
+                inv.project(args.res, datadir=args.datadir)
+            else:
+                VerboseOut('Command %s not recognized' % cmd)
+        except Exception,e:
+            VerboseOut('Error in %s: %s' % (args.command, e))
+            VerboseOut(traceback.format_exc(), 4)
 
 
 class DataInventory(object):
@@ -541,19 +522,8 @@ class DataInventory(object):
         'purple':          '0;35',
     }
 
-    def __init__(self, dataclass, site=None, tiles=None, dates=None, days=None, products=None, **kwargs):
-        self.dataclass = dataclass
-        self.site = site
-        self.tiles = tiles
-        self.temporal_extent(dates, days)
-        self.data = {}
-        if products is not None:
-            if len(products) == 0: products = dataclass._products.keys()
-        self.products = products
-        self.AddData(dataclass, **kwargs)
-
-    def __getitem__(self,date):
-        return self.data[date]
+    def _colorize(self,txt,color):
+        return "\033["+self._colorcodes[color]+'m' + txt + "\033[0m"
 
     @property
     def dates(self):
@@ -565,16 +535,19 @@ class DataInventory(object):
         """ Get number of dates """
         return len(self.data)
 
-    def get_timeseries(self,product=''):
-        """ Read all files as time series """
-        # assumes only one sensor row for each date
-        img = self.data[self.dates[0]][0].open(product=product)
-        for i in range(1,len(self.dates)):
-            img.AddBand(self.data[self.dates[i]][0].open(product=product)[0])
-        return img
+    def __getitem__(self,date):
+        return self.data[date]
 
-    def _colorize(self,txt,color):
-        return "\033["+self._colorcodes[color]+'m' + txt + "\033[0m"
+    def __init__(self, dataclass, site=None, tiles=None, dates=None, days=None, products=None, **kwargs):
+        self.dataclass = dataclass
+        self.site = site
+        self.tiles = tiles
+        self.temporal_extent(dates, days)
+        self.data = {}
+        if products is not None:
+            if len(products) == 0: products = dataclass._products.keys()
+        self.products = products
+        self.AddData(dataclass, **kwargs)
 
     def AddData(self, dataclass, **kwargs):
         """ Add additional data to this inventory (usually from different sensors """
@@ -612,22 +585,40 @@ class DataInventory(object):
         else: days = (1,366)
         self.start_day,self.end_day = ( int(days[0]), int(days[1]) )
 
-    def process(self, overwrite=False, suffix=''): #, overviews=False):
-        """ Process all data in inventory """
+    def process(self, *args, **kwargs):
+        """ Process data in inventory """
+        if self.products is None:
+            raise Exception('No products specified for processing')
+        start = datetime.now()
         VerboseOut('Requested %s products for %s files' % (len(self.products), self.numfiles))
-        # TODO only process if don't exist
         for date in self.dates:
             for data in self.data[date]:
-                data.process(overwrite, suffix)
-                # TODO - add completed product(s) to inventory
-        VerboseOut('Completed processing')
+                data.process(*args, **kwargs)
+        VerboseOut('Completed processing in %s' % (datetime.now()-start))
 
-    def project(self, res=None, datadir='gipdata'):
-        VerboseOut('Preparing data for %s dates (%s - %s)' % (len(self.dates),self.dates[0],self.dates[-1]))
+    def project(self, *args, **kwargs):
+        self.process()
+        start = datetime.now()
+        VerboseOut('Projecting data for %s dates (%s - %s)' % (len(self.dates),self.dates[0],self.dates[-1]))
         # res should default to data?
         for date in self.dates:
             for data in self.data[date]:
-                data.project(res, datadir=datadir)
+                data.project(*args, **kwargs)
+        VerboseOut('Completed projecting in %s' % (datetime.now()-start))
+
+    def links(self,hard=False):
+        """ Create links to tiles - move linking to core """
+        for date in self.data:
+            for data in self.data[date]:
+                for t in data.tiles:
+                    for p in data.tiles[t]['products']:
+                        fname = data.tiles[t]['products'][p]
+                        if hard:
+                            f = os.link
+                        else: f = os.symlink
+                        try:
+                            f( fname, os.path.basename(f) )
+                        except: pass
 
     # TODO - check if this is needed
     def get_products(self, date):
@@ -639,16 +630,7 @@ class DataInventory(object):
                 for p in data.tiles[t]['products']:
                     prods.append(p)
                 #for prod in data.products.keys(): prods.append(prod)
-        #set_trace()
         return sorted(set(prods))
-
-    def createlinks(self,hard=False):
-        """ Create product links """
-        for date in self.data:
-            for data in self.data[date]:
-                for t in data.tiles:
-                    for p in data.tiles[t]['products']:
-                        link( data.tiles[t]['products'][p], hard )
 
     def printcalendar(self,md=False):
         """ print calendar for raw original datafiles """
@@ -701,19 +683,10 @@ class DataInventory(object):
             print self._colorize(s, self._colororder[i])
             #print self._colorize(self.dataclass.sensors[s], self._colororder[s])
 
-def link(f,hard=False):
-    """ Create link to file in current directory """
-    #faux = f + '.aux.xml'
-    if hard:
-        try:
-            os.link(f,os.path.basename(f))
-            #os.link(faux,os.path.basename(faux))
-        except:
-            pass
-    else:
-        try:
-            os.symlink(f,os.path.basename(f))
-            #if os.path.isfile(faux):
-            #    os.symlink(faux,os.path.basename(faux))
-        except:
-            pass
+    def get_timeseries(self,product=''):
+        """ Read all files as time series """
+        # assumes only one sensor row for each date
+        img = self.data[self.dates[0]][0].open(product=product)
+        for i in range(1,len(self.dates)):
+            img.AddBand(self.data[self.dates[i]][0].open(product=product)[0])
+        return img

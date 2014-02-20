@@ -306,7 +306,7 @@ class LandsatData(Data):
         except Exception,e:
             print 'Error reading data %s' % info['filename']
             VerboseOut('%s %s' % (data['basename'],e), 2)
-            VerboseOut(traceback.format_exc(), 3)
+            VerboseOut(traceback.format_exc(), 4)
 
         #if self._products[p]['atmcorr']:
         # running atmosphere automatically, for now
@@ -335,11 +335,11 @@ class LandsatData(Data):
                     VerboseOut(' -> %s: processed in %s' % (os.path.basename(fname),datetime.datetime.now()-start))
                 except Exception,e:
                     print 'Error creating product %s for %s: %s' % (p,info['filename'],e)
-                    VerboseOut(traceback.format_exc(),2)
+                    VerboseOut(traceback.format_exc(),4)
 
             except Exception,e:
                 VerboseOut('Error processing %s: %s' % (info['basename'],e))
-                VerboseOut(traceback.format_exc(), 3)
+                VerboseOut(traceback.format_exc(), 4)
 
             img = None
             # cleanup directory
