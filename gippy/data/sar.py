@@ -216,22 +216,21 @@ class SARData(Data):
         # extract all data from archive
         self._extract(tile)
         meta = self.meta(tile)
-        set_trace()
-        #if 'sign' in products.keys():
-        avail = self.tiles[tile]['products']
-        bands = [b for b in self._databands if b in avail]
-        img = gippy.GeoImage(avail[bands[0]]) 
-        del bands[0]
-        for b in bands: img.AddBand(gippy.GeoImage(avail[b])[0])
-        img.SetNoData(0)
-        mask = gippy.GeoImage(avail['mask'],False)
-        img.AddMask(mask[0] == 255)
-        # apply date mask
-        dateimg = gippy.GeoImage(avail['date'],False)
-        dateday = (meta['date'] - self._launchdate[meta['sensor'][0]]).days
-        img.AddMask(dateimg[0] == dateday)
-        imgout = gippy.SigmaNought(img, products['sign'], meta['CF'])
-        avail['sign'] = imgout.Filename()
+        if 'sign' in products.keys():
+            avail = self.tiles[tile]['products']
+            bands = [b for b in self._databands if b in avail]
+            img = gippy.GeoImage(avail[bands[0]]) 
+            del bands[0]
+            for b in bands: img.AddBand(gippy.GeoImage(avail[b])[0])
+            img.SetNoData(0)
+            mask = gippy.GeoImage(avail['mask'],False)
+            img.AddMask(mask[0] == 255)
+            # apply date mask
+            dateimg = gippy.GeoImage(avail['date'],False)
+            dateday = (meta['date'] - self._launchdate[meta['sensor'][0]]).days
+            img.AddMask(dateimg[0] == dateday)
+            imgout = gippy.SigmaNought(img, products['sign'], meta['CF'])
+            avail['sign'] = imgout.Filename()
 
         # Remove unused stuff
         for k in ['linci','mask','date'] + self._databands:

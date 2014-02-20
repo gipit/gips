@@ -81,32 +81,6 @@ class Data(object):
             'products':{}   # dictionary {'product name': filename}
     }
 
-    def find_data(self, tile):
-        """ Find all data for tile, add products dictionary to info dict from inspect function """
-        # find original datafile
-        filenames = self.find_raw(tile)
-        if len(filenames) == 0: return {}
-        if len(filenames) > 1:
-            raise Exception('More than 1 file found for same tile/date')
-        info = self.inspect(filenames[0])
-
-        # find additional products named basename_product
-        # TODO replace with regular expressions
-        path = self.path(info['tile'],info['date'])
-        files = glob.glob(os.path.join(path,info['basename']+self._prodpattern))
-        files2 = []
-        for f in files:
-            ext = os.path.splitext(f)[1]
-            if ext != '.hdr' and ext != '.xml': files2.append(f)
-        files = files2
-        products = {}
-        for f in files:
-            fname,ext = os.path.splitext(os.path.split(f)[1])
-            products[ fname[len(info['basename'])+1:]  ] = f
-        # extend info['products'] instead of replace ?
-        info['products'] = products
-        return info
-
     def meta(self, tile):
         """ Retrieve metadata for this tile """
         filename = self.tiles[tile]['filename']
@@ -129,7 +103,7 @@ class Data(object):
         return str(feature.GetField(fldindex))
 
     @classmethod
-    def fetch(cls):
+    def fetch(cls,*args,**kwargs):
         """ Download data and add to archive """
         raise Exception("Fetch not implemented for %s" % cls.name)
 
@@ -166,6 +140,33 @@ class Data(object):
         else:
             # return filename of a tile from self.tiles ?
             raise Exception('Invalid product %s' % product)
+
+    def find_data(self, tile):
+        """ Find all data for tile, add products dictionary to info dict from inspect function """
+        # find original datafile
+        filenames = self.find_raw(tile)
+        if len(filenames) == 0: return {}
+        # Some datasets will have more then one file
+        if len(filenames) > 1:
+            raise Exception('More than 1 file found for same tile/date')
+        info = self.inspect(filenames[0])
+
+        # find additional products named basename_product
+        # TODO replace with regular expressions
+        path = self.path(info['tile'],info['date'])
+        files = glob.glob(os.path.join(path,info['basename']+self._prodpattern))
+        files2 = []
+        for f in files:
+            ext = os.path.splitext(f)[1]
+            if ext != '.hdr' and ext != '.xml': files2.append(f)
+        files = files2
+        products = info['products']
+        for f in files:
+            fname,ext = os.path.splitext(os.path.split(f)[1])
+            products[ fname[len(info['basename'])+1:]  ] = f
+        # extend info['products'] instead of replace ?
+        info['products'] = products
+        return info
 
     ##########################################################################
     # Child classes should not generally have to override anything below here
@@ -281,6 +282,7 @@ class Data(object):
                 filename = os.path.join(datadir, self.date.strftime('%Y%j') + '_%s_%s.tif' % (product,self.sensor))
                 if not os.path.exists(filename):
                     filenames = [self.tiles[t]['products'][product] for t in self.tiles]
+                    # cookiecutter should validate pixels in image.  Throw exception if not
                     imgout = gippy.CookieCutter(filenames, filename, self.site, res[0], res[1])
                     VerboseOut('Projected and cropped %s files -> %s in %s' % (len(filenames),imgout.Basename(),datetime.now() - start))
                 self.products[product] = filename
@@ -360,7 +362,7 @@ class Data(object):
                 pass
         return {'headerfile': hdrfile, 'datafiles': datafiles}
 
-    def __init__(self, site=None, tiles=None, date=None, products=None, sensors=None, **kwargs):
+    def __init__(self, site=None, tiles=None, date=None, products=None, sensors=None, fetch=False, **kwargs):
         """ Locate data matching vector location (or tiles) and date
         self.tile_coverage - dictionary of tile id and % coverage with site
         self.tiles - dictionary of tile id and a tile dictionary (see next)
@@ -393,6 +395,8 @@ class Data(object):
 
         #VerboseOut('Finding products for %s tiles ' % (len(self.tile_coverage)),3)
 
+        if fetch: self.fetch()
+
         # Find products
         for t in self.tile_coverage.keys():
             tile = self.find_data(t)
@@ -414,6 +418,7 @@ class Data(object):
         group.add_argument('-t','--tiles', nargs='*', help='Tile designations', default=None)
         group.add_argument('-d','--dates',help='Range of dates (YYYY-MM-DD,YYYY-MM-DD)')
         group.add_argument('--days',help='Include data within these days of year (doy1,doy2)',default=None)
+        group.add_argument('--fetch',help='Fetch any missing data (if supported)',default=False, action='store_true')
         group.add_argument('-p','--products', nargs='*', help='Process/filter these products', default=None)
         group.add_argument('-v','--verbose',help='Verbosity - 0: quiet, 1: normal, 2: debug', default=1, type=int)
         group.add_argument('--%cov',dest='pcov',help='Threshold of %% coverage of tile over site', default=0, type=int)
@@ -488,6 +493,7 @@ class Data(object):
                 exit(1)
             inv = cls.inventory(site=args.site, dates=args.dates, days=args.days, tiles=args.tiles, 
                 products=args.products, pcov=args.pcov, ptile=args.ptile)
+            if args.fetch: inv.fetch()
             if args.command == 'inventory': 
                 inv.printcalendar(args.md)
             elif args.command == 'link':
@@ -570,10 +576,11 @@ class DataInventory(object):
         self.numfiles = 0
         for date in sorted(dates):
             try:
-                dat = dataclass(site=self.site, tiles=self.tiles, date=date, products=self.products, **kwargs)
+                dat = dataclass(site=self.site, tiles=self.tiles.keys(), date=date, products=self.products, **kwargs)
                 self.data[date] = [ dat ]
                 self.numfiles = self.numfiles + len(dat.tiles)
-            except: 
+            except Exception,e:
+                VerboseOut('Inventory error %s' % e,3)
                 VerboseOut(traceback.format_exc(),4)
 
     def temporal_extent(self, dates, days):
@@ -584,6 +591,21 @@ class DataInventory(object):
             days = days.split(',')
         else: days = (1,366)
         self.start_day,self.end_day = ( int(days[0]), int(days[1]) )
+
+    def fetch(self):
+        from dateutil.rrule import rrule, DAILY
+        VerboseOut('Fetching Data')
+        # calculate all daily dates within range
+        for date in rrule(DAILY,dtstart=self.start_date,until=self.end_date):
+            start = datetime.now()
+            if self.start_day <= int(date.strftime('%j')) <= self.end_day:
+                try:
+                    dat = self.dataclass(site=self.site, tiles=self.tiles.keys(), date=date, products=self.products, fetch=True)
+                    self.data[date] = [dat]
+                except Exception,e:
+                    VerboseOut('Fetch error: %s' % e,3)
+                    VerboseOut(traceback.format_exc(),4)
+                    exit(1)
 
     def process(self, *args, **kwargs):
         """ Process data in inventory """
@@ -613,12 +635,15 @@ class DataInventory(object):
                 for t in data.tiles:
                     for p in data.tiles[t]['products']:
                         fname = data.tiles[t]['products'][p]
+                        bname = os.path.basename(fname)
                         if hard:
                             f = os.link
                         else: f = os.symlink
                         try:
-                            f( fname, os.path.basename(f) )
-                        except: pass
+                            f( fname, bname )
+                            VerboseOut('%s: linking' % bname)
+                        except: 
+                            VerboseOut('%s: Problem creating link' % bname,2)
 
     # TODO - check if this is needed
     def get_products(self, date):
