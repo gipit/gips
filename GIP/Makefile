@@ -40,7 +40,11 @@ OBJ_DEBUG = $(OBJDIR_DEBUG)/GeoVector.o $(OBJDIR_DEBUG)/GeoRaster.o $(OBJDIR_DEB
 
 OBJ_RELEASE = $(OBJDIR_RELEASE)/GeoVector.o $(OBJDIR_RELEASE)/GeoRaster.o $(OBJDIR_RELEASE)/GeoImage.o $(OBJDIR_RELEASE)/GeoData.o $(OBJDIR_RELEASE)/GeoAlgorithms.o
 
+
 all: debug release
+
+install:
+	cp bin/Release/libgip.so /usr/lib/
 
 clean: clean_debug clean_release
 

@@ -16,7 +16,7 @@ import os, glob, filecmp, shutil
 def install_gip(install):
     src = glob.glob('GIP/giputils/bin/Release/*')
     dst = [os.path.join('/usr/local/bin',os.path.basename(b)) for b in src]
-    src.append('GIP/gip/bin/Release/libgip.so')
+    src.append('GIP/bin/Release/libgip.so')
     dst.append('/usr/lib/libgip.so')
     for b in zip(src,dst):
         if not os.path.exists(b[1]) or not filecmp.cmp(b[0],b[1]): shutil.copy(b[0],b[1])
