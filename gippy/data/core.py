@@ -205,11 +205,11 @@ class Data(object):
                 meta = cls.inspect(f)
             except Exception,e:
                 # if problem with inspection, move to quarantine
-                VerboseOut(traceback.format_exc(), 4)
                 qname = os.path.join(qdir,f)
                 if not os.path.exists(qname):
                     os.link(os.path.abspath(f),os.path.join(qdir,f))
                 VerboseOut('%s -> quarantine (file error)' % f,2)
+                VerboseOut(traceback.format_exc(), 4)
                 continue
             if not hasattr(meta['date'],'__len__'): meta['date'] = [meta['date']]
             for d in meta['date']:
@@ -395,7 +395,6 @@ class Data(object):
         #VerboseOut('Finding products for %s tiles ' % (len(self.tile_coverage)),3)
 
         if fetch: self.fetch()
-
         # Find products
         for t in self.tile_coverage.keys():
             tile = self.find_data(t)
@@ -405,7 +404,6 @@ class Data(object):
             #    empty_tiles.append(t)
             if any(tile):
                 self.tiles[t] = tile
-
         self.sensor = self.tiles[self.tiles.keys()[0]]['sensor']
         if len(self.tiles) == 0: raise Exception('No valid data found')
 
@@ -547,22 +545,25 @@ class DataInventory(object):
 
     def __init__(self, dataclass, site=None, tiles=None, dates=None, days=None, products=None, **kwargs):
         self.dataclass = dataclass
+
         self.site = site
-        self.tiles = tiles
+        # default to all tiles
+        if tiles is None and self.site is None:
+            tiles = dataclass.find_tiles()
+        # if tiles provided, make coverage all 100%
+        if tiles is not None:
+            self.tiles = {}
+            for t in tiles: self.tiles[t] = (1,1)
+        elif tiles is None and self.site is not None:
+            self.tiles = dataclass.vector2tiles(gippy.GeoVector(self.site),**kwargs)
+
         self.temporal_extent(dates, days)
+
         self.data = {}
         if products is not None:
             if len(products) == 0: products = dataclass._products.keys()
         self.products = products
-        self.AddData(dataclass, **kwargs)
 
-    def AddData(self, dataclass, **kwargs):
-        """ Add additional data to this inventory (usually from different sensors """
-        if self.tiles is None and self.site is None:
-            self.tiles = dataclass.find_tiles()
-            #raise Exception('No shapefile or tiles provided for inventory')
-        if self.tiles is None and self.site is not None:
-            self.tiles = dataclass.vector2tiles(gippy.GeoVector(self.site),**kwargs)
         # get all potential matching dates for tiles
         dates = []
         for t in self.tiles:
