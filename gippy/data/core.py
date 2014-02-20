@@ -102,10 +102,9 @@ class Data(object):
         fldindex = feature.GetFieldIndex(cls._tiles_attribute)
         return str(feature.GetField(fldindex))
 
-    @classmethod
-    def fetch(cls,*args,**kwargs):
+    def fetch(self,*args,**kwargs):
         """ Download data and add to archive """
-        raise Exception("Fetch not implemented for %s" % cls.name)
+        raise Exception("Fetch not implemented for %s" % self.name)
 
     ##########################################################################
     # Override these functions if not using a tile/date directory structure
