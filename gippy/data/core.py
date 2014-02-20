@@ -613,12 +613,14 @@ class DataInventory(object):
                 for t in data.tiles:
                     for p in data.tiles[t]['products']:
                         fname = data.tiles[t]['products'][p]
+                        print p,fname
                         if hard:
                             f = os.link
                         else: f = os.symlink
                         try:
-                            f( fname, os.path.basename(f) )
-                        except: pass
+                            f( fname, os.path.basename(fname) )
+                        except:
+                            print 'problem'
 
     # TODO - check if this is needed
     def get_products(self, date):
