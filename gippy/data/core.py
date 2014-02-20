@@ -487,6 +487,8 @@ class Data(object):
         gippy.Options.SetVerbose(args.verbose)
         gippy.Options.SetChunkSize(256.0)   # replace with option
 
+        VerboseOut('GIPPY %s command line utility' % cls.name)
+
         try:
             if args.command == 'archive':
                 cls.archive(link=args.link)
@@ -663,10 +665,9 @@ class DataInventory(object):
         #cal = calendar.TextCalendar()
         oldyear = ''
 
-        print '%s INVENTORY' % self.dataclass.name
-
         # print tile coverage
         if self.site is not None:
+            print '\nTILE COVERAGE'
             print '{:^8}{:>14}{:>14}'.format('Tile','% Coverage','% Tile Used')
             for t in sorted(self.tiles): 
                 print "{:>8}{:>11.1f}%{:>11.1f}%".format(t,self.tiles[t][0]*100,self.tiles[t][1]*100)
