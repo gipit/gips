@@ -78,8 +78,8 @@ class Data(object):
         fldindex = feature.GetFieldIndex(cls._tiles_attribute)
         return str(feature.GetField(fldindex))
 
-    def fetch(self,*args,**kwargs):
-        """ Download data and add to archive """
+    def fetch(self,tile):
+        """ Download data for tile and add to archive """
         raise Exception("Fetch not implemented for %s" % self.name)
 
     ##########################################################################
@@ -372,7 +372,6 @@ class Data(object):
 
         #VerboseOut('Finding products for %s tiles ' % (len(self.tile_coverage)),3)
 
-        if fetch: self.fetch()
         # Find products
         for t in self.tile_coverage.keys():
             tile = self.find_data(t)
@@ -382,6 +381,10 @@ class Data(object):
             #    empty_tiles.append(t)
             if any(tile):
                 self.tiles[t] = tile
+            if fetch: 
+                self.fetch(t)
+                self.tiles[t] = self.find_data(t)
+        # check all tiles - should be same sensor
         self.sensor = self.tiles[self.tiles.keys()[0]]['sensor']
         if len(self.tiles) == 0: raise Exception('No valid data found')
 
