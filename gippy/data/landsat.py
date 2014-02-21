@@ -5,7 +5,7 @@ import argparse
 import glob
 import re
 
-import datetime
+from datetime import datetime
 import shutil
 import numpy
 
@@ -16,9 +16,10 @@ from collections import OrderedDict
 import gippy
 from gippy.atmosphere import atmosphere
 
-from gippy.data.core import Data, DataInventory, VerboseOut, File2List
+from gippy.data.core import Data
+from gippy.utils import VerboseOut, File2List
 
-from pdb import set_trace
+
 
 class LandsatData(Data):
     """ Represents a single date and temporal extent along with (existing) product variations (raw, ref, toaref, ind, ndvi, etc) """
@@ -151,7 +152,7 @@ class LandsatData(Data):
             'filename': filename,
             'datafiles': [],    # not needed for inspect, populate in meta()
             'tile': tile,
-            'date': datetime.datetime.strptime(year+doy,"%Y%j"),
+            'date': datetime.strptime(year+doy,"%Y%j"),
             'basename': basename[:-12],
             #'path':os.path.join(cls._rootdir,tile,year+doy),
             'sensor': basename[0:3],
@@ -242,7 +243,7 @@ class LandsatData(Data):
             float(mtl['CORNER_LL_LON_PRODUCT']), float(mtl['CORNER_LR_LON_PRODUCT']))
         lat = (min(lats) + max(lats))/2.0
         lon = (min(lons) + max(lons))/2.0
-        dt = datetime.datetime.strptime(mtl['DATE_ACQUIRED'] + ' ' +
+        dt = datetime.strptime(mtl['DATE_ACQUIRED'] + ' ' +
             mtl['SCENE_CENTER_TIME'][:-2],'%Y-%m-%d %H:%M:%S.%f')
         seconds = (dt.second + dt.microsecond/1000000.)/3600.
         dectime = dt.hour + dt.minute/60.0 + seconds
@@ -282,7 +283,7 @@ class LandsatData(Data):
 
         _datetime = {
             'datetime': dt,
-            'JulianDay': (dt - datetime.datetime(dt.year,1,1)).days + 1,
+            'JulianDay': (dt - datetime(dt.year,1,1)).days + 1,
             'DecimalTime': dectime,
         }
 
@@ -299,24 +300,24 @@ class LandsatData(Data):
         return self.tiles[tile]['metadata']
 
     def processtile(self,tile,products):
-        start = datetime.datetime.now()
+        start = datetime.now()
         info = self.tiles[tile]
         path = self.path(info['tile'],info['date'])
         try:
             img = self._readraw(tile)
         except Exception,e:
             print 'Error reading data %s' % info['filename']
-            VerboseOut('%s %s' % (data['basename'],e), 2)
+            VerboseOut('%s %s' % (info['basename'],e), 2)
             VerboseOut(traceback.format_exc(), 4)
 
         #if self._products[p]['atmcorr']:
         # running atmosphere automatically, for now
         atmospheres = [atmosphere(i,self.tiles[tile]['metadata']) for i in range(1,img.NumBands()+1)]
-        VerboseOut('%s: read in %s' % (info['basename'],datetime.datetime.now() - start)) 
+        VerboseOut('%s: read in %s' % (info['basename'],datetime.now() - start)) 
 
         for p,fout in products.items():
             try: 
-                start = datetime.datetime.now()
+                start = datetime.now()
                 if (self._products[p]['atmcorr']):
                     for i in range(0,img.NumBands()):
                         b = img[i]
@@ -333,7 +334,7 @@ class LandsatData(Data):
                     fname = imgout.Filename()
                     info['products'][p] = fname
                     imgout = None
-                    VerboseOut(' -> %s: processed in %s' % (os.path.basename(fname),datetime.datetime.now()-start))
+                    VerboseOut(' -> %s: processed in %s' % (os.path.basename(fname),datetime.now()-start))
                 except Exception,e:
                     print 'Error creating product %s for %s: %s' % (p,info['filename'],e)
                     VerboseOut(traceback.format_exc(),4)
@@ -388,7 +389,7 @@ class LandsatData(Data):
         filenames = []
         for b in bandnums:
             fname = tiledata['metadata']['filenames'][b-1]
-            filenames.append(os.path.join(tiledata['path'],fname))
+            filenames.append( os.path.join(self.path(tile,self.date),fname) )
 
         if gippy.Options.Verbose() > 2:
             print 'Landsat files: '

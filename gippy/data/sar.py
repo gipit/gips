@@ -6,13 +6,12 @@ import glob
 import tarfile
 import copy
 import numpy
-
-# move VerboseOut, File2List to utils or main gippy
-from gippy.data.core import Data, VerboseOut, File2List, List2File, RemoveFiles
-import gippy
+from collections import OrderedDict
 from pdb import set_trace
 
-from collections import OrderedDict
+import gippy
+from gippy.data.core import Data
+from gippy.utils import VerboseOut, File2List, List2File, RemoveFiles
 
 class SARData(Data):
     """ Represents a single date and temporal extent along with (existing) product variations """
