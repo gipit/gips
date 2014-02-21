@@ -332,7 +332,9 @@ class Data(object):
             else: datafiles.append(os.path.join(dirname,f))
             # make sure file is readable and writable
             try:
-                os.chmod(os.path.join(dirname,f),0664)
+                ff = os.path.join(dirname,f)
+                if not os.path.isdir(ff):
+                    os.chmod(ff,0664)
             except:
                 pass
         return {'headerfile': hdrfile, 'datafiles': datafiles}
