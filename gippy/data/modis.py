@@ -1,9 +1,11 @@
-
+import os
 import datetime
-
+from osgeo import gdal
 from collections import OrderedDict
 
 from gippy.data.core import Data, DataInventory
+from gippy utils import File2List, List2File
+
 
 class ModisData(Data):
     """ Represent a single day and temporal extent of MODIS data along with product variations """
@@ -25,6 +27,10 @@ class ModisData(Data):
     _products = OrderedDict([
         ('temp', {
             'description': 'Surface temperature observations',
+            'depends': ['MOD11A1', 'MYD11A1'],
+        }),
+        ('sds1', {
+            'description': 'First SDS in the file',
         }),
     ])
 
@@ -46,45 +52,53 @@ class ModisData(Data):
         doy = basename[13:16]
         sensor = basename[:3]
 
-        gdalfile = gdal.Open(filename)
-        subdatasets = gdalfile.GetSubDatasets()
-        sds_names = [s[0] for s in subdatasets]
+        indexfile = filename + '.index'
+        if os.path.exists(indexfile):
+            datafiles = File2List(indexfile)
+        else:            
+            gdalfile = gdal.Open(filename)
+            subdatasets = gdalfile.GetSubDatasets()
+            datafiles = [s[0] for s in subdatasets]
+            List2File(datafiles, indexfile)
 
         return {
 
+            # required
             'filename': filename,
-
-            # these are just HDF sds names, should they be paths?
-            'datafiles': sds_names,
-
+            'datafiles': datafiles,
             'tile': tile,
+            'date': datetime.datetime.strptime(year+doy, "%Y%j").date(),
+            'basename': 'MODIS_',
+            'sensor': sensor,
 
-            # should this be a datetime date?
-            'date': datetime.datetime.strptime(year+doy, "%Y%j"),
+            # optional
 
-            # ? the file doesn't know what other files it might be used with to make products
-            'basename': 'M',
-
-            'sensor': sensor
-
-            # what is this?
-            'path': os.path.join(cls._rootdir,tile,year+doy),
+            'products': {'sds1': datafiles[0]}
 
         }
-
 
     @classmethod
     def feature2tile(cls, feature):
         """ convert tile field attributes to tile identifier """
         fldindex_h = feature.GetFieldIndex("h")
         fldindex_v = feature.GetFieldIndex("v")
-
-        h = str(feature.GetField(fldindex_h)).zfill(2)
-        v = str(feature.GetField(fldindex_v)).zfill(2)
-
+        h = str(int(feature.GetField(fldindex_h))).zfill(2)
+        v = str(int(feature.GetField(fldindex_v))).zfill(2)
         tile = "h%sv%s" % (h, v)
-
         return tile
+
+
+    
+    def fetch(self):
+
+        datasets = set()
+        for product in self.products:
+            datasets.add(self._products[product]['depends'])
+
+        for tile in self.tiles:
+            for dataset in datasets:
+                http_fetch(self, tile, date, dataset)
+
 
 
 def main(): ModisData.main()

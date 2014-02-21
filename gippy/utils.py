@@ -53,3 +53,44 @@ def daterange(dstring):
         return (datesplit(d1),datesplit(d2,True))
     except:
         return (datesplit(dstring),datesplit(dstring,True))
+
+
+def http_fetch(obj, tile, date, dataset):
+
+    httploc = 'http://e4ftl01.cr.usgs.gov/MOLT/MOD11A1.005' # only some datasets available here
+
+    STAGE = '/titan/data/modis/stage'
+
+    os.chdir(STAGE)
+
+    year, month, day = date.timetuple()[:3]
+    doy = date.timetuple[7]
+
+    pattern = ''.join(['(', MDS, '.A', year, doy, '.', tile, '.005.\d{13}.hdf)'])
+    mainurl = ''.join([httploc, '/', year, '.', '%02d'%month, '.', '%02d'%day])
+
+    try:
+        listing = urllib.urlopen(mainurl).readlines()
+    except Exception, e:
+        listing = None
+        print 'unable to access %s' % mainurl
+        continue
+
+    cpattern = re.compile(pattern)
+    name = None
+    for item in listing:
+        if cpattern.search(item):
+            if 'xml' in item:
+                continue
+            print 'found in', item.strip()
+            name = cpattern.findall(item)[0]
+            print 'it is', name
+            url = ''.join([mainurl, '/', name])
+            print 'the url is', url
+            try:
+                urllib.urlretrieve(url, name)
+                retrieved.append(name)
+            except Exception, e:
+                print 'unable to retrieve %s from %s' % (name, url)
+
+    time.sleep(2)
