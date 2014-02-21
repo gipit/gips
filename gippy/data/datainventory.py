@@ -2,7 +2,7 @@
 
 import sys
 import gippy
-from gippy.utils import VerboseOut, daterange
+from gippy.utils import VerboseOut, parse_dates
 
 from datetime import datetime
 import traceback
@@ -87,7 +87,7 @@ class DataInventory(object):
     def temporal_extent(self, dates, days):
         """ Temporal extent (define self.dates and self.days) """
         if dates is None: dates='1984,2050'
-        self.start_date,self.end_date = daterange(dates)
+        self.start_date,self.end_date = parse_dates(dates)
         if days:
             days = days.split(',')
         else: days = (1,366)
