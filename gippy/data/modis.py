@@ -4,7 +4,7 @@ from osgeo import gdal
 from collections import OrderedDict
 
 from gippy.data.core import Data, DataInventory
-from gippy utils import File2List, List2File
+from gippy.utils import File2List, List2File
 
 
 class ModisData(Data):
