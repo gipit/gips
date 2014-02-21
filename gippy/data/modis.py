@@ -88,17 +88,52 @@ class ModisData(Data):
         return tile
 
 
-    
+
     def fetch(self):
 
         datasets = set()
         for product in self.products:
             datasets.add(self._products[product]['depends'])
 
+        httploc = 'http://e4ftl01.cr.usgs.gov/MOLT/MOD11A1.005' # only some datasets available here
+        STAGE = '/titan/data/modis/stage'
+
+        os.chdir(STAGE)
+
+        year, month, day = date.timetuple()[:3]
+        doy = date.timetuple[7]
+
         for tile in self.tiles:
             for dataset in datasets:
-                http_fetch(self, tile, date, dataset)
 
+                pattern = ''.join(['(', dataset, '.A', year, doy, '.', tile, '.005.\d{13}.hdf)'])
+                mainurl = ''.join([httploc, '/', year, '.', '%02d'%month, '.', '%02d'%day])
+
+                try:
+                    listing = urllib.urlopen(mainurl).readlines()
+                except Exception, e:
+                    listing = None
+                    print 'unable to access %s' % mainurl
+                    continue
+
+                cpattern = re.compile(pattern)
+                name = None
+                for item in listing:
+                    if cpattern.search(item):
+                        if 'xml' in item:
+                            continue
+                        print 'found in', item.strip()
+                        name = cpattern.findall(item)[0]
+                        print 'it is', name
+                        url = ''.join([mainurl, '/', name])
+                        print 'the url is', url
+                        try:
+                            urllib.urlretrieve(url, name)
+                            retrieved.append(name)
+                        except Exception, e:
+                            print 'unable to retrieve %s from %s' % (name, url)
+
+                time.sleep(2)
 
 
 def main(): ModisData.main()
