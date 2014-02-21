@@ -152,7 +152,7 @@ namespace gip {
 			bbox chunk(p1,p2);
 			_Chunks.push_back(chunk);
 		}
-		if (Options::Verbose() > 3) {
+		if (Options::Verbose() > 4) {
 		    int i(0);
 		    std::cout << "Chunked " << Basename() << " into " << _Chunks.size() << " chunks (" << Options::ChunkSize() << " MB max each)"<< std::endl;
             for (std::vector<bbox>::const_iterator iChunk=_Chunks.begin(); iChunk!=_Chunks.end(); iChunk++)
