@@ -61,6 +61,7 @@ def parse_dates(dstring):
         return (_parse_date(dstring),_parse_date(dstring,True))
 
 
+"""
 def http_fetch(obj, tile, date, dataset):
 
     httploc = 'http://e4ftl01.cr.usgs.gov/MOLT/MOD11A1.005' # only some datasets available here
@@ -100,3 +101,4 @@ def http_fetch(obj, tile, date, dataset):
                 print 'unable to retrieve %s from %s' % (name, url)
 
     time.sleep(2)
+"""
