@@ -3,14 +3,17 @@ import datetime
 from osgeo import gdal
 from collections import OrderedDict
 
-from gippy.data.core import Data, DataInventory
-from gippy.utils import File2List, List2File
+from gippy.data.core import Data
+from gippy.utils import File2List, List2File, VerboseOut
+
+from pdb import set_trace
 
 
 class ModisData(Data):
     """ Represent a single day and temporal extent of MODIS data along with product variations """
 
     name = 'Modis'
+
     sensors = {
         'MOD': 'Terra',
         'MYD': 'Aqua',
@@ -27,10 +30,13 @@ class ModisData(Data):
     _products = OrderedDict([
         ('temp', {
             'description': 'Surface temperature observations',
+            # the list of asset types associated with this product
             'depends': ['MOD11A1', 'MYD11A1'],
         }),
         ('sds1', {
             'description': 'First SDS in the file',
+            # the list of asset types associated with this product
+            'depends': ['MOD11A1'],
         }),
     ])
 
@@ -39,6 +45,8 @@ class ModisData(Data):
         'MYD': datetime.date(2002, 5, 1),
         'MCD': None
     }
+
+    _stage = '/titan/data/modis/stage'
 
     # MOD11A1.A2005241.h12v04.005.2008059145629.hdf
 
@@ -88,52 +96,60 @@ class ModisData(Data):
         return tile
 
 
+    @classmethod
+    def fetch(cls, tile, date, products):
 
-    def fetch(self):
+        VerboseOut('about to fetch', 1)
 
-        datasets = set()
-        for product in self.products:
-            datasets.add(self._products[product]['depends'])
+        #VerboseOut(dir(self), 1)
+
+        VerboseOut(self.products, 1)
+        VerboseOut(self._products, 1)
+
+        set_trace()
+            VerboseOut(self.path( self.tiles.keys()[0] , self.date ), 1)
+
+        assets = set()
+        for product in products:
+            assets.update(self._products[product]['depends'])
 
         httploc = 'http://e4ftl01.cr.usgs.gov/MOLT/MOD11A1.005' # only some datasets available here
-        STAGE = '/titan/data/modis/stage'
-
-        os.chdir(STAGE)
 
         year, month, day = date.timetuple()[:3]
         doy = date.timetuple[7]
 
-        for tile in self.tiles:
-            for dataset in datasets:
+        for asset in assets:
 
-                pattern = ''.join(['(', dataset, '.A', year, doy, '.', tile, '.005.\d{13}.hdf)'])
-                mainurl = ''.join([httploc, '/', year, '.', '%02d'%month, '.', '%02d'%day])
+            pattern = ''.join(['(', asset, '.A', year, doy, '.', tile, '.005.\d{13}.hdf)'])
+            mainurl = ''.join([httploc, '/', year, '.', '%02d'%month, '.', '%02d'%day])
 
-                try:
-                    listing = urllib.urlopen(mainurl).readlines()
-                except Exception, e:
-                    listing = None
-                    print 'unable to access %s' % mainurl
-                    continue
+            try:
+                VerboseOut('opening listing', 1)
+                # listing = urllib.urlopen(mainurl).readlines()
 
-                cpattern = re.compile(pattern)
-                name = None
-                for item in listing:
-                    if cpattern.search(item):
-                        if 'xml' in item:
-                            continue
-                        print 'found in', item.strip()
-                        name = cpattern.findall(item)[0]
-                        print 'it is', name
-                        url = ''.join([mainurl, '/', name])
-                        print 'the url is', url
-                        try:
-                            urllib.urlretrieve(url, name)
-                            retrieved.append(name)
-                        except Exception, e:
-                            print 'unable to retrieve %s from %s' % (name, url)
+            except Exception, e:
+                listing = None
+                print 'unable to access %s' % mainurl
+                continue
 
-                time.sleep(2)
+            cpattern = re.compile(pattern)
+            name = None
+            for item in listing:
+                if cpattern.search(item):
+                    if 'xml' in item:
+                        continue
+                    print 'found in', item.strip()
+                    name = cpattern.findall(item)[0]
+                    print 'it is', name
+                    url = ''.join([mainurl, '/', name])
+                    print 'the url is', url
+                    try:
+                        urllib.urlretrieve(url, os.path.join(self._stage, name))
+                        retrieved.append(name)
+                    except Exception, e:
+                        print 'unable to retrieve %s from %s' % (name, url)
+
+            time.sleep(2)
 
 
 def main(): ModisData.main()
