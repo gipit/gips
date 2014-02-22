@@ -339,17 +339,16 @@ class LandsatData(Data):
                     VerboseOut(traceback.format_exc(),4)
             # double exception? is this necessary ?
             except Exception,e:
-                VerboseOut('Error processing %s: %s' % (info['basename'],e),2)
+                VerboseOut('Error processing %s: %s' % (tdata['basename'],e),2)
                 VerboseOut(traceback.format_exc(), 4)
-
-            img = None
-            # cleanup directory
-            try:
-            #    for bname self.tiles[tile]['datafiles']:
-            #        files = glob.glob(os.path.join(data['path'],bname)+'*')
-            #            for f in files: os.remove(f)
-                shutil.rmtree(os.path.join(tdata['path'],'modtran'))
-            except: pass
+        img = None
+        # cleanup directory
+        try:
+            for bname in self.tiles[tile]['datafiles']:
+                files = glob.glob(os.path.join(data['path'],bname)+'*')
+                RemoveFiles(files)
+            shutil.rmtree(os.path.join(tdata['path'],'modtran'))
+        except: pass
 
     def filter(self, tile, maxclouds=100):
         """ Check if tile passes filter """
