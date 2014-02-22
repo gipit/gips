@@ -43,6 +43,8 @@ namespace gip {
     // Create new file
 	GeoData::GeoData(int xsz, int ysz, int bsz, GDALDataType datatype, string filename, dictionary options)
 		:_Filename(filename) {
+        if (Options::Verbose() > 3)
+            std::cout << Basename() << ": create new " << datatype << " file " << xsz << "x" << ysz << "x" << bsz << std::endl;
 		string format = Options::DefaultFormat();
 		//if (format == "GTiff" && datatype == GDT_Byte) options["COMPRESS"] = "JPEG";
 		//if (format == "GTiff") options["COMPRESS"] = "LZW";
