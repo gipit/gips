@@ -28,7 +28,7 @@ class LandsatData(Data):
     _rootdir = '/titan/data/landsat/tiles'
     _tiles_vector = 'landsat_wrs'
     _tiles_attribute = 'pr'
-    _pattern = 'L*.tar.gz'
+    _assetpattern = 'L*.tar.gz'
     #_pattern = r'^L[TEC][4578].*\.tar\.gz$'
     _prodpattern = '*.tif'
     _metapattern = 'MTL.txt'
@@ -161,8 +161,8 @@ class LandsatData(Data):
 
     def _readmeta(self, tile):
         """ Read in Landsat MTL (metadata) file """
-        filename = self.tiles[tile]['filename']
-        mtlfilename = self.extracthdr(filename)
+        tdata = self.tiles[tile]
+        mtlfilename = self.extracthdr(tdata['assets'][0])
 
         VerboseOut('reading %s' % mtlfilename, 3)
         # Read MTL file
@@ -288,7 +288,7 @@ class LandsatData(Data):
         }
 
         # TODO - now that metadata part of LandsatData object some of these keys not needed
-        self.tiles[tile]['metadata'] = {
+        tdata['metadata'] = {
             'sensor': 'Landsat'+str(id),
             'metafilename': mtlfilename,
             'filenames': filenames,
@@ -300,20 +300,20 @@ class LandsatData(Data):
         return self.tiles[tile]['metadata']
 
     def processtile(self,tile,products):
+        """ Make sure all products have been pre-processed """
         start = datetime.now()
-        info = self.tiles[tile]
-        path = self.path(info['tile'],info['date'])
+        tdata = self.tiles[tile]
+        bname = os.path.basename(tdata['assets'][0])
         try:
             img = self._readraw(tile)
         except Exception,e:
-            print 'Error reading data %s' % info['filename']
-            VerboseOut('%s %s' % (info['basename'],e), 2)
+            VerboseOut('Error reading %s %s' % (bname,e), 2)
             VerboseOut(traceback.format_exc(), 4)
 
         #if self._products[p]['atmcorr']:
         # running atmosphere automatically, for now
-        atmospheres = [atmosphere(i,self.tiles[tile]['metadata']) for i in range(1,img.NumBands()+1)]
-        VerboseOut('%s: read in %s' % (info['basename'],datetime.now() - start)) 
+        atmospheres = [atmosphere(i,tdata['metadata']) for i in range(1,img.NumBands()+1)]
+        VerboseOut('%s: read in %s' % (bname,datetime.now() - start)) 
 
         for p,fout in products.items():
             try: 
@@ -323,24 +323,23 @@ class LandsatData(Data):
                         b = img[i]
                         b.SetAtmosphere(atmospheres[i])
                         img[i] = b
-                        VerboseOut('atmospherically correcting',2)
+                        VerboseOut('atmospherically correcting',3)
                 else: img.ClearAtmosphere()
 
                 try:
                     fcall = 'gippy.%s(img, fout)' % self._products[p]['function']
                     VerboseOut(fcall,2)
-                    imgout = eval(fcall)
+                    eval(fcall)
                     #if overviews: imgout.AddOverviews()
-                    fname = imgout.Filename()
-                    info['products'][p] = fname
-                    imgout = None
+                    fname = glob.glob(fout+'*')[0]
+                    tdata['products'][p] = fname
                     VerboseOut(' -> %s: processed in %s' % (os.path.basename(fname),datetime.now()-start))
                 except Exception,e:
-                    print 'Error creating product %s for %s: %s' % (p,info['filename'],e)
+                    VerboseOut('Error creating product %s for %s: %s' % (p,bname,e),3)
                     VerboseOut(traceback.format_exc(),4)
-
+            # double exception? is this necessary ?
             except Exception,e:
-                VerboseOut('Error processing %s: %s' % (info['basename'],e))
+                VerboseOut('Error processing %s: %s' % (info['basename'],e),2)
                 VerboseOut(traceback.format_exc(), 4)
 
             img = None
@@ -349,7 +348,7 @@ class LandsatData(Data):
             #    for bname self.tiles[tile]['datafiles']:
             #        files = glob.glob(os.path.join(data['path'],bname)+'*')
             #            for f in files: os.remove(f)
-                shutil.rmtree(os.path.join(path,'modtran'))
+                shutil.rmtree(os.path.join(tdata['path'],'modtran'))
             except: pass
 
     def filter(self, tile, maxclouds=100):
@@ -383,8 +382,7 @@ class LandsatData(Data):
             bandnums = numpy.arange(0,len(tiledata['metadata']['bands'])) + 1
 
         # Extract desired files from tarfile
-        filename = tiledata['filename']
-        index = self.extractdata(filename)
+        index = self.extractdata(tiledata['assets'][0])
 
         filenames = []
         for b in bandnums:
