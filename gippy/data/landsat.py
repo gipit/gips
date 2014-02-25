@@ -19,6 +19,7 @@ from gippy.atmosphere import atmosphere
 from gippy.data.core import Data
 from gippy.utils import VerboseOut, File2List
 
+from pdb import set_trace
 
 
 class LandsatData(Data):
@@ -140,6 +141,12 @@ class LandsatData(Data):
             'atmcorr': False,
         }),
     ])
+
+    _assets = {
+        '': {
+            'pattern': 'L*.tar.gz'
+        }
+    }
 
     @classmethod
     def inspect(cls, filename):

@@ -26,7 +26,6 @@ class SARData(Data):
     _rootdir = '/titan/data/SAR/tiles'
     #_datedir = '%Y%j'
     _tiles_vector = '/titan/data/SAR/tiles.shp'
-    _assetpattern = 'KC_*.tar.gz'
     _prodpattern = '*'
     _metapattern = '.hdr'
     _products = OrderedDict([
@@ -34,6 +33,12 @@ class SARData(Data):
             'description': 'Sigma nought (radar backscatter coefficient)',
         }),
     ])
+
+    _assets = {
+        '': {
+            'pattern': 'KC_*.tar.gz'
+        }
+    }
 
     # SAR specific constants
     # launch dates for PALSAR (A) and JERS-1 (J)

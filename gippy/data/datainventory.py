@@ -7,6 +7,8 @@ from gippy.utils import VerboseOut, parse_dates
 from datetime import datetime
 import traceback
 
+from pdb import set_trace
+
 class DataInventory(object):
     """ Manager class for data inventories """
     # redo color, combine into ordered dictionary
@@ -42,7 +44,7 @@ class DataInventory(object):
     def __getitem__(self,date):
         return self.data[date]
 
-    def __init__(self, dataclass, site=None, tiles=None, dates=None, days=None, products=None, **kwargs):
+    def __init__(self, dataclass, site=None, tiles=None, dates=None, days=None, products=None, fetch=False, **kwargs):
         self.dataclass = dataclass
 
         self.site = site
@@ -62,6 +64,12 @@ class DataInventory(object):
         if products is not None:
             if len(products) == 0: products = dataclass._products.keys()
         self.products = products
+
+        if fetch and products is not None:
+            dataclass.fetch(products,self.tiles,(self.start_date,self.end_date),(self.start_day,self.end_day))
+            exit(1)
+            # archive
+            #dataclass.archive(os.path.join(dataclass._rootdir),'staging')
 
         # get all potential matching dates for tiles
         dates = []
@@ -84,6 +92,15 @@ class DataInventory(object):
                 VerboseOut('Inventory error %s' % e,3)
                 VerboseOut(traceback.format_exc(),4)
 
+    #def fetch(self):
+        """ fetch data from remote location """
+        # call fetch with range of dates, then archive 
+    #    for t in self.tile_coverage.keys():
+    #        set_trace()
+    #        self.fetch(t)
+        # archive files
+        #self.archive(os.path.join(self._rootdir,'staging'))
+
     def temporal_extent(self, dates, days):
         """ Temporal extent (define self.dates and self.days) """
         if dates is None: dates='1984,2050'
@@ -92,21 +109,6 @@ class DataInventory(object):
             days = days.split(',')
         else: days = (1,366)
         self.start_day,self.end_day = ( int(days[0]), int(days[1]) )
-
-    def fetch(self):
-        from dateutil.rrule import rrule, DAILY
-        VerboseOut('Fetching Data')
-        # calculate all daily dates within range
-        for date in rrule(DAILY,dtstart=self.start_date,until=self.end_date):
-            start = datetime.now()
-            if self.start_day <= int(date.strftime('%j')) <= self.end_day:
-                try:
-                    dat = self.dataclass(site=self.site, tiles=self.tiles.keys(), date=date, products=self.products, fetch=True)
-                    self.data[date] = [dat]
-                except Exception,e:
-                    VerboseOut('Fetch error: %s' % e,3)
-                    VerboseOut(traceback.format_exc(),4)
-                    exit(1)
 
     def process(self, *args, **kwargs):
         """ Process data in inventory """

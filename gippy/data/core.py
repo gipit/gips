@@ -44,6 +44,8 @@ class Data(object):
     _tiles_attribute = 'tile'
     # dictionary of available products for this dataset
     _products = {}
+    # dictionary of available assets for this dataset
+    _assets = {}
     
     @classmethod
     def inspect(cls, filename):
@@ -80,16 +82,29 @@ class Data(object):
         fldindex = feature.GetFieldIndex(cls._tiles_attribute)
         return str(feature.GetField(fldindex))
 
-    def fetch(self,tile):
-        """ Download data for tile and add to archive """
-        raise Exception("Fetch not implemented for %s" % self.name)
+    @classmethod
+    def fetch_asset(cls,asset,tile,date):
+        """ Get this asset for this tile and date """
+        raise Exception("Fetch not implemented for %s" % cls.name)
+
+    @classmethod
+    def asset_dates(cls, asset, tile, dates, days):
+        """ For a given asset get all dates possible (in repo or not) """
+        from dateutil.rrule import rrule, DAILY
+        # default assumes daily regardless of asset or tile
+        dates = [dt for dt in rrule(DAILY, dtstart=dates[0], until=dates[1]) if days[0] <= int(dt.strftime('%j')) <= days[1]]
+        return dates
 
     ##########################################################################
     # Override these functions if not using a tile/date directory structure
     ##########################################################################
     def find_assets(self, tile):
         """ Find assets (raw/original data) for this tile """
-        return glob.glob(os.path.join(self._rootdir, tile, self.date.strftime(self._datedir), self._assetpattern))
+        assets = []
+        for key in self._assets:
+            files = glob.glob(os.path.join(self._rootdir, tile, self.date.strftime(self._datedir), self._assets[key]['pattern']))
+            assets = assets + files
+        return assets
 
     @classmethod
     def find_tiles(cls):
@@ -98,7 +113,7 @@ class Data(object):
 
     @classmethod
     def find_dates(cls, tile):
-        """ Get list of dates available for a tile """
+        """ Get list of dates available in repository for a tile """
         tdir = os.path.join(cls._rootdir,tile)
         if os.path.exists(tdir):
             return [datetime.strptime(os.path.basename(d),cls._datedir).date() for d in os.listdir(tdir)]
@@ -230,6 +245,26 @@ class Data(object):
             VerboseOut('%s already in archive' % fname, 2)
         return 0
 
+    @classmethod
+    def fetch(cls, products, tiles, dates, days):
+        """ Download data for tile and add to archive """
+        assets = cls.products2assets(products)
+        for a in assets:
+            for t in tiles:
+                dates = cls.asset_dates(t,a,dates,days)
+                for d in dates:
+                    if not glob.glob(cls.path(t,d,cls._assets[a]['pattern'])): cls.fetch_asset(a,t,d)
+
+    @classmethod
+    def products2assets(cls,products):
+        """ Get list of assets needed for these products """
+        assets = []
+        for p in products:
+            if 'assets' in cls._products[p]:
+                assets.append(cls._products[p]['assets'])
+            else: assets.append('')
+        return set(assets)
+
     def process(self, overwrite=False, suffix=''):
         """ Determines what products need to be processed for each tile and calls processtile """
         if suffix != '' and suffix[:1] != '_': suffix = '_' + suffix
@@ -354,7 +389,6 @@ class Data(object):
         #print self._assetpattern
         #self._assetpattern = re.compile(self._assetpattern)
         #print self._assetpattern
-
         self.site = site
         # Calculate spatial extent
         if tiles is not None:
@@ -380,7 +414,6 @@ class Data(object):
         self.used_sensors = {s: self.sensors.get(s,None) for s in sensors}
 
         #VerboseOut('Finding products for %s tiles ' % (len(self.tile_coverage)),3)
-        # call fetch with range of dates, then archive 
         for t in self.tile_coverage.keys():
             try:
                 self.tiles[t] = self.discover(t)
@@ -392,9 +425,6 @@ class Data(object):
                 self.sensor = self.tiles[t]['sensor']
             except:
                 continue
-            #if fetch: 
-            #    self.fetch(t)
-            #    self.tiles[t] = self.discover(t)
         if len(self.tiles) == 0: raise Exception('No valid data found')
 
     @staticmethod
@@ -458,6 +488,8 @@ class Data(object):
         parser.add_argument('--link',help='Create symbolic links instead of moving', default=False,action='store_true')
         parser.add_argument('-v','--verbose',help='Verbosity - 0: quiet, 1: normal, 2: debug', default=1, type=int)
 
+        parser = subparser.add_parser('fetch',help='Fetch products from remote location')
+
         #cls.add_subparsers(subparser)
 
         # Pull in cls options here
@@ -481,8 +513,7 @@ class Data(object):
                 cls.archive(link=args.link)
                 exit(1)
             inv = cls.inventory(site=args.site, dates=args.dates, days=args.days, tiles=args.tiles, 
-                products=args.products, pcov=args.pcov, ptile=args.ptile)
-            if args.fetch: inv.fetch()
+                products=args.products, pcov=args.pcov, ptile=args.ptile, fetch=args.fetch)
             if args.command == 'inventory': 
                 inv.printcalendar(args.md)
             elif args.command == 'link':
