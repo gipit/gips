@@ -261,7 +261,7 @@ class Data(object):
         assets = []
         for p in products:
             if 'assets' in cls._products[p]:
-                assets.append(cls._products[p]['assets'])
+                assets.extend(cls._products[p]['assets'])
             else: assets.append('')
         return set(assets)
 
