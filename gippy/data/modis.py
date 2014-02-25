@@ -21,10 +21,19 @@ class ModisData(Data):
     }
     _rootdir = '/titan/data/modis/tiles'
     _tiles_vector = '/titan/data/vector/MODIS/modis_sinusoidal/modis_sinusoidal_grid_world.shp'
+
     _assetpattern = 'M?D????.????????.h??v??.???.hdf'
 
+
+    _assets = {
+        'MOD11A1': {
+            'pattern': 'MOD11A1.????????.h??v??.???.hdf',
+            'url': 'http://e4ftl01.cr.usgs.gov/MOLT/MOD11A1.005'
+            }
+        }
+
     _prodpattern = '*.tif'
-    #_metapattern = 'MTL.txt'
+
     _defaultresolution = [926.625433138333392, -926.625433139166944]
 
     _products = OrderedDict([
@@ -91,59 +100,51 @@ class ModisData(Data):
         tile = "h%sv%s" % (h, v)
         return tile
 
+
     @classmethod
-    def fetch(cls, tile, date, products):
+    def fetch_asset(cls, asset, tile, date):
 
-        VerboseOut('about to fetch',2)
-
-        #VerboseOut(dir(self), 1)
-
-        VerboseOut(self.products,3)
-        VerboseOut(self._products,3)
+        print "about to fetch"
+        VerboseOut('about to fetch',1)
+        VerboseOut('about to fetch4',4)
 
         #set_trace()
         #VerboseOut(self.path( self.tiles.keys()[0] , self.date ), 1)
 
-        assets = set()
-        for product in products:
-            assets.update(self._products[product]['depends'])
+        #httploc = 'http://e4ftl01.cr.usgs.gov/MOLT/MOD11A1.005' # only some datasets available here
 
-        httploc = 'http://e4ftl01.cr.usgs.gov/MOLT/MOD11A1.005' # only some datasets available here
+        httploc = cls._assets[asset]['url']
 
         year, month, day = date.timetuple()[:3]
         doy = date.timetuple[7]
 
-        for asset in assets:
+        pattern = ''.join(['(', asset, '.A', year, doy, '.', tile, '.005.\d{13}.hdf)'])
+        mainurl = ''.join([httploc, '/', year, '.', '%02d'%month, '.', '%02d'%day])
 
-            pattern = ''.join(['(', asset, '.A', year, doy, '.', tile, '.005.\d{13}.hdf)'])
-            mainurl = ''.join([httploc, '/', year, '.', '%02d'%month, '.', '%02d'%day])
+        try:
+            VerboseOut('opening listing', 1)
+            # listing = urllib.urlopen(mainurl).readlines()
+        except Exception, e:
+            listing = None
+            print 'unable to access %s' % mainurl
+            
+        cpattern = re.compile(pattern)
+        name = None
+        for item in listing:
+            if cpattern.search(item):
+                if 'xml' in item:
+                    continue
+                print 'found in', item.strip()
+                name = cpattern.findall(item)[0]
+                print 'it is', name
+                url = ''.join([mainurl, '/', name])
+                print 'the url is', url
+                try:
+                    urllib.urlretrieve(url, os.path.join(self._stage, name))
+                    retrieved.append(name)
+                except Exception, e:
+                    print 'unable to retrieve %s from %s' % (name, url)
 
-            try:
-                VerboseOut('opening listing', 1)
-                # listing = urllib.urlopen(mainurl).readlines()
-
-            except Exception, e:
-                listing = None
-                print 'unable to access %s' % mainurl
-                continue
-
-            cpattern = re.compile(pattern)
-            name = None
-            for item in listing:
-                if cpattern.search(item):
-                    if 'xml' in item:
-                        continue
-                    print 'found in', item.strip()
-                    name = cpattern.findall(item)[0]
-                    print 'it is', name
-                    url = ''.join([mainurl, '/', name])
-                    print 'the url is', url
-                    try:
-                        urllib.urlretrieve(url, os.path.join(self._stage, name))
-                        retrieved.append(name)
-                    except Exception, e:
-                        print 'unable to retrieve %s from %s' % (name, url)
-
-            time.sleep(2)
+        time.sleep(2)
 
 def main(): ModisData.main()
