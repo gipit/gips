@@ -317,9 +317,11 @@ class LandsatData(Data):
             VerboseOut('Error reading %s %s' % (bname,e), 2)
             VerboseOut(traceback.format_exc(), 4)
 
-        #if self._products[p]['atmcorr']:
-        # running atmosphere automatically, for now
-        atmospheres = [atmosphere(i,tdata['metadata']) for i in range(1,img.NumBands()+1)]
+        runatm = False
+        for p in products:
+            if self._products[p]['atmcorr']: runatm = True
+        if runatm:
+            atmospheres = [atmosphere(i,tdata['metadata']) for i in range(1,img.NumBands()+1)]
         VerboseOut('%s: read in %s' % (bname,datetime.now() - start)) 
 
         for p,fout in products.items():
@@ -332,7 +334,6 @@ class LandsatData(Data):
                         img[i] = b
                         VerboseOut('atmospherically correcting',3)
                 else: img.ClearAtmosphere()
-
                 try:
                     fcall = 'gippy.%s(img, fout)' % self._products[p]['function']
                     VerboseOut(fcall,2)
