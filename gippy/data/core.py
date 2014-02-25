@@ -10,6 +10,7 @@ from shapely.wkb import loads
 from shapely.geometry import shape
 import traceback
 import tarfile
+import re
 
 from pdb import set_trace
 
@@ -31,8 +32,8 @@ class Data(object):
 
     # Format code of date directories in repository
     _datedir = '%Y%j'
-    # pattern of original raw data file
-    _pattern = ''
+    # pattern of assets (original/raw) file
+    _assetpattern = ''
     # pattern of created products
     _prodpattern = '*.tif'
     # pattern of a metadata or header file
@@ -43,18 +44,21 @@ class Data(object):
     _tiles_attribute = 'tile'
     # dictionary of available products for this dataset
     _products = {}
+    # dictionary of available assets for this dataset
+    _assets = {}
     
     @classmethod
     def inspect(cls, filename):
-        """ Inspect a single file and derive some info (for archiving) - Needs to be overridden by child """
+        """ Inspect a single asset and get info - Needs to be overridden by child """
         return {
-            'filename':'',  # full filename
+            'filename':'',  # full filename to asset
             'datafiles':[], # if filename is archive, index of datafiles in archive
             'tile':'',      # tile designation
             'date': '',     # full date
+            #'path': '',     # path in repository where asset belongs
             'basename':'',  # base/root name of this tile/date (used for product naming)
             'sensor': '',   # sensor code (key used in cls.sensors dictionary)
-            'products':{}   # dictionary {'product name': filename}
+            'products':{}   # dictionary of existing products in asset {'product name': filename}
     }
 
     def meta(self, tile):
@@ -78,16 +82,29 @@ class Data(object):
         fldindex = feature.GetFieldIndex(cls._tiles_attribute)
         return str(feature.GetField(fldindex))
 
-    def fetch(self,tile):
-        """ Download data for tile and add to archive """
-        raise Exception("Fetch not implemented for %s" % self.name)
+    @classmethod
+    def fetch_asset(cls,asset,tile,date):
+        """ Get this asset for this tile and date """
+        raise Exception("Fetch not implemented for %s" % cls.name)
+
+    @classmethod
+    def asset_dates(cls, asset, tile, dates, days):
+        """ For a given asset get all dates possible (in repo or not) """
+        from dateutil.rrule import rrule, DAILY
+        # default assumes daily regardless of asset or tile
+        dates = [dt for dt in rrule(DAILY, dtstart=dates[0], until=dates[1]) if days[0] <= int(dt.strftime('%j')) <= days[1]]
+        return dates
 
     ##########################################################################
     # Override these functions if not using a tile/date directory structure
     ##########################################################################
-    def find_raw(self, tile):
-        """ Find raw/original data for this tile """
-        return glob.glob(os.path.join(self._rootdir, tile, self.date.strftime(self._datedir), self._pattern))
+    def find_assets(self, tile):
+        """ Find assets (raw/original data) for this tile """
+        assets = []
+        for key in self._assets:
+            files = glob.glob(os.path.join(self._rootdir, tile, self.date.strftime(self._datedir), self._assets[key]['pattern']))
+            assets = assets + files
+        return assets
 
     @classmethod
     def find_tiles(cls):
@@ -96,16 +113,16 @@ class Data(object):
 
     @classmethod
     def find_dates(cls, tile):
-        """ Get list of dates available for a tile """
+        """ Get list of dates available in repository for a tile """
         tdir = os.path.join(cls._rootdir,tile)
         if os.path.exists(tdir):
-            return [datetime.strptime(os.path.basename(d),cls._datedir).date() for d in os.listdir( os.path.join(cls._rootdir,tile) )]
+            return [datetime.strptime(os.path.basename(d),cls._datedir).date() for d in os.listdir(tdir)]
         else: return []
 
     @classmethod
-    def path(cls, tile, date):
+    def path(cls, tile, date, filename=''):
         """ Return path in repository for this tile and date """
-        return os.path.join(cls._rootdir, tile, str(date.strftime(cls._datedir)))
+        return os.path.join(cls._rootdir, tile, str(date.strftime(cls._datedir)), filename)
 
     def opentile(self, tile, product=''):
         if product != '':
@@ -116,32 +133,35 @@ class Data(object):
             # return filename of a tile from self.tiles ?
             raise Exception('Invalid product %s' % product)
 
-    def find_data(self, tile):
-        """ Find all data for tile, add products dictionary to info dict from inspect function """
-        # find original datafile
-        filenames = self.find_raw(tile)
-        if len(filenames) == 0: return {}
-        # Some datasets will have more then one file
-        if len(filenames) > 1:
-            raise Exception('More than 1 file found for same tile/date')
-        info = self.inspect(filenames[0])
-
-        # find additional products named basename_product
-        # TODO replace with regular expressions
-        path = self.path(info['tile'],info['date'])
-        files = glob.glob(os.path.join(path,info['basename']+self._prodpattern))
-        files2 = []
-        for f in files:
-            ext = os.path.splitext(f)[1]
-            if ext != '.hdr' and ext != '.xml': files2.append(f)
-        files = files2
-        products = info['products']
-        for f in files:
-            fname,ext = os.path.splitext(os.path.split(f)[1])
-            products[ fname[len(info['basename'])+1:]  ] = f
-        # extend info['products'] instead of replace ?
-        info['products'] = products
-        return info
+    def discover(self, tile):
+        """ This analyzes a tile and date directory for assets and products """
+        assets = self.find_assets(tile)
+        if len(assets) == 0: raise Exception('no assets')
+        dat = {'assets': [], 'datafiles': {}, 'path': self.path(tile,self.date), 'basename': '', 'products': {}}
+        for a in assets:
+            info = self.inspect(a)
+            dat['assets'].append(info['filename'])
+            dat['datafiles'][info['filename']] = info['datafiles']
+            # should this be property of tile date, sensor?
+            dat['basename'] = info['basename']
+            dat['sensor'] = info['sensor']
+            dat['products'].update(info['products'])
+            # find additional products
+            files = glob.glob(os.path.join(dat['path'],info['basename']+self._prodpattern))
+            files2 = []
+            for f in files:
+                ext = os.path.splitext(f)[1]
+                if ext != '.hdr' and ext != '.xml': files2.append(f)
+            files = files2
+            # TODO - BASENAME IS DIFFERENT FOR EVERY ASSET !??  Because of sensor issue
+            for f in files:
+                fname,ext = os.path.splitext(os.path.split(f)[1])
+                dat['products'][ fname[len(info['basename'])+1:]  ] = f
+        #if any(assets):
+        #    VerboseOut('%s %s: assets and products found' % (tile, self.date),3)
+        #    VerboseOut(assets,3)
+        #    VerboseOut(dat['products'],3)
+        return dat
 
     ##########################################################################
     # Child classes should not generally have to override anything below here
@@ -225,16 +245,35 @@ class Data(object):
             VerboseOut('%s already in archive' % fname, 2)
         return 0
 
+    @classmethod
+    def fetch(cls, products, tiles, dates, days):
+        """ Download data for tile and add to archive """
+        assets = cls.products2assets(products)
+        for a in assets:
+            for t in tiles:
+                dates = cls.asset_dates(t,a,dates,days)
+                for d in dates:
+                    if not glob.glob(cls.path(t,d,cls._assets[a]['pattern'])): cls.fetch_asset(a,t,d)
+
+    @classmethod
+    def products2assets(cls,products):
+        """ Get list of assets needed for these products """
+        assets = []
+        for p in products:
+            if 'assets' in cls._products[p]:
+                assets.append(cls._products[p]['assets'])
+            else: assets.append('')
+        return set(assets)
+
     def process(self, overwrite=False, suffix=''):
         """ Determines what products need to be processed for each tile and calls processtile """
         if suffix != '' and suffix[:1] != '_': suffix = '_' + suffix
         for tile, info in self.tiles.items():
             # Determine what needs to be processed
-            path = self.path(tile,info['date'])
             toprocess = {}
             prods = [p for p in self.products if p in self._products.keys()]
             for p in prods:
-                fout = os.path.join(path,info['basename']+'_'+p+suffix)
+                fout = os.path.join(info['path'],info['basename']+'_'+p+suffix)
                 # need to figure out extension properly
                 if len(glob.glob(fout+'*')) == 0 or overwrite: toprocess[p] = fout
             if len(toprocess) != 0:
@@ -346,6 +385,10 @@ class Data(object):
         self.tiles[tile] - dictionary of tile data {path, baename, sensor, products}
         self.products - dictionary of product name and final product filename
         """
+        # compile regular expressions
+        #print self._assetpattern
+        #self._assetpattern = re.compile(self._assetpattern)
+        #print self._assetpattern
         self.site = site
         # Calculate spatial extent
         if tiles is not None:
@@ -371,21 +414,17 @@ class Data(object):
         self.used_sensors = {s: self.sensors.get(s,None) for s in sensors}
 
         #VerboseOut('Finding products for %s tiles ' % (len(self.tile_coverage)),3)
-
-        # Find products
         for t in self.tile_coverage.keys():
-            tile = self.find_data(t)
-            # Custom filter based on dataclass
-            #good = self.filter(t,filename, **kwargs)
-            #if good == False:
-            #    empty_tiles.append(t)
-            if any(tile):
-                self.tiles[t] = tile
-            if fetch: 
-                self.fetch(t)
-                self.tiles[t] = self.find_data(t)
-        # check all tiles - should be same sensor
-        self.sensor = self.tiles[self.tiles.keys()[0]]['sensor']
+            try:
+                self.tiles[t] = self.discover(t)
+                # Custom filter based on dataclass
+                #good = self.filter(t,filename, **kwargs)
+                #if good == False:
+                #    empty_tiles.append(t)
+                # check all tiles - should be same sensor - MODIS
+                self.sensor = self.tiles[t]['sensor']
+            except:
+                continue
         if len(self.tiles) == 0: raise Exception('No valid data found')
 
     @staticmethod
@@ -449,6 +488,8 @@ class Data(object):
         parser.add_argument('--link',help='Create symbolic links instead of moving', default=False,action='store_true')
         parser.add_argument('-v','--verbose',help='Verbosity - 0: quiet, 1: normal, 2: debug', default=1, type=int)
 
+        parser = subparser.add_parser('fetch',help='Fetch products from remote location')
+
         #cls.add_subparsers(subparser)
 
         # Pull in cls options here
@@ -472,8 +513,7 @@ class Data(object):
                 cls.archive(link=args.link)
                 exit(1)
             inv = cls.inventory(site=args.site, dates=args.dates, days=args.days, tiles=args.tiles, 
-                products=args.products, pcov=args.pcov, ptile=args.ptile)
-            if args.fetch: inv.fetch()
+                products=args.products, pcov=args.pcov, ptile=args.ptile, fetch=args.fetch)
             if args.command == 'inventory': 
                 inv.printcalendar(args.md)
             elif args.command == 'link':

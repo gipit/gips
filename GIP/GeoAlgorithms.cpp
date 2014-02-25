@@ -196,6 +196,10 @@ namespace gip {
 	//! Merge images into one file and crop to vector
 	GeoImage CookieCutter(vector<std::string> imgnames, string filename, string vectorname, float xres, float yres) {
 	    // TODO - pass in vector of GeoRaster's instead
+        if (Options::Verbose() > 2) {
+            std::cout << filename << ": CookieCutter" << std::endl;
+        }
+
         // Open input images
         vector<GeoImage> imgs;
         vector<std::string>::const_iterator iimgs;
@@ -208,6 +212,7 @@ namespace gip {
         OGRLayer *poLayer = poDS->GetLayer(0);
         OGREnvelope extent;
         poLayer->GetExtent(&extent, true);
+        // Need to convert extent to resolution units
         int xsize = (int)(0.5 + (extent.MaxX - extent.MinX) / xres);
         int ysize = (int)(0.5 + (extent.MaxY - extent.MinY) / yres);
         GeoImage imgout(filename, xsize, ysize, bsz, dtype);
@@ -316,6 +321,7 @@ namespace gip {
         // Perform warp for each input file
         vector<GeoImage>::iterator iimg;
         for (iimg=imgs.begin();iimg!=imgs.end();iimg++) {
+            if (Options::Verbose() > 2) std::cout << "Warping file " << iimg->Basename() << std::endl;
             psWarpOptions->hSrcDS = iimg->GetGDALDataset();
             psWarpOptions->pTransformerArg =
                 GDALCreateGenImgProjTransformer( iimg->GetGDALDataset(), iimg->GetGDALDataset()->GetProjectionRef(),
@@ -323,7 +329,6 @@ namespace gip {
             psWarpOptions->pfnTransformer = GDALGenImgProjTransform;
             oOperation.Initialize( psWarpOptions );
             //std::cout << CPLGetLastErrorMsg() << std::endl;
-            if (Options::Verbose() > 2) std::cout << "Warping file " << iimg->Basename() << std::endl;
             oOperation.ChunkAndWarpMulti( 0, 0, imgout.XSize(), imgout.YSize() );
 
             GDALDestroyGenImgProjTransformer( psWarpOptions->pTransformerArg );
@@ -412,6 +417,7 @@ namespace gip {
             }
 
             for (iprod=products.begin(); iprod!=products.end(); iprod++) {
+                std::cout << "product = " << *iprod << std::endl;
                 //string p = iprod->toupper();
                 if (*iprod == "NDVI") {
                     cimgout = (nir-red).div(nir+red);
@@ -445,6 +451,7 @@ namespace gip {
                 imagesout[*iprod].Write(cimgout,iChunk);
             }
         }
+        //return imagesout;
 	}
 
 	//! Auto cloud mask - toaref input
@@ -905,6 +912,108 @@ namespace gip {
         //imgout.GetGDALDataset()->FlushCache();
         return imgout;
     }
+/*
+    //! Rice detection algorithm
+    GeoImage RiceDetect(const GeoImage& img, string filename, vector<int> days, int maxcrops, float th0, float th1, int dth0, int dth1) {
+
+        GeoImageIO<float> imgio(img);
+        int numbands = 2 * maxcrops + 3;
+        GeoImage imgout(filename, img, GDT_Byte, numband);
+        GeoImage<unsigned char> imgoutio(imgout);
+
+        if (Options::Verbose() > 1) {
+            vector<int>::const_iterator v;
+            std::cout << "Days ";
+            for (v=days.begin(); v!=days.end(); v++) std::cout << *v << " ";
+            std::cout << endl;
+        }
+
+        int chunknum(0);
+        int peaknum(0);
+        for (int iChunk=1; iChunk<=image[0].NumChunks(); iChunk++) {
+            CImgList<T> CImage( Image.ReadAsList(*iChunk) );
+            CImgList<T> CImageOut( ImageOut.ReadAsList(*iChunk) );
+
+            CImg<int> cimgout1, cimgout2;
+
+            // get chunk size?
+            p1 = iChunk->min_corner();
+            p2 = iChunk->max_corner();
+            width = p2.x()-p1.x()+1;
+            height = p2.y()-p1.y()+1;
+            // Reset running DOY to all zero
+            CImg<int> DOY( width, height, 1, 1, 0 );
+
+            CImg<int> Clow, Chigh, matched;
+
+            // Seed with first band
+            CImg<float> cimg = imgio[0].Read(iChunk);
+            CImg<int> ClowEver( cimg.get_threshold(th0)^1 );
+            CImg<int> ChighEver( cimg.get_threshold(th1,false,true) );
+            cimgout1 = ClowEver;
+            cimgout2 = ChighEver;
+            for (unsigned int b=1;b<Image.NumBands();b++) {
+                cimg = imgio[b].Read(iChunk);
+                // Get low and high thresholds for this band
+                Clow = cimg.get_threshold(th0);
+                Chigh = cimg.get_threshold(th1,false,true);
+
+                // Temporal processing
+                // Where <= low threshold, set DOY to 0
+                DOY.mul(Clow);
+                // Where > low threshold, add to previous DOY
+                DOY += Clow * doy[b];
+
+                // Update flags if it was Ever low/high
+                ClowEver |= (Clow^=1); // Clow now represents <= th0
+                ChighEver |= Chigh;
+
+                // Add to number of troughs/peaks
+                cimgout1 += Clow;
+                cimgout2 += Chigh;
+
+                // More temporal processing
+                // If low threshold was never met, change DOY to zero
+                DOY.mul(ClowEver^1);
+                Chigh = Chigh & DOY.get_threshold(dth0,true) & (DOY.get_threshold(dth1)^1);
+                matched += Chigh;
+                // Reset if high date has passed
+                DOY.mul(DOY.get_threshold(dth1));
+                // Loop through
+                if (maxcrops != 0) {
+                    cimg_forXY(CImageOut[0],x,y) {
+                        if (Clow(x,y)) {
+                            peaknum = CImageOut[1](x,y);
+                            if (peaknum > 0 && peaknum <= maxcrops) {
+                                CImageOut[(peaknum-1)*2+3](x,y) = doy[b];
+                            }
+                        }
+                        if (Chigh(x,y)) {
+                            peaknum = CImageOut[2](x,y);
+                            if (peaknum > 0 && peaknum <= maxcrops) {
+                                CImageOut[(peaknum-1)*2+4](x,y) = doy[b];
+                                // Day of Year
+                                CImageOut[(peaknum-1)*2+3](x,y) = DOY(x,y); // * Chigh(x,y);
+                                // Yield (value)
+                                CImageOut[(peaknum-1)*2+4](x,y) = CImage[b](x,y);
+                            }
+                        }
+
+                    }
+                }
+            }
+            CImageOut[0] = ClowEver & ChighEver;
+            CImg<T> tmp = CImageOut[0].get_threshold(0);
+            for (unsigned int c=0;c<CImageOut.size();c++) {
+                CImageOut[c].mul(tmp);
+            }
+
+            // Write out images
+            ImageOut.Write(CImageOut.get_append('c'), *iChunk, true);
+        }
+
+    }
+*/
 
     // Perform band math (hard coded subtraction)
     /*GeoImage BandMath(const GeoImage& image, string filename, int band1, int band2) {

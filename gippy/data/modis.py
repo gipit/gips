@@ -21,7 +21,7 @@ class ModisData(Data):
     }
     _rootdir = '/titan/data/modis/tiles'
     _tiles_vector = '/titan/data/vector/MODIS/modis_sinusoidal/modis_sinusoidal_grid_world.shp'
-    _pattern = 'M?D????.????????.h??v??.???.hdf'
+    _assetpattern = 'M?D????.????????.h??v??.???.hdf'
 
     _prodpattern = '*.tif'
     #_metapattern = 'MTL.txt'
@@ -70,19 +70,15 @@ class ModisData(Data):
             List2File(datafiles, indexfile)
 
         return {
-
             # required
             'filename': filename,
             'datafiles': datafiles,
             'tile': tile,
             'date': datetime.datetime.strptime(year+doy, "%Y%j").date(),
-            'basename': 'MODIS_',
+            'basename': 'MODIS'+tile+'_'+year+doy,
             'sensor': sensor,
-
-            # optional
-
             'products': {'sds1': datafiles[0]}
-
+            # optional
         }
 
     @classmethod
@@ -95,16 +91,15 @@ class ModisData(Data):
         tile = "h%sv%s" % (h, v)
         return tile
 
-
     @classmethod
     def fetch(cls, tile, date, products):
 
-        VerboseOut('about to fetch', 1)
+        VerboseOut('about to fetch',2)
 
         #VerboseOut(dir(self), 1)
 
-        VerboseOut(self.products, 1)
-        VerboseOut(self._products, 1)
+        VerboseOut(self.products,3)
+        VerboseOut(self._products,3)
 
         #set_trace()
         #VerboseOut(self.path( self.tiles.keys()[0] , self.date ), 1)
@@ -150,6 +145,5 @@ class ModisData(Data):
                         print 'unable to retrieve %s from %s' % (name, url)
 
             time.sleep(2)
-
 
 def main(): ModisData.main()

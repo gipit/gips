@@ -17,19 +17,23 @@ class CDLData(Data):
     _defaultresolution = [30.0,30.0]
     _rootdir = '/titan/data/CDL/tiles'
     _datedir = '%Y'
-    _pattern = 'CDL*.tif'
     _tiles_vector = 'usa_states'
     _tiles_attribute = 'state_name'
     _products = {
         'cdl': {'description': 'Crop Data Layer'}
     }
+    _assets = {
+        '': {
+            'pattern': 'CDL*.tif'
+        }
+    }
+
     _legend_file = _rootdir + '/../CDL_Legend.csv'
     _legend = map(lambda x: x.lower(), Table(csvfile=_legend_file)['ClassName'])
 
     @classmethod
     def inspect(cls, filename):
-        bname = os.path.basename(filename)
-        path = os.path.dirname(filename)
+        path,bname = os.path.split(filename)
         # not implemented for archive purposes
         tile = os.path.basename(path)
         return {
@@ -50,7 +54,8 @@ class CDLData(Data):
             raise Exception('More than 1 file found for same tile/date')
         return self.inspect(filename[0])
 
-    def find_raw(self, tile):
+    # _datedir used inappropriately elsewhere. if it wasn't this could be removed (use Data.find_assets)
+    def find_assets(self, tile):
         return glob.glob(os.path.join(self._rootdir, tile, 'CDL_%s_*.tif' % self.date.strftime('%Y')))
 
     def process(self,**kwargs):

@@ -26,7 +26,6 @@ class SARData(Data):
     _rootdir = '/titan/data/SAR/tiles'
     #_datedir = '%Y%j'
     _tiles_vector = '/titan/data/SAR/tiles.shp'
-    _pattern = 'KC_*.tar.gz'
     _prodpattern = '*'
     _metapattern = '.hdr'
     _products = OrderedDict([
@@ -34,6 +33,12 @@ class SARData(Data):
             'description': 'Sigma nought (radar backscatter coefficient)',
         }),
     ])
+
+    _assets = {
+        '': {
+            'pattern': 'KC_*.tar.gz'
+        }
+    }
 
     # SAR specific constants
     # launch dates for PALSAR (A) and JERS-1 (J)
@@ -150,16 +155,16 @@ class SARData(Data):
 
     def meta(self, tile):
         """ Get metadata for this tile """
-        #meta = self.inspect(filename)
-        meta = self.tiles[tile]
+        tdata = self.tiles[tile]
         # add info from headerfile
-        tfile = tarfile.open(meta['filename'])
-        path = self.path(meta['tile'],meta['date'])
-        hdrfile = os.path.join(path,meta['hdrfile'])
-        if not os.path.exists(hdrfile):
-            tfile.extract(meta['hdrfile'],path)
-        meta.update( self._meta(hdrfile) ) 
-        return meta
+        tfile = tarfile.open(tdata['assets'][0])
+        for f in tdata['datafiles'][ tdata['assets'][0] ]:
+            if f[-3:] == 'hdr': hdr_bname = f
+        hdr_fname = os.path.join(tdata['path'],hdr_bname)
+        if not os.path.exists(hdr_fname):
+            tfile.extract(hdr_bname, tdata['path'])
+        #tdata.update( self._meta(hdr_fname) ) 
+        return self._meta(hdr_fname)
 
     @classmethod
     def _meta(cls,hdrfile):
@@ -187,55 +192,54 @@ class SARData(Data):
         return meta
 
     def _extract(self,tile):
+        tdata = self.tiles[tile]
         meta = self.meta(tile)
-        path,bname = os.path.split(meta['filename'])
-        if tarfile.is_tarfile(meta['filename']):
-            tfile = tarfile.open(meta['filename'])
-        else: raise Exceptin('%s is not a valid tar file' % bname)
-        tfile.extractall(path)
-        prods = {}
-        for f in self.tiles[tile]['datafiles']:
-            filename = os.path.join(path,f)
+        asset_name = self.tiles[tile]['assets'][0]
+        if tarfile.is_tarfile(asset_name):
+            tfile = tarfile.open(asset_name)
+        else: raise Exception('%s is not a valid tar file' % os.path.basename(asset_name))
+        tfile.extractall(tdata['path'])
+        datafiles = {}
+        for f in tdata['datafiles'][asset_name]:
+            filename = os.path.join(tdata['path'],f)
             try:
                 os.chmod(filename,0664)
             except: pass
             #if not os.path.exists(fname+'.hdr'):
-            bandname = f[len(meta['basename'])+1:]
+            bandname = f[len(tdata['basename'])+1:]
             envihdr = copy.deepcopy(meta['envihdr'])
             if bandname in ['mask','linci']: envihdr[6] = 'data type = 1'
             envihdr.append('band names={%s}' % bandname)
             List2File(envihdr,filename+'.hdr') 
-            prods[bandname] = filename
-        # update with available products
-        self.tiles[tile]['products'].update(prods)
+            datafiles[bandname] = filename
+        return datafiles
 
     def processtile(self, tile, products):
         """ Make sure all products have been pre-processed """
         if len(products) == 0: raise Exception('Tile %s: No products specified' % tile)
         # extract all data from archive
-        self._extract(tile)
+        tdata = self.tiles[tile]
+        datafiles = self._extract(tile)
         meta = self.meta(tile)
         if 'sign' in products.keys():
-            avail = self.tiles[tile]['products']
-            bands = [b for b in self._databands if b in avail]
-            img = gippy.GeoImage(avail[bands[0]]) 
+            bands = [b for b in self._databands if b in datafiles]
+            img = gippy.GeoImage(datafiles[bands[0]]) 
             del bands[0]
-            for b in bands: img.AddBand(gippy.GeoImage(avail[b])[0])
+            for b in bands: img.AddBand(gippy.GeoImage(datafiles[b])[0])
             img.SetNoData(0)
-            mask = gippy.GeoImage(avail['mask'],False)
+            mask = gippy.GeoImage(datafiles['mask'],False)
             img.AddMask(mask[0] == 255)
             # apply date mask
-            dateimg = gippy.GeoImage(avail['date'],False)
-            dateday = (meta['date'] - self._launchdate[meta['sensor'][0]]).days
+            dateimg = gippy.GeoImage(datafiles['date'],False)
+            dateday = (self.date - self._launchdate[self.sensor[0]]).days
             img.AddMask(dateimg[0] == dateday)
             imgout = gippy.SigmaNought(img, products['sign'], meta['CF'])
-            avail['sign'] = imgout.Filename()
+            self.tiles[tile]['products']['sign'] = imgout.Filename()
 
         # Remove unused stuff
-        for k in ['linci','mask','date'] + self._databands:
-            if k in self.tiles[tile]['products']:
-                RemoveFiles([self.tiles[tile]['products'][k],self.tiles[tile]['products'][k]+'.hdr',self.tiles[tile]['products'][k]+'.aux.xml'])
-                del self.tiles[tile]['products'][k]
+        rmfiles = [k for k in ['linci','mask','date'] + self._databands if k in tdata['products']]
+        for f in rmfiles:
+            RemoveFiles([self.tiles[tile]['products'][f],self.tiles[tile]['products'][f]+'.hdr',self.tiles[tile]['products'][f]+'.aux.xml'])
 
     @classmethod
     def feature2tile(cls,feature):
