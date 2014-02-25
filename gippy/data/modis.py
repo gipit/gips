@@ -106,8 +106,8 @@ class ModisData(Data):
         VerboseOut(self.products, 1)
         VerboseOut(self._products, 1)
 
-        set_trace()
-            VerboseOut(self.path( self.tiles.keys()[0] , self.date ), 1)
+        #set_trace()
+        #VerboseOut(self.path( self.tiles.keys()[0] , self.date ), 1)
 
         assets = set()
         for product in products:
