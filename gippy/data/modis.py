@@ -1,5 +1,8 @@
 import os
+import re
+import time
 import datetime
+import urllib
 from osgeo import gdal
 from collections import OrderedDict
 
@@ -29,8 +32,12 @@ class ModisData(Data):
         'MOD11A1': {
             'pattern': 'MOD11A1.????????.h??v??.???.hdf',
             'url': 'http://e4ftl01.cr.usgs.gov/MOLT/MOD11A1.005'
-            }
+        },
+        'MYD11A1': {
+            'pattern': 'MYD11A1.????????.h??v??.???.hdf',
+            'url': 'http://e4ftl01.cr.usgs.gov/MOLT/MYD11A1.005'
         }
+    }
 
     _prodpattern = '*.tif'
 
@@ -40,12 +47,12 @@ class ModisData(Data):
         ('temp', {
             'description': 'Surface temperature observations',
             # the list of asset types associated with this product
-            'depends': ['MOD11A1', 'MYD11A1'],
+            'assets': ['MOD11A1', 'MYD11A1'],
         }),
         ('sds1', {
             'description': 'First SDS in the file',
             # the list of asset types associated with this product
-            'depends': ['MOD11A1'],
+            'assets': ['MOD11A1'],
         }),
     ])
 
@@ -104,32 +111,32 @@ class ModisData(Data):
     @classmethod
     def fetch_asset(cls, asset, tile, date):
 
-        print "about to fetch"
-        VerboseOut('about to fetch',1)
-        VerboseOut('about to fetch4',4)
-
-        #set_trace()
-        #VerboseOut(self.path( self.tiles.keys()[0] , self.date ), 1)
-
-        #httploc = 'http://e4ftl01.cr.usgs.gov/MOLT/MOD11A1.005' # only some datasets available here
+        VerboseOut('about to fetch',4)
 
         httploc = cls._assets[asset]['url']
 
         year, month, day = date.timetuple()[:3]
-        doy = date.timetuple[7]
+        doy = date.timetuple()[7]
 
-        pattern = ''.join(['(', asset, '.A', year, doy, '.', tile, '.005.\d{13}.hdf)'])
-        mainurl = ''.join([httploc, '/', year, '.', '%02d'%month, '.', '%02d'%day])
+        pattern = ''.join(['(', asset, '.A', str(year), str(doy).zfill(3), '.', tile, '.005.\d{13}.hdf)'])
+        mainurl = ''.join([httploc, '/', str(year), '.', '%02d'%month, '.', '%02d'%day])
+
+        print "mainurl"
+        print mainurl
+
+        print "pattern"
+        print pattern
 
         try:
             VerboseOut('opening listing', 1)
-            # listing = urllib.urlopen(mainurl).readlines()
+            listing = urllib.urlopen(mainurl).readlines()
         except Exception, e:
             listing = None
             print 'unable to access %s' % mainurl
-            
+
         cpattern = re.compile(pattern)
         name = None
+
         for item in listing:
             if cpattern.search(item):
                 if 'xml' in item:
@@ -140,9 +147,10 @@ class ModisData(Data):
                 url = ''.join([mainurl, '/', name])
                 print 'the url is', url
                 try:
-                    urllib.urlretrieve(url, os.path.join(self._stage, name))
-                    retrieved.append(name)
+                    urllib.urlretrieve(url, os.path.join(cls._stage, name))
+                    print "retrieved %s" % name
                 except Exception, e:
+                    print e
                     print 'unable to retrieve %s from %s' % (name, url)
 
         time.sleep(2)
