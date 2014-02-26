@@ -12,6 +12,8 @@
 #include <gip/GeoRaster.h>
 #include <initializer_list>
 
+ #include <gip/GeoImageIO.h>
+
 namespace gip {
 
     //! Test function

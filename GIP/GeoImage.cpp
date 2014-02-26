@@ -6,7 +6,6 @@
 namespace gip {
     using std::string;
     using std::vector;
-    typedef boost::geometry::model::box<point> bbox;
 
 	// Copy constructor
 	GeoImage::GeoImage(const GeoImage& image)
@@ -116,7 +115,7 @@ namespace gip {
 		typedef float T;
 		for (unsigned int b=0;b<NumBands();b++) {
 			GeoRasterIO<T> band((*this)[b]);
-			for (int iChunk=1; iChunk<=NumChunks(); iChunk++) {
+			for (unsigned int iChunk=1; iChunk<=NumChunks(); iChunk++) {
 				CImg<T> img = band.ReadRaw(iChunk);
 				T nodata = band.NoDataValue();
 				cimg_for(img,ptr,T)	if ( std::isinf(*ptr) || std::isnan(*ptr) ) *ptr = nodata;
@@ -170,7 +169,6 @@ namespace gip {
 			_GDALDataset.reset();
 			_GDALDataset = _RasterBands[index]._GDALDataset;
 		}
-		Chunk();
 	}
 
 } // namespace gip

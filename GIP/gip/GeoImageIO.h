@@ -15,7 +15,6 @@ namespace gip {
 
 	template<class T> class GeoImageIO : public GeoImage {
 	public:
-        typedef boost::geometry::model::box<point> bbox;
 		//! \name Constructors/Destructor
 		GeoImageIO() {}
 		GeoImageIO(GeoImage& img)

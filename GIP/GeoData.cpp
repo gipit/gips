@@ -12,8 +12,6 @@
 
 namespace gip {
     using std::string;
-    typedef boost::geometry::model::d2::point_xy<float> point;
-    typedef boost::geometry::model::box<point> bbox;
 
     // Options given initial values here
 	//boost::filesystem::path Options::_ConfigDir("/usr/share/gip/");
@@ -44,7 +42,7 @@ namespace gip {
 	GeoData::GeoData(int xsz, int ysz, int bsz, GDALDataType datatype, string filename, dictionary options)
 		:_Filename(filename) {
         if (Options::Verbose() > 3)
-            std::cout << Basename() << ": create new " << datatype << " file " << xsz << "x" << ysz << "x" << bsz << std::endl;
+            std::cout << Basename() << ": create new file " << xsz << " x " << ysz << " x " << bsz << std::endl;
 		string format = Options::DefaultFormat();
 		//if (format == "GTiff" && datatype == GDT_Byte) options["COMPRESS"] = "JPEG";
 		//if (format == "GTiff") options["COMPRESS"] = "LZW";
@@ -65,7 +63,7 @@ namespace gip {
 
 	// Copy constructor
 	GeoData::GeoData(const GeoData& geodata)
-		: _Filename(geodata._Filename), _GDALDataset(geodata._GDALDataset), _Chunks(geodata._Chunks) {
+		: _Filename(geodata._Filename), _GDALDataset(geodata._GDALDataset), _Chunks(geodata._Chunks), _PadChunks(geodata._PadChunks) {
 	}
 
 	// Assignment copy
@@ -76,6 +74,7 @@ namespace gip {
 		_Filename = geodata._Filename;
 		_GDALDataset = geodata._GDALDataset;
 		_Chunks = geodata._Chunks;
+		_PadChunks = geodata._PadChunks;
 		return *this;
 	}
 
@@ -103,10 +102,10 @@ namespace gip {
 	}*/
 
     // Using GDALDatasets GeoTransform get Geo-located coordinates
-	point GeoData::GeoLoc(float xloc, float yloc) const {
+	Point<double> GeoData::GeoLoc(float xloc, float yloc) const {
 		double Affine[6];
 		_GDALDataset->GetGeoTransform(Affine);
-		point Coord(Affine[0] + xloc*Affine[1] + yloc*Affine[2], Affine[3] + xloc*Affine[4] + yloc*Affine[5]);
+		Point<double> Coord(Affine[0] + xloc*Affine[1] + yloc*Affine[2], Affine[3] + xloc*Affine[4] + yloc*Affine[5]);
 		return Coord;
 	}
 
@@ -142,25 +141,28 @@ namespace gip {
 	}
 
 	//! Break up image into smaller size pieces, each of ChunkSize
-	void GeoData::Chunk() const {
+	void GeoData::Chunk(unsigned int pad) const {
         unsigned int rows = floor( ( Options::ChunkSize() *1024*1024) / sizeof(double) / XSize() );
 		rows = rows > YSize() ? YSize() : rows;
 		int numchunks = ceil( YSize()/(float)rows );
-		//std::vector<bbox> Chunks;
 		_Chunks.clear();
-		for (int i=0; i<numchunks; i++) {
-			point p1(0,rows*i);
-			point p2(XSize()-1, std::min((rows*(i+1)-1),YSize()-1));
-			bbox chunk(p1,p2);
-			_Chunks.push_back(chunk);
-		}
+		_PadChunks.clear();
+		iRect chunk;
 		if (Options::Verbose() > 4) {
-		    int i(0);
-		    std::cout << "Chunked " << Basename() << " into " << _Chunks.size() << " chunks (" << Options::ChunkSize() << " MB max each)"<< std::endl;
-            for (std::vector<bbox>::const_iterator iChunk=_Chunks.begin(); iChunk!=_Chunks.end(); iChunk++)
-                std::cout << "  Chunk " << i++ << ": " << boost::geometry::dsv(*iChunk) << std::endl;
+			std::cout << Basename() << ": chunking into " << numchunks << " chunks (" 
+				<< Options::ChunkSize() << " MB max each)" << " with pad = " << pad << std::endl;
 		}
-		//return Chunks;
+		for (int i=0; i<numchunks; i++) {
+			chunk = iRect( iPoint(0,rows*i),iPoint(XSize()-1,std::min(rows*(i+1)-1,YSize()-1)) );
+			_Chunks.push_back(chunk);
+			if (Options::Verbose() > 4) std::cout << "  Chunk " << i << ": " << chunk << std::endl;
+
+			if (pad > 0) {
+				chunk.Pad(pad).Intersect(iRect(0,0,XSize()-1,YSize()-1));
+				if (Options::Verbose() > 4) std::cout << "  PadChunk " << i << ": " << chunk << std::endl;
+			}
+			_PadChunks.push_back(chunk);
+		}
 	}
 
 	// Copy collection of meta data
