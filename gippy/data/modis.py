@@ -111,6 +111,8 @@ class ModisData(Data):
     @classmethod
     def fetch_asset(cls, asset, tile, date):
 
+        print asset, tile, date
+        
         VerboseOut('about to fetch',4)
 
         httploc = cls._assets[asset]['url']
@@ -137,6 +139,7 @@ class ModisData(Data):
         cpattern = re.compile(pattern)
         name = None
 
+        success = False
         for item in listing:
             if cpattern.search(item):
                 if 'xml' in item:
@@ -149,9 +152,13 @@ class ModisData(Data):
                 try:
                     urllib.urlretrieve(url, os.path.join(cls._stage, name))
                     print "retrieved %s" % name
+                    success =  True
                 except Exception, e:
                     print e
                     print 'unable to retrieve %s from %s' % (name, url)
+
+        if not success:
+            print "did not find a match for %s in listing of %s" % (pattern, mainurl)
 
         time.sleep(2)
 
