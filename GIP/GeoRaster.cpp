@@ -91,7 +91,7 @@ namespace gip {
         double count(0), total(0), val;
         double min(MaxValue()), max(MinValue());
 
-        for (int iChunk=1; iChunk<=NumChunks(); iChunk++) {
+        for (unsigned int iChunk=1; iChunk<=NumChunks(); iChunk++) {
             cimg = img.Read(iChunk);
             cimg_for(cimg,ptr,double) {
                 if (*ptr != NoDataValue()) {
@@ -105,7 +105,7 @@ namespace gip {
         float mean = total/count;
         total = 0;
         double total3(0);
-        for (int iChunk=1; iChunk<=NumChunks(); iChunk++) {
+        for (unsigned int iChunk=1; iChunk<=NumChunks(); iChunk++) {
             cimg = img.Read(iChunk);
             cimg_for(cimg,ptr,double) {
                 if (*ptr != NoDataValue()) {
@@ -147,7 +147,7 @@ namespace gip {
         long numpixels(0);
         float nodata = NoDataValue();
         GeoRasterIO<double> img(*this);
-        for (int iChunk=1; iChunk<=NumChunks(); iChunk++) {
+        for (unsigned int iChunk=1; iChunk<=NumChunks(); iChunk++) {
             cimg = img.Read(iChunk);
             cimg_for(cimg,ptr,double) {
                 if (*ptr != nodata) {

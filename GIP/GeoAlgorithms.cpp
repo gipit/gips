@@ -41,8 +41,6 @@ namespace gip {
 	using std::vector;
 	using std::cout;
 	using std::endl;
-	typedef boost::geometry::model::d2::point_xy<float> point;
-	typedef boost::geometry::model::box<point> bbox;
 
 	void test(const GeoImage& img) {
 	    cout << img.Info() << endl;
@@ -63,23 +61,24 @@ namespace gip {
 	GeoRaster CreateMask(const GeoImage& image, string filename) {
 		typedef float T;
 
-		GeoImageIO<T> imageIO(image);
+		GeoImageIO<T> img(image);
 		CImg<T> imgchunk;
 
 		//if (filename == "") filename = image.Basename() + "_mask";
-		GeoImage mask(filename, image, GDT_Byte, 1);
+		GeoImage mask(filename, img, GDT_Byte, 1);
 		GeoRasterIO<unsigned char> mask0(mask[0]);
 		CImg<unsigned char> imgout;
 		mask.SetNoData(0);
 		//unsigned int validpixels(0);
-        for (int iChunk=1; iChunk<=imageIO[0].NumChunks(); iChunk++) {
+        mask0.Chunk();
+        for (unsigned int iChunk=1; iChunk<=img[0].NumChunks(); iChunk++) {
         	//imgchunk = imageIO[0].Read(*iChunk);
 			//imgout = Pbands[0].NoDataMask(imgchunk);
 			//for (unsigned int b=1;b<image.NumBands();b++) {
             //        imgout &= Pbands[b].NoDataMask( Pbands[b].Read(*iChunk) );
 			//}
 			//validpixels += imgout.sum();
-			imgout = imageIO.NoDataMask(iChunk);
+			imgout = img.NoDataMask(iChunk);
 			mask0.Write(imgout,iChunk);
 		}
 		//mask[0].SetValidSize(validpixels);
@@ -88,109 +87,115 @@ namespace gip {
 
 	//! Calculate Radiance
 	// TODO - combine with Copy/Process
-	GeoImage Rad(const GeoImage& img, string filename) {
-	    if (img[0].Units() != "radiance") {
+	GeoImage Rad(const GeoImage& image, string filename) {
+	    if (image[0].Units() != "radiance") {
 	        throw std::runtime_error("image not in radiance units");
 	    }
-	    img.SetUnitsOut("radiance");
-        typedef float T;
-        GeoImageIO<T> imgIO(img);
-        GeoImageIO<T> imgoutIO(GeoImage(filename, img, GDT_Int16));
-        imgoutIO.SetNoData(-32768); // TODO - set nodata option
-        imgoutIO.SetGain(0.1);
-        imgoutIO.SetUnits("radiance");
-        CImg<T> cimg;
+	    image.SetUnitsOut("radiance");
+        GeoImageIO<float> img(image);
+        GeoImageIO<float> imgout(GeoImage(filename, img, GDT_Int16));
+        imgout.SetNoData(-32768); // TODO - set nodata option
+        imgout.SetGain(0.1);
+        imgout.SetUnits("radiance");
+        CImg<float> cimg;
         Colors colors = img.GetColors();
         CImg<unsigned char> nodata;
         for (unsigned int b=0;b<img.NumBands();b++) {
-            imgoutIO.SetColor(colors[b+1], b+1);
-            for (int iChunk=1; iChunk<=imgIO[b].NumChunks(); iChunk++) {
-                cimg = imgIO[b].Read(iChunk);
-                nodata = imgIO[b].NoDataMask(iChunk);
+            imgout.SetColor(colors[b+1], b+1);
+            img[b].Chunk();
+            imgout[b].Chunk();
+            for (unsigned int iChunk=1; iChunk<=img[b].NumChunks(); iChunk++) {
+                cimg = img[b].Read(iChunk);
+                nodata = img[b].NoDataMask(iChunk);
                 // only if nodata not same between input and output images
-                cimg_forXY(cimg,x,y) { if (!nodata(x,y)) cimg(x,y) = imgoutIO[b].NoDataValue(); }
-                imgoutIO[b].Write(cimg,iChunk);
+                cimg_forXY(cimg,x,y) { if (!nodata(x,y)) cimg(x,y) = imgout[b].NoDataValue(); }
+                imgout[b].Write(cimg,iChunk);
             }
         }
-        return imgoutIO;
+        return imgout;
 	}
 
     //! Calculate reflectance assuming read image is radiance
-	GeoImage Ref(const GeoImage& img, string filename) {
-	    if ((img[0].Units() != "radiance") && (img[0].Units() != "reflectance")) {
+	GeoImage Ref(const GeoImage& image, string filename) {
+        if (Options::Verbose() > 1)
+            std::cout << "Reflectance(" << image.Basename() << ") -> " << filename << std::endl;
+	    if ((image[0].Units() != "radiance") && (image[0].Units() != "reflectance")) {
 	        throw std::runtime_error("image not in compatible units for reflectance");
 	    }
-	    img.SetUnitsOut("reflectance");
-	    typedef float t;
-        GeoImageIO<t> imgIO(img);
-        GeoImageIO<t> imgoutIO(GeoImage(filename, img, GDT_Int16));
-        imgoutIO.SetNoData(-32768); // TODO - set nodata option
-        imgoutIO.SetUnits("reflectance");
+        image.SetUnitsOut("reflectance");
+        GeoImageIO<float> img(image);
+        GeoImageIO<float> imgout(GeoImage(filename, img, GDT_Int16));
+        imgout.SetNoData(-32768); // TODO - set nodata option
+        imgout.SetUnits("reflectance");
         CImg<float> cimg;
         CImg<unsigned char> nodata;
         Colors colors = img.GetColors();
         for (unsigned int b=0;b<img.NumBands();b++) {
-            if (img[b].Thermal()) imgoutIO[b].SetGain(0.01); else imgoutIO[b].SetGain(0.0001);
-            imgoutIO.SetColor(colors[b+1], b+1);
-            for (int iChunk=1; iChunk<=img[b].NumChunks(); iChunk++) {
-                cimg = imgIO[b].Read(iChunk);
-                nodata = imgIO[b].NoDataMask(iChunk);
-                cimg_forXY(cimg,x,y) { if (!nodata(x,y)) cimg(x,y) = imgoutIO[b].NoDataValue(); }
-                imgoutIO[b].Write(cimg,iChunk);
+            if (img[b].Thermal()) imgout[b].SetGain(0.01); else imgout[b].SetGain(0.0001);
+            imgout.SetColor(colors[b+1], b+1);
+            img[b].Chunk();
+            imgout[b].Chunk();
+            for (unsigned int iChunk=1; iChunk<=img[b].NumChunks(); iChunk++) {
+                cimg = img[b].Read(iChunk);
+                nodata = img[b].NoDataMask(iChunk);
+                cimg_forXY(cimg,x,y) { if (!nodata(x,y)) cimg(x,y) = imgout[b].NoDataValue(); }
+                imgout[b].Write(cimg,iChunk);
             }
         }
-        return imgoutIO;
+        return imgout;
 	}
 
 	//! Calculate radar backscatter for all bands
-	GeoImage SigmaNought(const GeoImage& img, string filename, float CF) {
-	    GeoImageIO<float> imgIO(img);
-	    GeoImageIO<float> imgoutIO(GeoImage(filename, img, GDT_Float32));
+	GeoImage SigmaNought(const GeoImage& image, string filename, float CF) {
+	    GeoImageIO<float> img(image);
+	    GeoImageIO<float> imgout(GeoImage(filename, img, GDT_Float32));
 	    float nodataval = -32768;
-	    imgoutIO.SetNoData(nodataval);
+	    imgout.SetNoData(nodataval);
 	    img.SetUnitsOut("other");
-	    imgoutIO.SetUnits("other");
+	    imgout.SetUnits("other");
 	    CImg<float> cimg;
 	    CImg<unsigned char> nodata;
 	    Colors colors = img.GetColors();
         for (unsigned int b=0;b<img.NumBands();b++) {
-            imgoutIO.SetColor(colors[b+1], b+1);
-            for (int iChunk=1; iChunk<=img[b].NumChunks(); iChunk++) {
-                cimg = imgIO[b].Read(iChunk);
+            imgout.SetColor(colors[b+1], b+1);
+            img[b].Chunk();
+            imgout[b].Chunk();
+            for (unsigned int iChunk=1; iChunk<=img[b].NumChunks(); iChunk++) {
+                cimg = img[b].Read(iChunk);
                 cimg = cimg.pow(2).log10() * 10 + CF;
-                nodata = imgIO[b].NoDataMask(iChunk);
+                nodata = img[b].NoDataMask(iChunk);
                 cimg_forXY(cimg,x,y) { if (!nodata(x,y)) cimg(x,y) = nodataval; }
-                imgoutIO[b].Write(cimg,iChunk);
+                imgout[b].Write(cimg,iChunk);
                 //imgoutIO[b].Write(nodata,iChunk);
             }
         }
-        return imgoutIO;
+        return imgout;
 	}
 
     //! Generate 3-band RGB image scaled to 1 byte for easy viewing
-    GeoImage RGB(const GeoImage& img, string filename) {
+    GeoImage RGB(const GeoImage& image, string filename) {
+        GeoImageIO<float> img(image);
         img.SetUnitsOut("reflectance");
-        GeoImageIO<float> imgIO(img);
-        imgIO.PruneToRGB();
-        GeoImageIO<unsigned char> imgoutIO(GeoImage(filename, imgIO, GDT_Byte));
-        imgoutIO.SetNoData(0);
-        imgoutIO.SetUnits("other");
+        img.PruneToRGB();
+        GeoImageIO<unsigned char> imgout(GeoImage(filename, img, GDT_Byte));
+        imgout.SetNoData(0);
+        imgout.SetUnits("other");
         CImg<float> stats, cimg;
         CImg<unsigned char> mask;
-        for (unsigned int b=0;b<imgIO.NumBands();b++) {
-            stats = imgIO[b].ComputeStats();
+        for (unsigned int b=0;b<img.NumBands();b++) {
+            stats = img[b].ComputeStats();
             float lo = std::max(stats(2) - 3*stats(3), stats(0)-1);
             float hi = std::min(stats(2) + 3*stats(3), stats(1));
-            for (int iChunk=1; iChunk<=imgIO[b].NumChunks(); iChunk++) {
-                cimg = imgIO[b].Read(iChunk);
-                mask = imgIO[b].NoDataMask(iChunk);
+            for (unsigned int iChunk=1; iChunk<=img[b].NumChunks(); iChunk++) {
+                cimg = img[b].Read(iChunk);
+                mask = img[b].NoDataMask(iChunk);
                 ((cimg-=lo)*=(255.0/(hi-lo))).max(0.0).min(255.0);
                 //cimg_printstats(cimg,"after stretch");
-                cimg_forXY(cimg,x,y) { if (!mask(x,y)) cimg(x,y) = imgoutIO[b].NoDataValue(); }
-                imgoutIO[b].Write(CImg<unsigned char>().assign(cimg.round()),iChunk);
+                cimg_forXY(cimg,x,y) { if (!mask(x,y)) cimg(x,y) = imgout[b].NoDataValue(); }
+                imgout[b].Write(CImg<unsigned char>().assign(cimg.round()),iChunk);
             }
         }
-        return imgoutIO;
+        return imgout;
     }
 
 	//! Merge images into one file and crop to vector
@@ -370,6 +375,7 @@ namespace gip {
             imagesout[*iprod].SetGain(0.0001);
             imagesout[*iprod].SetUnits("other");
             imagesout[*iprod][0].SetDescription(*iprod);
+            imagesout[*iprod][0].Chunk();
         }
         if (imagesout.size() == 0) throw std::runtime_error("No indices selected for calculation!");
 
@@ -401,7 +407,7 @@ namespace gip {
 		CImg<float> red, green, blue, nir, swir1, swir2, cimgout, cimgmask;
 
         // need to add overlap
-        for (int iChunk=1; iChunk<=ImageIn[0].NumChunks(); iChunk++) {
+        for (unsigned int iChunk=1; iChunk<=ImageIn[0].NumChunks(); iChunk++) {
             for (isstr=used_colors.begin();isstr!=used_colors.end();isstr++) {
                 if (*isstr == "RED") red = imgin["RED"].Read(iChunk);
                 else if (*isstr == "GREEN") green = imgin["GREEN"].Read(iChunk);
@@ -514,7 +520,7 @@ namespace gip {
         float cloudsum(0), scenesize(0);
 
         if (Options::Verbose()) cout << img.Basename() << " - ACCA" << endl;
-        for (int iChunk=1; iChunk<=imgin[0].NumChunks(); iChunk++) {
+        for (unsigned int iChunk=1; iChunk<=imgin[0].NumChunks(); iChunk++) {
             red = imgin["RED"].Read(iChunk);
             green = imgin["GREEN"].Read(iChunk);
             nir = imgin["NIR"].Read(iChunk);
@@ -613,7 +619,7 @@ namespace gip {
         //CImg<int> selem(esize,esize,1,1,1);
         // 3x3 filter of 1's for majority filter
         CImg<int> filter(3,3,1,1, 1);
-        for (int iChunk=1; iChunk<=imgin[0].NumChunks(); iChunk++) {
+        for (unsigned int iChunk=1; iChunk<=imgin[0].NumChunks(); iChunk++) {
             clouds = imgout[2].Read(iChunk);
             if (addclouds) clouds += imgout[1].Read(iChunk);
             // Majority filter
@@ -629,7 +635,7 @@ namespace gip {
 	}
 
     //! Fmask cloud mask
-    GeoImage Fmask(const GeoImage& image, string filename, int tolerance, int dilate) {
+    /*GeoImage Fmask(const GeoImage& image, string filename, int tolerance, int dilate) {
         image.SetUnitsOut("reflectance");
         GeoImageIO<float> imgin(image);
 
@@ -649,7 +655,7 @@ namespace gip {
         CImg<double> wstats(image.Size()), lstats(image.Size());
         int wloc(0), lloc(0);
 
-        for (int iChunk=1; iChunk<=image[0].NumChunks(); iChunk++) {
+        for (unsigned int iChunk=1; iChunk<=image[0].NumChunks(); iChunk++) {
             blue = imgin["BLUE"].Read(iChunk);
             red = imgin["RED"].Read(iChunk);
             green = imgin["GREEN"].Read(iChunk);
@@ -705,12 +711,12 @@ namespace gip {
             cimg_forXY(BT,x,y) if (wmask(x,y)) wstats[wloc++] = BT(x,y);
             cimg_forXY(BT,x,y) if (lmask(x,y)) lstats[lloc++] = BT(x,y);
 
-            /*lBT = BT;
-            wBT = BT;
-            cimg_forXY(BT,x,y) if (!wmask(x,y)) wBT(x,y) = nodata;
-            cimg_forXY(BT,x,y) if (!mask(x,y)) lBT(x,y) = nodata;
-            probout[0].WriteChunk(wBT,*iChunk);
-            probout[1].WriteChunk(lBT,*iChunk);*/
+            //lBT = BT;
+            //wBT = BT;
+            //cimg_forXY(BT,x,y) if (!wmask(x,y)) wBT(x,y) = nodata;
+            //cimg_forXY(BT,x,y) if (!mask(x,y)) lBT(x,y) = nodata;
+            //probout[0].WriteChunk(wBT,*iChunk);
+            //probout[1].WriteChunk(lBT,*iChunk);
         }
 
         // If not enough non-cloud pixels then return existing mask
@@ -742,7 +748,7 @@ namespace gip {
 
         // 2nd pass cloud probabilities over land
         CImg<float> wprob, lprob;
-        for (int iChunk=1; iChunk<=image[0].NumChunks(); iChunk++) {
+        for (unsigned int iChunk=1; iChunk<=image[0].NumChunks(); iChunk++) {
             // Cloud over Water prob
             BT = imgin["LWIR"].Read(iChunk);
             nodatamask = imgin.NoDataMask(iChunk);
@@ -777,7 +783,7 @@ namespace gip {
         CImg<int> erode_elem(esize,esize,1,1,1);
         CImg<int> dilate_elem(esize+dilate,esize+dilate,1,1,1);
 
-        for (int iChunk=1; iChunk<=image[0].NumChunks(); iChunk++) {
+        for (unsigned int iChunk=1; iChunk<=image[0].NumChunks(); iChunk++) {
             mask = imgout[0].Read(iChunk);
             wmask = imgout[1].Read(iChunk);
 
@@ -811,7 +817,7 @@ namespace gip {
 
         // NoData regions
         return imgout;
-    }
+    }*/
 
     //! Convert lo-high of index into probability
     GeoImage Index2Probability(const GeoImage& image, string filename, float min, float max) {
@@ -824,7 +830,7 @@ namespace gip {
         imageout.SetNoData(nodataout);
 
         CImg<float> cimgin, cimgout;
-        for (int iChunk=1; iChunk<=image[bandnum-1].NumChunks(); iChunk++) {
+        for (unsigned int iChunk=1; iChunk<=image[bandnum-1].NumChunks(); iChunk++) {
             cimgin = imagein[bandnum-1].Read(iChunk);
             cimgout = (cimgin - min)/(max-min);
             cimgout.min(1.0).max(0.0);
@@ -866,7 +872,7 @@ namespace gip {
             for (i=0; i<classes; i++) NumSamples(i) = 0;
             if (Options::Verbose()) cout << "  Iteration " << iteration+1 << std::flush;
 
-            for (int iChunk=1; iChunk<=image[0].NumChunks(); iChunk++) {
+            for (unsigned int iChunk=1; iChunk<=image[0].NumChunks(); iChunk++) {
                 C_img = img.Read(iChunk);
                 C_mask = img.NoDataMask(iChunk);
                 C_imgout = imgout[0].Read(iChunk);

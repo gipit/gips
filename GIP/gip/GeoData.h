@@ -3,20 +3,21 @@
 
 #include <vector>
 #include <string>
-//#include <map>
+#include <map>
 #include <gdal/gdal_priv.h>
 #include <boost/shared_ptr.hpp>
 
-#include <boost/geometry/geometry.hpp>
-#include <boost/geometry/geometries/point_xy.hpp>
 #include <boost/filesystem.hpp>
 
 #include <gip/Utils.h>
 
+#include <gip/geometry.h>
+
 namespace gip {
 	//class GeoData : boost::enable_shared_from_this<GeoData> {
-	typedef boost::geometry::model::d2::point_xy<float> point;
 	typedef std::map<std::string,std::string> dictionary;
+	typedef Rect<int> iRect;
+	typedef Point<int> iPoint;
 
 	class GeoData {
 	public:
@@ -59,11 +60,11 @@ namespace gip {
 		//! Total number of pixels
 		unsigned long Size() const { return XSize() * YSize(); }
 		//! Geolocated coordinates of a pixel
-		point GeoLoc(float xloc, float yloc) const;
+		Point<double> GeoLoc(float xloc, float yloc) const;
 		//! Coordinates of top left
-		point TopLeft() const { return GeoLoc(0,0); }
+		Point<double> TopLeft() const { return GeoLoc(0,0); }
 		//! Coordinates of bottom right
-		point LowerRight() const { return GeoLoc(XSize()-1,YSize()-1); }
+		Point<double> LowerRight() const { return GeoLoc(XSize()-1,YSize()-1); }
 
 		//! \name Metadata functions
 		//! Get metadata item
@@ -85,10 +86,13 @@ namespace gip {
 
 		//! \name Processing functions
         //! Get the number of chunks used for processing image
-		int NumChunks() const {
-            if (_Chunks.size() == 0) Chunk();
+		unsigned int NumChunks() const {
+			if (_Chunks.size() == 0) Chunk();
             return _Chunks.size();
 		}
+
+		//! Break up image into chunks
+		void Chunk(unsigned int = 0) const;
 
 	protected:
 		//! Filename to dataset
@@ -97,10 +101,9 @@ namespace gip {
 		boost::shared_ptr<GDALDataset> _GDALDataset;
 
 		//! Vector of chunk coordinates
-		mutable std::vector< boost::geometry::model::box<point> > _Chunks;
+		mutable std::vector< Rect<int> > _Chunks;
+		mutable std::vector< Rect<int> > _PadChunks;
 
-		//! Break up image into chunks
-		void Chunk() const;
 	}; //class GeoData
 
 } // namespace gip
