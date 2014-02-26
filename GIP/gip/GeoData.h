@@ -87,7 +87,7 @@ namespace gip {
 		//! \name Processing functions
         //! Get the number of chunks used for processing image
 		unsigned int NumChunks() const {
-			if (_Chunks.size() == 0) Chunk();
+			//if (_Chunks.size() == 0) Chunk();
             return _Chunks.size();
 		}
 

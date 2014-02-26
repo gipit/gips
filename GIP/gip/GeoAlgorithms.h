@@ -62,7 +62,7 @@ namespace gip {
 	//GeoImage AutoCloud(const GeoImage&, std::string, int=4000, float=0.2, float=14, float=0.2, int=20);
 
 	//! Create new file with a basic cloud mask
-	GeoImage Fmask(const GeoImage&, std::string, int=3, int=5);
+	//GeoImage Fmask(const GeoImage&, std::string, int=3, int=5);
 
     //! Rescale indices (between lo and hi) to between 0 and 1
     GeoImage Index2Probability(const GeoImage&, std::string, float, float);

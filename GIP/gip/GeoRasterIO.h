@@ -158,11 +158,12 @@ namespace gip {
 		//! Write raw CImg to file
 		GeoRasterIO<T>& WriteRaw(cimg_library::CImg<T> img, iRect chunk) {
             if (Options::Verbose() > 3) {
-            	std::cout << Basename() << ": writing " << chunk << std::endl;
-            	cimg_print(img,"img to write: ");
+            	std::cout << Basename() << ": writing " << img.width() << " x " 
+            		<< img.height() << " image to rect " << chunk << std::endl;
             }
 			CPLErr err = _GDALRasterBand->RasterIO(GF_Write, chunk.x0(), chunk.y0(), 
-				chunk.width(), chunk.height(), img.data(), img.width(), img.height(), this->Type(), 0, 0);
+				chunk.width(), chunk.height(), img.data(), img.width(), img.height(), 
+				this->Type(), 0, 0);
             if (err != CE_None) {
                 std::stringstream err;
                 err << "error writing " << CPLGetLastErrorMsg();
@@ -180,15 +181,11 @@ namespace gip {
 		    } else {
                 chunk = _Chunks[chunknum-1];
                 iRect pchunk = _PadChunks[chunknum-1];
-                cimg_print(img, "img before crop");
                 if (chunk != pchunk) {
-         			// Points of where to crop
                 	iPoint p0(chunk.p0()-pchunk.p0());
                 	iPoint p1 = p0 + iPoint(chunk.width()-1,chunk.height()-1);
-                	//std::cout << "crop = " << p0 << " - " << wchunk.p1() << std::endl;
                 	img.crop(p0.x(),p0.y(),p1.x(),p1.y());
                 }
-                cimg_print(img, "img after crop");
 		    }
             if (Gain() != 1.0 || Offset() != 0.0) {
                 cimg_for(img,ptr,T) if (*ptr != NoDataValue()) *ptr = (*ptr-Offset())/Gain();
