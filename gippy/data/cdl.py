@@ -19,14 +19,17 @@ class CDLData(Data):
     _datedir = '%Y'
     _tiles_vector = 'usa_states'
     _tiles_attribute = 'state_name'
-    _products = {
-        'cdl': {'description': 'Crop Data Layer'}
-    }
+
     _assets = {
         '': {
             'pattern': 'CDL*.tif'
         }
     }
+
+    _products = {
+        'cdl': {'description': 'Crop Data Layer'}
+    }
+
 
     _legend_file = _rootdir + '/../CDL_Legend.csv'
     _legend = map(lambda x: x.lower(), Table(csvfile=_legend_file)['ClassName'])

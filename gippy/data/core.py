@@ -42,10 +42,10 @@ class Data(object):
     _tiles_vector = ''
     # column name in _tiles_vector holding tile designation
     _tiles_attribute = 'tile'
-    # dictionary of available products for this dataset
-    _products = {}
     # dictionary of available assets for this dataset
     _assets = {}
+    # dictionary of available products for this dataset
+    _products = {}
     
     @classmethod
     def inspect(cls, filename):
@@ -188,7 +188,7 @@ class Data(object):
     def archive(cls, path='', link=True):
         """ Move files from directory to archive location """
         start = datetime.now()
-        fnames = glob.glob(os.path.join(path,cls._pattern))
+        fnames = [glob.glob(os.path.join(path,a['pattern'])) for a in cls._assets]
         qdir = os.path.join(cls._rootdir,'../quarantine')
         try:
             os.makedirs(qdir)
@@ -504,7 +504,7 @@ class Data(object):
             exit(1)
 
         gippy.Options.SetVerbose(args.verbose)
-        gippy.Options.SetChunkSize(256.0)   # replace with option
+        gippy.Options.SetChunkSize(128.0)   # replace with option
 
         VerboseOut('GIPPY %s command line utility' % cls.name)
 

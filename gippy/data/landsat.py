@@ -27,13 +27,20 @@ class LandsatData(Data):
     name = 'Landsat'
     sensors = {'LT4': 'Landsat 4', 'LT5': 'Landsat 5', 'LE7': 'Landsat 7', 'LC8': 'Landsat 8'}
     _rootdir = '/titan/data/landsat/tiles'
+    _stage = os.path.join(_rootdir,'stage')
     _tiles_vector = 'landsat_wrs'
     _tiles_attribute = 'pr'
-    _assetpattern = 'L*.tar.gz'
-    #_pattern = r'^L[TEC][4578].*\.tar\.gz$'
+    
     _prodpattern = '*.tif'
     _metapattern = 'MTL.txt'
     _defaultresolution = [30.0, 30.0]
+
+    _assets = {
+        '': {
+            'pattern': 'L*.tar.gz'
+            #_pattern = r'^L[TEC][4578].*\.tar\.gz$'
+        }
+    }
 
     _products = OrderedDict([
         ('rgb', {
@@ -141,12 +148,6 @@ class LandsatData(Data):
             'atmcorr': False,
         }),
     ])
-
-    _assets = {
-        '': {
-            'pattern': 'L*.tar.gz'
-        }
-    }
 
     @classmethod
     def inspect(cls, filename):

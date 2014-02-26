@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys
+import os
 import gippy
 from gippy.utils import VerboseOut, parse_dates
 
