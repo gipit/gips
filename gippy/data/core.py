@@ -258,7 +258,13 @@ class Data(object):
             for t in tiles:
                 dates = cls.asset_dates(t,a,dates,days)
                 for d in dates:
-                    if not glob.glob(cls.path(t,d,cls._assets[a]['pattern'])): cls.fetch_asset(a,t,d)
+                    if not glob.glob(cls.path(t,d,cls._assets[a]['pattern'])):
+                        cls.fetch_asset(a,t,d)
+                        VerboseOut('moving data to archive', 1)
+        try:
+            cls.archive(cls._stage)
+        except:
+            VerboseOut('archive of downloaded files was unsuccessful', 1)
 
     @classmethod
     def products2assets(cls,products):
