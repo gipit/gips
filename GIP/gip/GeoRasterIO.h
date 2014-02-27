@@ -20,9 +20,9 @@ namespace gip {
 	public:
         //! \name Constructors/Destructor
 		GeoRasterIO(GeoRaster& img)
-			: GeoRaster(img) {}
+			: GeoRaster(img), _cimg(CImg<T>()), _chunknum(0) {}
 		GeoRasterIO(const GeoRaster& img)
-			: GeoRaster(img) {}
+			: GeoRaster(img), _cimg(CImg<T>()), _chunknum(0) {}
 		~GeoRasterIO() {}
 
 		//! \name File I/O
@@ -30,7 +30,11 @@ namespace gip {
 		cimg_library::CImg<T> ReadRaw(int chunknum=0) const {
             if (chunknum == 0)
                 return ReadRaw( iRect(iPoint(0,0),iPoint(XSize()-1,YSize()-1)) );
-            return ReadRaw( _PadChunks[chunknum-1] );
+            //if (chunknum == _chunknum) return _cimg;
+            //_chunknum = chunknum;
+            //_cimg.assign( ReadRaw( _PadChunks[chunknum-1] ) );
+            //return _cimg;
+            return ReadRaw( _PadChunks[chunknum-1] ) ;
 		}
 
         //! Read raw chunk given bounding box
@@ -225,7 +229,7 @@ namespace gip {
 		}
 
         //! Get Saturation mask
-		cimg_library::CImg<bool> SaturationMask(int chunk=0) const {
+		cimg_library::CImg<unsigned char> SaturationMask(int chunk=0) const {
 		    cimg_library::CImg<float> band(ReadRaw(chunk));
 		    return band.threshold(_maxDC);
 		}
@@ -332,6 +336,11 @@ namespace gip {
 	private:
 		// Private default constructor prevents direct creation
 		GeoRasterIO() {}
+
+		//! Cache of last chunk read
+		mutable CImg<T> _cimg;
+		//! chunknumber of last chunk read
+		mutable int _chunknum;
 
 		//! Returns GDAL Type corresponding to template type T
 		GDALDataType Type() const {

@@ -29,13 +29,15 @@ namespace gip {
             << " NumPixels = " << img.size() << std::endl;
     }
 
-    template<typename T> inline void cimg_print(cimg_library::CImg<T> img, std::string note="", bool vals=false) {
+    template<typename T> inline void cimg_printinfo(cimg_library::CImg<T> img, std::string note="", bool vals=false) {
         std::cout << note << ": " << " (" << img.width() << " x " << img.height() 
             << " x " << img.depth() << " x " << img.spectrum() << "): " << std::endl;
-        if (vals) {
-            cimg_for(img,ptr,T) std::cout << *ptr << "  ";
-            std::cout << std::endl;
-        }
+    }    
+
+    template<typename T> inline void cimg_print(cimg_library::CImg<T> img, std::string note="", bool vals=false) {
+        std::cout << note;
+        cimg_for(img,ptr,T) std::cout << *ptr << "  ";
+        std::cout << std::endl;
     }
 
 }
