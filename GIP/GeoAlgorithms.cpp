@@ -615,9 +615,9 @@ namespace gip {
         int th_majority(((ksize*ksize)+1)/2);
         int padding((ksize+1)/2);
 
-        int esize = 5;
-        CImg<int> erode_elem(esize,esize,1,1,1);
-        CImg<int> dilate_elem(esize+dilate,esize+dilate,1,1,1);
+        //int esize = 5;
+        //CImg<int> erode_elem(esize,esize,1,1,1);
+        //CImg<int> dilate_elem(esize+dilate,esize+dilate,1,1,1);
 
         for (int b=0;b<4;b++) imgout[b].Chunk(ksize);
         for (int b=0;b<imgin.NumBands();b++) imgin[b].Chunk(ksize);
