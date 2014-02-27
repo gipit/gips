@@ -40,6 +40,8 @@ class ModisData(Data):
         }
     }
 
+    _stage = os.path.join(_rootdir, 'stage')
+
     _prodpattern = '*.tif'
 
     _defaultresolution = [926.625433138333392, -926.625433139166944]
