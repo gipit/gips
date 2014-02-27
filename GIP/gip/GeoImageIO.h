@@ -19,11 +19,11 @@ namespace gip {
 		GeoImageIO() {}
 		GeoImageIO(GeoImage& img)
 			: GeoImage(img) {
-			LoadRasterIO();
+			//LoadRasterIO();
 		}
 		GeoImageIO(const GeoImage& img)
 			: GeoImage(img) {
-			LoadRasterIO();
+			//LoadRasterIO();
 		}
 		~GeoImageIO() {}
 
@@ -138,7 +138,18 @@ namespace gip {
             return mask;
 		}
 
+        //! NoData mask (all bands).  1's where it is good data
+        CImg<unsigned char> SaturationMask(int chunk=0, std::vector<std::string> bands=std::vector<std::string>()) const {
+            // TODO - utilize bands parameter like in NoDataMask
+            CImg<unsigned char> mask(_RasterIOBands[0].SaturationMask(chunk));
+            for (unsigned int b=1;b<NumBands();b++)
+                mask|=_RasterIOBands[b].SaturationMask(chunk);
+            return mask;
+        }
+
 		// TODO - examine that these are even generically needed, and aren't just part of algorithms (all or mostly fmask)
+        // TODO - without caching the cost of below functions is too great. With caching they are great convenience functions
+        // TODO - to C++ algorithms. Caching would have no effect on python unless bindings incorporated a fixed datatype caching
 
 		//! Return a mask of snow
 		CImg<bool> SnowMask(int chunk=0) const {
@@ -324,6 +335,7 @@ namespace gip {
 
 	protected:
 		//! Vector of raster bands
+        GeoRasterIO<T> _RasterIOBands
 		std::vector< GeoRasterIO<T> > _RasterIOBands;
 
 	private:

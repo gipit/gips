@@ -186,6 +186,12 @@ namespace gip {
             return *this;
 		}
 
+		//! Break up image into chunks
+		/*void Chunk(unsigned int pad=0) const {
+			GeoData::Chunk(pad);
+			for (unsigned int b=0;b<NumBands();b++) _RasterBands.
+		}*/
+
 	protected:
 		//! Vector of raster bands
 		std::vector< GeoRaster > _RasterBands;
