@@ -70,7 +70,6 @@ namespace gip {
 		CImg<unsigned char> imgout;
 		mask.SetNoData(0);
 		//unsigned int validpixels(0);
-        mask0.Chunk();
         for (unsigned int iChunk=1; iChunk<=img[0].NumChunks(); iChunk++) {
         	//imgchunk = imageIO[0].Read(*iChunk);
 			//imgout = Pbands[0].NoDataMask(imgchunk);
@@ -102,8 +101,6 @@ namespace gip {
         CImg<unsigned char> nodata;
         for (unsigned int b=0;b<img.NumBands();b++) {
             imgout.SetColor(colors[b+1], b+1);
-            img[b].Chunk();
-            imgout[b].Chunk();
             for (unsigned int iChunk=1; iChunk<=img[b].NumChunks(); iChunk++) {
                 cimg = img[b].Read(iChunk);
                 nodata = img[b].NoDataMask(iChunk);
@@ -133,8 +130,6 @@ namespace gip {
         for (unsigned int b=0;b<img.NumBands();b++) {
             if (img[b].Thermal()) imgout[b].SetGain(0.01); else imgout[b].SetGain(0.0001);
             imgout.SetColor(colors[b+1], b+1);
-            img[b].Chunk();
-            imgout[b].Chunk();
             for (unsigned int iChunk=1; iChunk<=img[b].NumChunks(); iChunk++) {
                 cimg = img[b].Read(iChunk);
                 nodata = img[b].NoDataMask(iChunk);
@@ -158,8 +153,6 @@ namespace gip {
 	    Colors colors = img.GetColors();
         for (unsigned int b=0;b<img.NumBands();b++) {
             imgout.SetColor(colors[b+1], b+1);
-            img[b].Chunk();
-            imgout[b].Chunk();
             for (unsigned int iChunk=1; iChunk<=img[b].NumChunks(); iChunk++) {
                 cimg = img[b].Read(iChunk);
                 cimg = cimg.pow(2).log10() * 10 + CF;
@@ -375,7 +368,6 @@ namespace gip {
             imagesout[*iprod].SetGain(0.0001);
             imagesout[*iprod].SetUnits("other");
             imagesout[*iprod][0].SetDescription(*iprod);
-            imagesout[*iprod][0].Chunk();
         }
         if (imagesout.size() == 0) throw std::runtime_error("No indices selected for calculation!");
 
