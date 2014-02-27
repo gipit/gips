@@ -189,11 +189,11 @@ class Data(object):
         """ Move files from directory to archive location """
         start = datetime.now()
 
-        fnames = [glob.glob(os.path.join(path, a['pattern'])) for a in cls._assets.values()]
-        qdir = os.path.join(cls._rootdir,'../quarantine')
+        fnames = []
+        for a in cls._assets.values():
+            fnames.extend(glob.glob(os.path.join(path, a['pattern'])))
 
-        print fnames
-        print qdir
+        qdir = os.path.join(cls._rootdir,'../quarantine')
         
         try:
             os.makedirs(qdir)
@@ -206,8 +206,6 @@ class Data(object):
                 meta = cls.inspect(f)
             except Exception,e:
                 # if problem with inspection, move to quarantine
-
-                print qdir, f
                 qname = os.path.join(qdir, f)
                 if not os.path.exists(qname):
                     os.link(os.path.abspath(f),os.path.join(qdir,f))

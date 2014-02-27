@@ -27,14 +27,15 @@ class ModisData(Data):
 
     _assetpattern = 'M?D????.????????.h??v??.???.hdf'
 
+    _pattern = 'M?D*.hdf'
 
     _assets = {
         'MOD11A1': {
-            'pattern': 'MOD11A1.????????.h??v??.???.hdf',
+            'pattern': 'MOD11A1*hdf',
             'url': 'http://e4ftl01.cr.usgs.gov/MOLT/MOD11A1.005'
         },
         'MYD11A1': {
-            'pattern': 'MYD11A1.????????.h??v??.???.hdf',
+            'pattern': 'MYD11A1*hdf',
             'url': 'http://e4ftl01.cr.usgs.gov/MOLT/MYD11A1.005'
         }
     }
@@ -112,7 +113,7 @@ class ModisData(Data):
     def fetch_asset(cls, asset, tile, date):
 
         print asset, tile, date
-        
+
         VerboseOut('about to fetch',4)
 
         httploc = cls._assets[asset]['url']
