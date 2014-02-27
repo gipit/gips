@@ -15,7 +15,7 @@ import re
 from pdb import set_trace
 
 import gippy
-from gippy.utils import VerboseOut
+from gippy.utils import VerboseOut, RemoveFiles
 from gippy.data.datainventory import DataInventory
 
 class Data(object):
@@ -29,6 +29,7 @@ class Data(object):
 
     # root directory to data
     _rootdir = ''
+    _stage = os.path.abspath(os.path.join(_rootdir,'../stage'))
 
     # Format code of date directories in repository
     _datedir = '%Y%j'
@@ -51,6 +52,7 @@ class Data(object):
     def inspect(cls, filename):
         """ Inspect a single asset and get info - Needs to be overridden by child """
         return {
+            'asset': '',    # the asset code
             'filename':'',  # full filename to asset
             'datafiles':[], # if filename is archive, index of datafiles in archive
             'tile':'',      # tile designation
@@ -189,66 +191,66 @@ class Data(object):
         """ Move files from directory to archive location """
         start = datetime.now()
 
-        fnames = []
-        for a in cls._assets.values():
-            fnames.extend(glob.glob(os.path.join(path, a['pattern'])))
-
         qdir = os.path.join(cls._rootdir,'../quarantine')
-        
         try:
             os.makedirs(qdir)
         except:
             pass
+
+        to_remove = []
+        fnames = []
+        for a in cls._assets.values():
+            fnames.extend( glob.glob(os.path.join(path, a['pattern'])) )
+
         numlinks = 0
         numfiles = 0
         for f in fnames:
             try:
-                meta = cls.inspect(f)
+                info = cls.inspect(f)
             except Exception,e:
                 # if problem with inspection, move to quarantine
                 qname = os.path.join(qdir, f)
                 if not os.path.exists(qname):
                     os.link(os.path.abspath(f),os.path.join(qdir,f))
+                to_remove.append(f)
                 VerboseOut('%s -> quarantine (file error)' % f,2)
                 VerboseOut(traceback.format_exc(), 4)
                 continue
-            if not hasattr(meta['date'],'__len__'): meta['date'] = [meta['date']]
-            for d in meta['date']:
-                added = cls._move2archive(tile=meta['tile'],date=d,filename=f)
-                numlinks = numlinks + added
+            if not hasattr(info['date'],'__len__'): info['date'] = [info['date']]
+            for d in info['date']:
+                added = 0
+                path = cls.path(info['tile'],d)
+                pattern = cls._assets[info['asset']]['pattern']
+                newfilename = os.path.join(path,os.path.basename(f))
+                if not os.path.exists(newfilename):
+                    # check if another asset exists
+                    existing_assets = glob.glob(os.path.join(path,pattern))
+                    if len(existing_assets) > 0:
+                        VerboseOut('%s: other version(s) already exists:' % f,2)
+                        for ef in existing_assets: VerboseOut('\t%s' % os.path.basename(ef),2)
+                    else:
+                        try:
+                            os.makedirs(path)
+                        except OSError as exc: # Python >2.5
+                            if exc.errno == errno.EEXIST and os.path.isdir(path):
+                                pass
+                            else:
+                                raise Exception('Unable to make data directory %s' % path)
+                        os.link(os.path.abspath(f),newfilename)
+                        #shutil.move(os.path.abspath(f),newfilename)
+                        VerboseOut(os.path.basename(f) + ' -> ' + newfilename,2)
+                        added = 1
+                        numlinks = numlinks + added
+                        to_remove.append(f)
+                else: 
+                    VerboseOut('%s already in archive' % f, 2)
+                    to_remove.append(f)
             numfiles = numfiles + added
+        RemoveFiles(to_remove,['.index','.aux.xml'])
         # Summarize
         VerboseOut( '%s files (%s links) added to archive in %s' % (numfiles, numlinks, datetime.now()-start) )
         if numfiles != len(fnames):
             VerboseOut( '%s files not added to archive' % (len(fnames)-numfiles) )
-
-    @classmethod
-    def _move2archive(cls, tile, date, filename):
-        path = cls.path(tile, date)
-        try:
-            os.makedirs(path)
-        except OSError as exc: # Python >2.5
-            if exc.errno == errno.EEXIST and os.path.isdir(path):
-                pass
-            else:
-                raise Exception('Unable to make data directory %s' % path)
-        # Move or link file
-        origpath,fname = os.path.split(filename)
-        newfilename = os.path.join(path,fname)
-        if not os.path.exists(newfilename):
-            # Check for older versions
-            existing_files = glob.glob(os.path.join(path,cls._pattern))
-            if len(existing_files) > 0:
-                VerboseOut('Other version of %s already exists:' % fname,2)
-                for ef in existing_files: VerboseOut('\t%s' % os.path.basename(ef),2)
-            else:
-                os.link(os.path.abspath(filename),newfilename)
-                #shutil.move(os.path.abspath(f),newfilename)
-            VerboseOut(fname + ' -> ' + newfilename,2)
-            return 1
-        else:
-            VerboseOut('%s already in archive' % fname, 2)
-        return 0
 
     @classmethod
     def fetch(cls, products, tiles, dates, days):

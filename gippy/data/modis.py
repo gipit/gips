@@ -63,8 +63,6 @@ class ModisData(Data):
         'MCD': None
     }
 
-    _stage = '/titan/data/modis/stage'
-
     # MOD11A1.A2005241.h12v04.005.2008059145629.hdf
 
     @classmethod
@@ -88,6 +86,7 @@ class ModisData(Data):
 
         return {
             # required
+            'asset': basename[0:7],
             'filename': filename,
             'datafiles': datafiles,
             'tile': tile,

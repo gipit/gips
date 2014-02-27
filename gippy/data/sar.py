@@ -145,6 +145,7 @@ class SARData(Data):
             #VerboseOut('%s: inspect %s' % (fname,datetime.datetime.now()-start), 4)
 
         return {
+            'asset': '',
             'filename': filename,
             'datafiles': datafiles,
             'tile': tile, 

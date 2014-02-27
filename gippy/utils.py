@@ -24,13 +24,14 @@ def List2File(lst,filename):
     f.write('\n'.join(lst)+'\n')
     f.close()
 
-def RemoveFiles(filenames):
+def RemoveFiles(filenames, extensions=['']):
     for f in filenames:
-        try:
-            os.remove(f)
-        except OSError as e:
-            if e.errno != errno.ENOENT: raise
-            continue
+        for ext in ([''] + extensions):
+            try:
+                os.remove(f+ext)
+            except OSError as e:
+                if e.errno != errno.ENOENT: raise
+                continue
 
 def _parse_date(dstring, last=False):
     """ Parses string of YYYY or YYYY-MM or YYYY-MM-DD or YYYY-DOY and returns date object """

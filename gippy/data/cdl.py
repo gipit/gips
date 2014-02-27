@@ -40,6 +40,7 @@ class CDLData(Data):
         # not implemented for archive purposes
         tile = os.path.basename(path)
         return {
+            'asset': '',
             'filename': filename,
             'datafiles': [],
             'tile': '', 

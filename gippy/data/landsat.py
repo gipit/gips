@@ -26,8 +26,7 @@ class LandsatData(Data):
     """ Represents a single date and temporal extent along with (existing) product variations (raw, ref, toaref, ind, ndvi, etc) """
     name = 'Landsat'
     sensors = {'LT4': 'Landsat 4', 'LT5': 'Landsat 5', 'LE7': 'Landsat 7', 'LC8': 'Landsat 8'}
-    _rootdir = '/titan/data/landsat/tiles'
-    _stage = os.path.join(_rootdir,'stage')
+    _rootdir = '/titan/data/landsat/tiles.dev'
     _tiles_vector = 'landsat_wrs'
     _tiles_attribute = 'pr'
     
@@ -157,6 +156,7 @@ class LandsatData(Data):
         year = basename[9:13]
         doy = basename[13:16]
         return {
+            'asset': '',
             'filename': filename,
             'datafiles': [],    # not needed for inspect, populate in meta()
             'tile': tile,
