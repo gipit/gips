@@ -19,11 +19,11 @@ namespace gip {
 		GeoImageIO() {}
 		GeoImageIO(GeoImage& img)
 			: GeoImage(img) {
-			//LoadRasterIO();
+			LoadRasterIO();
 		}
 		GeoImageIO(const GeoImage& img)
 			: GeoImage(img) {
-			//LoadRasterIO();
+			LoadRasterIO();
 		}
 		~GeoImageIO() {}
 
@@ -335,7 +335,6 @@ namespace gip {
 
 	protected:
 		//! Vector of raster bands
-        GeoRasterIO<T> _RasterIOBands
 		std::vector< GeoRasterIO<T> > _RasterIOBands;
 
 	private:
