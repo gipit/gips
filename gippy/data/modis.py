@@ -25,9 +25,9 @@ class ModisData(Data):
     _rootdir = '/titan/data/modis/tiles'
     _tiles_vector = '/titan/data/vector/MODIS/modis_sinusoidal/modis_sinusoidal_grid_world.shp'
 
-    _assetpattern = 'M?D????.????????.h??v??.???.hdf'
+    #_assetpattern = 'M?D????.????????.h??v??.???.hdf'
 
-    _pattern = 'M?D*.hdf'
+    #_pattern = 'M?D*.hdf'
 
     _assets = {
         'MOD11A1': {
@@ -36,7 +36,7 @@ class ModisData(Data):
         },
         'MYD11A1': {
             'pattern': 'MYD11A1*hdf',
-            'url': 'http://e4ftl01.cr.usgs.gov/MOLT/MYD11A1.005'
+            'url': 'http://e4ftl01.cr.usgs.gov/MOLA/MYD11A1.005'
         }
     }
 
@@ -112,6 +112,8 @@ class ModisData(Data):
     @classmethod
     def fetch_asset(cls, asset, tile, date):
 
+        print
+        print "trying to fetch:"
         print asset, tile, date
 
         VerboseOut('about to fetch',4)
@@ -136,11 +138,13 @@ class ModisData(Data):
         except Exception, e:
             listing = None
             print 'unable to access %s' % mainurl
-
+            return 2
+        
         cpattern = re.compile(pattern)
         name = None
 
         success = False
+
         for item in listing:
             if cpattern.search(item):
                 if 'xml' in item:
@@ -158,9 +162,12 @@ class ModisData(Data):
                     print e
                     print 'unable to retrieve %s from %s' % (name, url)
 
+
         if not success:
             print "did not find a match for %s in listing of %s" % (pattern, mainurl)
+            return 1
+        else:
+            return 0
 
-        time.sleep(2)
 
 def main(): ModisData.main()

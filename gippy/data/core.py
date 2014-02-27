@@ -254,17 +254,30 @@ class Data(object):
     def fetch(cls, products, tiles, dates, days):
         """ Download data for tile and add to archive """
         assets = cls.products2assets(products)
+
         for a in assets:
             for t in tiles:
-                dates = cls.asset_dates(t,a,dates,days)
-                for d in dates:
+
+                asset_dates = cls.asset_dates(a,t,dates,days)
+
+                for d in asset_dates:
+
                     if not glob.glob(cls.path(t,d,cls._assets[a]['pattern'])):
-                        cls.fetch_asset(a,t,d)
-                        VerboseOut('moving data to archive', 1)
-        try:
-            cls.archive(cls._stage)
-        except:
-            VerboseOut('archive of downloaded files was unsuccessful', 1)
+
+                        status = cls.fetch_asset(a,t,d)
+
+                        print "status:", status
+                        # what to do if status is nonzero?
+
+                        # move files as you get them
+                        VerboseOut('copying data to archive', 2)
+
+                        try:
+                            print "calling archive"
+                            cls.archive(cls._stage)
+                        except:
+                            VerboseOut('archive of downloaded files was unsuccessful', 2)
+
 
     @classmethod
     def products2assets(cls,products):
