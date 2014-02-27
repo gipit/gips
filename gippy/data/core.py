@@ -33,8 +33,6 @@ class Data(object):
 
     # Format code of date directories in repository
     _datedir = '%Y%j'
-    # pattern of assets (original/raw) file
-    _assetpattern = ''
     # pattern of created products
     _prodpattern = '*.tif'
     # pattern of a metadata or header file
@@ -411,10 +409,6 @@ class Data(object):
         self.tiles[tile] - dictionary of tile data {path, baename, sensor, products}
         self.products - dictionary of product name and final product filename
         """
-        # compile regular expressions
-        #print self._assetpattern
-        #self._assetpattern = re.compile(self._assetpattern)
-        #print self._assetpattern
         self.site = site
         # Calculate spatial extent
         if tiles is not None:
