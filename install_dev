@@ -1,0 +1,7 @@
+#!/bin/bash
+git clean -xfd
+cd GIP
+make
+sudo make install
+cd ..
+./setup.py develop

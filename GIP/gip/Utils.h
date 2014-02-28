@@ -1,10 +1,13 @@
 #ifndef GIP_UTILS_H
 #define GIP_UTILS_H
 
-#include <gip/Utils.h>
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <typeinfo>
+#include <gdal/gdal_priv.h>
+#include <vector>
+#include <boost/filesystem.hpp>
 
 namespace gip {
 
@@ -21,6 +24,21 @@ namespace gip {
 		ss << t;
 		return ss.str();
 	}
+
+    //! Returns GDAL Type corresponding to type passed in
+    inline GDALDataType type2GDALtype(const std::type_info& info) {
+        if (info == typeid(unsigned char)) return GDT_Byte;
+        else if (info == typeid(unsigned short)) return GDT_UInt16;
+        else if (info == typeid(short)) return GDT_Int16;
+        else if (info == typeid(unsigned int)) return GDT_UInt32;
+        else if (info == typeid(int)) return GDT_Int32;
+        else if (info == typeid(float)) return GDT_Float32;
+        else if (info == typeid(double)) return GDT_Float64;
+        else {
+            std::cout << "Data Type " << info.name() << " not supported" << std::endl;
+            throw(std::exception());
+        }
+    }
 
     class Options {
     public:

@@ -5,6 +5,7 @@
 #include <gip/GeoRaster.h>
 #include <cmath>
 //#include <gip/geometry.h>
+//#include <gip/Utils.h>
 
 // only used for debugging
 #include <iostream>
@@ -44,7 +45,8 @@ namespace gip {
             int height = chunk.y1()-chunk.y0()+1;
 
             T* ptrPixels = new T[width*height];
-            CPLErr err = _GDALRasterBand->RasterIO(GF_Read, chunk.x0(), chunk.y0(), width, height, ptrPixels, width, height, this->Type(), 0, 0);
+            CPLErr err = _GDALRasterBand->RasterIO(GF_Read, chunk.x0(), chunk.y0(), width, height, 
+            	ptrPixels, width, height, type2GDALtype(typeid(T)), 0, 0);
             if (err != CE_None) {
                 std::stringstream err;
                 err << "error reading " << CPLGetLastErrorMsg();
@@ -167,7 +169,7 @@ namespace gip {
             }
 			CPLErr err = _GDALRasterBand->RasterIO(GF_Write, chunk.x0(), chunk.y0(), 
 				chunk.width(), chunk.height(), img.data(), img.width(), img.height(), 
-				this->Type(), 0, 0);
+				type2GDALtype(typeid(T)), 0, 0);
             if (err != CE_None) {
                 std::stringstream err;
                 err << "error writing " << CPLGetLastErrorMsg();
@@ -228,13 +230,13 @@ namespace gip {
             return *this;
 		}
 
-        //! Get Saturation mask
+        //! Get Saturation mask: 1's where it's saturated
 		cimg_library::CImg<unsigned char> SaturationMask(int chunk=0) const {
 		    cimg_library::CImg<float> band(ReadRaw(chunk));
 		    return band.threshold(_maxDC);
 		}
 
-		//! NoData mask
+		//! NoData mask: 1's where it's good data
 		cimg_library::CImg<unsigned char> NoDataMask(int chunk=0) const {
 		    using cimg_library::CImg;
 		    CImg<T> img = ReadRaw(chunk);
@@ -341,21 +343,6 @@ namespace gip {
 		mutable CImg<T> _cimg;
 		//! chunknumber of last chunk read
 		mutable int _chunknum;
-
-		//! Returns GDAL Type corresponding to template type T
-		GDALDataType Type() const {
-			if (typeid(T) == typeid(unsigned char)) return GDT_Byte;
-			else if (typeid(T) == typeid(unsigned short)) return GDT_UInt16;
-			else if (typeid(T) == typeid(short)) return GDT_Int16;
-			else if (typeid(T) == typeid(unsigned int)) return GDT_UInt32;
-			else if (typeid(T) == typeid(int)) return GDT_Int32;
-			else if (typeid(T) == typeid(float)) return GDT_Float32;
-			else if (typeid(T) == typeid(double)) return GDT_Float64;
-			else {
-				std::cout << "Data Type " << typeid(T).name() << " not supported" << std::endl;
-				throw(std::exception());
-			}
-		}
 
 	}; //class GeoRasterIO
 } // namespace gip

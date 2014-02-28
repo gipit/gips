@@ -21,6 +21,13 @@ def install_gip(install):
     for b in zip(src,dst):
         if not os.path.exists(b[1]) or not filecmp.cmp(b[0],b[1]): shutil.copy(b[0],b[1])
 
+libgip = Extension(name = 'libgip',
+            sources=['GIP/Atmosphere.cpp','GIP/GeoAlgorithms.cpp','GIP/GeoData.cpp',
+                'GIP/GeoImage.cpp','GIP/GeoRaster.cpp','GIP/GeoVector.cpp'],
+            include_dirs=['GIP'],
+            extra_compile_args=['-std=c++0x','-Wall','-fexceptions','-fPIC','-O2']
+        )
+
 gippy_module = Extension(name = '_gippylib',
                     #compiler='g++',
                     sources=['gippy/gippylib.i'],
@@ -42,6 +49,7 @@ setup (name = 'gippy',
     py_modules = ['gippy.gippylib','gippy.atmosphere','gippy.GeoVector','gippy.gipit'],
     dependency_links = ['https://github.com/matthewhanson/Py6S.git'],
     install_requires = ['Py6S','shapely==1.2.18'],
+    #data_files = [('/usr/local/lib',['GIP/bin/Release/libgip.so'])],
     entry_points = {
         'console_scripts': [
             'gipit = gippy.gipit:main',

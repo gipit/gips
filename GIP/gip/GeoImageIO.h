@@ -288,7 +288,7 @@ namespace gip {
                 T pix[1];
                 badpix = false;
                 for (unsigned int j=0; j<NumBands(); j++) {
-                    _RasterIOBands[j].GetGDALRasterBand()->RasterIO(GF_Read, col, row, 1, 1, &pix, 1, 1, Type(), 0, 0);
+                    _RasterIOBands[j].GetGDALRasterBand()->RasterIO(GF_Read, col, row, 1, 1, &pix, 1, 1, type2GDALtype(typeid(T)), 0, 0);
                     if (_RasterIOBands[j].NoData() && pix[0] == _RasterIOBands[j].NoDataValue()) {
                         badpix = true;
                     } else {
@@ -338,23 +338,6 @@ namespace gip {
 		std::vector< GeoRasterIO<T> > _RasterIOBands;
 
 	private:
-
-
-		//! Returns GDAL Type corresponding to template type T
-		GDALDataType Type() const {
-		    // TODO - this is repeated in GeoRaster
-			if (typeid(T) == typeid(unsigned char)) return GDT_Byte;
-			else if (typeid(T) == typeid(unsigned short)) return GDT_UInt16;
-			else if (typeid(T) == typeid(short)) return GDT_Int16;
-			else if (typeid(T) == typeid(unsigned int)) return GDT_UInt32;
-			else if (typeid(T) == typeid(int)) return GDT_Int32;
-			else if (typeid(T) == typeid(float)) return GDT_Float32;
-			else if (typeid(T) == typeid(double)) return GDT_Float64;
-			else {
-				std::cout << "Data Type " << typeid(T).name() << " not supported" << std::endl;
-				throw(std::exception());
-			}
-		}
 
 	}; // class GeoImageIO
 } // namespace gip
