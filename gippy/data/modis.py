@@ -22,7 +22,9 @@ class ModisData(Data):
         'MYD': 'Aqua',
         'MCD': 'Combined'
     }
-    _rootdir = '/titan/data/modis/tiles'
+    _rootdir = '/titan/data/modis'
+    _tiledir = os.path.join(_rootdir,'tiles')
+    _stagedir = os.path.join(_rootdir, 'stage')
     _tiles_vector = '/titan/data/vector/MODIS/modis_sinusoidal/modis_sinusoidal_grid_world.shp'
 
     #_assetpattern = 'M?D????.????????.h??v??.???.hdf'
@@ -40,7 +42,7 @@ class ModisData(Data):
         }
     }
 
-    _stage = os.path.join(_rootdir, 'stage')
+   
 
     _prodpattern = '*.tif'
 
@@ -156,7 +158,7 @@ class ModisData(Data):
                 url = ''.join([mainurl, '/', name])
                 print 'the url is', url
                 try:
-                    urllib.urlretrieve(url, os.path.join(cls._stage, name))
+                    urllib.urlretrieve(url, os.path.join(cls._stagedir, name))
                     print "retrieved %s" % name
                     success =  True
                 except Exception, e:

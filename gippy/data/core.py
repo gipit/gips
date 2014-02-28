@@ -29,7 +29,8 @@ class Data(object):
 
     # root directory to data
     _rootdir = ''
-    _stage = os.path.abspath(os.path.join(_rootdir,'../stage'))
+    _tiledir = os.path.join(_rootdir,'tiles')
+    _stagedir = os.path.join(_rootdir,'.stage')
 
     # Format code of date directories in repository
     _datedir = '%Y%j'
@@ -38,7 +39,7 @@ class Data(object):
     # pattern of a metadata or header file
     _metapattern = ''
     # shapefile name or PostGIS layer name describing sensor tiles
-    _tiles_vector = ''
+    _tiles_vector = os.path.join(_rootdir,'vectors','tiles.shp')
     # column name in _tiles_vector holding tile designation
     _tiles_attribute = 'tile'
     # dictionary of available assets for this dataset
@@ -102,19 +103,19 @@ class Data(object):
         """ Find assets (raw/original data) for this tile """
         assets = []
         for key in self._assets:
-            files = glob.glob(os.path.join(self._rootdir, tile, self.date.strftime(self._datedir), self._assets[key]['pattern']))
+            files = glob.glob(os.path.join(self._tiledir, tile, self.date.strftime(self._datedir), self._assets[key]['pattern']))
             assets = assets + files
         return assets
 
     @classmethod
     def find_tiles(cls):
         """ Get list of all available tiles """
-        return os.listdir(cls._rootdir)
+        return os.listdir(cls._tiledir)
 
     @classmethod
     def find_dates(cls, tile):
         """ Get list of dates available in repository for a tile """
-        tdir = os.path.join(cls._rootdir,tile)
+        tdir = os.path.join(cls._tiledir,tile)
         if os.path.exists(tdir):
             return [datetime.strptime(os.path.basename(d),cls._datedir).date() for d in os.listdir(tdir)]
         else: return []
@@ -122,7 +123,7 @@ class Data(object):
     @classmethod
     def path(cls, tile, date, filename=''):
         """ Return path in repository for this tile and date """
-        return os.path.join(cls._rootdir, tile, str(date.strftime(cls._datedir)), filename)
+        return os.path.join(cls._tiledir, tile, str(date.strftime(cls._datedir)), filename)
 
     def opentile(self, tile, product=''):
         if product != '':
@@ -189,7 +190,7 @@ class Data(object):
         """ Move files from directory to archive location """
         start = datetime.now()
 
-        qdir = os.path.join(cls._rootdir,'../quarantine')
+        qdir = os.path.join(cls._rootdir,'quarantine')
         try:
             os.makedirs(qdir)
         except:
@@ -209,7 +210,7 @@ class Data(object):
                 # if problem with inspection, move to quarantine
                 qname = os.path.join(qdir, f)
                 if not os.path.exists(qname):
-                    os.link(os.path.abspath(f),os.path.join(qdir,f))
+                    os.link(os.path.abspath(f),qname)
                 to_remove.append(f)
                 VerboseOut('%s -> quarantine (file error)' % f,2)
                 VerboseOut(traceback.format_exc(), 4)
@@ -331,7 +332,10 @@ class Data(object):
         if os.path.isfile(cls._tiles_vector):
             tiles = gippy.GeoVector(cls._tiles_vector)
         else:
-            tiles = gippy.GeoVector("PG:dbname=geodata host=congo port=5432 user=ags", layer=cls._tiles_vector)
+            try:
+                tiles = gippy.GeoVector("PG:dbname=geodata host=congo port=5432 user=ags", layer=cls._tiles_vector)
+            except:
+                raise Exception('unable to access %s tiles (file or database)' % cls.name)
         return tiles
 
     @classmethod

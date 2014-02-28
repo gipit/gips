@@ -23,9 +23,13 @@ class SARData(Data):
         'JFBS':'JERS-1 FineBeam Single Polarization'
     }
     _defaultresolution = [0.000834028356964,0.000834028356964]
-    _rootdir = '/titan/data/SAR/tiles'
+    _rootdir = '/titan/data/SAR'
+    _tiledir = os.path.join(_rootdir,'tiles')
+    _stagedir = os.path.join(_rootdir,'.stage')
     #_datedir = '%Y%j'
-    _tiles_vector = '/titan/data/SAR/tiles.shp'
+
+    _tiles_vector = os.path.join(_rootdir,'vectors','tiles.shp')
+
     _prodpattern = '*'
     _metapattern = '.hdr'
 
@@ -130,7 +134,7 @@ class SARData(Data):
             dates = [cls._launchdate[fname[-9]] + datetime.timedelta(days=int(d)) for d in numpy.unique(dateimg.Read()) if d != 0]
             if not dates: raise Exception('%s: no valid dates' % fname)
             date = min(dates)
-            RemoveFiles([hdrfile,datefile,datefile+'.hdr'])
+            RemoveFiles([hdrfile,datefile],['.hdr','.aux.xml'])
             #VerboseOut('Date from image: %s' % str(date),3) 
             # If year provided check
             if fname[7] == 'Y' and fname[8:10] != '00':
