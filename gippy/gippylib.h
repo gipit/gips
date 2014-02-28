@@ -89,6 +89,7 @@
 %include "std_vector.i"
 namespace std {
     %template(vectors) std::vector<std::string>;
+    %template(vectori) std::vector<int>;
 }
 // TODO - add in map<string,string> to/from dictionary
 
