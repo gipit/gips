@@ -4,7 +4,6 @@
 #include <gip/Colors.h>
 #include <gip/GeoData.h>
 #include <gip/GeoRaster.h>
-#include <gip/GeoRasterIO.h>
 
 namespace gip {
 	// Forward declaration
