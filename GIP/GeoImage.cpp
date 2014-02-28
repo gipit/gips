@@ -1,5 +1,6 @@
 #include <gip/GeoImage.h>
 #include <gip/GeoRaster.h>
+#include <gip/GeoRasterIO.h>
 
 //#include <sstream>
 
