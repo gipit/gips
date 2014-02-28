@@ -617,15 +617,10 @@ namespace gip {
         //CImg<int> filter(ksize,ksize,1,1, 1);
         //int majority(((ksize*ksize)+1)/2);
 
-        int esize(5);
-        CImg<int> struct_elem(esize,esize,1,1,1);
-        //CImg<int> erode_elem(esize,esize,1,1,1);
-        //CImg<int> dilate_elem(esize+dilate,esize+dilate,1,1,1);
-
         int dx(0);
         int dy(0);
 
-        int padding((std::max(esize,dx,dy)+1)/2);
+        int padding((std::max(dilate,std::max(dx,dy))+1)/2);
 
         for (int b=0;b<imgout.NumBands();b++) imgout[b].Chunk(padding);
         for (int b=0;b<imgin.NumBands();b++) imgin[b].Chunk(padding);
@@ -637,18 +632,15 @@ namespace gip {
             if (addclouds) clouds += imgout[b_ambclouds].Read(iChunk);
             clouds|=(imgin.SaturationMask(iChunk));
             // Majority filter
-            //clouds = (clouds + clouds.get_convolve(filter).threshold(majority)).threshold(1);
+            //clouds|=clouds.get_convolve(filter).threshold(majority));
             if (dilate > 0) clouds.dilate(dilate, dilate);
-            if (dx > 0 && dy > 0) clouds|=clouds.get_shift(dx,dy);cefrsw
+            // add in shadow mask
+            if (dx > 0 && dy > 0) clouds|=clouds.get_shift(dx,dy);
+            // mask of 1's where there are clouds
             imgout[b_cloudmask].Write(clouds,iChunk);
             // Inverse and multiply by nodata mask to get good data mask
             imgout[b_finalmask].Write((clouds^=1).mul(imgin.NoDataMask(iChunk)), iChunk);
-            //imgout[0].Write(clouds|=imgin.SaturationMask(iChunk), iChunk);
-            //imgout[0].Write(clouds^=1, iChunk);
-
-            // Erode, then dilate twice
-            //mask.erode(erode_elem).dilate(dilate_elem);
-            //mask.dilate(dilate_elem);
+            // TODO - add in snow mask
         }
         return imgout;
 	}
