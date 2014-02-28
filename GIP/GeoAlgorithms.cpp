@@ -487,7 +487,7 @@ namespace gip {
 	}*/
 
 	//! ACCA (Automatic Cloud Cover Assessment) takes in TOA Reflectance and temperature
-	GeoImage ACCA(const GeoImage& img, string filename) {
+	GeoImage ACCA(const GeoImage& img, string filename, int dilate) {
 	    img.SetUnitsOut("reflectance");
         GeoImageIO<float> imgin(img);
 
@@ -503,10 +503,15 @@ namespace gip {
         GeoImageIO<unsigned char> imgout(GeoImage(filename, imgin, GDT_Byte, 4));
         imgout.SetNoData(0);
         imgout.SetUnits("other");
-        imgout[0].SetDescription("finalmask");
-        imgout[1].SetDescription("datamask");
-        imgout[2].SetDescription("pass2");
-        imgout[3].SetDescription("pass1");
+        // Band indices
+        int b_pass1(3);
+        int b_ambclouds(2);
+        int b_cloudmask(1);
+        int b_finalmask(0);
+        imgout[b_finalmask].SetDescription("finalmask");
+        imgout[b_cloudmask].SetDescription("cloudmask");
+        imgout[b_ambclouds].SetDescription("ambclouds");
+        imgout[b_pass1].SetDescription("pass1");
 
         CImg<float> red, green, nir, swir1, temp, ndsi, b56comp;
         CImg<unsigned char> nonclouds, ambclouds, clouds, mask;
@@ -558,14 +563,14 @@ namespace gip {
             cloudsum += clouds.sum();
             scenesize += mask.sum();
 
-            imgout[3].Write(clouds,iChunk);
-            imgout[2].Write(ambclouds,iChunk);
+            imgout[b_pass1].Write(clouds,iChunk);
+            imgout[b_ambclouds].Write(ambclouds,iChunk);
             //imgout[0].Write(nonclouds,iChunk);
             if (Options::Verbose() > 3) std::cout << "Processed chunk " << iChunk << " of " << imgin[0].NumChunks() << std::endl;
         }
         // Cloud statistics
         float cloudcover = cloudsum / scenesize;
-        CImg<float> tstats = imgin["LWIR"].AddMask(imgout[3]).ComputeStats();
+        CImg<float> tstats = imgin["LWIR"].AddMask(imgout[b_pass1]).ComputeStats();
         if (Options::Verbose() > 1) {
             cout.precision(4);
             cout << "   Cloud Cover = " << cloudcover*100 << "%" << endl;
@@ -587,62 +592,64 @@ namespace gip {
                 th1 += shift;
             }
             imgin["LWIR"].ClearMasks();
-            CImg<float> warm_stats = imgin["LWIR"].AddMask(imgout[2]).AddMask(imgin["LWIR"] < th1).AddMask(imgin["LWIR"] > th0).ComputeStats();
+            CImg<float> warm_stats = imgin["LWIR"].AddMask(imgout[b_cloudmask]).AddMask(imgin["LWIR"] < th1).AddMask(imgin["LWIR"] > th0).ComputeStats();
             if (Options::Verbose() > 1) cimg_print(warm_stats, "Warm Cloud stats(min,max,mean,sd,skew,count)");
             imgin["LWIR"].ClearMasks();
             if (((warm_stats(5)/scenesize) < 0.4) && (warm_stats(2) < 22)) {
                 if (Options::Verbose() > 2) cout << "Accepting warm clouds" << endl;
-                imgout[2].AddMask(imgin["LWIR"] < th1).AddMask(imgin["LWIR"] > th0);
+                imgout[b_cloudmask].AddMask(imgin["LWIR"] < th1).AddMask(imgin["LWIR"] > th0);
                 addclouds = true;
             } else {
                 // Cold clouds
-                CImg<float> cold_stats = imgin["LWIR"].AddMask(imgout[2]).AddMask(imgin["LWIR"] < th0).ComputeStats();
+                CImg<float> cold_stats = imgin["LWIR"].AddMask(imgout[b_cloudmask]).AddMask(imgin["LWIR"] < th0).ComputeStats();
                 if (Options::Verbose() > 1) cimg_print(cold_stats, "Cold Cloud stats(min,max,mean,sd,skew,count)");
                 imgin["LWIR"].ClearMasks();
                 if (((cold_stats(5)/scenesize) < 0.4) && (cold_stats(2) < 22)) {
                     if (Options::Verbose() > 2) cout << "Accepting cold clouds" << endl;
-                    imgout[2].AddMask(imgin["LWIR"] < th0);
+                    imgout[b_cloudmask].AddMask(imgin["LWIR"] < th0);
                     addclouds = true;
                 } else
                     if (Options::Verbose() > 2) cout << "Rejecting all ambiguous clouds" << endl;
             }
         } else imgin["LWIR"].ClearMasks();
 
-        int ksize(3);
-        //CImg<int> selem(esize,esize,1,1,1);
-        // 3x3 filter of 1's for majority filter
-        CImg<int> filter(ksize,ksize,1,1, 1);
-        int th_majority(((ksize*ksize)+1)/2);
-        int padding((ksize+1)/2);
+        //int ksize(3);
+        //CImg<int> filter(ksize,ksize,1,1, 1);
+        //int majority(((ksize*ksize)+1)/2);
 
-        //int esize = 5;
+        int esize(5);
+        CImg<int> struct_elem(esize,esize,1,1,1);
         //CImg<int> erode_elem(esize,esize,1,1,1);
         //CImg<int> dilate_elem(esize+dilate,esize+dilate,1,1,1);
 
-        for (int b=0;b<4;b++) imgout[b].Chunk(ksize);
-        for (int b=0;b<imgin.NumBands();b++) imgin[b].Chunk(ksize);
+        int dx(0);
+        int dy(0);
+
+        int padding((std::max(esize,dx,dy)+1)/2);
+
+        for (int b=0;b<imgout.NumBands();b++) imgout[b].Chunk(padding);
+        for (int b=0;b<imgin.NumBands();b++) imgin[b].Chunk(padding);
 
         for (unsigned int iChunk=1; iChunk<=imgout[0].NumChunks(); iChunk++) {
             if (Options::Verbose() > 3) std::cout << "Chunk " << iChunk << " of " << imgout[0].NumChunks() << std::endl;
-            clouds = imgout[3].Read(iChunk);
+            clouds = imgout[b_pass1].Read(iChunk);
             // should this be a |= ?
-            if (addclouds) clouds += imgout[2].Read(iChunk);
+            if (addclouds) clouds += imgout[b_ambclouds].Read(iChunk);
+            clouds|=(imgin.SaturationMask(iChunk));
             // Majority filter
-            clouds|=(imgin.SaturationMask(iChunk)^=1);
-            clouds = (clouds + clouds.get_convolve(filter).threshold(th_majority)).threshold(1);
-            //clouds.erode(selem).dilate(selem);
-            imgout[2].Write(clouds,iChunk);
+            //clouds = (clouds + clouds.get_convolve(filter).threshold(majority)).threshold(1);
+            if (dilate > 0) clouds.dilate(dilate, dilate);
+            if (dx > 0 && dy > 0) clouds|=clouds.get_shift(dx,dy);cefrsw
+            imgout[b_cloudmask].Write(clouds,iChunk);
             // Inverse and multiply by nodata mask to get good data mask
-            imgout[1].Write((clouds^=1).mul(imgin.NoDataMask(iChunk)), iChunk);
+            imgout[b_finalmask].Write((clouds^=1).mul(imgin.NoDataMask(iChunk)), iChunk);
             //imgout[0].Write(clouds|=imgin.SaturationMask(iChunk), iChunk);
-            imgout[0].Write(clouds, iChunk);
             //imgout[0].Write(clouds^=1, iChunk);
 
             // Erode, then dilate twice
             //mask.erode(erode_elem).dilate(dilate_elem);
             //mask.dilate(dilate_elem);
         }
-
         return imgout;
 	}
 
