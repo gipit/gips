@@ -622,8 +622,8 @@ namespace gip {
 
         int padding((std::max(dilate,std::max(dx,dy))+1)/2);
 
-        for (int b=0;b<imgout.NumBands();b++) imgout[b].Chunk(padding);
-        for (int b=0;b<imgin.NumBands();b++) imgin[b].Chunk(padding);
+        for (unsigned int b=0;b<imgout.NumBands();b++) imgout[b].Chunk(padding);
+        for (unsigned int b=0;b<imgin.NumBands();b++) imgin[b].Chunk(padding);
 
         for (unsigned int iChunk=1; iChunk<=imgout[0].NumChunks(); iChunk++) {
             if (Options::Verbose() > 3) std::cout << "Chunk " << iChunk << " of " << imgout[0].NumChunks() << std::endl;
@@ -941,7 +941,7 @@ namespace gip {
         imgout[1].SetDescription("troughs");
         imgout[2].SetDescription("peaks");
         for (int b=3;b<numbands;b=b+2) {
-            imgout[b].SetDescription("peak"+to_string(b)+'');
+            imgout[b].SetDescription("peak"+to_string(b)+"");
             imgout[b+1].SetDescription("");
         }
 
@@ -953,7 +953,7 @@ namespace gip {
 
         CImgList<int> cimgout;
 
-        for (int iChunk=1; iChunk<=img[0].NumChunks(); iChunk++) {
+        for (unsigned int iChunk=1; iChunk<=img[0].NumChunks(); iChunk++) {
 
             //cimg = img.Read(iChunk);
             //cimgout = imgout.Read(iChunk);

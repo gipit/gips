@@ -23,7 +23,7 @@ class ModisData(Data):
         'MCD': 'Combined'
     }
     _rootdir = '/titan/data/modis'
-    _tiledir = os.path.join(_rootdir,'tiles')
+    _tiledir = os.path.join(_rootdir, 'tiles')
     _stagedir = os.path.join(_rootdir, 'stage')
     _tiles_vector = '/titan/data/vector/MODIS/modis_sinusoidal/modis_sinusoidal_grid_world.shp'
 
@@ -41,8 +41,6 @@ class ModisData(Data):
             'url': 'http://e4ftl01.cr.usgs.gov/MOLA/MYD11A1.005'
         }
     }
-
-   
 
     _prodpattern = '*.tif'
 
