@@ -38,59 +38,58 @@ public:
 
 namespace gip {
     using std::string;
-	using std::vector;
-	using std::cout;
-	using std::endl;
+    using std::vector;
+    using std::cout;
+    using std::endl;
 
-	void test(const GeoImage& img) {
-	    cout << img.Info() << endl;
-	    cout << img[0].Info() << endl;
+    void test(const GeoImage& img) {
+        cout << img.Info() << endl;
+        cout << img[0].Info() << endl;
 
         GeoImageIO<float> img0(img);
 
-	    img0[0] > 5;
-	    cout << img0.Info() << endl;
-	    cout << img.Info() << endl;
-	    img0[0] = img0[0] > 5;
-	    cout << img0.Info() << endl;
-	    cout << img.Info() << endl;
-
-	}
+        img0[0] > 5;
+        cout << img0.Info() << endl;
+        cout << img.Info() << endl;
+        img0[0] = img0[0] > 5;
+        cout << img0.Info() << endl;
+        cout << img.Info() << endl;
+    }
 
     //! Create mask based on NoData values for all bands
-	GeoRaster CreateMask(const GeoImage& image, string filename) {
-		typedef float T;
+    GeoRaster CreateMask(const GeoImage& image, string filename) {
+        typedef float T;
 
-		GeoImageIO<T> img(image);
-		CImg<T> imgchunk;
+        GeoImageIO<T> img(image);
+        CImg<T> imgchunk;
 
-		//if (filename == "") filename = image.Basename() + "_mask";
-		GeoImage mask(filename, img, GDT_Byte, 1);
-		GeoRasterIO<unsigned char> mask0(mask[0]);
-		CImg<unsigned char> imgout;
-		mask.SetNoData(0);
-		//unsigned int validpixels(0);
+        // if (filename == "") filename = image.Basename() + "_mask";
+        GeoImage mask(filename, img, GDT_Byte, 1);
+        GeoRasterIO<unsigned char> mask0(mask[0]);
+        CImg<unsigned char> imgout;
+        mask.SetNoData(0);
+        //unsigned int validpixels(0);
         for (unsigned int iChunk=1; iChunk<=img[0].NumChunks(); iChunk++) {
-        	//imgchunk = imageIO[0].Read(*iChunk);
-			//imgout = Pbands[0].NoDataMask(imgchunk);
-			//for (unsigned int b=1;b<image.NumBands();b++) {
+            //imgchunk = imageIO[0].Read(*iChunk);
+            //imgout = Pbands[0].NoDataMask(imgchunk);
+            //for (unsigned int b=1;b<image.NumBands();b++) {
             //        imgout &= Pbands[b].NoDataMask( Pbands[b].Read(*iChunk) );
-			//}
-			//validpixels += imgout.sum();
-			imgout = img.NoDataMask(iChunk);
-			mask0.Write(imgout,iChunk);
-		}
-		//mask[0].SetValidSize(validpixels);
-		return mask[0];
-	}
+            //}
+            //validpixels += imgout.sum();
+            imgout = img.NoDataMask(iChunk);
+            mask0.Write(imgout,iChunk);
+        }
+        //mask[0].SetValidSize(validpixels);
+        return mask[0];
+    }
 
-	//! Calculate Radiance
-	// TODO - combine with Copy/Process
-	GeoImage Rad(const GeoImage& image, string filename) {
-	    if (image[0].Units() != "radiance") {
-	        throw std::runtime_error("image not in radiance units");
-	    }
-	    image.SetUnitsOut("radiance");
+    //! Calculate Radiance
+    // TODO - combine with Copy/Process
+    GeoImage Rad(const GeoImage& image, string filename) {
+        if (image[0].Units() != "radiance") {
+            throw std::runtime_error("image not in radiance units");
+        }
+        image.SetUnitsOut("radiance");
         GeoImageIO<float> img(image);
         GeoImageIO<float> imgout(GeoImage(filename, img, GDT_Int16));
         imgout.SetNoData(-32768); // TODO - set nodata option
@@ -110,15 +109,15 @@ namespace gip {
             }
         }
         return imgout;
-	}
+    }
 
     //! Calculate reflectance assuming read image is radiance
-	GeoImage Ref(const GeoImage& image, string filename) {
+    GeoImage Ref(const GeoImage& image, string filename) {
         if (Options::Verbose() > 1)
             std::cout << "Reflectance(" << image.Basename() << ") -> " << filename << std::endl;
-	    if ((image[0].Units() != "radiance") && (image[0].Units() != "reflectance")) {
-	        throw std::runtime_error("image not in compatible units for reflectance");
-	    }
+        if ((image[0].Units() != "radiance") && (image[0].Units() != "reflectance")) {
+            throw std::runtime_error("image not in compatible units for reflectance");
+        }
         image.SetUnitsOut("reflectance");
         GeoImageIO<float> img(image);
         GeoImageIO<float> imgout(GeoImage(filename, img, GDT_Int16));
@@ -138,19 +137,19 @@ namespace gip {
             }
         }
         return imgout;
-	}
+    }
 
-	//! Calculate radar backscatter for all bands
-	GeoImage SigmaNought(const GeoImage& image, string filename, float CF) {
-	    GeoImageIO<float> img(image);
-	    GeoImageIO<float> imgout(GeoImage(filename, img, GDT_Float32));
-	    float nodataval = -32768;
-	    imgout.SetNoData(nodataval);
-	    img.SetUnitsOut("other");
-	    imgout.SetUnits("other");
-	    CImg<float> cimg;
-	    CImg<unsigned char> nodata;
-	    Colors colors = img.GetColors();
+    //! Calculate radar backscatter for all bands
+    GeoImage SigmaNought(const GeoImage& image, string filename, float CF) {
+        GeoImageIO<float> img(image);
+        GeoImageIO<float> imgout(GeoImage(filename, img, GDT_Float32));
+        float nodataval = -32768;
+        imgout.SetNoData(nodataval);
+        img.SetUnitsOut("other");
+        imgout.SetUnits("other");
+        CImg<float> cimg;
+        CImg<unsigned char> nodata;
+        Colors colors = img.GetColors();
         for (unsigned int b=0;b<img.NumBands();b++) {
             imgout.SetColor(colors[b+1], b+1);
             for (unsigned int iChunk=1; iChunk<=img[b].NumChunks(); iChunk++) {
@@ -163,7 +162,7 @@ namespace gip {
             }
         }
         return imgout;
-	}
+    }
 
     //! Generate 3-band RGB image scaled to 1 byte for easy viewing
     GeoImage RGB(const GeoImage& image, string filename) {
@@ -191,9 +190,9 @@ namespace gip {
         return imgout;
     }
 
-	//! Merge images into one file and crop to vector
-	GeoImage CookieCutter(vector<std::string> imgnames, string filename, string vectorname, float xres, float yres) {
-	    // TODO - pass in vector of GeoRaster's instead
+    //! Merge images into one file and crop to vector
+    GeoImage CookieCutter(vector<std::string> imgnames, string filename, string vectorname, float xres, float yres) {
+        // TODO - pass in vector of GeoRaster's instead
         if (Options::Verbose() > 2) {
             std::cout << filename << ": CookieCutter" << std::endl;
         }
@@ -205,7 +204,7 @@ namespace gip {
         unsigned int bsz = imgs[0].NumBands();
         GDALDataType dtype = imgs[0].DataType();
 
-	    // Create output file based on input vector
+        // Create output file based on input vector
         OGRDataSource *poDS = OGRSFDriverRegistrar::Open(vectorname.c_str());
         OGRLayer *poLayer = poDS->GetLayer(0);
         OGREnvelope extent;
@@ -334,10 +333,10 @@ namespace gip {
         GDALDestroyWarpOptions( psWarpOptions );
 
         return imgout;
-	}
+    }
 
-	void NDVI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, std::vector<std::string>({"NDVI"})); }
-	void EVI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"EVI"}); }
+    void NDVI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, std::vector<std::string>({"NDVI"})); }
+    void EVI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"EVI"}); }
     void LSWI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"LSWI"}); }
     void NDSI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"NDSI"}); }
     void BI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"BI"}); }
@@ -348,16 +347,16 @@ namespace gip {
     void iSTI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"ISTI"}); }
     void STI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"STI"}); }
 
-	//! Create multi-band image of various indices calculated from input
-	//GeoImage Indices(const GeoImage& ImageIn, string filename, bool ndvi, bool evi, bool lswi, bool ndsi, bool bi) {
-	//void Indices(const GeoImage& ImageIn, string basename, std::initializer_list<std::string> list) {
+    //! Create multi-band image of various indices calculated from input
+    //GeoImage Indices(const GeoImage& ImageIn, string filename, bool ndvi, bool evi, bool lswi, bool ndsi, bool bi) {
+    //void Indices(const GeoImage& ImageIn, string basename, std::initializer_list<std::string> list) {
     //    Indices(ImageIn, basename, std::vector<std::string>(list));
     //}
 
     void Indices(const GeoImage& ImageIn, string basename, std::vector<std::string> products) {
         ImageIn.SetUnitsOut("reflectance");
         GeoImageIO<float> imgin(ImageIn);
-		float nodataout = -32768;
+        float nodataout = -32768;
 
         std::map< string, GeoImageIO<float> > imagesout;
         vector<string>::const_iterator iprod;
@@ -396,7 +395,7 @@ namespace gip {
             if (Options::Verbose() > 2) std::cout << "Product " << *iprod << std::endl;
         }
 
-		CImg<float> red, green, blue, nir, swir1, swir2, cimgout, cimgmask;
+        CImg<float> red, green, blue, nir, swir1, swir2, cimgout, cimgmask;
 
         // need to add overlap
         for (unsigned int iChunk=1; iChunk<=ImageIn[0].NumChunks(); iChunk++) {
@@ -450,11 +449,11 @@ namespace gip {
             }
         }
         //return imagesout;
-	}
+    }
 
-	//! Auto cloud mask - toaref input
-	/*GeoImage AutoCloud(const GeoImage& image, string filename, int cheight, float minred, float maxtemp, float maxndvi, int morph) {
-	    typedef float outtype;
+    //! Auto cloud mask - toaref input
+    /*GeoImage AutoCloud(const GeoImage& image, string filename, int cheight, float minred, float maxtemp, float maxndvi, int morph) {
+        typedef float outtype;
         GeoImageIO<float> imgin(image);
         GeoImageIO<outtype> imgout(GeoImage(filename, image, GDT_Byte, 1));
         imgout.SetNoData(0);
@@ -484,11 +483,11 @@ namespace gip {
             //cout << endl;
         }
         return imgout;
-	}*/
+    }*/
 
-	//! ACCA (Automatic Cloud Cover Assessment) takes in TOA Reflectance and temperature
-	GeoImage ACCA(const GeoImage& img, string filename, int dilate) {
-	    img.SetUnitsOut("reflectance");
+    //! ACCA (Automatic Cloud Cover Assessment) takes in TOA Reflectance and temperature
+    GeoImage ACCA(const GeoImage& img, string filename, int dilate) {
+        img.SetUnitsOut("reflectance");
         GeoImageIO<float> imgin(img);
 
         float th_red(0.08);
@@ -643,7 +642,7 @@ namespace gip {
             // TODO - add in snow mask
         }
         return imgout;
-	}
+    }
 
     //! Fmask cloud mask
     /*GeoImage Fmask(const GeoImage& image, string filename, int tolerance, int dilate) {
@@ -1049,108 +1048,108 @@ namespace gip {
         return imageout;
     }*/
 
-	//! Spectral Matched Filter, with missing data
-	/*GeoImage SMF(const GeoImage& image, string filename, CImg<double> Signature) {
-		GeoImage output(filename, image, GDT_Float32, 1);
+    //! Spectral Matched Filter, with missing data
+    /*GeoImage SMF(const GeoImage& image, string filename, CImg<double> Signature) {
+        GeoImage output(filename, image, GDT_Float32, 1);
 
-		// Band Means
-		CImg<double> means(image.NumBands());
-		for (unsigned int b=0;b<image.NumBands();b++) means(b) = image[b].Mean();
+        // Band Means
+        CImg<double> means(image.NumBands());
+        for (unsigned int b=0;b<image.NumBands();b++) means(b) = image[b].Mean();
 
-		//vector< box<point> > Chunks = ImageIn.Chunk();
-		return output;
-	}*/
+        //vector< box<point> > Chunks = ImageIn.Chunk();
+        return output;
+    }*/
 
-	/*CImg<double> SpectralCovariance(const GeoImage& image) {
-		typedef double T;
+    /*CImg<double> SpectralCovariance(const GeoImage& image) {
+        typedef double T;
 
-		GeoImageIO<T> img(image);
+        GeoImageIO<T> img(image);
 
-		unsigned int NumBands(image.NumBands());
-		CImg<double> Covariance(NumBands, NumBands);
+        unsigned int NumBands(image.NumBands());
+        CImg<double> Covariance(NumBands, NumBands);
 
-		// Calculate Covariance
-		vector<bbox> Chunks = image.Chunk();
-		vector<bbox>::const_iterator iChunk;
-		CImg<T> bandchunk;
-		CImg<unsigned char> mask;
-		for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
-			int chunksize = boost::geometry::area(*iChunk);
-			CImg<T> matrixchunk(NumBands, chunksize);
-			mask = img.NoDataMask(*iChunk);
-			int validsize = mask.size() - mask.sum();
+        // Calculate Covariance
+        vector<bbox> Chunks = image.Chunk();
+        vector<bbox>::const_iterator iChunk;
+        CImg<T> bandchunk;
+        CImg<unsigned char> mask;
+        for (iChunk=Chunks.begin(); iChunk!=Chunks.end(); iChunk++) {
+            int chunksize = boost::geometry::area(*iChunk);
+            CImg<T> matrixchunk(NumBands, chunksize);
+            mask = img.NoDataMask(*iChunk);
+            int validsize = mask.size() - mask.sum();
 
-			int p(0);
-			for (unsigned int b=0;b<NumBands;b++) {
-				cout << "band" << b << endl;
-				CImg<T> bandchunk( img[b].Read(*iChunk) );
-				p = 0;
-				cimg_forXY(bandchunk,x,y) {
-					if (mask(x,y)==0) matrixchunk(b,p++) = bandchunk(x,y);
-				}
-				//cout << "p = " << matrixchunk[p-1] << endl;
-			}
-			if (p != (int)image.Size()) matrixchunk.crop(0,0,NumBands-1,p-1);
-			Covariance += (matrixchunk.get_transpose() * matrixchunk)/(validsize-1);
-		}
-		cout << "done cov" << endl;
-		// Subtract Mean
-		CImg<double> means(NumBands);
-		for (unsigned int b=0; b<NumBands; b++) means(b) = image[b].Mean(); //cout << "Mean b" << b << " = " << means(b) << endl; }
-		Covariance -= (means.get_transpose() * means);
+            int p(0);
+            for (unsigned int b=0;b<NumBands;b++) {
+                cout << "band" << b << endl;
+                CImg<T> bandchunk( img[b].Read(*iChunk) );
+                p = 0;
+                cimg_forXY(bandchunk,x,y) {
+                    if (mask(x,y)==0) matrixchunk(b,p++) = bandchunk(x,y);
+                }
+                //cout << "p = " << matrixchunk[p-1] << endl;
+            }
+            if (p != (int)image.Size()) matrixchunk.crop(0,0,NumBands-1,p-1);
+            Covariance += (matrixchunk.get_transpose() * matrixchunk)/(validsize-1);
+        }
+        cout << "done cov" << endl;
+        // Subtract Mean
+        CImg<double> means(NumBands);
+        for (unsigned int b=0; b<NumBands; b++) means(b) = image[b].Mean(); //cout << "Mean b" << b << " = " << means(b) << endl; }
+        Covariance -= (means.get_transpose() * means);
 
-		if (Options::Verbose() > 0) {
-			cout << image.Basename() << " Spectral Covariance Matrix:" << endl;
-			cimg_forY(Covariance,y) {
-				cout << "\t";
-				cimg_forX(Covariance,x) {
-					cout << std::setw(18) << Covariance(x,y);
-				}
-				cout << endl;
-			}
-		}
-		return Covariance;
-	}*/
+        if (Options::Verbose() > 0) {
+            cout << image.Basename() << " Spectral Covariance Matrix:" << endl;
+            cimg_forY(Covariance,y) {
+                cout << "\t";
+                cimg_forX(Covariance,x) {
+                    cout << std::setw(18) << Covariance(x,y);
+                }
+                cout << endl;
+            }
+        }
+        return Covariance;
+    }*/
 /*
-	CImg<double> SpectralCorrelation(const GeoImage& image, CImg<double> covariance) {
-		// Correlation matrix
-		if (covariance.size() == 0) covariance = SpectralCovariance(image);
+    CImg<double> SpectralCorrelation(const GeoImage& image, CImg<double> covariance) {
+        // Correlation matrix
+        if (covariance.size() == 0) covariance = SpectralCovariance(image);
 
-		unsigned int NumBands = image.NumBands();
-		unsigned int b;
+        unsigned int NumBands = image.NumBands();
+        unsigned int b;
 
-		// Subtract Mean
-		//CImg<double> means(NumBands);
-		//for (b=0; b<NumBands; b++) means(b) = image[b].Mean();
-		//covariance -= (means.get_transpose() * means);
+        // Subtract Mean
+        //CImg<double> means(NumBands);
+        //for (b=0; b<NumBands; b++) means(b) = image[b].Mean();
+        //covariance -= (means.get_transpose() * means);
 
-		CImg<double> stddev(NumBands);
-		for (b=0; b<NumBands; b++) stddev(b) = image[b].StdDev();
-		CImg<double> Correlation = covariance.div(stddev.get_transpose() * stddev);
+        CImg<double> stddev(NumBands);
+        for (b=0; b<NumBands; b++) stddev(b) = image[b].StdDev();
+        CImg<double> Correlation = covariance.div(stddev.get_transpose() * stddev);
 
-		if (Options::Verbose() > 0) {
-			cout << image.Basename() << " Spectral Correlation Matrix:" << endl;
-			cimg_forY(Correlation,y) {
-				cout << "\t";
-				cimg_forX(Correlation,x) {
-					cout << std::setw(18) << Correlation(x,y);
-				}
-				cout << endl;
-			}
-		}
+        if (Options::Verbose() > 0) {
+            cout << image.Basename() << " Spectral Correlation Matrix:" << endl;
+            cimg_forY(Correlation,y) {
+                cout << "\t";
+                cimg_forX(Correlation,x) {
+                    cout << std::setw(18) << Correlation(x,y);
+                }
+                cout << endl;
+            }
+        }
 
-		return Correlation;
-	}*/
+        return Correlation;
+    }*/
 
-	//! Rewrite file (applying processing, masks, etc)
-	/* GeoImage Process(const GeoImage& image) {
-	    for (unsigned int i=0l i<Output.NumBands(); i++) {
+    //! Rewrite file (applying processing, masks, etc)
+    /* GeoImage Process(const GeoImage& image) {
+        for (unsigned int i=0l i<Output.NumBands(); i++) {
 
-	    }
-	}
-	// Apply a mask to existing file (where mask>0 change to NoDataValue)
-	GeoImage Process(const GeoImage& image, GeoRaster& mask) {
-	    image.AddMask(mask);
+        }
+    }
+    // Apply a mask to existing file (where mask>0 change to NoDataValue)
+    GeoImage Process(const GeoImage& image, GeoRaster& mask) {
+        image.AddMask(mask);
         for (unsigned int i=0; i<image.NumBands(); i++) {
             switch (image.DataType()) {
                 case GDT_Byte: GeoRasterIO<unsigned char>(image[i]).ApplyMask(mask);
@@ -1171,7 +1170,7 @@ namespace gip {
             }
         }
         return image;
-	}	*/
+    }   */
 
 } // namespace gip
 
