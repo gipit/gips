@@ -501,7 +501,7 @@ class Data(object):
         parser = subparser.add_parser('project',help='Create project', parents=[invparser], formatter_class=dhf)
         group = parser.add_argument_group('Project options')
         group.add_argument('--res',nargs=2,help='Resolution of output rasters', default=None, type=float)
-        group.add_argument('--datadir', help='Directory to save project files', default='gipdata')
+        group.add_argument('--datadir', help='Directory to save project files', default=cls.name+'_data')
 
         # Links
         parser = subparser.add_parser('link',help='Link to Products', parents=[invparser], formatter_class=dhf)
