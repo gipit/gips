@@ -87,7 +87,7 @@ class DataInventory(object):
         for date in sorted(dates):
             try:
                 dat = dataclass(site=self.site, tiles=self.tiles.keys(), date=date, products=self.products, **kwargs)
-                self.data[date] = [ dat ]
+                self.data[date] = dat
                 self.numfiles = self.numfiles + len(dat.tiles)
             except Exception,e:
                 VerboseOut('Inventory error %s' % e,3)
@@ -189,9 +189,8 @@ class DataInventory(object):
                 if self.products: sys.stdout.write('\n ')
             colors = {}
             for i,s in enumerate(self.dataclass.sensor_names()): colors[s] = self._colororder[i]
-
-            for dat in self.data[date]:
-                sys.stdout.write(self._colorize('{:<6}'.format(daystr), colors[self.dataclass.sensors[dat.sensor]] ))
+            #for dat in self.data[date]:
+            sys.stdout.write(self._colorize('{:<6}'.format(daystr), colors[self.dataclass.sensors[self.data[date].sensor]] ))
             if self.products:
                 sys.stdout.write('        ')
                 prods = [p for p in self.get_products(date) if p in self.products]
