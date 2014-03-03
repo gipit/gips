@@ -39,7 +39,6 @@ namespace gip {
 	GeoImage CookieCutter(std::vector<std::string>, std::string, std::string, float=1.0, float=1.0);
 
 	//! Create new file of standard indices: NDVI, EVI, LSWI, NDSI, BI
-	//void Indices(const GeoImage&, std::string, std::initializer_list<std::string>);
 	void Indices(const GeoImage&, std::string, std::vector<std::string>);
 
     void NDVI(const GeoImage&, std::string);
@@ -57,6 +56,9 @@ namespace gip {
 
     //! Create cloudmask using ACCA
     GeoImage ACCA(const GeoImage&, std::string, int = 5);
+
+    GeoImage RiceDetect(const GeoImage& img, std::string filename, std::vector<int> days, 
+        int maxcrops, float th0, float th1, int dth0=90, int dth1=120);
 
 	// Create new file with AutoCloud algorithm
 	//GeoImage AutoCloud(const GeoImage&, std::string, int=4000, float=0.2, float=14, float=0.2, int=20);
@@ -80,4 +82,4 @@ namespace gip {
 
 } // namespace gip
 
-#endif /* GIP_GEOALGORITHMS_H_ */
+#endif // GIP_GEOALGORITHMS_H

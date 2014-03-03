@@ -102,14 +102,14 @@ namespace gip {
 			return *this;
 		}
 		// Read Cube as list
-		/*cimg_library::CImgList<T> ReadAsList(bbox chunk) const {
+		cimg_library::CImgList<T> ReadAsList(int chunk=0) const {
 			cimg_library::CImgList<T> images;
 			typename std::vector< GeoRasterIO<T> >::const_iterator iBand;
 			for (iBand=_RasterIOBands.begin();iBand!=_RasterIOBands.end();iBand++) {
 				images.insert( iBand->Read(chunk) );
 			}
 			return images;
-		}*/
+		}
 
 		//! NoData mask (all bands).  1's where it is good data
 		CImg<unsigned char> NoDataMask(int chunk=0, std::vector<std::string> bands=std::vector<std::string>()) const {
