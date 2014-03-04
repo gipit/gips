@@ -312,8 +312,9 @@ class Data(object):
                 VerboseOut(['Processing products for tile %s' % tile, toprocess],3)
                 self.processtile(tile,toprocess)
 
-    def project(self, res=None, datadir='gipdata'):
+    def project(self, res=None, datadir=''):
         """ Create image of final product (reprojected/mosaiced) """
+        if datadir == '': datadir = self.name+'_data'
         self.process()
         if not os.path.exists(datadir): os.makedirs(datadir)
         datadir = os.path.abspath(datadir)
