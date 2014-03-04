@@ -154,11 +154,11 @@ class DataInventory(object):
         """ Get list of products for given date """
         # this doesn't handle different tiles (if prod exists for one tile, it lists it)
         prods = []
-        for data in self.data[date]:
-            for t in data.tiles:
-                for p in data.tiles[t]['products']:
-                    prods.append(p)
-                #for prod in data.products.keys(): prods.append(prod)
+        dat = self.data[date]
+        for t in dat.tiles:
+            for p in dat.tiles[t]['products']:
+                prods.append(p)
+            #for prod in data.products.keys(): prods.append(prod)
         return sorted(set(prods))
 
     def printcalendar(self,md=False):
@@ -176,6 +176,7 @@ class DataInventory(object):
         # print inventory
         print '\nINVENTORY'
         for date in self.dates:
+            dat = self.data[date]
             if md:
                 daystr = str(date.month) + '-' + str(date.day)
             else:
@@ -190,7 +191,7 @@ class DataInventory(object):
             colors = {}
             for i,s in enumerate(self.dataclass.sensor_names()): colors[s] = self._colororder[i]
             #for dat in self.data[date]:
-            sys.stdout.write(self._colorize('{:<6}'.format(daystr), colors[self.dataclass.sensors[self.data[date].sensor]] ))
+            sys.stdout.write(self._colorize('{:<6}'.format(daystr), colors[self.dataclass.sensors[dat.sensor]] ))
             if self.products:
                 sys.stdout.write('        ')
                 prods = [p for p in self.get_products(date) if p in self.products]
