@@ -621,8 +621,8 @@ namespace gip {
 
         int padding((std::max(dilate,std::max(dx,dy))+1)/2);
 
-        for (int b=0;b<imgout.NumBands();b++) imgout[b].Chunk(padding);
-        for (int b=0;b<imgin.NumBands();b++) imgin[b].Chunk(padding);
+        for (unsigned int b=0;b<imgout.NumBands();b++) imgout[b].Chunk(padding);
+        for (unsigned int b=0;b<imgin.NumBands();b++) imgin[b].Chunk(padding);
 
         for (unsigned int iChunk=1; iChunk<=imgout[0].NumChunks(); iChunk++) {
             if (Options::Verbose() > 3) std::cout << "Chunk " << iChunk << " of " << imgout[0].NumChunks() << std::endl;
@@ -930,101 +930,56 @@ namespace gip {
     }
 
     //! Rice detection algorithm
-    GeoImage RiceDetect(const GeoImage& image, string filename, vector<int> days, int maxcrops, float th0, float th1, int dth0, int dth1) {
-        using cimg_library::CImgList;
-
-        GeoImageIO<float> img(image);
-        int numbands = 2 * maxcrops + 3;
-        GeoImageIO<unsigned char> imgout(GeoImage(filename, image, GDT_Byte, numbands));
-        imgout[0].SetDescription("met");
-        imgout[1].SetDescription("troughs");
-        imgout[2].SetDescription("peaks");
-        for (int b=3;b<numbands;b=b+2) {
-            imgout[b].SetDescription("peak"+to_string(b)+'');
-            imgout[b+1].SetDescription("");
-        }
-
+    GeoImage RiceDetect(const GeoImage& image, string filename, vector<int> days, float th0, float th1, int dth0, int dth1) {
         if (Options::Verbose() > 1) std::cout << "RiceDetect(" << image.Basename() << ") -> " << filename << std::endl;
 
-        int peaknum(0);
-        CImg<double> cimg;
-        CImg<int> cimg_th0, cimg_th1; //, matched;
+        GeoImageIO<float> img(image);
+        GeoImageIO<unsigned char> imgout(GeoImage(filename, image, GDT_Byte, img.NumBands()));
+        imgout.SetNoData(0);
+        imgout[0].SetDescription("rice");
+        for (unsigned int b=1;b<img.NumBands();b++) {
+            imgout[b].SetDescription("day"+to_string(days[b]));
+        }
 
-        CImgList<int> cimgout;
+        CImg<float> cimg;
+        CImg<unsigned char> cimg_nodata, cimg_dmask;
+        CImg<int> cimg_th0, cimg_flood;
 
-        for (int iChunk=1; iChunk<=img[0].NumChunks(); iChunk++) {
-
-            //cimg = img.Read(iChunk);
-            //cimgout = imgout.Read(iChunk);
-            cimgout = imgout.ReadAsList(iChunk);
-
-            // Reset running DOY to all zero
-            CImg<int> DOY( cimgout[0].width(), cimgout[0].height(), 1, 1, 0 );
-
-            // Seed with first band
+        for (unsigned int iChunk=1; iChunk<=img[0].NumChunks(); iChunk++) {
+            if (Options::Verbose() > 3) std::cout << "Chunk " << iChunk << " of " << img[0].NumChunks() << std::endl;
             cimg = img[0].Read(iChunk);
-            CImg<int> cimg_everlow( cimg.get_threshold(th0)^=1 );
-            CImg<int> cimg_everhigh( cimg.threshold(th1,false,true) );
-            cimgout[1] = cimg_everlow;
-            cimgout[2] = cimg_everhigh;
+            cimg_nodata = img[0].NoDataMask(iChunk);
+            int delta_day(0);
+            CImg<int> DOY(cimg.width(), cimg.height(), 1, 1, 0);
+            CImg<int> cimg_rice(cimg.width(), cimg.height(), 1, 1, 0);
+            cimg_flood = (cimg.get_threshold(th0)^=1).mul(cimg_nodata);
+
             for (unsigned int b=1;b<image.NumBands();b++) {
+                if (Options::Verbose() > 3) std::cout << "Day " << days[b] << std::endl;
+                delta_day = days[b]-days[b-1];
                 cimg = img[b].Read(iChunk);
-                // Get low and high thresholds for this band
-                cimg_th0 = cimg.get_threshold(th0);         // >=
-                cimg_th1 = cimg.threshold(th1,false,true);  // >
+                cimg_nodata = img[b].NoDataMask(iChunk);
+                cimg_th0 = cimg.get_threshold(th0)|=(cimg_nodata^1);    // >= th0 and assume nodata >= th0
 
-                // Where <= low threshold, set DOY to 0
-                DOY.mul(cimg_th0);
-                // As long as > low threshold keep adding days
-                DOY += cimg_th0 * days[b];
+                DOY += delta_day;                                       // running total of days
+                DOY.mul(cimg_flood);                                    // reset if it hasn't been flooded yet
+                DOY.mul(cimg_th0);                                      // reset if in hydroperiod
 
-                // Update flags if it was ever low/high
-                cimg_everlow |= (cimg_th0^=1); // cimg_th0 now represents <= th0
-                cimg_everhigh |= cimg_th1;
+                cimg_dmask = DOY.get_threshold(dth1,false,true)^=1;      // mask of where past high date
+                DOY.mul(cimg_dmask);
 
-                cimgout[1] += cimg_th0;
-                cimgout[2] += cimg_th1;
+                // locate (and count) where rice criteria met
+                CImg<unsigned char> newrice = cimg.threshold(th1,false,true) & DOY.get_threshold(dth0,false,true);
+                cimg_rice = cimg_rice + newrice;
 
-                // If low threshold was never met, change DOY to zero ???
-                //DOY.mul(cimg_everlow^1);
+                // update flood map
+                cimg_flood |= (cimg_th0^=1);
+                // remove new found rice pixels, and past high date
+                cimg_flood.mul(newrice^=1).mul(cimg_dmask);                           
 
-                // locate where high threshold reached and is between day thresholds since low threshold
-                cimg_th1 = cimg_th1 & DOY.get_threshold(dth0,true) & (DOY.get_threshold(dth1)^1);
-                //matched += cimg_th1;
-                // Reset if high date has passed
-                DOY.mul(DOY.get_threshold(dth1));
-                // Loop through
-                if (maxcrops != 0) {
-                    cimg_forXY(cimg_everlow,x,y) {
-                        if (cimg_th0(x,y)) {
-                            peaknum = cimgout[1](x,y);
-                            if (peaknum > 0 && peaknum <= maxcrops) {
-                                cimgout[(peaknum-1)*2+3](x,y) = days[b];
-                            }
-                        }
-                        if (cimg_th1(x,y)) {
-                            peaknum = cimgout[2](x,y);
-                            if (peaknum > 0 && peaknum <= maxcrops) {
-                                cimgout[(peaknum-1)*2+4](x,y) = days[b];
-                                // Day of Year
-                                cimgout[(peaknum-1)*2+3](x,y) = DOY(x,y); // * cimg_th1(x,y);
-                                // Yield (value)
-                                //cimgout[(peaknum-1)*2+4](x,y) = CImage[b](x,y);
-                            }
-                        }
-
-                    }
-                }
+                imgout[b].Write(DOY, iChunk);
             }
-            // flag where low and high thresholds were both met
-            cimgout[0] = cimg_everlow & cimg_everhigh;
-            //CImg<T> tmp = cimgout[0].get_threshold(0);
-            for (unsigned int c=1;c<cimgout.size();c++) {
-                cimgout[c].mul(cimgout[0]);
-            }
-
-            // Write out images
-            imgout.Write(cimgout.get_append('c'), iChunk);
+            imgout[0].Write(cimg_rice,iChunk);              // rice map count
         }
         return imgout;
     }
