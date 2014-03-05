@@ -118,8 +118,7 @@ class DataInventory(object):
         start = datetime.now()
         VerboseOut('Requested %s products for %s files' % (len(self.products), self.numfiles))
         for date in self.dates:
-            for data in self.data[date]:
-                data.process(*args, **kwargs)
+            self.data[date].process(*args, **kwargs)
         VerboseOut('Completed processing in %s' % (datetime.now()-start))
 
     def project(self, *args, **kwargs):
@@ -128,26 +127,24 @@ class DataInventory(object):
         VerboseOut('Projecting data for %s dates (%s - %s)' % (len(self.dates),self.dates[0],self.dates[-1]))
         # res should default to data?
         for date in self.dates:
-            for data in self.data[date]:
-                data.project(*args, **kwargs)
+            self.data[date].project(*args, **kwargs)
         VerboseOut('Completed projecting in %s' % (datetime.now()-start))
 
     def links(self,hard=False):
         """ Create links to tiles - move linking to core """
         for date in self.data:
-            for data in self.data[date]:
-                for t in data.tiles:
-                    for p in data.tiles[t]['products']:
-                        fname = data.tiles[t]['products'][p]
-                        bname = os.path.basename(fname)
-                        if hard:
-                            f = os.link
-                        else: f = os.symlink
-                        try:
-                            f( fname, bname )
-                            VerboseOut('%s: linking' % bname)
-                        except: 
-                            VerboseOut('%s: Problem creating link' % bname,2)
+            for t in self.data[date].tiles:
+                for p in self.data[date].tiles[t]['products']:
+                    fname = self.data[date].tiles[t]['products'][p]
+                    bname = os.path.basename(fname)
+                    if hard:
+                        f = os.link
+                    else: f = os.symlink
+                    try:
+                        f( fname, bname )
+                        VerboseOut('%s: linking' % bname)
+                    except: 
+                        VerboseOut('%s: Problem creating link' % bname,2)
 
     # TODO - check if this is needed
     def get_products(self, date):
