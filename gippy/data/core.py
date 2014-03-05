@@ -192,7 +192,7 @@ class Data(object):
             raise Exception('No product provided')
 
     @classmethod
-    def archive(cls, path='', link=True):
+    def archive(cls, path='', recursive=False, keep=False):
         """ Move files from directory to archive location """
         start = datetime.now()
 
@@ -214,7 +214,7 @@ class Data(object):
                 info = cls.inspect(f)
             except Exception, e:
                 # if problem with inspection, move to quarantine
-                qname = os.path.join(qdir, f)
+                qname = os.path.join(qdir, os.path.basename(f))
                 if not os.path.exists(qname):
                     os.link(os.path.abspath(f), qname)
                 to_remove.append(f)
@@ -252,9 +252,11 @@ class Data(object):
                     VerboseOut('%s already in archive' % f, 2)
                     to_remove.append(f)
             numfiles = numfiles + added
-        RemoveFiles(to_remove,['.index', '.aux.xml'])
+
+        if not keep: RemoveFiles(to_remove,['.index', '.aux.xml'])
         # Summarize
-        VerboseOut('%s files (%s links) added to archive in %s' % (numfiles, numlinks, datetime.now()-start) )
+        VerboseOut('%s files (%s links) from %s added to archive in %s' %
+                    (numfiles, numlinks, path, datetime.now()-start) )
         if numfiles != len(fnames):
             VerboseOut('%s files not added to archive' % (len(fnames)-numfiles))
 
@@ -517,7 +519,9 @@ class Data(object):
 
         # Misc
         parser = subparser.add_parser('archive',help='Move files from current directory to data archive')
-        parser.add_argument('--link',help='Create symbolic links instead of moving', default=False,action='store_true')
+        #parser.add_argument('--link',help='Create symbolic links instead of moving', default=False,action='store_true')
+        parser.add_argument('--keep',help='Keep files after adding to archive', default=False,action='store_true')
+        parser.add_argument('--recursive',help='Iterate through subdirectories', default=False,action='store_true')
         parser.add_argument('-v','--verbose',help='Verbosity - 0: quiet, 1: normal, 2: debug', default=1, type=int)
 
         parser = subparser.add_parser('fetch',help='Fetch products from remote location')
@@ -542,7 +546,11 @@ class Data(object):
 
         try:
             if args.command == 'archive':
-                cls.archive(link=args.link)
+                if args.recursive:
+                    for root, subdirs, files in os.walk('.'):
+                        cls.archive(path=root, keep=args.keep)
+                else:
+                    cls.archive(keep=args.keep)
                 exit(1)
             inv = cls.inventory(site=args.site, dates=args.dates, days=args.days, tiles=args.tiles, 
                 products=args.products, pcov=args.pcov, ptile=args.ptile, fetch=args.fetch)
