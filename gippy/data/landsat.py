@@ -31,7 +31,7 @@ class LandsatData(Data):
     _stagedir = os.path.join(_rootdir,'.stage')
     _tiles_vector = 'landsat_wrs'
     _tiles_attribute = 'pr'
-
+    
     _prodpattern = '*.tif'
     _metapattern = 'MTL.txt'
     _defaultresolution = [30.0, 30.0]
@@ -309,66 +309,56 @@ class LandsatData(Data):
         }
         return self.tiles[tile]['metadata']
 
-    def processtile(self, tile, products):
+    def processtile(self,tile,products):
         """ Make sure all products have been pre-processed """
         start = datetime.now()
         tdata = self.tiles[tile]
         bname = os.path.basename(tdata['assets'][0])
         try:
             img = self._readraw(tile)
-        except Exception, e:
-            VerboseOut('Error reading %s %s' % (bname, e), 2)
+        except Exception,e:
+            VerboseOut('Error reading %s %s' % (bname,e), 2)
             VerboseOut(traceback.format_exc(), 4)
 
         runatm = False
         for p in products:
             if self._products[p]['atmcorr']: runatm = True
         if runatm:
-            atmospheres = [atmosphere(i, tdata['metadata']) for i in range(1, img.NumBands() + 1)]
-        VerboseOut('%s: read in %s' % (bname, datetime.now() - start))
+            atmospheres = [atmosphere(i,tdata['metadata']) for i in range(1,img.NumBands()+1)]
+        VerboseOut('%s: read in %s' % (bname,datetime.now() - start)) 
 
-        for p, fout in products.items():
-            try:
+        for p,fout in products.items():
+            try: 
                 start = datetime.now()
                 if (self._products[p]['atmcorr']):
-                    for i in range(0, img.NumBands()):
+                    for i in range(0,img.NumBands()):
                         b = img[i]
                         b.SetAtmosphere(atmospheres[i])
                         img[i] = b
-                        VerboseOut('atmospherically correcting', 3)
+                        VerboseOut('atmospherically correcting',3)
                 else: img.ClearAtmosphere()
                 try:
-                    if p == 'ACCA':
-                        dilation = 60  # pixels
-                        fcall = ('gippy.%s(img, fout, %d, %d, %d)' %
-                                 self._products[p]['function'],
-                                 90 - self._geometry['solarzenith'],
-                                 self._geometry['solarazimuth'],
-                                 dilation)
-                        print fcall
-                        set_trace()
-                    else:
-                        fcall = 'gippy.%s(img, fout)' % self._products[p]['function']
-                    VerboseOut(fcall, 2)
+                    fcall = 'gippy.%s(img, fout)' % self._products[p]['function']
+                    VerboseOut(fcall,2)
                     eval(fcall)
                     #if overviews: imgout.AddOverviews()
-                    fname = glob.glob(fout + '*')[0]
+                    fname = glob.glob(fout+'*')[0]
                     tdata['products'][p] = fname
-                    VerboseOut(' -> %s: processed in %s' % (os.path.basename(fname), datetime.now() - start))
-                except Exception, e:
-                    VerboseOut('Error creating product %s for %s: %s' % (p, bname, e), 3)
-                    VerboseOut(traceback.format_exc(), 4)
+                    VerboseOut(' -> %s: processed in %s' % (os.path.basename(fname),datetime.now()-start))
+                except Exception,e:
+                    VerboseOut('Error creating product %s for %s: %s' % (p,bname,e),3)
+                    VerboseOut(traceback.format_exc(),4)
             # double exception? is this necessary ?
-            except Exception, e:
-                VerboseOut('Error processing %s: %s' % (tdata['basename'], e), 2)
+            except Exception,e:
+                VerboseOut('Error processing %s: %s' % (tdata['basename'],e),2)
                 VerboseOut(traceback.format_exc(), 4)
         img = None
         # cleanup directory
         try:
             for bname in self.tiles[tile]['datafiles']:
-                files = glob.glob(os.path.join(data['path'], bname) + '*')
+                files = glob.glob(os.path.join(data['path'],bname)+'*')
                 RemoveFiles(files)
-            shutil.rmtree(os.path.join(tdata['path'], 'modtran'))
+            shutil.rmtree(os.path.join(tdata['path'],'modtran'))
         except: pass
 
     def filter(self, tile, maxclouds=100):

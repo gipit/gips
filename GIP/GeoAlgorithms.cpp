@@ -4,8 +4,6 @@
  *  Created on: Aug 26, 2011
  *      Author: mhanson
  */
-#define _USE_MATH_DEFINES
-#include <cmath>
 
 #include <gip/GeoAlgorithms.h>
 #include <gip/GeoImageIO.h>
@@ -397,7 +395,7 @@ namespace gip {
             if (Options::Verbose() > 2) std::cout << "Product " << *iprod << std::endl;
         }
 
-		CImg<float> red, green, blue, nir, swir1, swir2, cimgout, cimgmask;
+        CImg<float> red, green, blue, nir, swir1, swir2, cimgout, cimgmask;
 
         // need to add overlap
         for (unsigned int iChunk=1; iChunk<=ImageIn[0].NumChunks(); iChunk++) {
@@ -487,12 +485,8 @@ namespace gip {
         return imgout;
     }*/
 
-    /** ACCA (Automatic Cloud Cover Assessment). Takes in TOA Reflectance,
-     * temperature, sun elevation, solar azimuth, and number of pixels to
-     * dilate.
-     */
-    GeoImage ACCA(const GeoImage& img, string filename, float se_degrees,
-                  float sa_degrees, int dilate) {
+    //! ACCA (Automatic Cloud Cover Assessment) takes in TOA Reflectance and temperature
+    GeoImage ACCA(const GeoImage& img, string filename, int dilate) {
         img.SetUnitsOut("reflectance");
         GeoImageIO<float> imgin(img);
 
@@ -622,16 +616,8 @@ namespace gip {
         //CImg<int> filter(ksize,ksize,1,1, 1);
         //int majority(((ksize*ksize)+1)/2);
 
-        //! Coarse shadow covering smear of image
-        float xres(30.0);
-        float yres(30.0);
-        float sunelevation(se_degrees*M_PI/180.0);
-        float solarazimuth(sa_degrees*M_PI/180.0);
-        float cloudheight(10000.0);
-        float distance = cloudheight/tan(sunelevation);
-        int dx = -1.0 * sin(solarazimuth) * distance / xres;
-        int dy = cos(solarazimuth) * distance / yres;
-
+        int dx(0);
+        int dy(0);
 
         int padding((std::max(dilate,std::max(dx,dy))+1)/2);
 
@@ -942,108 +928,61 @@ namespace gip {
         //imgout.GetGDALDataset()->FlushCache();
         return imgout;
     }
-/*
+
     //! Rice detection algorithm
-    GeoImage RiceDetect(const GeoImage& img, string filename, vector<int> days, int maxcrops, float th0, float th1, int dth0, int dth1) {
+    GeoImage RiceDetect(const GeoImage& image, string filename, vector<int> days, float th0, float th1, int dth0, int dth1) {
+        if (Options::Verbose() > 1) std::cout << "RiceDetect(" << image.Basename() << ") -> " << filename << std::endl;
 
-        GeoImageIO<float> imgio(img);
-        int numbands = 2 * maxcrops + 3;
-        GeoImage imgout(filename, img, GDT_Byte, numband);
-        GeoImage<unsigned char> imgoutio(imgout);
-
-        if (Options::Verbose() > 1) {
-            vector<int>::const_iterator v;
-            std::cout << "Days ";
-            for (v=days.begin(); v!=days.end(); v++) std::cout << *v << " ";
-            std::cout << endl;
+        GeoImageIO<float> img(image);
+        GeoImageIO<unsigned char> imgout(GeoImage(filename, image, GDT_Byte, img.NumBands()));
+        imgout.SetNoData(0);
+        imgout[0].SetDescription("rice");
+        for (unsigned int b=1;b<img.NumBands();b++) {
+            imgout[b].SetDescription("day"+to_string(days[b]));
         }
 
-        int chunknum(0);
-        int peaknum(0);
-        for (int iChunk=1; iChunk<=image[0].NumChunks(); iChunk++) {
-            CImgList<T> CImage( Image.ReadAsList(*iChunk) );
-            CImgList<T> CImageOut( ImageOut.ReadAsList(*iChunk) );
+        CImg<float> cimg;
+        CImg<unsigned char> cimg_nodata, cimg_dmask;
+        CImg<int> cimg_th0, cimg_flood;
 
-            CImg<int> cimgout1, cimgout2;
+        for (unsigned int iChunk=1; iChunk<=img[0].NumChunks(); iChunk++) {
+            if (Options::Verbose() > 3) std::cout << "Chunk " << iChunk << " of " << img[0].NumChunks() << std::endl;
+            cimg = img[0].Read(iChunk);
+            cimg_nodata = img[0].NoDataMask(iChunk);
+            int delta_day(0);
+            CImg<int> DOY(cimg.width(), cimg.height(), 1, 1, 0);
+            CImg<int> cimg_rice(cimg.width(), cimg.height(), 1, 1, 0);
+            cimg_flood = (cimg.get_threshold(th0)^=1).mul(cimg_nodata);
 
-            // get chunk size?
-            p1 = iChunk->min_corner();
-            p2 = iChunk->max_corner();
-            width = p2.x()-p1.x()+1;
-            height = p2.y()-p1.y()+1;
-            // Reset running DOY to all zero
-            CImg<int> DOY( width, height, 1, 1, 0 );
+            for (unsigned int b=1;b<image.NumBands();b++) {
+                if (Options::Verbose() > 3) std::cout << "Day " << days[b] << std::endl;
+                delta_day = days[b]-days[b-1];
+                cimg = img[b].Read(iChunk);
+                cimg_nodata = img[b].NoDataMask(iChunk);
+                cimg_th0 = cimg.get_threshold(th0)|=(cimg_nodata^1);    // >= th0 and assume nodata >= th0
 
-            CImg<int> Clow, Chigh, matched;
+                DOY += delta_day;                                       // running total of days
+                DOY.mul(cimg_flood);                                    // reset if it hasn't been flooded yet
+                DOY.mul(cimg_th0);                                      // reset if in hydroperiod
 
-            // Seed with first band
-            CImg<float> cimg = imgio[0].Read(iChunk);
-            CImg<int> ClowEver( cimg.get_threshold(th0)^1 );
-            CImg<int> ChighEver( cimg.get_threshold(th1,false,true) );
-            cimgout1 = ClowEver;
-            cimgout2 = ChighEver;
-            for (unsigned int b=1;b<Image.NumBands();b++) {
-                cimg = imgio[b].Read(iChunk);
-                // Get low and high thresholds for this band
-                Clow = cimg.get_threshold(th0);
-                Chigh = cimg.get_threshold(th1,false,true);
+                cimg_dmask = DOY.get_threshold(dth1,false,true)^=1;      // mask of where past high date
+                DOY.mul(cimg_dmask);
 
-                // Temporal processing
-                // Where <= low threshold, set DOY to 0
-                DOY.mul(Clow);
-                // Where > low threshold, add to previous DOY
-                DOY += Clow * doy[b];
+                // locate (and count) where rice criteria met
+                CImg<unsigned char> newrice = cimg.threshold(th1,false,true) & DOY.get_threshold(dth0,false,true);
+                cimg_rice = cimg_rice + newrice;
 
-                // Update flags if it was Ever low/high
-                ClowEver |= (Clow^=1); // Clow now represents <= th0
-                ChighEver |= Chigh;
+                // update flood map
+                cimg_flood |= (cimg_th0^=1);
+                // remove new found rice pixels, and past high date
+                cimg_flood.mul(newrice^=1).mul(cimg_dmask);                           
 
-                // Add to number of troughs/peaks
-                cimgout1 += Clow;
-                cimgout2 += Chigh;
-
-                // More temporal processing
-                // If low threshold was never met, change DOY to zero
-                DOY.mul(ClowEver^1);
-                Chigh = Chigh & DOY.get_threshold(dth0,true) & (DOY.get_threshold(dth1)^1);
-                matched += Chigh;
-                // Reset if high date has passed
-                DOY.mul(DOY.get_threshold(dth1));
-                // Loop through
-                if (maxcrops != 0) {
-                    cimg_forXY(CImageOut[0],x,y) {
-                        if (Clow(x,y)) {
-                            peaknum = CImageOut[1](x,y);
-                            if (peaknum > 0 && peaknum <= maxcrops) {
-                                CImageOut[(peaknum-1)*2+3](x,y) = doy[b];
-                            }
-                        }
-                        if (Chigh(x,y)) {
-                            peaknum = CImageOut[2](x,y);
-                            if (peaknum > 0 && peaknum <= maxcrops) {
-                                CImageOut[(peaknum-1)*2+4](x,y) = doy[b];
-                                // Day of Year
-                                CImageOut[(peaknum-1)*2+3](x,y) = DOY(x,y); // * Chigh(x,y);
-                                // Yield (value)
-                                CImageOut[(peaknum-1)*2+4](x,y) = CImage[b](x,y);
-                            }
-                        }
-
-                    }
-                }
+                imgout[b].Write(DOY, iChunk);
             }
-            CImageOut[0] = ClowEver & ChighEver;
-            CImg<T> tmp = CImageOut[0].get_threshold(0);
-            for (unsigned int c=0;c<CImageOut.size();c++) {
-                CImageOut[c].mul(tmp);
-            }
-
-            // Write out images
-            ImageOut.Write(CImageOut.get_append('c'), *iChunk, true);
+            imgout[0].Write(cimg_rice,iChunk);              // rice map count
         }
-
+        return imgout;
     }
-*/
 
     // Perform band math (hard coded subtraction)
     /*GeoImage BandMath(const GeoImage& image, string filename, int band1, int band2) {
