@@ -24,8 +24,8 @@ class SARData(Data):
     }
     _defaultresolution = [0.000834028356964,0.000834028356964]
     _rootdir = '/titan/data/SAR'
-    _tiledir = os.path.join(_rootdir,'tiles')
-    _stagedir = os.path.join(_rootdir,'.stage')
+    _tiledir = os.path.join(_rootdir, 'tiles.dev')
+    _stagedir = os.path.join(_rootdir, 'stage')
     #_datedir = '%Y%j'
 
     _tiles_vector = os.path.join(_rootdir,'vectors','tiles.shp')
@@ -99,13 +99,13 @@ class SARData(Data):
         tile = fname[10:17]
         #start = datetime.datetime.now()
         # read date
-        indexfile = os.path.join(path,fname+'.index')
+        indexfile = os.path.join(path, fname+'.index')
         if os.path.exists(indexfile):
             datafiles = File2List(indexfile)
         else:            
             tfile = tarfile.open(filename)
             datafiles = tfile.getnames()
-            List2File(datafiles,indexfile)
+            List2File(datafiles, indexfile)
         for f in datafiles: 
             if f[-3:] == 'hdr': 
                 hdrfile = f
@@ -115,44 +115,49 @@ class SARData(Data):
 
         # Check if inspecting a file in the repository
         if cls._rootdir in path:
-            date = datetime.datetime.strptime(os.path.basename(path),cls._datedir).date()
+            date = datetime.datetime.strptime(os.path.basename(path), cls._datedir).date()
             dates = date
             #VerboseOut('Date from repository = '+str(dates),4)
         else:
             # extract header and date image
             tfile = tarfile.open(filename)
-            tfile.extract(hdrfile,path)
-            hdrfile = os.path.join(path,hdrfile)
-            os.chmod(hdrfile,0664)
+            tfile.extract(hdrfile, path)
+            hdrfile = os.path.join(path, hdrfile)
+            os.chmod(hdrfile, 0664)
             meta = cls._meta(hdrfile)
-            tfile.extract(datefile,path)
-            os.chmod(os.path.join(path,datefile),0664)
+            tfile.extract(datefile, path)
+            datefile = os.path.join(path, datefile)
+            os.chmod(datefile, 0664)
             # Write ENVI header for date image
-            List2File(meta['envihdr'],datefile+'.hdr')
+            List2File(meta['envihdr'], datefile+'.hdr')
             dateimg = gippy.GeoImage(datefile)
             dateimg.SetNoData(0)
             dates = [cls._launchdate[fname[-9]] + datetime.timedelta(days=int(d)) for d in numpy.unique(dateimg.Read()) if d != 0]
-            if not dates: raise Exception('%s: no valid dates' % fname)
+            if not dates:
+                RemoveFiles([hdrfile, datefile], ['.hdr', '.aux.xml'])
+                raise Exception('%s: no valid dates' % fname)
             date = min(dates)
-            RemoveFiles([hdrfile,datefile],['.hdr','.aux.xml'])
+            dateimg = None
+            #RemoveFiles([hdrfile, datefile], ['.hdr', '.aux.xml'])
             #VerboseOut('Date from image: %s' % str(date),3) 
             # If year provided check
-            if fname[7] == 'Y' and fname[8:10] != '00':
-                ydate = datetime.datetime.strptime(fname[8:10],'%y')
-                if date.year != ydate.year:
-                    raise Exception('%s: Date %s outside of expected year (%s)' % (fname, str(date),str(ydate)))
+            #if fname[7] == 'Y' and fname[8:10] != '00':
+            #    ydate = datetime.datetime.strptime(fname[8:10], '%y')
+            #    if date.year != ydate.year:
+            #        raise Exception('%s: Date %s outside of expected year (%s)' % (fname, str(date),str(ydate)))
             # If widebeam check cycle dates
             if fname[7] == 'C':
-                cdate = datetime.datetime.strptime(cls._cycledates[int(fname[8:10])],'%d-%b-%y').date()
+                cdate = datetime.datetime.strptime(cls._cycledates[int(fname[8:10])], '%d-%b-%y').date()
                 if not (cdate <= date <= (cdate + datetime.timedelta(days=45))):
-                    raise Exception('%s: Date %s outside of cycle range (%s)' % (fname, str(date),str(cdate)))
+                    raise Exception('%s: Date %s outside of cycle range (%s)' % (fname, str(date), str(cdate)))
             #VerboseOut('%s: inspect %s' % (fname,datetime.datetime.now()-start), 4)
+            
 
         return {
             'asset': '',
             'filename': filename,
             'datafiles': datafiles,
-            'tile': tile, 
+            'tile': tile,
             'date': dates,
             'basename': bname,
             'sensor': fname[-9:-8] + fname[-15:-12],
@@ -247,7 +252,7 @@ class SARData(Data):
         # Remove unused stuff
         rmfiles = [k for k in ['linci','mask','date'] + self._databands if k in tdata['products']]
         for f in rmfiles:
-            RemoveFiles([self.tiles[tile]['products'][f],self.tiles[tile]['products'][f]+'.hdr',self.tiles[tile]['products'][f]+'.aux.xml'])
+            RemoveFiles([self.tiles[tile]['products'][f]],[self.tiles[tile]['products'][f]+'.hdr',self.tiles[tile]['products'][f]+'.aux.xml'])
 
     @classmethod
     def feature2tile(cls,feature):
