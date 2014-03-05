@@ -225,26 +225,27 @@ class Data(object):
                 info['date'] = [info['date']]
             for d in info['date']:
                 added = 0
-                path = cls.path(info['tile'], d)
+                bname = os.path.basename(f)
+                tpath = cls.path(info['tile'], d)
                 pattern = cls._assets[info['asset']]['pattern']
-                newfilename = os.path.join(path, os.path.basename(f))
+                newfilename = os.path.join(tpath, bname)
                 if not os.path.exists(newfilename):
                     # check if another asset exists
-                    existing_assets = glob.glob(os.path.join(path, pattern))
+                    existing_assets = glob.glob(os.path.join(tpath, pattern))
                     if len(existing_assets) > 0:
-                        VerboseOut('%s: other version(s) already exists:' % f, 2)
+                        VerboseOut('%s: other version(s) already exists:' % bname, 2)
                         for ef in existing_assets: VerboseOut('\t%s' % os.path.basename(ef),2)
                     else:
                         try:
-                            os.makedirs(path)
+                            os.makedirs(tpath)
                         except OSError as exc:  # Python >2.5
                             if exc.errno == errno.EEXIST and os.path.isdir(path):
                                 pass
                             else:
-                                raise Exception('Unable to make data directory %s' % path)
+                                raise Exception('Unable to make data directory %s' % tpath)
                         os.link(os.path.abspath(f), newfilename)
                         #shutil.move(os.path.abspath(f),newfilename)
-                        VerboseOut(os.path.basename(f) + ' -> ' + newfilename, 2)
+                        VerboseOut(bname + ' -> ' + newfilename, 2)
                         added = 1
                         numlinks = numlinks + added
                         to_remove.append(f)
@@ -256,7 +257,7 @@ class Data(object):
         if not keep: RemoveFiles(to_remove,['.index', '.aux.xml'])
         # Summarize
         VerboseOut('%s files (%s links) from %s added to archive in %s' %
-                    (numfiles, numlinks, path, datetime.now()-start) )
+                    (numfiles, numlinks, os.path.abspath(path), datetime.now()-start) )
         if numfiles != len(fnames):
             VerboseOut('%s files not added to archive' % (len(fnames)-numfiles))
 
