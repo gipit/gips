@@ -44,13 +44,14 @@ class SARData(Data):
         ('sign', {
             'description': 'Sigma nought (radar backscatter coefficient)',
         }),
+        ('linci', {
+            'description': 'Incident angles',
+        }),
     ])
-
-
 
     # SAR specific constants
     # launch dates for PALSAR (A) and JERS-1 (J)
-    _launchdate = {'A': datetime.date(2006,1,24), 'J': datetime.date(1992,2,11)}
+    _launchdate = {'A': datetime.date(2006, 1, 24), 'J': datetime.date(1992, 2, 11)}
     _databands = ["sl_HH", "sl_HV"]
 
     _cycledates = {
@@ -249,12 +250,14 @@ class SARData(Data):
             dateday = (self.date - self._launchdate[self.sensor[0]]).days
             img.AddMask(dateimg[0] == dateday)
             imgout = gippy.SigmaNought(img, products['sign'], meta['CF'])
-            self.tiles[tile]['products']['sign'] = imgout.Filename()
+            tdata['products']['sign'] = imgout.Filename()
             img = None
             imgout = None
+        if 'angle' in products.keys():
+            tdata['products']['linci'] = datafiles['linci']
         # Remove unused stuff
-        for key,f in datafiles.items():
-            if key != 'hdr': RemoveFiles([f],['.hdr','.aux.xml'])
+        for key, f in datafiles.items():
+            if key not in tdata['products'] and key != 'hdr': RemoveFiles([f],['.hdr','.aux.xml'])
 
     @classmethod
     def feature2tile(cls,feature):

@@ -157,7 +157,8 @@ class Data(object):
             files2 = []
             for f in files:
                 ext = os.path.splitext(f)[1]
-                if ext != '.hdr' and ext != '.xml': files2.append(f)
+                # bad....don't check gz, this should check that is not asset
+                if ext != '.hdr' and ext != '.xml' and ext != '.gz' and ext != '.index': files2.append(f)
             files = files2
             # TODO - BASENAME IS DIFFERENT FOR EVERY ASSET !??  Because of sensor issue
             for f in files:
@@ -238,8 +239,8 @@ class Data(object):
                     else:
                         try:
                             os.makedirs(tpath)
-                        except OSError as exc:  # Python >2.5
-                            if exc.errno == errno.EEXIST and os.path.isdir(path):
+                        except OSError as exc:
+                            if exc.errno == errno.EEXIST and os.path.isdir(tpath):
                                 pass
                             else:
                                 raise Exception('Unable to make data directory %s' % tpath)
