@@ -63,7 +63,7 @@ class DataInventory(object):
 
         self.data = {}
         if products is not None:
-            if len(products) == 0: products = dataclass._products.keys()
+            if len(products) == 0: products = dataclass.Tile._products.keys()
         self.products = products
 
         if fetch and products is not None:
@@ -153,7 +153,7 @@ class DataInventory(object):
         prods = []
         dat = self.data[date]
         for t in dat.tiles:
-            for p in dat.tiles[t]['products']:
+            for p in dat.tiles[t].products:
                 prods.append(p)
             #for prod in data.products.keys(): prods.append(prod)
         return sorted(set(prods))
@@ -188,12 +188,12 @@ class DataInventory(object):
             colors = {}
             for i,s in enumerate(self.dataclass.sensor_names()): colors[s] = self._colororder[i]
             #for dat in self.data[date]:
-            sys.stdout.write(self._colorize('{:<6}'.format(daystr), colors[self.dataclass.sensors[dat.sensor]] ))
+            sys.stdout.write(self._colorize('{:<6}'.format(daystr), colors[self.dataclass.Tile.Asset._sensors[dat.sensor]] ))
             if self.products:
                 sys.stdout.write('        ')
                 prods = [p for p in self.get_products(date) if p in self.products]
                 for p in prods:
-                    sys.stdout.write(self._colorize('{:<12}'.format(p), colors[self.dataclass.sensors[dat.sensor]] ))
+                    sys.stdout.write(self._colorize('{:<12}'.format(p), colors[self.dataclass.Tile.Asset._sensors[dat.sensor]] ))
                 sys.stdout.write('\n ')
             oldyear = date.year
         sys.stdout.write('\n')
@@ -205,7 +205,7 @@ class DataInventory(object):
 
     def legend(self):
         print '\nSENSORS'
-        sensors = sorted(self.dataclass.sensors.values())
+        sensors = sorted(self.dataclass.Tile.Asset._sensors.values())
         for i,s in enumerate(sensors):
             print self._colorize(s, self._colororder[i])
             #print self._colorize(self.dataclass.sensors[s], self._colororder[s])

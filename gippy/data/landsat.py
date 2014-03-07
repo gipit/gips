@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
-import os, sys, errno
+import os
+import sys
+import errno
 import argparse
 import glob
 import re
@@ -16,26 +18,17 @@ from collections import OrderedDict
 import gippy
 from gippy.atmosphere import atmosphere
 
-from gippy.data.core import Data
+from gippy.data.core import Asset, Tile, Data
 from gippy.utils import VerboseOut, File2List
 
 from pdb import set_trace
 
 
-class LandsatData(Data):
-    """ Represents a single date and temporal extent along with (existing) product variations (raw, ref, toaref, ind, ndvi, etc) """
-    name = 'Landsat'
-    sensors = {'LT4': 'Landsat 4', 'LT5': 'Landsat 5', 'LE7': 'Landsat 7', 'LC8': 'Landsat 8'}
-    _rootdir = '/titan/data/landsat'
-    _tiledir = os.path.join(_rootdir,'tiles')
-    _stagedir = os.path.join(_rootdir,'.stage')
-    _tiles_vector = 'landsat_wrs'
-    _tiles_attribute = 'pr'
-    
-    _prodpattern = '*.tif'
-    _metapattern = 'MTL.txt'
-    _defaultresolution = [30.0, 30.0]
-
+class LandsatAsset(Asset):
+    """ Landsat asset (original raw tar file) """
+    name = 'LandsatAsset'
+    _rootpath = '/titan/data/landsat'
+    _sensors = {'LT4': 'Landsat 4', 'LT5': 'Landsat 5', 'LE7': 'Landsat 7', 'LC8': 'Landsat 8'}
     _assets = {
         '': {
             'pattern': 'L*.tar.gz'
@@ -43,6 +36,22 @@ class LandsatData(Data):
         }
     }
 
+    def __init__(self, filename):
+        """ Inspect a single file and get some metadata """
+        super(LandsatAsset, self).__init__(filename)
+        self.basename = self.basename[:-12]
+        self.sensor = self.basename[0:3]
+        self.tile = self.basename[3:9]
+        year = self.basename[9:13]
+        doy = self.basename[13:16]
+        self.date = datetime.strptime(year+doy, "%Y%j")
+
+
+class LandsatTile(Tile):
+
+    Asset = LandsatAsset
+
+    _prodpattern = '*.tif'
     _products = OrderedDict([
         ('rgb', {
             'description': 'RGB image for viewing (quick processing)',
@@ -54,7 +63,7 @@ class LandsatData(Data):
             'function': 'Rad',
             'atmcorr': True,
         }),
-        ('toarad',{
+        ('toarad', {
             'description': 'Top of atmosphere radiance',
             'function': 'Rad',
             'atmcorr': False,
@@ -150,24 +159,66 @@ class LandsatData(Data):
         }),
     ])
 
-    @classmethod
-    def inspect(cls, filename):
-        """ Inspect a single file and get some metadata """
-        path,basename = os.path.split(filename)
-        tile = basename[3:9]
-        year = basename[9:13]
-        doy = basename[13:16]
-        return {
-            'asset': '',
-            'filename': filename,
-            'datafiles': [],    # not needed for inspect, populate in meta()
-            'tile': tile,
-            'date': datetime.strptime(year+doy,"%Y%j"),
-            'basename': basename[:-12],
-            #'path':os.path.join(cls._rootdir,tile,year+doy),
-            'sensor': basename[0:3],
-            'products': {}
-        }
+    def process(self, products):
+        """ Make sure all products have been pre-processed """
+        start = datetime.now()
+        tdata = self.tiles[tile]
+        bname = os.path.basename(tdata['assets'][0])
+        try:
+            img = self._readraw(tile)
+        except Exception,e:
+            VerboseOut('Error reading %s %s' % (bname,e), 2)
+            VerboseOut(traceback.format_exc(), 4)
+
+        runatm = False
+        for p in products:
+            if self._products[p]['atmcorr']: runatm = True
+        if runatm:
+            atmospheres = [atmosphere(i,tdata['metadata']) for i in range(1,img.NumBands()+1)]
+        VerboseOut('%s: read in %s' % (bname,datetime.now() - start)) 
+
+        for p,fout in products.items():
+            try: 
+                start = datetime.now()
+                if (self._products[p]['atmcorr']):
+                    for i in range(0,img.NumBands()):
+                        b = img[i]
+                        b.SetAtmosphere(atmospheres[i])
+                        img[i] = b
+                        VerboseOut('atmospherically correcting',3)
+                else: img.ClearAtmosphere()
+                try:
+                    fcall = 'gippy.%s(img, fout)' % self._products[p]['function']
+                    VerboseOut(fcall,2)
+                    eval(fcall)
+                    #if overviews: imgout.AddOverviews()
+                    fname = glob.glob(fout+'*')[0]
+                    tdata['products'][p] = fname
+                    VerboseOut(' -> %s: processed in %s' % (os.path.basename(fname),datetime.now()-start))
+                except Exception,e:
+                    VerboseOut('Error creating product %s for %s: %s' % (p,bname,e),3)
+                    VerboseOut(traceback.format_exc(),4)
+            # double exception? is this necessary ?
+            except Exception,e:
+                VerboseOut('Error processing %s: %s' % (tdata['basename'],e),2)
+                VerboseOut(traceback.format_exc(), 4)
+        img = None
+        # cleanup directory
+        try:
+            for bname in self.tiles[tile]['datafiles']:
+                files = glob.glob(os.path.join(data['path'],bname)+'*')
+                RemoveFiles(files)
+            shutil.rmtree(os.path.join(tdata['path'],'modtran'))
+        except:
+            pass
+
+    def filter(self, maxclouds=100):
+        """ Check if tile passes filter """
+        if maxclouds < 100:
+            meta = cls._readmeta(tile)
+            if meta['clouds'] > maxclouds:
+                return False
+        return True
 
     def _readmeta(self, tile):
         """ Read in Landsat MTL (metadata) file """
@@ -309,77 +360,7 @@ class LandsatData(Data):
         }
         return self.tiles[tile]['metadata']
 
-    def processtile(self,tile,products):
-        """ Make sure all products have been pre-processed """
-        start = datetime.now()
-        tdata = self.tiles[tile]
-        bname = os.path.basename(tdata['assets'][0])
-        try:
-            img = self._readraw(tile)
-        except Exception,e:
-            VerboseOut('Error reading %s %s' % (bname,e), 2)
-            VerboseOut(traceback.format_exc(), 4)
-
-        runatm = False
-        for p in products:
-            if self._products[p]['atmcorr']: runatm = True
-        if runatm:
-            atmospheres = [atmosphere(i,tdata['metadata']) for i in range(1,img.NumBands()+1)]
-        VerboseOut('%s: read in %s' % (bname,datetime.now() - start)) 
-
-        for p,fout in products.items():
-            try: 
-                start = datetime.now()
-                if (self._products[p]['atmcorr']):
-                    for i in range(0,img.NumBands()):
-                        b = img[i]
-                        b.SetAtmosphere(atmospheres[i])
-                        img[i] = b
-                        VerboseOut('atmospherically correcting',3)
-                else: img.ClearAtmosphere()
-                try:
-                    fcall = 'gippy.%s(img, fout)' % self._products[p]['function']
-                    VerboseOut(fcall,2)
-                    eval(fcall)
-                    #if overviews: imgout.AddOverviews()
-                    fname = glob.glob(fout+'*')[0]
-                    tdata['products'][p] = fname
-                    VerboseOut(' -> %s: processed in %s' % (os.path.basename(fname),datetime.now()-start))
-                except Exception,e:
-                    VerboseOut('Error creating product %s for %s: %s' % (p,bname,e),3)
-                    VerboseOut(traceback.format_exc(),4)
-            # double exception? is this necessary ?
-            except Exception,e:
-                VerboseOut('Error processing %s: %s' % (tdata['basename'],e),2)
-                VerboseOut(traceback.format_exc(), 4)
-        img = None
-        # cleanup directory
-        try:
-            for bname in self.tiles[tile]['datafiles']:
-                files = glob.glob(os.path.join(data['path'],bname)+'*')
-                RemoveFiles(files)
-            shutil.rmtree(os.path.join(tdata['path'],'modtran'))
-        except: pass
-
-    def filter(self, tile, maxclouds=100):
-        """ Check if tile passes filter """
-        if maxclouds < 100:
-            meta = cls._readmeta(tile)
-            if meta['clouds'] > maxclouds:
-                return False
-        return True
-
-    @classmethod
-    def feature2tile(cls,feature):
-        tile = super(LandsatData, cls).feature2tile(feature)
-        return tile.zfill(6)
-
-    def project(self, res=[30,30], datadir='data_landsat'):
-        """ Create reprojected, mosaiced images for this site and date """
-        if res is None: res=[30,30]
-        super(LandsatData, self).project(res=res, datadir=datadir)
-
-    def _readraw(self,tile,bandnums=[]):
+    def _readraw(self, tile, bandnums=[]):
         """ Read in Landsat bands using original tar.gz file """
         # Read in collection metadata
         self._readmeta(tile)
@@ -406,7 +387,8 @@ class LandsatData(Data):
         # Read in files
         image = gippy.GeoImage(filenames[0])
         del filenames[0]
-        for f in filenames: image.AddBand(gippy.GeoImage(f)[0])
+        for f in filenames:
+            image.AddBand(gippy.GeoImage(f)[0])
 
         # Geometry used for calculating incident irradiance
         theta = numpy.pi * tiledata['metadata']['geometry']['solarzenith']/180.0
@@ -427,16 +409,37 @@ class LandsatData(Data):
             band = image[i]
             band.SetGain(gain)
             band.SetOffset(offset)
-            band.SetDynamicRange(bandmeta['minval'],bandmeta['maxval'])
-            band.SetEsun( (bandmeta['E'] * numpy.cos(theta)) / (numpy.pi * sundist * sundist) )
-            band.SetThermal(bandmeta['k1'],bandmeta['k2'])
+            band.SetDynamicRange(bandmeta['minval'], bandmeta['maxval'])
+            band.SetEsun((bandmeta['E'] * numpy.cos(theta)) / (numpy.pi * sundist * sundist))
+            band.SetThermal(bandmeta['k1'], bandmeta['k2'])
             image[i] = band
-            image.SetColor(bandmeta['color'],i+1)
+            image.SetColor(bandmeta['color'], i+1)
         return image
 
-    #@classmethod
-    #def add_subparsers(cls, parser):
-    #    p = parser.add_parser('cloudmask', help='Create cloud masks', parents=[cls.args_inventory()],
-    #        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-def main(): LandsatData.main()
+class LandsatData(Data):
+    """ Represents a single date and temporal extent along with (existing) product variations (raw, ref, toaref, ind, ndvi, etc) """
+    name = 'Landsat'
+
+    _defaultresolution = [30.0, 30.0]
+
+    Tile = LandsatTile
+
+    _metapattern = 'MTL.txt'
+
+    _tiles_vector = 'landsat_wrs'
+    _tiles_attribute = 'pr'
+
+    @classmethod
+    def feature2tile(cls, feature):
+        tile = super(LandsatData, cls).feature2tile(feature)
+        return tile.zfill(6)
+
+    def project(self, res=[30, 30], datadir='data_landsat'):
+        """ Create reprojected, mosaiced images for this site and date """
+        if res is None: res=[30, 30]
+        super(LandsatData, self).project(res=res, datadir=datadir)
+
+
+def main():
+    LandsatData.main()
