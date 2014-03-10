@@ -488,7 +488,7 @@ class Data(object):
                     start = datetime.now()
                     filename = os.path.join(datadir, self.date.strftime('%Y%j') + '_%s_%s.tif' % (product, self.sensor))
                     if not os.path.exists(filename):
-                        filenames = [self.tiles[t]['products'][product] for t in self.tiles]
+                        filenames = [self.tiles[t].products[product] for t in self.tiles]
                         # cookiecutter should validate pixels in image.  Throw exception if not
                         imgout = gippy.CookieCutter(filenames, filename, self.site, res[0], res[1])
                         VerboseOut('Projected and cropped %s files -> %s in %s' % (len(filenames),
