@@ -10,50 +10,28 @@ from collections import OrderedDict
 from pdb import set_trace
 
 import gippy
-from gippy.data.core import Data
+from gippy.data.core import Asset, Tile, Data
 from gippy.utils import VerboseOut, File2List, List2File, RemoveFiles
 
 
-class SARData(Data):
-    """ Represents a single date and temporal extent along with (existing) product variations """
-    name = 'SAR'
-    sensors = {
+class SARAsset(Asset):
+    """ Single original file """
+    _rootpath = '/titan/data/SAR'
+    _sensors = {
         'AFBS': 'PALSAR FineBeam Single Polarization',
         'AFBD': 'PALSAR FineBeam Dual Polarization',
         'AWB1': 'PALSAR WideBeam (ScanSAR Short Mode)',
         'JFBS': 'JERS-1 FineBeam Single Polarization'
     }
-    _defaultresolution = [0.000834028356964, 0.000834028356964]
-    _rootdir = '/titan/data/SAR'
-    _tiledir = os.path.join(_rootdir, 'tiles')
-    _stagedir = os.path.join(_rootdir, 'stage')
-    #_datedir = '%Y%j'
-
-    _tiles_vector = os.path.join(_rootdir, 'vectors', 'tiles.shp')
-
-    _prodpattern = '*'
-    _metapattern = '.hdr'
-
     _assets = {
         '': {
             'pattern': 'KC_*.tar.gz'
         }
     }
 
-    _products = OrderedDict([
-        ('sign', {
-            'description': 'Sigma nought (radar backscatter coefficient)',
-        }),
-        ('linci', {
-            'description': 'Incident angles',
-        }),
-    ])
-
-    # SAR specific constants
     # launch dates for PALSAR (A) and JERS-1 (J)
     _launchdate = {'A': datetime.date(2006, 1, 24), 'J': datetime.date(1992, 2, 11)}
-    _databands = ["sl_HH", "sl_HV"]
-
+    
     _cycledates = {
         7:  '20-Oct-06',
         8:  '05-Dec-06',
@@ -94,30 +72,29 @@ class SARData(Data):
         43: '03-May-11'
     }
 
-    @classmethod
-    def inspect(cls, filename):
+    def __init__(self, filename):
         """ Inspect a single file and get some basic info """
-        path, fname = os.path.split(filename)
-        tile = fname[10:17]
-        #start = datetime.datetime.now()
-        # read date
-        indexfile = os.path.join(path, fname+'.index')
-        if os.path.exists(indexfile):
-            datafiles = File2List(indexfile)
-        else:            
-            tfile = tarfile.open(filename)
-            datafiles = tfile.getnames()
-            List2File(datafiles, indexfile)
-        for f in datafiles: 
-            if f[-3:] == 'hdr': 
+        super(SARAsset, self).__init__(filename)
+
+        self.tile = self.basename[10:17]
+        self.sensor = self.basename[-9:-8] + self.basename[-15:-12],
+
+        datafiles = self.datafiles()
+        for f in datafiles:
+            if f[-3:] == 'hdr':
                 hdrfile = f
-            if f[-4:] == 'date': 
+            if f[-4:] == 'date':
                 datefile = f
                 bname = f[:-5]
 
+        self.basename = bname
+        # unique to SARData (TODO - is this still used later?)
+        self.hdrfile = hdrfile
+
         # Check if inspecting a file in the repository
-        if cls._rootdir in path:
-            date = datetime.datetime.strptime(os.path.basename(path), cls._datedir).date()
+        path = os.path.dirname(filename)
+        if self._rootpath in path:
+            date = datetime.datetime.strptime(os.path.basename(path), self._datedir).date()
             dates = date
             #VerboseOut('Date from repository = '+str(dates),4)
         else:
@@ -126,7 +103,7 @@ class SARData(Data):
             tfile.extract(hdrfile, path)
             hdrfile = os.path.join(path, hdrfile)
             os.chmod(hdrfile, 0664)
-            meta = cls._meta(hdrfile)
+            meta = self._meta(hdrfile)
             tfile.extract(datefile, path)
             datefile = os.path.join(path, datefile)
             os.chmod(datefile, 0664)
@@ -134,14 +111,14 @@ class SARData(Data):
             List2File(meta['envihdr'], datefile+'.hdr')
             dateimg = gippy.GeoImage(datefile)
             dateimg.SetNoData(0)
-            dates = [cls._launchdate[fname[-9]] + datetime.timedelta(days=int(d)) for d in numpy.unique(dateimg.Read()) if d != 0]
+            dates = [self._launchdate[fname[-9]] + datetime.timedelta(days=int(d)) for d in numpy.unique(dateimg.Read()) if d != 0]
             if not dates:
                 RemoveFiles([hdrfile, datefile], ['.hdr', '.aux.xml'])
                 raise Exception('%s: no valid dates' % fname)
             date = min(dates)
             dateimg = None
             RemoveFiles([hdrfile, datefile], ['.hdr', '.aux.xml'])
-            #VerboseOut('Date from image: %s' % str(date),3) 
+            #VerboseOut('Date from image: %s' % str(date),3)
             # If year provided check
             #if fname[7] == 'Y' and fname[8:10] != '00':
             #    ydate = datetime.datetime.strptime(fname[8:10], '%y')
@@ -149,36 +126,10 @@ class SARData(Data):
             #        raise Exception('%s: Date %s outside of expected year (%s)' % (fname, str(date),str(ydate)))
             # If widebeam check cycle dates
             if fname[7] == 'C':
-                cdate = datetime.datetime.strptime(cls._cycledates[int(fname[8:10])], '%d-%b-%y').date()
+                cdate = datetime.datetime.strptime(self._cycledates[int(fname[8:10])], '%d-%b-%y').date()
                 if not (cdate <= date <= (cdate + datetime.timedelta(days=45))):
                     raise Exception('%s: Date %s outside of cycle range (%s)' % (fname, str(date), str(cdate)))
             #VerboseOut('%s: inspect %s' % (fname,datetime.datetime.now()-start), 4)
-
-        return {
-            'asset': '',
-            'filename': filename,
-            'datafiles': datafiles,
-            'tile': tile,
-            'date': dates,
-            'basename': bname,
-            'sensor': fname[-9:-8] + fname[-15:-12],
-            'products': {},
-            # unique to SARData
-            'hdrfile': hdrfile
-        }
-
-    def meta(self, tile):
-        """ Get metadata for this tile """
-        tdata = self.tiles[tile]
-        # add info from headerfile
-        tfile = tarfile.open(tdata['assets'][0])
-        for f in tdata['datafiles'][ tdata['assets'][0] ]:
-            if f[-3:] == 'hdr': hdr_bname = f
-        hdr_fname = os.path.join(tdata['path'],hdr_bname)
-        if not os.path.exists(hdr_fname):
-            tfile.extract(hdr_bname, tdata['path'])
-        #tdata.update( self._meta(hdr_fname) ) 
-        return self._meta(hdr_fname)
 
     @classmethod
     def _meta(cls,hdrfile):
@@ -196,14 +147,61 @@ class SARData(Data):
         lon = [ min(lon), max(lon)]
         meta['lon'] = lon
         meta['res'] = [ (lon[1]-lon[0])/(meta['size'][0]-1), (lat[1]-lat[0])/(meta['size'][1]-1) ]
-        meta['envihdr'] = ['ENVI','samples = %s' % meta['size'][0], 'lines = %s' % meta['size'][1],
-            'bands = 1','header offset = 0','file type = ENVI Standard','data type = 12',
+        meta['envihdr'] = [
+            'ENVI', 'samples = %s' % meta['size'][0], 'lines = %s' % meta['size'][1],
+            'bands = 1', 'header offset = 0', 'file type = ENVI Standard', 'data type = 12',
             'interleave = bsq', 'sensor type = Unknown', 'byte order = 0',
             'coordinate system string = ' + meta['proj'],
             'data ignore value = 0',
-            'map info = {Geographic Lat/Lon, 1, 1, %s, %s, %s, %s}' % (lon[0], lat[1], meta['res'][0], meta['res'][1]) ]
+            'map info = {Geographic Lat/Lon, 1, 1, %s, %s, %s, %s}'
+            % (lon[0], lat[1], meta['res'][0], meta['res'][1])]
         meta['CF'] = float(hdr[21])
         return meta
+
+
+class SARTile(Data):
+    """ Tile of data """
+
+    _prodpattern = '*'
+
+    _products = OrderedDict([
+        ('sign', {
+            'description': 'Sigma nought (radar backscatter coefficient)',
+        }),
+        ('linci', {
+            'description': 'Incident angles',
+        }),
+    ])
+
+    Asset = SARAsset
+
+    def meta(self, tile):
+        """ Get metadata for this tile """
+        tdata = self.tiles[tile]
+        # add info from headerfile
+        tfile = tarfile.open(tdata['assets'][0])
+        for f in tdata['datafiles'][tdata['assets'][0]]:
+            if f[-3:] == 'hdr':
+                hdr_bname = f
+        hdr_fname = os.path.join(tdata['path'], hdr_bname)
+        if not os.path.exists(hdr_fname):
+            tfile.extract(hdr_bname, tdata['path'])
+        #tdata.update( self._meta(hdr_fname) )
+        return self._meta(hdr_fname)
+
+
+class SARData(Data):
+    """ Represents a single date and temporal extent along with (existing) product variations """
+    name = 'SAR'
+
+    _defaultresolution = [0.000834028356964, 0.000834028356964]
+
+    Tile = SARTile
+
+    # SAR specific constants
+    _databands = ["sl_HH", "sl_HV"]
+
+
 
     def _extract(self,tile):
         tdata = self.tiles[tile]

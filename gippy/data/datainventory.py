@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import sys
-import os
 import gippy
 from gippy.utils import VerboseOut, parse_dates
 
@@ -10,10 +9,11 @@ import traceback
 
 from pdb import set_trace
 
+
 class DataInventory(object):
     """ Manager class for data inventories """
     # redo color, combine into ordered dictionary
-    _colororder = ['purple', 'bright red', 'bright green', 'bright blue','bright purple']
+    _colororder = ['purple', 'bright red', 'bright green', 'bright blue', 'bright purple']
     _colorcodes = {
         'bright yellow':   '1;33',
         'bright red':      '1;31',
@@ -29,7 +29,7 @@ class DataInventory(object):
         'purple':          '0;35',
     }
 
-    def _colorize(self,txt,color):
+    def _colorize(self, txt, color):
         return "\033["+self._colorcodes[color]+'m' + txt + "\033[0m"
 
     @property
@@ -42,7 +42,7 @@ class DataInventory(object):
         """ Get number of dates """
         return len(self.data)
 
-    def __getitem__(self,date):
+    def __getitem__(self, date):
         return self.data[date]
 
     def __init__(self, dataclass, site=None, tiles=None, dates=None, days=None, products=None, fetch=False, **kwargs):
@@ -55,19 +55,21 @@ class DataInventory(object):
         # if tiles provided, make coverage all 100%
         if tiles is not None:
             self.tiles = {}
-            for t in tiles: self.tiles[t] = (1,1)
+            for t in tiles:
+                self.tiles[t] = (1, 1)
         elif tiles is None and self.site is not None:
-            self.tiles = dataclass.vector2tiles(gippy.GeoVector(self.site),**kwargs)
+            self.tiles = dataclass.vector2tiles(gippy.GeoVector(self.site), **kwargs)
 
         self.temporal_extent(dates, days)
 
         self.data = {}
         if products is not None:
-            if len(products) == 0: products = dataclass.Tile._products.keys()
+            if len(products) == 0:
+                products = dataclass.Tile._products.keys()
         self.products = products
 
         if fetch and products is not None:
-            dataclass.fetch(products,self.tiles,(self.start_date,self.end_date),(self.start_day,self.end_day))
+            dataclass.fetch(products, self.tiles, (self.start_date, self.end_date), (self.start_day, self.end_day))
             exit(1)
             # archive
             #dataclass.archive(os.path.join(dataclass._rootdir),'staging')
@@ -79,9 +81,10 @@ class DataInventory(object):
                 for date in dataclass.find_dates(t):
                     day = int(date.strftime('%j'))
                     if (self.start_date <= date <= self.end_date) and (self.start_day <= day <= self.end_day):
-                        if date not in dates: dates.append(date)
-            except: 
-                VerboseOut(traceback.format_exc(),4)
+                        if date not in dates:
+                            dates.append(date)
+            except:
+                VerboseOut(traceback.format_exc(), 4)
 
         self.numfiles = 0
         for date in sorted(dates):
@@ -89,27 +92,20 @@ class DataInventory(object):
                 dat = dataclass(site=self.site, tiles=self.tiles.keys(), date=date, products=self.products, **kwargs)
                 self.data[date] = dat
                 self.numfiles = self.numfiles + len(dat.tiles)
-            except Exception,e:
-                VerboseOut('Inventory error %s' % e,3)
-                VerboseOut(traceback.format_exc(),4)
-
-    #def fetch(self):
-        """ fetch data from remote location """
-        # call fetch with range of dates, then archive 
-    #    for t in self.tile_coverage.keys():
-    #        set_trace()
-    #        self.fetch(t)
-        # archive files
-        #self.archive(os.path.join(self._rootdir,'staging'))
+            except Exception, e:
+                VerboseOut('Inventory error %s' % e, 3)
+                VerboseOut(traceback.format_exc(), 4)
 
     def temporal_extent(self, dates, days):
         """ Temporal extent (define self.dates and self.days) """
-        if dates is None: dates='1984,2050'
-        self.start_date,self.end_date = parse_dates(dates)
+        if dates is None:
+            dates = '1984,2050'
+        self.start_date, self.end_date = parse_dates(dates)
         if days:
             days = days.split(',')
-        else: days = (1,366)
-        self.start_day,self.end_day = ( int(days[0]), int(days[1]) )
+        else:
+            days = (1, 366)
+        self.start_day, self.end_day = (int(days[0]), int(days[1]))
 
     def process(self, *args, **kwargs):
         """ Process data in inventory """
@@ -124,27 +120,11 @@ class DataInventory(object):
     def project(self, *args, **kwargs):
         self.process()
         start = datetime.now()
-        VerboseOut('Projecting data for %s dates (%s - %s)' % (len(self.dates),self.dates[0],self.dates[-1]))
+        VerboseOut('Projecting data for %s dates (%s - %s)' % (len(self.dates), self.dates[0], self.dates[-1]))
         # res should default to data?
         for date in self.dates:
             self.data[date].project(*args, **kwargs)
         VerboseOut('Completed projecting in %s' % (datetime.now()-start))
-
-    def links(self,hard=False):
-        """ Create links to tiles - move linking to core """
-        for date in self.data:
-            for t in self.data[date].tiles:
-                for p in self.data[date].tiles[t]['products']:
-                    fname = self.data[date].tiles[t]['products'][p]
-                    bname = os.path.basename(fname)
-                    if hard:
-                        f = os.link
-                    else: f = os.symlink
-                    try:
-                        f( fname, bname )
-                        VerboseOut('%s: linking' % bname)
-                    except: 
-                        VerboseOut('%s: Problem creating link' % bname,2)
 
     # TODO - check if this is needed
     def get_products(self, date):
@@ -158,7 +138,7 @@ class DataInventory(object):
             #for prod in data.products.keys(): prods.append(prod)
         return sorted(set(prods))
 
-    def printcalendar(self,md=False):
+    def printcalendar(self, md=False):
         """ print calendar for raw original datafiles """
         #import calendar
         #cal = calendar.TextCalendar()
@@ -167,9 +147,9 @@ class DataInventory(object):
         # print tile coverage
         if self.site is not None:
             print '\nTILE COVERAGE'
-            print '{:^8}{:>14}{:>14}'.format('Tile','% Coverage','% Tile Used')
-            for t in sorted(self.tiles): 
-                print "{:>8}{:>11.1f}%{:>11.1f}%".format(t,self.tiles[t][0]*100,self.tiles[t][1]*100)
+            print '{:^8}{:>14}{:>14}'.format('Tile', '% Coverage', '% Tile Used')
+            for t in sorted(self.tiles):
+                print "{:>8}{:>11.1f}%{:>11.1f}%".format(t, self.tiles[t][0]*100, self.tiles[t][1]*100)
         # print inventory
         print '\nINVENTORY'
         for date in self.dates:
@@ -184,16 +164,20 @@ class DataInventory(object):
                     daystr = '0' + daystr
             if date.year != oldyear:
                 sys.stdout.write('\n{:>5}: '.format(date.year))
-                if self.products: sys.stdout.write('\n ')
+                if self.products:
+                    sys.stdout.write('\n ')
             colors = {}
-            for i,s in enumerate(self.dataclass.sensor_names()): colors[s] = self._colororder[i]
+            for i, s in enumerate(self.dataclass.sensor_names()):
+                colors[s] = self._colororder[i]
             #for dat in self.data[date]:
-            sys.stdout.write(self._colorize('{:<6}'.format(daystr), colors[self.dataclass.Tile.Asset._sensors[dat.sensor]] ))
+            col = colors[self.dataclass.Tile.Asset._sensors[dat.sensor]['description']]
+
+            sys.stdout.write(self._colorize('{:<6}'.format(daystr), col))
             if self.products:
                 sys.stdout.write('        ')
-                prods = [p for p in self.get_products(date) if p in self.products]
+                prods = [p for p in self.get_products(date) if p.split('_')[0] in self.products]
                 for p in prods:
-                    sys.stdout.write(self._colorize('{:<12}'.format(p), colors[self.dataclass.Tile.Asset._sensors[dat.sensor]] ))
+                    sys.stdout.write(self._colorize('{:<12}'.format(p), col))
                 sys.stdout.write('\n ')
             oldyear = date.year
         sys.stdout.write('\n')
@@ -205,15 +189,15 @@ class DataInventory(object):
 
     def legend(self):
         print '\nSENSORS'
-        sensors = sorted(self.dataclass.Tile.Asset._sensors.values())
-        for i,s in enumerate(sensors):
+        #sensors = sorted(self.dataclass.Tile.Asset._sensors.values())
+        for i, s in enumerate(self.dataclass.sensor_names()):
             print self._colorize(s, self._colororder[i])
             #print self._colorize(self.dataclass.sensors[s], self._colororder[s])
 
-    def get_timeseries(self,product=''):
+    def get_timeseries(self, product=''):
         """ Read all files as time series """
         # assumes only one sensor row for each date
         img = self.data[self.dates[0]][0].open(product=product)
-        for i in range(1,len(self.dates)):
+        for i in range(1, len(self.dates)):
             img.AddBand(self.data[self.dates[i]][0].open(product=product)[0])
         return img

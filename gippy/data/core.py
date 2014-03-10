@@ -10,14 +10,12 @@ from datetime import datetime
 import glob
 from shapely.wkb import loads
 from shapely.geometry import shape
-import traceback
 import tarfile
-import re
-
+import traceback
 from pdb import set_trace
 
 import gippy
-from gippy.utils import VerboseOut, RemoveFiles
+from gippy.utils import VerboseOut, RemoveFiles, File2List, List2File
 from gippy.data.datainventory import DataInventory
 
 
@@ -29,7 +27,7 @@ class Asset(object):
     _datedir = '%Y%j'
     # Sensors
     _sensors = {
-        '': '',
+        '': {'description': ''},
     }
     # dictionary of assets
     _assets = {
@@ -48,7 +46,7 @@ class Asset(object):
         # the asset code
         self.asset = ''
         # if filename is archive, index of datafiles in archive...needed?
-        self.datafiles = []
+        #self.datafiles = []
         # tile designation
         self.tile = ''
         # full date
@@ -62,7 +60,7 @@ class Asset(object):
 
     @classmethod
     def asset_dates(cls, asset, tile, dates, days):
-        """ For a given asset get all dates possible (in repo or not) """
+        """ For a given asset get all dates possible (in repo or not) - used for fetch """
         from dateutil.rrule import rrule, DAILY
         # default assumes daily regardless of asset or tile
         datearr = rrule(DAILY, dtstart=dates[0], until=dates[1])
@@ -92,25 +90,29 @@ class Asset(object):
     _tilesdir = 'tiles'
     _qdir = 'quarantine'
     _stagedir = 'stage'
+    _vectordir = 'vectors'
+
+    def sensor_meta(self):
+        return self._sensors[self.sensor]
 
     @classmethod
-    def find_assets(cls, path):
+    def find_assets(cls, tile, date, asset=None):
         """ Find assets in this path and return list of Asset objects """
-        assets = []
-        for key in cls._assets:
-            files = cls.find_asset(path, key)
+        path = cls.path(tile, date)
+        if asset is not None:
+            assets = [asset]
+        else:
+            assets = cls._assets.keys()
+        found = []
+        for a in assets:
+            files = glob.glob(os.path.join(path, cls._assets[a]['pattern']))
             # more than 1 asset??
             if len(files) > 1:
                 VerboseOut(files, 3)
                 raise Exception("Duplicate(?) assets found")
             else:
-                assets.append(cls(files[0]))
-        return assets
-
-    @classmethod
-    def find_asset(cls, path, asset=''):
-        """ Return base filenames, if any, of specified asset type """
-        return glob.glob(os.path.join(path, cls._assets[asset]['pattern']))
+                found.append(cls(files[0]))
+        return found
 
     @classmethod
     def archive(cls, path='', recursive=False, keep=False):
@@ -142,7 +144,7 @@ class Asset(object):
 
         # Summarize
         VerboseOut('%s files (%s links) from %s added to archive in %s' %
-                    (numfiles, numlinks, os.path.abspath(path), datetime.now()-start) )
+                    (numfiles, numlinks, os.path.abspath(path), datetime.now()-start))
         if numfiles != len(fnames):
             VerboseOut('%s files not added to archive' % (len(fnames)-numfiles))
 
@@ -170,7 +172,7 @@ class Asset(object):
             newfilename = os.path.join(tpath, bname)
             if not os.path.exists(newfilename):
                 # check if another asset exists
-                existing = cls.find_asset(tpath, asset.asset)
+                existing = cls.find_assets(asset.tile, d, asset.asset)
                 if len(existing) > 0:
                     VerboseOut('%s: other version(s) already exists:' % bname, 2)
                     for ef in existing:
@@ -196,47 +198,44 @@ class Asset(object):
             return numlinks
         # should return asset instance
 
-    # phasing out these functions i think...or move to asset
-    @classmethod
-    def extracthdr(cls, filename):
-        """ extract metadata header file """
-        if tarfile.is_tarfile(filename):
-            tfile = tarfile.open(filename)
+    def datafiles(self):
+        """ Get list of datafiles from asset (if archive file) """
+        if tarfile.is_tarfile(self.filename):
+            tfile = tarfile.open(self.filename)
         else:
-            raise Exception('%s is not a valid tar file' % filename)
-        index = tfile.getnames()
-        dirname = os.path.dirname(filename)
-        # need error handling
-        hdrfname = ([f for f in index if cls._metapattern in f])[0]
-        hdrfname2 = os.path.join(dirname, hdrfname)
-        if not os.path.exists(os.path.join(dirname, hdrfname2)):
-            tfile.extract(hdrfname, dirname)
-        return hdrfname2
+            raise Exception('%s is not a valid tar file' % self.filename)
+        path = os.path.dirname(self.filename)
+        indexfile = os.path.join(path, self.filename+'.index')
+        if os.path.exists(indexfile):
+            datafiles = File2List(indexfile)
+        else:
+            tfile = tarfile.open(self.filename)
+            datafiles = tfile.getnames()
+            List2File(datafiles, indexfile)
+        return datafiles
 
-    @classmethod
-    def extractdata(cls, filename):
-        """ Extract data from original datafile, if tarfile """
-        if tarfile.is_tarfile(filename):
-            tfile = tarfile.open(filename)
+    def extract(self, filenames=[]):
+        """ Extract filenames from asset (if archive file) """
+        if tarfile.is_tarfile(self.filename):
+            tfile = tarfile.open(self.filename)
         else:
-            raise Exception('%s is not a valid tar file' % filename)
-        index = tfile.getnames()
-        dirname = os.path.dirname(filename)
-        datafiles = []
-        tfile.extractall(dirname)
-        for f in index:
-            if cls._metapattern in f:
-                hdrfile = os.path.join(dirname, f)
-            else:
-                datafiles.append(os.path.join(dirname, f))
-            # make sure file is readable and writable
+            raise Exception('%s is not a valid tar file' % self.filename)
+        path = os.path.dirname(self.filename)
+        if len(filenames) == 0:
+            filenames = self.datafiles()
+        extracted_files = []
+        for f in filenames:
+            fname = os.path.join(path, f)
+            if not os.path.exists(fname):
+                tfile.extract(f, path)
             try:
-                ff = os.path.join(dirname, f)
-                if not os.path.isdir(ff):
-                    os.chmod(ff, 0664)
+                # this ensures we have permissions on extracted files
+                if not os.path.isdir(fname):
+                    os.chmod(fname, 0664)
             except:
                 pass
-        return {'headerfile': hdrfile, 'datafiles': datafiles}
+            extracted_files.append(fname)
+        return extracted_files
 
     def __str__(self):
         return os.path.basename(self.filename)
@@ -253,6 +252,78 @@ class Tile(object):
 
     Asset = Asset
 
+    def process(self, products):
+        """ Make sure all products exist and process if needed """
+        pass
+
+    def meta(self):
+        """ Retrieve metadata for this tile """
+        print '%s metadata!' % self.__name__
+        #meta = self.Asset(filename)
+        # add metadata to dictionary
+        return {}
+
+    #def filter(self, **kwargs):
+    #    """ Check if tile passes filter """
+    #    return True
+
+    ##########################################################################
+    # Override these functions if not using a tile/date directory structure
+    ##########################################################################
+    @property
+    def path(self):
+        """ Return repository path to this tile dir """
+        return os.path.join(self.Asset._rootpath, self.Asset._tilesdir,
+                            self.id, str(self.date.strftime(self.Asset._datedir)))
+
+    ##########################################################################
+    # Child classes should not generally have to override anything below here
+    ##########################################################################
+    def open(self, product=''):
+        if product != '':
+            return gippy.GeoImage(self.products[product])
+        elif len(self.products) == 1:
+            return gippy.GeoImage(self.products[self.products.keys()[0]])
+        else:
+            # return filename of a tile from self.tiles ?
+            raise Exception('Invalid product %s' % product)
+
+    def link(self, products, path='', copy=False):
+        """ Create links in path to tile products """
+        for p in products:
+            fname = self.products[p]
+            bname = os.path.basename(fname)
+            fullbname = os.path.join(path, bname)
+            if copy:
+                try:
+                    # TODO - copying doesn't seem to work
+                    os.copy(fname, fullbname)
+                    VerboseOut('%s: copying' % bname, 2)
+                    return
+                except:
+                    VerboseOut('%s: Problem copying file' % bname, 2)
+            # try hard link first, if it fails, soft link
+            try:
+                os.link(fname, fullbname)
+                VerboseOut('%s: hard linking' % bname, 2)
+            except:
+                try:
+                    os.symlink(fname, fullbname)
+                    VerboseOut('%s: soft linking' % bname, 2)
+                except:
+                    VerboseOut('%s: Problem creating link' % bname, 2)
+
+    @classmethod
+    def products2assets(cls, products):
+        """ Get list of assets needed for these products """
+        assets = []
+        for p in products:
+            if 'assets' in cls._products[p]:
+                assets.extend(cls._products[p]['assets'])
+            else:
+                assets.append('')
+        return set(assets)
+
     def __init__(self, tile, date):
         """ Find all data and assets for this tile and date """
         self.id = tile
@@ -260,7 +331,7 @@ class Tile(object):
         self.assets = []
         #self.basename = ''
         self.products = {}
-        for asset in self.Asset.find_assets(self.path):
+        for asset in self.Asset.find_assets(tile, date):
             self.assets.append(asset)
             # sensor and basename assumes same value every time ?
             self.sensor = asset.sensor
@@ -291,53 +362,6 @@ class Tile(object):
         VerboseOut(self.assets, 5)
         VerboseOut(self.products, 5)
 
-    def process(self, products):
-        """ Make sure all products exist and process if needed """
-        pass
-
-    def meta(self):
-        """ Retrieve metadata for this tile """
-        set_trace()
-        #meta = self.Asset(filename)
-        # add metadata to dictionary
-        return {}
-
-    #def filter(self, **kwargs):
-    #    """ Check if tile passes filter """
-    #    return True
-
-    ##########################################################################
-    # Override these functions if not using a tile/date directory structure
-    ##########################################################################
-    @property
-    def path(self):
-        """ Return repository path to this tile dir """
-        return os.path.join(self.Asset._rootpath, self.Asset._tilesdir,
-                            self.id, str(self.date.strftime(self.Asset._datedir)))
-
-    ##########################################################################
-    # Child classes should not generally have to override anything below here
-    ##########################################################################
-    def open(self, product=''):
-        if product != '':
-            return gippy.GeoImage(self.products[product])
-        elif len(self.products) == 1:
-            return gippy.GeoImage(self.products[self.products.keys()[0]])
-        else:
-            # return filename of a tile from self.tiles ?
-            raise Exception('Invalid product %s' % product)
-
-    @classmethod
-    def products2assets(cls, products):
-        """ Get list of assets needed for these products """
-        assets = []
-        for p in products:
-            if 'assets' in cls._products[p]:
-                assets.extend(cls._products[p]['assets'])
-            else:
-                assets.append('')
-        return set(assets)
-
 
 class Data(object):
     """ Base class for data objects """
@@ -352,7 +376,7 @@ class Data(object):
     Tile = Tile
 
     # vector of tiling/grid system
-    _vectordir = 'vectors'
+    _tiles_vector = 'tiles.shp'
     # column name in _tiles_vector holding tile designation
     _vectoratt = 'tile'
 
@@ -368,7 +392,7 @@ class Data(object):
     @classmethod
     def find_tiles(cls):
         """ Get list of all available tiles """
-        return os.listdir(os.path.join(cls.Asset._rootpath, cls.Asset._tilesdir))
+        return os.listdir(os.path.join(cls.Tile.Asset._rootpath, cls.Tile.Asset._tilesdir))
 
     @classmethod
     def find_dates(cls, tile):
@@ -387,10 +411,11 @@ class Data(object):
     def inventory(cls, **kwargs):
         return DataInventory(cls, **kwargs)
 
+    # TODO - not sure if this is needed
     @classmethod
     def sensor_names(cls):
         """ All possible sensor names """
-        return sorted(cls.Tile.Asset._sensors.values())
+        return sorted([s['description'] for s in cls.Tile.Asset._sensors.values()])
 
     def open(self, product='', update=True):
         """ Open and return final product GeoImage """
@@ -410,7 +435,7 @@ class Data(object):
             for t in tiles:
                 asset_dates = cls.asset_dates(a, t, dates, days)
                 for d in asset_dates:
-                    if not find_asset(os.path.join(a._rootpath, t, d), a):
+                    if not find_assets(t, d, a):
                         status = cls.fetch_asset(a, t, d)
                         VerboseOut("Fetch status: %s" % status, 2)
                         # what to do if status is nonzero?
@@ -454,26 +479,29 @@ class Data(object):
             res = [res, res]
         #elif len(res) == 1: res = [res[0],res[0]]
         if self.site is None:
-            raise Exception("No site file supplied")
-        for product in self.products:
-            if self.products[product] == '':
-                start = datetime.now()
-                filename = os.path.join(datadir, self.date.strftime('%Y%j') + '_%s_%s.tif' % (product,self.sensor))
-                if not os.path.exists(filename):
-                    filenames = [self.tiles[t]['products'][product] for t in self.tiles]
-                    # cookiecutter should validate pixels in image.  Throw exception if not
-                    imgout = gippy.CookieCutter(filenames, filename, self.site, res[0], res[1])
-                    VerboseOut('Projected and cropped %s files -> %s in %s' % (len(filenames),imgout.Basename(),datetime.now() - start))
-                self.products[product] = filename
+            # Link files instead
+            for t in self.tiles:
+                self.tiles[t].link(products=self.products, path=datadir)
+        else:
+            for product in self.products:
+                if self.products[product] == '':
+                    start = datetime.now()
+                    filename = os.path.join(datadir, self.date.strftime('%Y%j') + '_%s_%s.tif' % (product, self.sensor))
+                    if not os.path.exists(filename):
+                        filenames = [self.tiles[t]['products'][product] for t in self.tiles]
+                        # cookiecutter should validate pixels in image.  Throw exception if not
+                        imgout = gippy.CookieCutter(filenames, filename, self.site, res[0], res[1])
+                        VerboseOut('Projected and cropped %s files -> %s in %s' % (len(filenames), imgout.Basename(), datetime.now() - start))
+                    self.products[product] = filename
 
     @classmethod
     def get_tiles_vector(cls):
         """ Get GeoVector of sensor grid """
-        if os.path.isfile(cls.tiles_vector):
-            tiles = gippy.GeoVector(cls.tiles_vector)
+        if os.path.isfile(cls._tiles_vector):
+            tiles = gippy.GeoVector(cls._tiles_vector)
         else:
             try:
-                tiles = gippy.GeoVector("PG:dbname=geodata host=congo port=5432 user=ags", layer=cls.tiles_vector)
+                tiles = gippy.GeoVector("PG:dbname=geodata host=congo port=5432 user=ags", layer=cls._tiles_vector)
             except:
                 raise Exception('unable to access %s tiles (file or database)' % cls.__name__)
         return tiles
@@ -517,7 +545,7 @@ class Data(object):
         """
 
         # shapefile name or PostGIS layer name describing sensor tiles
-        self.tiles_vector = os.path.join(self.Tile.Asset._rootpath, self._vectordir, 'tiles.shp')
+        self.tiles_vector = os.path.join(self.Tile.Asset._rootpath, self.Tile.Asset._vectordir, self._tiles_vector)
 
         self.site = site
         # Calculate spatial extent
@@ -559,7 +587,7 @@ class Data(object):
                 # check all tiles - should be same sensor - MODIS?
                 self.sensor = self.tiles[t].sensor
             except:
-                print traceback.format_exc()
+                #print traceback.format_exc()
                 continue
         if len(self.tiles) == 0:
             raise Exception('No valid data found')

@@ -183,10 +183,9 @@ def SixS(bandnum, meta):
 
     idoy = dtmeta['JulianDay']
     model = atmmodel(idoy, geometa['lat'])
-    bandmeta = meta['bands'][bandnum-1]
     
-    wvlen1 = bandmeta['wavelength'] - bandmeta['bandwidth']/2.0
-    wvlen2 = bandmeta['wavelength'] + bandmeta['bandwidth']/2.0
+    wvlen1 = meta['bandlocs'][bandnum-1] - meta['bandwidths'][bandnum-1]/2.0
+    wvlen2 = meta['bandlocs'][bandnum-1] + meta['bandwidths'][bandnum-1]/2.0
 
     # Get aerosols
     strdoy=str(idoy)
@@ -232,7 +231,7 @@ class MODTRAN():
     filterfile = True
     workdir = 'modtran'
 
-    def __init__(self,bandnum,meta,merraprofile=True):
+    def __init__(self, bandnum, meta, merraprofile=True):
         #workdir = os.path.join(workdir,'modtran')
         self.meta = meta
         geometa = meta['geometry']
@@ -274,7 +273,7 @@ class MODTRAN():
         for r in rootnames: mod5root.write(r+'\n')
         mod5root.close()
         modout = commands.getstatusoutput('modtran')
-      
+
         self.output = self.readoutput(bandnum)
 
         # Change back to original directory
@@ -306,12 +305,11 @@ class MODTRAN():
             #print 'No MODTRAN data for band ',bandnum
             return
 
-    def addband(self,bandnum):
+    def addband(self, bandnum):
         rootname1 = 'band' + str(bandnum)
-        bandmeta = self.meta['bands'][bandnum-1]
-        wvlen1 = bandmeta['wavelength'] - bandmeta['bandwidth']/2.0
-        wvlen2 = bandmeta['wavelength'] + bandmeta['bandwidth']/2.0 
-        if bandmeta['wavelength'] < 3:
+        wvlen1 = self.meta['bandlocs'][bandnum-1] - self.meta['bandwidths'][bandnum-1]/2.0
+        wvlen2 = self.meta['bandlocs'][bandnum-1] + self.meta['bandwidths'][bandnum-1]/2.0 
+        if self.meta['bandlocs'] < 3:
             """ Run in transmittance mode for visible bands """
             mode = 4
             fwhm = 0.001
@@ -440,12 +438,13 @@ class MODTRAN():
         plt.tight_layout()
         plt.show()
     fout.close()
-    """    
+    """
+
 
 # Eventually Atmosphere should take in a gippy.GeoImage
 # and extract the parameters from the file itself
 # to do that though, meta needs to be embedded in GeoImage
-def atmosphere(bandnum,meta=None,merraprofile=False):
+def atmosphere(bandnum, meta=None, merraprofile=False):
     vismodel = '6s'
     thmodel = 'modtran'
     #if bandnums == None:
@@ -461,15 +460,15 @@ def atmosphere(bandnum,meta=None,merraprofile=False):
     #    return atmcorr
     #else:
     curdir = os.getcwd()
-    os.chdir(os.path.dirname(meta['metafilename']))
+    os.chdir(meta['path'])
     #output = dict()
     #for i,bandloc in enumerate(meta['bandlocs']):
     #for b in bandnums:
-    bandloc = meta['bands'][bandnum-1]['wavelength']
+    bandloc = meta['bandlocs'][bandnum-1]
     # visible
     if bandloc < 3:
         if vismodel == '6s':
-            atm = SixS(bandnum,meta)
+            atm = SixS(bandnum, meta)
         elif vismodel == 'modtran':
             raise Exception('modtran model not yet implemented for visible')
         else:
@@ -477,7 +476,7 @@ def atmosphere(bandnum,meta=None,merraprofile=False):
     # thermal
     else:
         if thmodel == 'modtran':
-            atm = MODTRAN(bandnum,meta,merraprofile=merraprofile).output
+            atm = MODTRAN(bandnum, meta, merraprofile=merraprofile).output
         else:
             raise Exception('unknown atm model %s' % model)
     os.chdir(curdir)
