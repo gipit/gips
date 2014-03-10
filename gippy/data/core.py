@@ -436,7 +436,7 @@ class Data(object):
                 asset_dates = cls.asset_dates(a, t, dates, days)
                 for d in asset_dates:
                     if not find_assets(t, d, a):
-                        status = cls.fetch_asset(a, t, d)
+                        status = cls.Asset.fetch(a, t, d)
                         VerboseOut("Fetch status: %s" % status, 2)
                         # what to do if status is nonzero?
 
@@ -491,13 +491,15 @@ class Data(object):
                         filenames = [self.tiles[t]['products'][product] for t in self.tiles]
                         # cookiecutter should validate pixels in image.  Throw exception if not
                         imgout = gippy.CookieCutter(filenames, filename, self.site, res[0], res[1])
-                        VerboseOut('Projected and cropped %s files -> %s in %s' % (len(filenames), imgout.Basename(), datetime.now() - start))
+                        VerboseOut('Projected and cropped %s files -> %s in %s' % (len(filenames),
+                                   imgout.Basename(), datetime.now() - start))
                     self.products[product] = filename
 
     @classmethod
     def get_tiles_vector(cls):
         """ Get GeoVector of sensor grid """
         fname = os.path.join(cls.Tile.Asset._rootpath, cls.Tile.Asset._vectordir, cls._tiles_vector)
+        VerboseOut('%s: tiles vector %s' % (cls.__name__, fname), 4)
         if os.path.isfile(fname):
             tiles = gippy.GeoVector(fname)
         else:
@@ -510,6 +512,7 @@ class Data(object):
     @classmethod
     def vector2tiles(cls, vector, pcov=0.0, ptile=0.0):
         """ Return matching tiles and coverage % for provided vector """
+        start = datetime.now()
         import osr
         geom = vector.union()
         ogrgeom = ogr.CreateGeometryFromWkb(geom.wkb)
@@ -536,6 +539,7 @@ class Data(object):
                 remove_tiles.append(t)
         for t in remove_tiles:
             tiles.pop(t, None)
+        VerboseOut("vector2tiles completed in %s" % datetime.now()-start)
         return tiles
 
     def __init__(self, site=None, tiles=None, date=None, products=None, sensors=None, fetch=False, **kwargs):
@@ -576,8 +580,9 @@ class Data(object):
             sensors = self.Tile.Asset._sensors.keys()
         self.used_sensors = {s: self.Tile.Asset._sensors.get(s, None) for s in sensors}
 
-        #VerboseOut('Finding products for %s tiles ' % (len(self.tile_coverage)),3)
+        VerboseOut('Finding products for %s tiles ' % (len(self.tile_coverage)), 4)
         for t in self.tile_coverage.keys():
+            VerboseOut("Tile %s" % t, 4)
             try:
                 tile = self.Tile(t, self.date)
                 # Custom filter based on dataclass
@@ -588,7 +593,7 @@ class Data(object):
                 # check all tiles - should be same sensor - MODIS?
                 self.sensor = tile.sensor
             except:
-                print traceback.format_exc()
+                #print traceback.format_exc()
                 continue
         if len(self.tiles) == 0:
             raise Exception('No valid data found')

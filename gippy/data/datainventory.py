@@ -52,6 +52,7 @@ class DataInventory(object):
         # default to all tiles
         if tiles is None and self.site is None:
             tiles = dataclass.find_tiles()
+
         # if tiles provided, make coverage all 100%
         if tiles is not None:
             self.tiles = {}
@@ -77,6 +78,7 @@ class DataInventory(object):
         # get all potential matching dates for tiles
         dates = []
         for t in self.tiles:
+            VerboseOut('locating matching dates', 5)
             try:
                 for date in dataclass.find_dates(t):
                     day = int(date.strftime('%j'))

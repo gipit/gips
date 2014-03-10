@@ -114,6 +114,8 @@ class SARAnnualData(Data):
 
     Tile = SARAnnualTile
 
+    _tiles_vector = 'sar_tiles'
+
     @classmethod
     def feature2tile(cls, feature):
         """ Get tile designation from a geospatial feature (i.e. a row) """
