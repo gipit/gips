@@ -199,11 +199,11 @@ class SARTile(Tile):
 
     def meta(self):
         """ Get metadata from headerfile """
-        files = self.assets[0].datafiles()
+        files = self.assets[''].datafiles()
         for f in files:
             if f[-3:] == 'hdr':
                 hdr_bname = f
-        files = self.assets[0].extract(filenames=[hdr_bname])
+        files = self.assets[''].extract(filenames=[hdr_bname])
         return self.Asset._meta(files['hdr'])
 
     def process(self, products):
@@ -211,7 +211,7 @@ class SARTile(Tile):
         if len(products) == 0:
             raise Exception('Tile %s: No products specified' % self.tile)
         # extract all data from archive
-        datafiles = self.assets[0].extract()
+        datafiles = self.assets[''].extract()
         meta = self.meta()
         if 'sign' in products.keys():
             bands = [b for b in ["sl_HH", "sl_HV"] if b in datafiles]

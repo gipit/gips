@@ -101,7 +101,6 @@ class SARAnnualTile(Tile):
 
         if 'fnf' in products.keys():
             datafiles = self.assets['FNF'].extract()
-            set_trace()
             if 'C' in datafiles:
                 self.products['fnf'] = datafiles['C']
 

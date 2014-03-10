@@ -197,7 +197,7 @@ class LandsatTile(Tile):
     def process(self, products):
         """ Make sure all products have been pre-processed """
         start = datetime.now()
-        bname = os.path.basename(self.assets[0].filename)
+        bname = os.path.basename(self.assets[''].filename)
         #try:
         img = self._readraw()
         #except Exception, e:
@@ -241,7 +241,7 @@ class LandsatTile(Tile):
         img = None
         # cleanup directory
         try:
-            for bname in self.assets[0].datafiles:
+            for bname in self.assets[''].datafiles:
                 files = glob.glob(os.path.join(self.path, bname)+'*')
                 print 'remove: ', files
                 RemoveFiles(files)
@@ -263,8 +263,8 @@ class LandsatTile(Tile):
 
         # test if metadata already read in, if so, return
 
-        datafiles = self.assets[0].datafiles()
-        mtlfilename = self.assets[0].extract(([f for f in datafiles if 'MTL.txt' in f]))[0]
+        datafiles = self.assets[''].datafiles()
+        mtlfilename = self.assets[''].extract(([f for f in datafiles if 'MTL.txt' in f]))[0]
 
         VerboseOut('reading %s' % mtlfilename, 3)
         # Read MTL file
@@ -273,7 +273,7 @@ class LandsatTile(Tile):
         except IOError as e:
             raise Exception('({})'.format(e))
 
-        sensor_meta = self.assets[0].sensor_meta()
+        sensor_meta = self.assets[''].sensor_meta()
 
         # Process MTL text - replace old metadata tags with new
         # NOTE This is not comprehensive, there may be others
@@ -369,7 +369,7 @@ class LandsatTile(Tile):
         #    bandnums = numpy.arange(0, len(self.metadata['bands'])) + 1
 
         # Extract all files
-        datafiles = self.assets[0].extract(self.metadata['filenames'])
+        datafiles = self.assets[''].extract(self.metadata['filenames'])
         VerboseOut('Extracted Landsat files:', 3)
         VerboseOut(datafiles, 3)
 
