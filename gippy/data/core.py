@@ -157,7 +157,8 @@ class Data(object):
             files2 = []
             for f in files:
                 ext = os.path.splitext(f)[1]
-                if ext != '.hdr' and ext != '.xml': files2.append(f)
+                # bad....don't check gz, this should check that is not asset
+                if ext != '.hdr' and ext != '.xml' and ext != '.gz' and ext != '.index': files2.append(f)
             files = files2
             # TODO - BASENAME IS DIFFERENT FOR EVERY ASSET !??  Because of sensor issue
             for f in files:
@@ -225,26 +226,27 @@ class Data(object):
                 info['date'] = [info['date']]
             for d in info['date']:
                 added = 0
-                path = cls.path(info['tile'], d)
+                bname = os.path.basename(f)
+                tpath = cls.path(info['tile'], d)
                 pattern = cls._assets[info['asset']]['pattern']
-                newfilename = os.path.join(path, os.path.basename(f))
+                newfilename = os.path.join(tpath, bname)
                 if not os.path.exists(newfilename):
                     # check if another asset exists
-                    existing_assets = glob.glob(os.path.join(path, pattern))
+                    existing_assets = glob.glob(os.path.join(tpath, pattern))
                     if len(existing_assets) > 0:
-                        VerboseOut('%s: other version(s) already exists:' % f, 2)
+                        VerboseOut('%s: other version(s) already exists:' % bname, 2)
                         for ef in existing_assets: VerboseOut('\t%s' % os.path.basename(ef),2)
                     else:
                         try:
-                            os.makedirs(path)
-                        except OSError as exc:  # Python >2.5
-                            if exc.errno == errno.EEXIST and os.path.isdir(path):
+                            os.makedirs(tpath)
+                        except OSError as exc:
+                            if exc.errno == errno.EEXIST and os.path.isdir(tpath):
                                 pass
                             else:
-                                raise Exception('Unable to make data directory %s' % path)
+                                raise Exception('Unable to make data directory %s' % tpath)
                         os.link(os.path.abspath(f), newfilename)
                         #shutil.move(os.path.abspath(f),newfilename)
-                        VerboseOut(os.path.basename(f) + ' -> ' + newfilename, 2)
+                        VerboseOut(bname + ' -> ' + newfilename, 2)
                         added = 1
                         numlinks = numlinks + added
                         to_remove.append(f)
@@ -256,7 +258,7 @@ class Data(object):
         if not keep: RemoveFiles(to_remove,['.index', '.aux.xml'])
         # Summarize
         VerboseOut('%s files (%s links) from %s added to archive in %s' %
-                    (numfiles, numlinks, path, datetime.now()-start) )
+                    (numfiles, numlinks, os.path.abspath(path), datetime.now()-start) )
         if numfiles != len(fnames):
             VerboseOut('%s files not added to archive' % (len(fnames)-numfiles))
 
@@ -283,8 +285,8 @@ class Data(object):
                         VerboseOut('copying data to archive', 2)
 
                         try:
-                            print "calling archive"
-                            cls.archive(cls._stage)
+                            print "calling archive moving to %s" % cls._stagedir
+                            cls.archive(cls._stagedir)
                         except:
                             VerboseOut('archive of downloaded files was unsuccessful', 2)
 

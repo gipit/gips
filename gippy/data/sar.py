@@ -13,22 +13,23 @@ import gippy
 from gippy.data.core import Data
 from gippy.utils import VerboseOut, File2List, List2File, RemoveFiles
 
+
 class SARData(Data):
     """ Represents a single date and temporal extent along with (existing) product variations """
     name = 'SAR'
     sensors = {
-        'AFBS':'PALSAR FineBeam Single Polarization',
-        'AFBD':'PALSAR FineBeam Dual Polarization',
-        'AWB1':'PALSAR WideBeam (ScanSAR Short Mode)',
-        'JFBS':'JERS-1 FineBeam Single Polarization'
+        'AFBS': 'PALSAR FineBeam Single Polarization',
+        'AFBD': 'PALSAR FineBeam Dual Polarization',
+        'AWB1': 'PALSAR WideBeam (ScanSAR Short Mode)',
+        'JFBS': 'JERS-1 FineBeam Single Polarization'
     }
-    _defaultresolution = [0.000834028356964,0.000834028356964]
+    _defaultresolution = [0.000834028356964, 0.000834028356964]
     _rootdir = '/titan/data/SAR'
-    _tiledir = os.path.join(_rootdir, 'tiles.dev')
+    _tiledir = os.path.join(_rootdir, 'tiles')
     _stagedir = os.path.join(_rootdir, 'stage')
     #_datedir = '%Y%j'
 
-    _tiles_vector = os.path.join(_rootdir,'vectors','tiles.shp')
+    _tiles_vector = os.path.join(_rootdir, 'vectors', 'tiles.shp')
 
     _prodpattern = '*'
     _metapattern = '.hdr'
@@ -43,14 +44,15 @@ class SARData(Data):
         ('sign', {
             'description': 'Sigma nought (radar backscatter coefficient)',
         }),
+        ('linci', {
+            'description': 'Incident angles',
+        }),
     ])
-
-
 
     # SAR specific constants
     # launch dates for PALSAR (A) and JERS-1 (J)
-    _launchdate = {'A': datetime.date(2006,1,24), 'J': datetime.date(1992,2,11)}
-    _databands = ["sl_HH","sl_HV"]
+    _launchdate = {'A': datetime.date(2006, 1, 24), 'J': datetime.date(1992, 2, 11)}
+    _databands = ["sl_HH", "sl_HV"]
 
     _cycledates = {
         7:  '20-Oct-06',
@@ -138,7 +140,7 @@ class SARData(Data):
                 raise Exception('%s: no valid dates' % fname)
             date = min(dates)
             dateimg = None
-            #RemoveFiles([hdrfile, datefile], ['.hdr', '.aux.xml'])
+            RemoveFiles([hdrfile, datefile], ['.hdr', '.aux.xml'])
             #VerboseOut('Date from image: %s' % str(date),3) 
             # If year provided check
             #if fname[7] == 'Y' and fname[8:10] != '00':
@@ -151,7 +153,6 @@ class SARData(Data):
                 if not (cdate <= date <= (cdate + datetime.timedelta(days=45))):
                     raise Exception('%s: Date %s outside of cycle range (%s)' % (fname, str(date), str(cdate)))
             #VerboseOut('%s: inspect %s' % (fname,datetime.datetime.now()-start), 4)
-            
 
         return {
             'asset': '',
@@ -219,11 +220,13 @@ class SARData(Data):
                 os.chmod(filename,0664)
             except: pass
             #if not os.path.exists(fname+'.hdr'):
-            bandname = f[len(tdata['basename'])+1:]
+            if f[-3:] == 'hdr':
+                bandname = 'hdr'
+            else: bandname = f[len(tdata['basename'])+1:]
             envihdr = copy.deepcopy(meta['envihdr'])
             if bandname in ['mask','linci']: envihdr[6] = 'data type = 1'
             envihdr.append('band names={%s}' % bandname)
-            List2File(envihdr,filename+'.hdr') 
+            if filename[-3:] != 'hdr': List2File(envihdr,filename+'.hdr') 
             datafiles[bandname] = filename
         return datafiles
 
@@ -247,12 +250,14 @@ class SARData(Data):
             dateday = (self.date - self._launchdate[self.sensor[0]]).days
             img.AddMask(dateimg[0] == dateday)
             imgout = gippy.SigmaNought(img, products['sign'], meta['CF'])
-            self.tiles[tile]['products']['sign'] = imgout.Filename()
-
+            tdata['products']['sign'] = imgout.Filename()
+            img = None
+            imgout = None
+        if 'angle' in products.keys():
+            tdata['products']['linci'] = datafiles['linci']
         # Remove unused stuff
-        rmfiles = [k for k in ['linci','mask','date'] + self._databands if k in tdata['products']]
-        for f in rmfiles:
-            RemoveFiles([self.tiles[tile]['products'][f]],[self.tiles[tile]['products'][f]+'.hdr',self.tiles[tile]['products'][f]+'.aux.xml'])
+        for key, f in datafiles.items():
+            if key not in tdata['products'] and key != 'hdr': RemoveFiles([f],['.hdr','.aux.xml'])
 
     @classmethod
     def feature2tile(cls,feature):
