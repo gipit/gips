@@ -591,21 +591,21 @@ namespace gip {
                 th1 += shift;
             }
             imgin["LWIR"].ClearMasks();
-            CImg<float> warm_stats = imgin["LWIR"].AddMask(imgout[b_cloudmask]).AddMask(imgin["LWIR"] < th1).AddMask(imgin["LWIR"] > th0).ComputeStats();
+            CImg<float> warm_stats = imgin["LWIR"].AddMask(imgout[b_ambclouds]).AddMask(imgin["LWIR"] < th1).AddMask(imgin["LWIR"] > th0).ComputeStats();
             if (Options::Verbose() > 1) cimg_print(warm_stats, "Warm Cloud stats(min,max,mean,sd,skew,count)");
             imgin["LWIR"].ClearMasks();
             if (((warm_stats(5)/scenesize) < 0.4) && (warm_stats(2) < 22)) {
                 if (Options::Verbose() > 2) cout << "Accepting warm clouds" << endl;
-                imgout[b_cloudmask].AddMask(imgin["LWIR"] < th1).AddMask(imgin["LWIR"] > th0);
+                imgout[b_ambclouds].AddMask(imgin["LWIR"] < th1).AddMask(imgin["LWIR"] > th0);
                 addclouds = true;
             } else {
                 // Cold clouds
-                CImg<float> cold_stats = imgin["LWIR"].AddMask(imgout[b_cloudmask]).AddMask(imgin["LWIR"] < th0).ComputeStats();
+                CImg<float> cold_stats = imgin["LWIR"].AddMask(imgout[b_ambclouds]).AddMask(imgin["LWIR"] < th0).ComputeStats();
                 if (Options::Verbose() > 1) cimg_print(cold_stats, "Cold Cloud stats(min,max,mean,sd,skew,count)");
                 imgin["LWIR"].ClearMasks();
                 if (((cold_stats(5)/scenesize) < 0.4) && (cold_stats(2) < 22)) {
                     if (Options::Verbose() > 2) cout << "Accepting cold clouds" << endl;
-                    imgout[b_cloudmask].AddMask(imgin["LWIR"] < th0);
+                    imgout[b_ambclouds].AddMask(imgin["LWIR"] < th0);
                     addclouds = true;
                 } else
                     if (Options::Verbose() > 2) cout << "Rejecting all ambiguous clouds" << endl;
