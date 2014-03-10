@@ -285,8 +285,8 @@ class Data(object):
                         VerboseOut('copying data to archive', 2)
 
                         try:
-                            print "calling archive"
-                            cls.archive(cls._stage)
+                            print "calling archive moving to %s" % cls._stagedir
+                            cls.archive(cls._stagedir)
                         except:
                             VerboseOut('archive of downloaded files was unsuccessful', 2)
 
