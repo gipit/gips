@@ -72,7 +72,7 @@ class ModisAsset(Asset):
         doy = date.timetuple()[7]
 
         pattern = ''.join(['(', asset, '.A', str(year), str(doy).zfill(3), '.', tile, '.005.\d{13}.hdf)'])
-        mainurl = ''.join([httploc, '/', str(year), '.', '%02d'%month, '.', '%02d'%day])
+        mainurl = ''.join([httploc, '/', str(year), '.', '%02d' % month, '.', '%02d' % day])
 
         print "mainurl"
         print mainurl
