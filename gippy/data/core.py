@@ -144,7 +144,7 @@ class Asset(object):
 
         # Summarize
         VerboseOut('%s files (%s links) from %s added to archive in %s' %
-                    (numfiles, numlinks, os.path.abspath(path), datetime.now()-start))
+                  (numfiles, numlinks, os.path.abspath(path), datetime.now()-start))
         if numfiles != len(fnames):
             VerboseOut('%s files not added to archive' % (len(fnames)-numfiles))
 
@@ -609,7 +609,7 @@ class Data(object):
         group.add_argument('--fetch', help='Fetch any missing data (if supported)', default=False, action='store_true')
         group.add_argument('-p', '--products', nargs='*', help='Process/filter these products', default=None)
         group.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2: debug', default=1, type=int)
-        group.add_argument('--%cov', dest='pcov', help='Threshold of %% coverage of tile over site', default=0, type=int)
+        group.add_argument('--%cov', dest='pcov', help='Threshold of %% tile coverage over site', default=0, type=int)
         group.add_argument('--%tile', dest='ptile', help='Threshold of %% tile used', default=0, type=int)
         return parser
 
@@ -624,7 +624,7 @@ class Data(object):
     def main(cls):
         dhf = argparse.ArgumentDefaultsHelpFormatter
         parser0 = argparse.ArgumentParser(description='%s Data Utility' % cls.name,
-            formatter_class=argparse.RawTextHelpFormatter)
+                                          formatter_class=argparse.RawTextHelpFormatter)
         subparser = parser0.add_subparsers(dest='command')
 
         parser = subparser.add_parser('help', help='Print extended help', formatter_class=dhf)
