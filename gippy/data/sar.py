@@ -18,10 +18,10 @@ class SARAsset(Asset):
     """ Single original file """
     _rootpath = '/titan/data/SAR'
     _sensors = {
-        'AFBS': 'PALSAR FineBeam Single Polarization',
-        'AFBD': 'PALSAR FineBeam Dual Polarization',
-        'AWB1': 'PALSAR WideBeam (ScanSAR Short Mode)',
-        'JFBS': 'JERS-1 FineBeam Single Polarization'
+        'AFBS': {'description': 'PALSAR FineBeam Single Polarization'},
+        'AFBD': {'description': 'PALSAR FineBeam Dual Polarization'},
+        'AWB1': {'description': 'PALSAR WideBeam (ScanSAR Short Mode)'},
+        'JFBS': {'description': 'JERS-1 FineBeam Single Polarization'}
     }
     _assets = {
         '': {
@@ -31,7 +31,7 @@ class SARAsset(Asset):
 
     # launch dates for PALSAR (A) and JERS-1 (J)
     _launchdate = {'A': datetime.date(2006, 1, 24), 'J': datetime.date(1992, 2, 11)}
-    
+
     _cycledates = {
         7:  '20-Oct-06',
         8:  '05-Dec-06',
@@ -77,7 +77,7 @@ class SARAsset(Asset):
         super(SARAsset, self).__init__(filename)
 
         self.tile = self.basename[10:17]
-        self.sensor = self.basename[-9:-8] + self.basename[-15:-12],
+        self.sensor = self.basename[-9:-8] + self.basename[-15:-12]
 
         datafiles = self.datafiles()
         for f in datafiles:
@@ -111,7 +111,8 @@ class SARAsset(Asset):
             List2File(meta['envihdr'], datefile+'.hdr')
             dateimg = gippy.GeoImage(datefile)
             dateimg.SetNoData(0)
-            dates = [self._launchdate[fname[-9]] + datetime.timedelta(days=int(d)) for d in numpy.unique(dateimg.Read()) if d != 0]
+            datevals = numpy.unique(dateimg.Read())
+            dates = [self._launchdate[fname[-9]] + datetime.timedelta(days=int(d)) for d in datevals if d != 0]
             if not dates:
                 RemoveFiles([hdrfile, datefile], ['.hdr', '.aux.xml'])
                 raise Exception('%s: no valid dates' % fname)
@@ -132,21 +133,21 @@ class SARAsset(Asset):
             #VerboseOut('%s: inspect %s' % (fname,datetime.datetime.now()-start), 4)
 
     @classmethod
-    def _meta(cls,hdrfile):
+    def _meta(cls, hdrfile):
         """ Get some metadata from header file """
-        hdr = File2List( hdrfile )
+        hdr = File2List(hdrfile)
         meta = {}
         meta['proj'] = (
-            'GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984", SPHEROID["WGS_1984",6378137.0,298.257223563]],' + 
+            'GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984", SPHEROID["WGS_1984",6378137.0,298.257223563]],' +
             'PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]]')
         meta['size'] = [int(hdr[23]), int(hdr[24])]
-        lat = [ float(hdr[12]), float(hdr[14]) ]
-        lat = [ min(lat), max(lat) ]
+        lat = [float(hdr[12]), float(hdr[14])]
+        lat = [min(lat), max(lat)]
         meta['lat'] = lat
-        lon = [ float(hdr[13]), float(hdr[15]) ]
-        lon = [ min(lon), max(lon)]
+        lon = [float(hdr[13]), float(hdr[15])]
+        lon = [min(lon), max(lon)]
         meta['lon'] = lon
-        meta['res'] = [ (lon[1]-lon[0])/(meta['size'][0]-1), (lat[1]-lat[0])/(meta['size'][1]-1) ]
+        meta['res'] = [(lon[1]-lon[0])/(meta['size'][0]-1), (lat[1]-lat[0])/(meta['size'][1]-1)]
         meta['envihdr'] = [
             'ENVI', 'samples = %s' % meta['size'][0], 'lines = %s' % meta['size'][1],
             'bands = 1', 'header offset = 0', 'file type = ENVI Standard', 'data type = 12',
@@ -158,8 +159,29 @@ class SARAsset(Asset):
         meta['CF'] = float(hdr[21])
         return meta
 
+    def extract(self, filenames=[]):
+        """ Extract filenames from asset and create ENVI header files """
+        files = super(SARAsset, self).extract(filenames)
+        for f in files:
+            if f[-3:] == 'hdr':
+                meta = self._meta(f)
+        datafiles = {}
+        for f in files:
+            bname = os.path.basename(f)
+            if f[-3:] != 'hdr':
+                bandname = bname[len(self.basename)+1:]
+                envihdr = copy.deepcopy(meta['envihdr'])
+                if bandname in ['mask', 'linci']:
+                    envihdr[6] = 'data type = 1'
+                envihdr.append('band names={%s}' % bandname)
+                List2File(envihdr, f+'.hdr')
+            else:
+                bandname = 'hdr'
+            datafiles[bandname] = f
+        return datafiles
 
-class SARTile(Data):
+
+class SARTile(Tile):
     """ Tile of data """
 
     _prodpattern = '*'
@@ -175,19 +197,45 @@ class SARTile(Data):
 
     Asset = SARAsset
 
-    def meta(self, tile):
-        """ Get metadata for this tile """
-        tdata = self.tiles[tile]
-        # add info from headerfile
-        tfile = tarfile.open(tdata['assets'][0])
-        for f in tdata['datafiles'][tdata['assets'][0]]:
+    def meta(self):
+        """ Get metadata from headerfile """
+        files = self.assets[0].datafiles()
+        for f in files:
             if f[-3:] == 'hdr':
                 hdr_bname = f
-        hdr_fname = os.path.join(tdata['path'], hdr_bname)
-        if not os.path.exists(hdr_fname):
-            tfile.extract(hdr_bname, tdata['path'])
-        #tdata.update( self._meta(hdr_fname) )
-        return self._meta(hdr_fname)
+        files = self.assets[0].extract(filenames=[hdr_bname])
+        return self.Asset._meta(files['hdr'])
+
+    def process(self, products):
+        """ Make sure all products have been pre-processed """
+        if len(products) == 0:
+            raise Exception('Tile %s: No products specified' % self.tile)
+        # extract all data from archive
+        datafiles = self.assets[0].extract()
+        meta = self.meta()
+        if 'sign' in products.keys():
+            bands = [b for b in ["sl_HH", "sl_HV"] if b in datafiles]
+            img = gippy.GeoImage(datafiles[bands[0]])
+            del bands[0]
+            for b in bands:
+                img.AddBand(gippy.GeoImage(datafiles[b])[0])
+            img.SetNoData(0)
+            mask = gippy.GeoImage(datafiles['mask'], False)
+            img.AddMask(mask[0] == 255)
+            # apply date mask
+            dateimg = gippy.GeoImage(datafiles['date'], False)
+            dateday = (self.date - SARAsset._launchdate[self.sensor[0]]).days
+            img.AddMask(dateimg[0] == dateday)
+            imgout = gippy.SigmaNought(img, products['sign'], meta['CF'])
+            self.products['sign'] = imgout.Filename()
+            img = None
+            imgout = None
+        if 'linci' in products.keys():
+            self.products['linci'] = datafiles['linci']
+        # Remove unused stuff
+        for key, f in datafiles.items():
+            if key not in self.products and key != 'hdr':
+                RemoveFiles([f], ['.hdr', '.aux.xml'])
 
 
 class SARData(Data):
@@ -198,67 +246,8 @@ class SARData(Data):
 
     Tile = SARTile
 
-    # SAR specific constants
-    _databands = ["sl_HH", "sl_HV"]
-
-
-
-    def _extract(self,tile):
-        tdata = self.tiles[tile]
-        meta = self.meta(tile)
-        asset_name = self.tiles[tile]['assets'][0]
-        if tarfile.is_tarfile(asset_name):
-            tfile = tarfile.open(asset_name)
-        else: raise Exception('%s is not a valid tar file' % os.path.basename(asset_name))
-        tfile.extractall(tdata['path'])
-        datafiles = {}
-        for f in tdata['datafiles'][asset_name]:
-            filename = os.path.join(tdata['path'],f)
-            try:
-                os.chmod(filename,0664)
-            except: pass
-            #if not os.path.exists(fname+'.hdr'):
-            if f[-3:] == 'hdr':
-                bandname = 'hdr'
-            else: bandname = f[len(tdata['basename'])+1:]
-            envihdr = copy.deepcopy(meta['envihdr'])
-            if bandname in ['mask','linci']: envihdr[6] = 'data type = 1'
-            envihdr.append('band names={%s}' % bandname)
-            if filename[-3:] != 'hdr': List2File(envihdr,filename+'.hdr') 
-            datafiles[bandname] = filename
-        return datafiles
-
-    def processtile(self, tile, products):
-        """ Make sure all products have been pre-processed """
-        if len(products) == 0: raise Exception('Tile %s: No products specified' % tile)
-        # extract all data from archive
-        tdata = self.tiles[tile]
-        datafiles = self._extract(tile)
-        meta = self.meta(tile)
-        if 'sign' in products.keys():
-            bands = [b for b in self._databands if b in datafiles]
-            img = gippy.GeoImage(datafiles[bands[0]]) 
-            del bands[0]
-            for b in bands: img.AddBand(gippy.GeoImage(datafiles[b])[0])
-            img.SetNoData(0)
-            mask = gippy.GeoImage(datafiles['mask'],False)
-            img.AddMask(mask[0] == 255)
-            # apply date mask
-            dateimg = gippy.GeoImage(datafiles['date'],False)
-            dateday = (self.date - self._launchdate[self.sensor[0]]).days
-            img.AddMask(dateimg[0] == dateday)
-            imgout = gippy.SigmaNought(img, products['sign'], meta['CF'])
-            tdata['products']['sign'] = imgout.Filename()
-            img = None
-            imgout = None
-        if 'angle' in products.keys():
-            tdata['products']['linci'] = datafiles['linci']
-        # Remove unused stuff
-        for key, f in datafiles.items():
-            if key not in tdata['products'] and key != 'hdr': RemoveFiles([f],['.hdr','.aux.xml'])
-
     @classmethod
-    def feature2tile(cls,feature):
+    def feature2tile(cls, feature):
         """ Get tile designation from a geospatial feature (i.e. a row) """
         fldindex_lat = feature.GetFieldIndex("lat")
         fldindex_lon = feature.GetFieldIndex("lon")
@@ -266,11 +255,15 @@ class SARData(Data):
         lon = int(feature.GetField(fldindex_lon)-0.5)
         if lat < 0:
             lat_h = 'S'
-        else: lat_h = 'N'
+        else:
+            lat_h = 'N'
         if lon < 0:
             lon_h = 'W'
-        else: lon_h = 'E'
+        else:
+            lon_h = 'E'
         tile = lat_h + str(abs(lat)).zfill(2) + lon_h + str(abs(lon)).zfill(3)
         return tile
 
-def main(): SARData.main()
+
+def main():
+    SARData.main()

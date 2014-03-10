@@ -241,7 +241,7 @@ class LandsatTile(Tile):
             for bname in self.assets[0].datafiles:
                 files = glob.glob(os.path.join(self.path, bname)+'*')
                 print 'remove: ', files
-                #RemoveFiles(files)
+                RemoveFiles(files)
             shutil.rmtree(os.path.join(self.path, 'modtran'))
         except:
             pass

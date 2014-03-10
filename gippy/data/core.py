@@ -75,10 +75,10 @@ class Asset(object):
     ##########################################################################
     # Override these functions if not using a tile/date directory structure
     ##########################################################################
-    #@property
-    #def path(self):
-    #    """ Return repository path to this asset """
-    #    return os.path.join(self._tilespath, self.tile, str(date.strftime(cls._datedir)))
+    @property
+    def path(self):
+        """ Return repository path to this asset """
+        return os.path.join(self._tilespath, self.tile, str(date.strftime(cls._datedir)))
 
     @classmethod
     def path(cls, tile, date):
@@ -110,7 +110,7 @@ class Asset(object):
             if len(files) > 1:
                 VerboseOut(files, 3)
                 raise Exception("Duplicate(?) assets found")
-            else:
+            if len(files) == 1:
                 found.append(cls(files[0]))
         return found
 
@@ -328,11 +328,11 @@ class Tile(object):
         """ Find all data and assets for this tile and date """
         self.id = tile
         self.date = date
-        self.assets = []
+        self.assets = {}
         #self.basename = ''
         self.products = {}
         for asset in self.Asset.find_assets(tile, date):
-            self.assets.append(asset)
+            self.assets[asset.asset] = asset
             # sensor and basename assumes same value every time ?
             self.sensor = asset.sensor
             # should this be property of tile date, sensor?  same for all assets ?
@@ -497,8 +497,9 @@ class Data(object):
     @classmethod
     def get_tiles_vector(cls):
         """ Get GeoVector of sensor grid """
-        if os.path.isfile(cls._tiles_vector):
-            tiles = gippy.GeoVector(cls._tiles_vector)
+        fname = os.path.join(cls.Tile.Asset._rootpath, cls.Tile.Asset._vectordir, cls._tiles_vector)
+        if os.path.isfile(fname):
+            tiles = gippy.GeoVector(fname)
         else:
             try:
                 tiles = gippy.GeoVector("PG:dbname=geodata host=congo port=5432 user=ags", layer=cls._tiles_vector)
@@ -545,7 +546,7 @@ class Data(object):
         """
 
         # shapefile name or PostGIS layer name describing sensor tiles
-        self.tiles_vector = os.path.join(self.Tile.Asset._rootpath, self.Tile.Asset._vectordir, self._tiles_vector)
+        #self.tiles_vector = os.path.join(self.Tile.Asset._rootpath, self.Tile.Asset._vectordir, self._tiles_vector)
 
         self.site = site
         # Calculate spatial extent
@@ -585,9 +586,9 @@ class Data(object):
                 #    empty_tiles.append(t)
                 self.tiles[t] = tile
                 # check all tiles - should be same sensor - MODIS?
-                self.sensor = self.tiles[t].sensor
+                self.sensor = tile.sensor
             except:
-                #print traceback.format_exc()
+                print traceback.format_exc()
                 continue
         if len(self.tiles) == 0:
             raise Exception('No valid data found')
@@ -621,10 +622,9 @@ class Data(object):
             formatter_class=argparse.RawTextHelpFormatter)
         subparser = parser0.add_subparsers(dest='command')
 
-        invparser = cls.args_inventory()
-
-        # Help
         parser = subparser.add_parser('help', help='Print extended help', formatter_class=dhf)
+
+        invparser = cls.args_inventory()
 
         # Inventory
         parser = subparser.add_parser('inventory', help='Get Inventory', parents=[invparser], formatter_class=dhf)
@@ -633,11 +633,9 @@ class Data(object):
         # Processing
         parser = subparser.add_parser('process', help='Process scenes', parents=[invparser], formatter_class=dhf)
         group = parser.add_argument_group('Processing Options')
-        group.add_argument('--overwrite', help='Overwrite output files if they exist', default=False, action='store_true')
+        group.add_argument('--overwrite', help='Overwrite exiting output file(s)', default=False, action='store_true')
         group.add_argument('--suffix', help='Append string to end of filename (before extension)', default='')
         #group.add_argument('--nooverviews', help='Do not add overviews to output', default=False, action='store_true')
-        #pparser.add_argument('--link', help='Create links in current directory to output', default=False, action='store_true')
-        #pparser.add_argument('--multi', help='Use multiple processors', default=False, action='store_true')
 
         # Project
         parser = subparser.add_parser('project', help='Create project', parents=[invparser], formatter_class=dhf)
@@ -645,13 +643,8 @@ class Data(object):
         group.add_argument('--res', nargs=2, help='Resolution of output rasters', default=None, type=float)
         group.add_argument('--datadir', help='Directory to save project files', default=cls.name+'_data')
 
-        # Links
-        parser = subparser.add_parser('link', help='Link to Products', parents=[invparser], formatter_class=dhf)
-        parser.add_argument('--hard', help='Create hard links instead of symbolic', default=False, action='store_true')
-
         # Misc
         parser = subparser.add_parser('archive', help='Move files from current directory to data archive')
-        #parser.add_argument('--link',help='Create symbolic links instead of moving', default=False,action='store_true')
         parser.add_argument('--keep', help='Keep files after adding to archive', default=False, action='store_true')
         parser.add_argument('--recursive', help='Iterate through subdirectories', default=False, action='store_true')
         parser.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2: debug', default=1, type=int)
@@ -659,7 +652,6 @@ class Data(object):
         parser = subparser.add_parser('fetch', help='Fetch products from remote location')
 
         #cls.add_subparsers(subparser)
-
         # Pull in cls options here
         #dataparser = subparser.add_parser('data',help='', parents=[invparser],formatter_class=dhf)
 
@@ -672,7 +664,8 @@ class Data(object):
             exit(1)
 
         gippy.Options.SetVerbose(args.verbose)
-        gippy.Options.SetChunkSize(128.0)   # replace with option
+        # TODO - replace with option
+        gippy.Options.SetChunkSize(128.0)
 
         VerboseOut('GIPPY %s command line utility' % cls.name)
 
@@ -681,7 +674,8 @@ class Data(object):
                 # TODO - take in path argument
                 cls.archive(recursive=args.recursive, keep=args.keep)
                 exit(1)
-            inv = cls.inventory(site=args.site, dates=args.dates, days=args.days, tiles=args.tiles,
+            inv = cls.inventory(
+                site=args.site, dates=args.dates, days=args.days, tiles=args.tiles,
                 products=args.products, pcov=args.pcov, ptile=args.ptile, fetch=args.fetch)
             if args.command == 'inventory':
                 inv.printcalendar(args.md)
