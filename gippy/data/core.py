@@ -539,7 +539,7 @@ class Data(object):
                 remove_tiles.append(t)
         for t in remove_tiles:
             tiles.pop(t, None)
-        VerboseOut("vector2tiles completed in %s" % datetime.now()-start)
+        VerboseOut('%s: vector2tiles completed in %s' % (cls.__name__, datetime.now() - start), 4)
         return tiles
 
     def __init__(self, site=None, tiles=None, date=None, products=None, sensors=None, fetch=False, **kwargs):
@@ -654,8 +654,6 @@ class Data(object):
         parser.add_argument('--recursive', help='Iterate through subdirectories', default=False, action='store_true')
         parser.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2: debug', default=1, type=int)
 
-        parser = subparser.add_parser('fetch', help='Fetch products from remote location')
-
         #cls.add_subparsers(subparser)
         # Pull in cls options here
         #dataparser = subparser.add_parser('data',help='', parents=[invparser],formatter_class=dhf)
@@ -664,7 +662,7 @@ class Data(object):
         if args.command == 'help':
             parser0.print_help()
             print '\navailable products:'
-            for key, val in cls._products.items():
+            for key, val in cls.Tile._products.items():
                 print '    {:<20}{:<100}'.format(key, val['description'])
             exit(1)
 

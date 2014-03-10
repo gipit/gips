@@ -78,7 +78,7 @@ class DataInventory(object):
         # get all potential matching dates for tiles
         dates = []
         for t in self.tiles:
-            VerboseOut('locating matching dates', 5)
+            #VerboseOut('locating matching dates', 5)
             try:
                 for date in dataclass.find_dates(t):
                     day = int(date.strftime('%j'))

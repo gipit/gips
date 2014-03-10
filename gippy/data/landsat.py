@@ -23,6 +23,9 @@ class LandsatAsset(Asset):
 
     # combine sensormeta with sensor
     _sensors = {
+        'LT4': {
+            'description': 'Landsat 4',
+        },
         'LT5': {
             'description': 'Landsat 5',
             'bands': ['1', '2', '3', '4', '5', '6', '7'],
@@ -411,7 +414,7 @@ class LandsatData(Data):
     Tile = LandsatTile
 
     _tiles_vector = 'landsat_wrs'
-    _tiles_attribute = 'pr'
+    _vectoratt = 'pr'
 
     @classmethod
     def feature2tile(cls, feature):
