@@ -55,9 +55,9 @@ namespace gip {
     void STI(const GeoImage&, std::string);
 
     //! Create cloudmask using ACCA
-    GeoImage ACCA(const GeoImage&, std::string, int = 5);
+    GeoImage ACCA(const GeoImage&, std::string, float, float, int = 5, int = 10, int = 4000);
 
-    GeoImage RiceDetect(const GeoImage& img, std::string filename, std::vector<int> days, 
+    GeoImage RiceDetect(const GeoImage& img, std::string filename, std::vector<int> days,
         float th0, float th1, int dth0=90, int dth1=120);
 
     // Create new file with AutoCloud algorithm
