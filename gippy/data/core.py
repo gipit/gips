@@ -19,6 +19,7 @@ from gippy.utils import VerboseOut, RemoveFiles, File2List, List2File
 from gippy.data.datainventory import DataInventory
 from gippy.settings import DATABASES
 
+
 class Asset(object):
     """ Class for a single file asset """
     # root directory to data
@@ -505,9 +506,11 @@ class Data(object):
         else:
             try:
                 VerboseOut('%s: tiles vector %s' % (cls.__name__, cls._tiles_vector), 4)
-                db = "PG:dbname=%s host=%s port=%s user=%s password=%s" %
-                (DATABASES.NAME, DATABASES.HOST, DATABASES.PORT, DATABASES.USER, DATABASES.PASSWORD)
-                tiles = gippy.GeoVector(db, layer=cls._tiles_vector)
+                db = DATABASES['tiles']
+                dbstr = ("PG:dbname=%s host=%s port=%s user=%s password=%s" %
+                        (db['NAME'], db['HOST'], db['PORT'], db['USER'], db['PASSWORD']))
+                print dbstr
+                tiles = gippy.GeoVector(dbstr, layer=cls._tiles_vector)
             except:
                 raise Exception('unable to access %s tiles (file or database)' % cls.__name__)
         return tiles
