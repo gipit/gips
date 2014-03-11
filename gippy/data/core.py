@@ -17,7 +17,7 @@ from pdb import set_trace
 import gippy
 from gippy.utils import VerboseOut, RemoveFiles, File2List, List2File
 from gippy.data.datainventory import DataInventory
-
+from gippy.settings import DATABASES
 
 class Asset(object):
     """ Class for a single file asset """
@@ -499,12 +499,15 @@ class Data(object):
     def get_tiles_vector(cls):
         """ Get GeoVector of sensor grid """
         fname = os.path.join(cls.Tile.Asset._rootpath, cls.Tile.Asset._vectordir, cls._tiles_vector)
-        VerboseOut('%s: tiles vector %s' % (cls.__name__, fname), 4)
         if os.path.isfile(fname):
+            VerboseOut('%s: tiles vector %s' % (cls.__name__, fname), 4)
             tiles = gippy.GeoVector(fname)
         else:
             try:
-                tiles = gippy.GeoVector("PG:dbname=geodata host=congo port=5432 user=ags", layer=cls._tiles_vector)
+                VerboseOut('%s: tiles vector %s' % (cls.__name__, cls._tiles_vector), 4)
+                db = "PG:dbname=%s host=%s port=%s user=%s password=%s" %
+                (DATABASES.NAME, DATABASES.HOST, DATABASES.PORT, DATABASES.USER, DATABASES.PASSWORD)
+                tiles = gippy.GeoVector(db, layer=cls._tiles_vector)
             except:
                 raise Exception('unable to access %s tiles (file or database)' % cls.__name__)
         return tiles
