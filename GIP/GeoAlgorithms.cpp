@@ -493,7 +493,7 @@ namespace gip {
      * dilate.
      */
     GeoImage ACCA(const GeoImage& img, string filename, float se_degrees,
-                  float sa_degrees, int dilate, int cloudheight ) {
+                  float sa_degrees, int erode, int dilate, int cloudheight ) {
         img.SetUnitsOut("reflectance");
         GeoImageIO<float> imgin(img);
 
@@ -519,12 +519,14 @@ namespace gip {
         imgout[b_ambclouds].SetDescription("ambclouds");
         imgout[b_pass1].SetDescription("pass1");
 
+        vector<string> bands_used({"RED","GREEN","NIR","SWIR1","LWIR"});
+
         CImg<float> red, green, nir, swir1, temp, ndsi, b56comp;
         CImg<unsigned char> nonclouds, ambclouds, clouds, mask, temp2;
         float cloudsum(0), scenesize(0);
 
-        //if (Options::Verbose()) cout << img.Basename() << " - ACCA" << endl;
-        if (Options::Verbose()) cout << img.Basename() << " - ACCA (dev-version)" << endl;
+        if (Options::Verbose()) cout << img.Basename() << " - ACCA" << endl;
+        //if (Options::Verbose()) cout << img.Basename() << " - ACCA (dev-version)" << endl;
         for (unsigned int iChunk=1; iChunk<=imgin[0].NumChunks(); iChunk++) {
             red = imgin["RED"].Read(iChunk);
             green = imgin["GREEN"].Read(iChunk);
@@ -532,7 +534,7 @@ namespace gip {
             swir1 = imgin["SWIR1"].Read(iChunk);
             temp = imgin["LWIR"].Read(iChunk);
 
-            mask = imgin.NoDataMask(iChunk, {"RED","GREEN","NIR","SWIR1","LWIR"});
+            mask = imgin.NoDataMask(iChunk, bands_used);
 
             ndsi = (green - swir1).div(green + swir1);
             b56comp = (1.0 - swir1).mul(temp + 273.15);
@@ -628,25 +630,23 @@ namespace gip {
         float distance = cloudheight/tan(sunelevation);
         int dx = -1.0 * sin(solarazimuth) * distance / xres;
         int dy = cos(solarazimuth) * distance / yres;
-		unsigned int erode_dim(3);
         int padding(double(dilate)/2+std::max(abs(dx),abs(dy))+1);
-		int color[1] = {1};
-		int smearlen = sqrt(dx*dx+dy*dy);
-		if (Options::Verbose() > 2)
-			cerr << "distance = " << distance << endl
-				 << "dx       = " << dx << endl
-				 << "dy       = " << dy << endl
-				 << "smearlen = " << smearlen << endl ;
+        int smearlen = sqrt(dx*dx+dy*dy);
+        if (Options::Verbose() > 2)
+            cerr << "distance = " << distance << endl
+                 << "dx       = " << dx << endl
+                 << "dy       = " << dy << endl
+                 << "smearlen = " << smearlen << endl ;
 
-		// shift-style smear
-		int signX(dx/abs(dx));
-		int signY(dy/abs(dy));
-		int xstep = std::max(signX*dx/dilate/4, 1);
-		int ystep = std::max(signY*dy/dilate/4, 1);
-		if (Options::Verbose() > 2)
-			cerr << "              dilate=" << dilate << endl
-				 << "               xstep=" << signX*xstep << endl
-				 << "               ystep=" << signY*ystep << endl ;
+        // shift-style smear
+        int signX(dx/abs(dx));
+        int signY(dy/abs(dy));
+        int xstep = std::max(signX*dx/dilate/4, 1);
+        int ystep = std::max(signY*dy/dilate/4, 1);
+        if (Options::Verbose() > 2)
+            cerr << "dilate = " << dilate << endl
+                 << "xstep  = " << signX*xstep << endl
+                 << "ystep  = " << signY*ystep << endl ;
 
         for (unsigned int b=0;b<imgout.NumBands();b++) imgout[b].Chunk(padding);
         for (unsigned int b=0;b<imgin.NumBands();b++) imgin[b].Chunk(padding);
@@ -659,18 +659,19 @@ namespace gip {
             clouds|=(imgin.SaturationMask(iChunk));
             // Majority filter
             //clouds|=clouds.get_convolve(filter).threshold(majority));
-			clouds.erode(erode_dim, erode_dim);
-			if (dilate > 0)
-				clouds.dilate(dilate,dilate);
-			if (smearlen > 0) {
-				temp2 = clouds;
-				// walking back to 0,0 from dx,dy
-				for(int xN=abs(dx),yN=abs(dy); xN>0 && yN>0; xN-=xstep,yN-=ystep)
-					clouds|=temp2.get_shift(signX*xN,signY*yN);
-			}
+            if (erode > 0)
+                clouds.erode(erode, erode);
+            if (dilate > 0)
+                clouds.dilate(dilate,dilate);
+            if (smearlen > 0) {
+                temp2 = clouds;
+                // walking back to 0,0 from dx,dy
+                for(int xN=abs(dx),yN=abs(dy); xN>0 && yN>0; xN-=xstep,yN-=ystep)
+                    clouds|=temp2.get_shift(signX*xN,signY*yN);
+            }
             imgout[b_cloudmask].Write(clouds,iChunk);
             // Inverse and multiply by nodata mask to get good data mask
-            imgout[b_finalmask].Write((clouds^=1).mul(imgin.NoDataMask(iChunk)), iChunk);
+            imgout[b_finalmask].Write((clouds^=1).mul(imgin.NoDataMask(iChunk, bands_used)), iChunk);
             // TODO - add in snow mask
         }
         return imgout;
