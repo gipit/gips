@@ -105,112 +105,30 @@ class LandsatTile(Tile):
     Asset = LandsatAsset
 
     _prodpattern = '*.tif'
-    _products = OrderedDict([
-        ('rgb', {
-            'description': 'RGB image for viewing (quick processing)',
-            'function': 'RGB',
-            'atmcorr': False,
-        }),
-        ('rad', {
-            'description': 'Surface leaving radiance',
-            'function': 'Rad',
-            'atmcorr': True,
-        }),
-        ('toarad', {
-            'description': 'Top of atmosphere radiance',
-            'function': 'Rad',
-            'atmcorr': False,
-        }),
-        ('ref', {
-            'description': 'Surface reflectance',
-            'function': 'Ref',
-            'atmcorr': True,
-        }),
-        ('toaref', {
-            'description': 'Top of atmosphere reflectance',
-            'function': 'Ref',
-            'atmcorr': False,
-        }),
-        #('ind', {
-        #    'description': 'Atmospherically corrected common indices (NDVI,EVI,LSWI,NDSI,BI)',
-        #    'function': 'Indices',
-        #    'atmcorr': True,
-        #}),
-        #('toaind', {
-        #    'description': 'Top of atmosphere common indices (NDVI,EVI,LSWI,NDSI,BI)',
-        #    'function': 'Indices',
-        #    'atmcorr': False,
-        #}),
-        ('ndvi', {
-            'description': 'Atmospherically corrected NDVI',
-            'function': 'NDVI',
-            'atmcorr': True,
-        }),
-        ('evi', {
-            'description': 'Atmospherically corrected EVI',
-            'function': 'EVI',
-            'atmcorr': True,
-        }),
-        ('lswi', {
-            'description': 'Atmospherically corrected LSWI',
-            'function': 'LSWI',
-            'atmcorr': True,
-        }),
-        ('ndsi', {
-            'description': 'Atmospherically corrected NDSI',
-            'function': 'NDSI',
-            'atmcorr': True,
-        }),
-        ('ndti', {
-            'description': 'Atmospherically corrected NDTI',
-            'function': 'NDTI',
-            'atmcorr': True,
-        }),
-        ('satvi', {
-            'description': 'Atmospherically corrected SATVI',
-            'function': 'SATVI',
-            'atmcorr': True,
-        }),
-        ('toabi', {
-            'description': 'TOA BI',
-            'function': 'BI',
-            'atmcorr': False,
-        }),
-        ('toandvi', {
-            'description': 'TOA NDVI',
-            'function': 'NDVI',
-            'atmcorr': False,
-        }),
 
-        # Tillage
-        ('crc', {
-            'description': 'Crop Residue Cover',
-            'function': 'CRC',
-            'atmcorr': True,
-        }),
-        ('crcm', {
-            'description': 'Crop Residue Cover',
-            'function': 'CRCm',
-            'atmcorr': True,
-        }),
-        ('isti', {
-            'description': 'Inverse Standard Tillage Index',
-            'function': 'iSTI',
-            'atmcorr': True,
-        }),
-        ('sti', {
-            'description': 'Standard Tillage Index',
-            'function': 'STI',
-            'atmcorr': True,
-        }),
-
-        # Other
-        ('acca', {
-            'description': 'ACCA Cloud Algorithm',
-            'function': 'ACCA',
-            'atmcorr': False,
-        }),
-    ])
+    _products = {
+        #'Standard': {
+        # 'rgb': 'RGB image for viewing (quick processing)',
+        'rad':  {'description': 'Surface-leaving radiance'},
+        'ref':  {'description': 'Surface reflectance'},
+        'acca': {'description': 'Automated Cloud Cover Assesment', 'atmos': False},
+        #'Indices': {
+        'bi':   {'description': 'Brightness Index'},
+        'ndvi': {'description': 'Normalized Difference Vegetation Index'},
+        'evi':  {'description': 'Enhanced Vegetation Index'},
+        'lswi': {'description': 'Land Surface Water Index'},
+        'ndsi': {'description': 'Normalized Difference Snow Index'},
+        'satvi': {'description': 'Soil-adjusted Total Vegetation Index'},
+        #'Tillage Indices': {
+        'ndti': {'description': 'Normalized Difference Tillage Index'},
+        'crc':  {'description': 'Crop Residue Cover'},
+        'sti':  {'description': 'Standard Tillage Index'},
+        'isti': {'description': 'Inverse Standard Tillage Index'},
+    }
+    _productgroups = {
+        'Indices': ['bi', 'ndvi', 'evi', 'lswi', 'ndsi', 'satvi'],
+        'Tillage': ['ndti', 'crc', 'sti', 'isti']
+    }
 
     def process(self, products):
         """ Make sure all products have been pre-processed """
@@ -222,13 +140,34 @@ class LandsatTile(Tile):
             #VerboseOut(traceback.format_exc(), 4)
         #    raise Exception('Error reading %s %s' % (bname, e))
 
-        runatm = False
+        # running atmosphere
+        runatmos = False
         for p in products:
-            if self._products[p]['atmcorr']:
-                runatm = True
-        if runatm:
+            if p[0:3] != 'toa':
+                runatmos = True
+            elif self._products[p].get('atmos', True):
+                runatmos = False
+        if runatmos:
+            start = datetime.now()
             atmospheres = [atmosphere(i, self.metadata) for i in range(1, img.NumBands()+1)]
-        VerboseOut('%s: read in %s' % (bname, datetime.now() - start))
+            VerboseOut('Ran atmospheric model in %s' % str(datetime.now()-start), 3)
+
+        # Break down by group
+        groups = {}
+        for group in self._productgroups:
+            print 'group', group
+            groups[group] = {}
+            for p in self._productgroups[group]:
+                print 'p', p
+                if p in products:
+                    groups[group][p] = products[p]
+                    del products[p]
+        groups['Standard'] = {}
+        for p in products:
+            groups['Standard'][p] = products[p]
+
+        set_trace()
+        #for p in groups['Indices']:
 
         for p, fout in products.items():
             try:
@@ -377,6 +316,7 @@ class LandsatTile(Tile):
 
     def _readraw(self):  # , bandnums=[]):
         """ Read in Landsat bands using original tar.gz file """
+        start = datetime.now()
         # make sure metadata is loaded
         self.meta()
 
@@ -420,6 +360,7 @@ class LandsatTile(Tile):
             band.SetThermal(self.metadata['K1'][bi], self.metadata['K2'][bi])
             image[bi] = band
 
+        VerboseOut('%s: read in %s' % (image.Basename(), datetime.now() - start), 3)
         return image
 
 

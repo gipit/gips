@@ -266,8 +266,8 @@ class Tile(object):
     # pattern of created products
     _prodpattern = '*.tif'
     # dictionary of available products for this dataset
-    _products = {
-    }
+    _products = {}
+    _productgroups = {}
 
     Asset = Asset
 
@@ -298,6 +298,15 @@ class Tile(object):
     ##########################################################################
     # Child classes should not generally have to override anything below here
     ##########################################################################
+    @property
+    def productkeys(self):
+        """ Get list of available product keys """
+        keys = []
+        for group in self._products:
+            for key in group:
+                keys.append(key)
+        return keys
+
     def open(self, product=''):
         if product != '':
             return gippy.GeoImage(self.products[product])
@@ -474,8 +483,8 @@ class Data(object):
         for tileid, tile in self.tiles.items():
             # Determine what needs to be processed
             toprocess = {}
-            prods = [p for p in self.products if p in self.Tile._products.keys()]
-            for p in prods:
+            #prods = [p for p in self.products if p in self.Tile._products.keys()]
+            for p in self.products:
                 fout = os.path.join(tile.path, tile.basename+'_'+p+suffix)
                 # need to figure out extension properly
                 if len(glob.glob(fout+'*')) == 0 or overwrite:
