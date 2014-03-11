@@ -47,12 +47,12 @@ all: release
 install:
 	cp bin/Release/libgip.so /usr/lib/
 
-develop: debug
+develop: release
 ifndef VIRTUAL_ENV
 	$(error "Must be in virtual environment for develop")
 endif
 	mkdir -p $(VIRTUAL_ENV)/lib
-	cp bin/Debug/libgip.so $(VIRTUAL_ENV)/lib/
+	cp bin/Release/libgip.so $(VIRTUAL_ENV)/lib/
 
 clean: clean_debug clean_release
 

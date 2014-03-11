@@ -1,4 +1,22 @@
 #!/usr/bin/env python
+################################################################################
+#    GIPPY: Geospatial Image Processing library for Python
+#
+#    Copyright (C) 2014 Matthew A Hanson
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program. If not, see <http://www.gnu.org/licenses/>
+################################################################################
 
 import os
 import errno
@@ -6,11 +24,13 @@ import gippy
 import datetime
 import calendar
 
+
 def VerboseOut(obj, level=1):
     if gippy.Options.Verbose() >= level: 
         #pprint.PrettyPrinter().pprint(obj)
         if not isinstance(obj,(list,tuple)): obj = [obj]
         for o in obj: print o
+
 
 def File2List(filename):
     f = open(filename)
@@ -19,10 +39,12 @@ def File2List(filename):
     for t in txt: txt2.append( t.rstrip('\n') )
     return txt2
 
+
 def List2File(lst,filename):
     f = open(filename,'w')
     f.write('\n'.join(lst)+'\n')
     f.close()
+
 
 def RemoveFiles(filenames, extensions=['']):
     for f in filenames:
@@ -32,6 +54,7 @@ def RemoveFiles(filenames, extensions=['']):
             except OSError as e:
                 if e.errno != errno.ENOENT: raise
                 continue
+
 
 def _parse_date(dstring, last=False):
     """ Parses string of YYYY or YYYY-MM or YYYY-MM-DD or YYYY-DOY and returns date object """
@@ -47,6 +70,7 @@ def _parse_date(dstring, last=False):
         if (len(d) == 1): d.append('12')
         if (len(d) == 2): d.append(calendar.monthrange(int(d[0]),int(d[1]))[1] )
     return datetime.date(int(d[0]),int(d[1]),int(d[2]))
+
 
 def parse_dates(dstring):
     """ Parses string of 1 or 2 dates separated by a comma.  Valid formats: YYYY, YYYY-MM, YYYY-MM-DD, YYYY-DOY """
