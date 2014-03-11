@@ -224,7 +224,32 @@ class LandsatTile(Tile):
                 else:
                     img.ClearAtmosphere()
                 try:
-                    fcall = 'gippy.%s(img, fout)' % self._products[p]['function']
+                    # If product is ACCA, get params from suffix, if possible
+                    mat = re.match('.*acca(?:_(?P<eds>(\d+)_(\d+)_(\d+))|(?:_(?P<ed>(\d+)_(\d+)))|(?:_(?P<e>(\d+))))*', fout)
+                    if mat:
+                        if mat.group('eds'):
+                            erosion = int(mat.group(2))
+                            dilation = int(mat.group(3))
+                            cloudheight = int(mat.group(4))
+                        elif mat.group('ed'):
+                            erosion = int(mat.group(6))
+                            dilation = int(mat.group(7))
+                            cloudheight = 4000
+                        elif mat.group('e'):
+                            erosion = int(mat.group(9))
+                            dilation = 10
+                            cloudheight = 4000
+                        else:
+                            erosion = 5
+                            dilation = 10
+                            cloudheight = 4000
+                        s_azim = self.metadata['geometry']['solarazimuth']
+                        s_elev = 90 - self.metadata['geometry']['solarzenith']
+                        VerboseOut('s_elev, s_azim, erosion, dilation, cloudheight = ' +
+                                   str((s_elev, s_azim, erosion, dilation, cloudheight)))
+                        fcall = 'gippy.%s(img, fout, s_elev, s_azim, erosion, dilation, cloudheight)' % self._products[p]['function']
+                    else:
+                        fcall = 'gippy.%s(img, fout)' % self._products[p]['function']
                     VerboseOut(fcall, 2)
                     eval(fcall)
                     #if overviews: imgout.AddOverviews()
