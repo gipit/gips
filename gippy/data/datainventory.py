@@ -83,6 +83,10 @@ class DataInventory(object):
 
         self.data = {}
         self.products = products
+        #if self.products is None:
+        #    self.products = dataclass.Tile._products.keys()
+        #if len(self.products) == 0:
+        #    self.products = dataclass.Tile._products.keys()
 
         if fetch and products is not None:
             dataclass.fetch(products, self.tiles, (self.start_date, self.end_date), (self.start_day, self.end_day))
@@ -189,8 +193,9 @@ class DataInventory(object):
             sys.stdout.write(self._colorize('{:<6}'.format(daystr), col))
             if products:
                 sys.stdout.write('        ')
-                prods = [p for p in self.get_products(date) if p.split('_')[0] in self.products]
-                for p in prods:
+                #prods = [p for p in self.get_products(date) if p.split('_')[0] in self.products]
+                #for p in prods:
+                for p in self.get_products(date):
                     sys.stdout.write(self._colorize('{:<12}'.format(p), col))
                 sys.stdout.write('\n ')
             oldyear = date.year
