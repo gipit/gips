@@ -452,10 +452,10 @@ class Data(object):
         assets = cls.Tile.products2assets(products)
         for a in assets:
             for t in tiles:
-                asset_dates = cls.asset_dates(a, t, dates, days)
+                asset_dates = cls.Tile.Asset.asset_dates(a, t, dates, days)
                 for d in asset_dates:
                     if not find_assets(t, d, a):
-                        status = cls.Asset.fetch(a, t, d)
+                        status = cls.Tile.Asset.fetch(a, t, d)
                         VerboseOut("Fetch status: %s" % status, 2)
                         # what to do if status is nonzero?
 
