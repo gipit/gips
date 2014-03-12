@@ -338,17 +338,17 @@ namespace gip {
         return imgout;
     }
 
-    void NDVI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, std::vector<std::string>({"NDVI"})); }
-    void EVI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"EVI"}); }
-    void LSWI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"LSWI"}); }
-    void NDSI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"NDSI"}); }
-    void BI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"BI"}); }
-    void SATVI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"SATVI"}); }
-    void NDTI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"NDTI"}); }
-    void CRC(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"CRC"}); }
-    void CRCm(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"CRCM"}); }
-    void iSTI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"ISTI"}); }
-    void STI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"STI"}); }
+    //void NDVI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, std::vector<std::string>({"NDVI"})); }
+    //void EVI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"EVI"}); }
+    //void LSWI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"LSWI"}); }
+    //void NDSI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"NDSI"}); }
+    //void BI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"BI"}); }
+    //void SATVI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"SATVI"}); }
+    //void NDTI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"NDTI"}); }
+    //void CRC(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"CRC"}); }
+    //void CRCm(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"CRCM"}); }
+    //void iSTI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"ISTI"}); }
+    //void STI(const GeoImage& ImageIn, std::string filename) { return Indices(ImageIn, filename, {"STI"}); }
 
     //! Create multi-band image of various indices calculated from input
     //GeoImage Indices(const GeoImage& ImageIn, string filename, bool ndvi, bool evi, bool lswi, bool ndsi, bool bi) {
@@ -356,20 +356,25 @@ namespace gip {
     //    Indices(ImageIn, basename, std::vector<std::string>(list));
     //}
 
-    void Indices(const GeoImage& ImageIn, string basename, std::vector<std::string> products) {
+    //void Indices(const GeoImage& ImageIn, string basename, std::vector<std::string> products) {
+    std::map<std::string, std::string> Indices(const GeoImage& ImageIn, std::map<std::string, std::string> products) {
         ImageIn.SetUnitsOut("reflectance");
         GeoImageIO<float> imgin(ImageIn);
         float nodataout = -32768;
 
         std::map< string, GeoImageIO<float> > imagesout;
-        vector<string>::const_iterator iprod;
+        std::map<string, string>::const_iterator iprod;
+        std::map<string, string> filenames;
+        string prodname;
         for (iprod=products.begin(); iprod!=products.end(); iprod++) {
             //imagesout[*iprod] = GeoImageIO<float>(GeoImage(basename + '_' + *iprod, imgin, GDT_Int16));
-            imagesout[*iprod] = GeoImageIO<float>(GeoImage(basename, imgin, GDT_Int16, 1));
-            imagesout[*iprod].SetNoData(nodataout);
-            imagesout[*iprod].SetGain(0.0001);
-            imagesout[*iprod].SetUnits("other");
-            imagesout[*iprod][0].SetDescription(*iprod);
+            prodname = iprod->first;
+            imagesout[prodname] = GeoImageIO<float>(GeoImage(iprod->second, imgin, GDT_Int16, 1));
+            imagesout[prodname].SetNoData(nodataout);
+            imagesout[prodname].SetGain(0.0001);
+            imagesout[prodname].SetUnits("other");
+            imagesout[prodname][0].SetDescription(prodname);
+            filenames[prodname] = imagesout[prodname].Filename();
         }
         if (imagesout.size() == 0) throw std::runtime_error("No indices selected for calculation!");
 
@@ -392,10 +397,10 @@ namespace gip {
         std::set< string >::const_iterator isstr;
         std::vector< string >::const_iterator ivstr;
         for (iprod=products.begin(); iprod!=products.end(); iprod++) {
-            for (ivstr=colors[*iprod].begin();ivstr!=colors[*iprod].end();ivstr++) {
+            for (ivstr=colors[iprod->first].begin();ivstr!=colors[iprod->first].end();ivstr++) {
                 used_colors.insert(*ivstr);
             }
-            if (Options::Verbose() > 2) std::cout << "Product " << *iprod << std::endl;
+            if (Options::Verbose() > 2) std::cout << "Product " << iprod->first << std::endl;
         }
 
         CImg<float> red, green, blue, nir, swir1, swir2, cimgout, cimgmask;
@@ -417,41 +422,42 @@ namespace gip {
             }
 
             for (iprod=products.begin(); iprod!=products.end(); iprod++) {
-                std::cout << "product = " << *iprod << std::endl;
+                prodname = iprod->first;
+                std::cout << "product = " << prodname << std::endl;
                 //string p = iprod->toupper();
-                if (*iprod == "NDVI") {
+                if (prodname == "NDVI") {
                     cimgout = (nir-red).div(nir+red);
-                } else if (*iprod == "EVI") {
+                } else if (prodname == "EVI") {
                     cimgout = 2.5*(nir-red).div(nir + 6*red - 7.5*blue + 1);
-                } else if (*iprod == "LSWI") {
+                } else if (prodname == "LSWI") {
                     cimgout = (nir-swir1).div(nir+swir1);
-                } else if (*iprod == "NDSI") {
+                } else if (prodname == "NDSI") {
                     cimgout = (green-swir1).div(green+swir1);
-                } else if (*iprod == "BI") {
+                } else if (prodname == "BI") {
                     cimgout = 0.5*(blue+nir);
-                } else if (*iprod == "SATVI") {
+                } else if (prodname == "SATVI") {
                     float L(0.5);
                     cimgout = (((1.0+L)*(swir1 - red)).div(swir1+red+L)) - (0.5*swir2);
                 // Tillage indices
-                } else if (*iprod == "NDTI") {
+                } else if (prodname == "NDTI") {
                     cimgout = (swir1-swir2).div(swir1+swir2);
-                } else if (*iprod == "CRC") {
+                } else if (prodname == "CRC") {
                     cimgout = (swir1-blue).div(swir2+blue);
-                } else if (*iprod == "CRCM") {
+                } else if (prodname == "CRCM") {
                     cimgout = (swir1-green).div(swir2+green);
-                } else if (*iprod == "ISTI") {
+                } else if (prodname == "ISTI") {
                     cimgout = swir2.div(swir1);
-                } else if (*iprod == "STI") {
+                } else if (prodname == "STI") {
                     cimgout = swir1.div(swir2);
                 }
                 if (Options::Verbose() > 2) std::cout << "Getting mask" << std::endl;
                 // TODO don't read mask again...create here
-                cimgmask = imgin.NoDataMask(iChunk, colors[*iprod]);
+                cimgmask = imgin.NoDataMask(iChunk, colors[prodname]);
                 cimg_forXY(cimgout,x,y) if (!cimgmask(x,y)) cimgout(x,y) = nodataout;
-                imagesout[*iprod].Write(cimgout,iChunk);
+                imagesout[prodname].Write(cimgout,iChunk);
             }
         }
-        //return imagesout;
+        return filenames;
     }
 
     //! Auto cloud mask - toaref input

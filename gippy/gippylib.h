@@ -105,11 +105,12 @@
 // STL bindings
 %include "std_string.i"
 %include "std_vector.i"
+%include "std_map.i"
 namespace std {
     %template(vectors) std::vector<std::string>;
     %template(vectori) std::vector<int>;
+    %template(mapss) std::map<std::string, std::string>;
 }
-// TODO - add in map<string,string> to/from dictionary
 
 %include "exception.i"
 %exception {

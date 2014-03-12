@@ -38,21 +38,20 @@ namespace gip {
     //! Create single image from multiple input images using vector file footprint
     GeoImage CookieCutter(std::vector<std::string>, std::string, std::string, float=1.0, float=1.0);
 
-    //! Create new file of standard indices: NDVI, EVI, LSWI, NDSI, BI
-    void Indices(const GeoImage&, std::string, std::vector<std::string>);
+    //! Create indices in one pass: NDVI, EVI, LSWI, NDSI, BI {product, filename}
+    std::map<std::string, std::string> Indices(const GeoImage&, std::map<std::string, std::string>);
 
-    void NDVI(const GeoImage&, std::string);
-    void EVI(const GeoImage&, std::string);
-    void LSWI(const GeoImage&, std::string);
-    void NDSI(const GeoImage&, std::string);
-    void BI(const GeoImage&, std::string);
-    void SATVI(const GeoImage&, std::string);
-
-    void NDTI(const GeoImage&, std::string);
-    void CRC(const GeoImage&, std::string);
-    void CRCm(const GeoImage&, std::string);
-    void iSTI(const GeoImage&, std::string);
-    void STI(const GeoImage&, std::string);
+    //void NDVI(const GeoImage&, std::string);
+    //void EVI(const GeoImage&, std::string);
+    //void LSWI(const GeoImage&, std::string);
+    //void NDSI(const GeoImage&, std::string);
+    //void BI(const GeoImage&, std::string);
+    //void SATVI(const GeoImage&, std::string);
+    //void NDTI(const GeoImage&, std::string);
+    //void CRC(const GeoImage&, std::string);
+    //void CRCm(const GeoImage&, std::string);
+    //void iSTI(const GeoImage&, std::string);
+    //void STI(const GeoImage&, std::string);
 
     //! Create cloudmask using ACCA
     GeoImage ACCA(const GeoImage&, std::string, float, float, int = 5, int = 10, int = 4000);
