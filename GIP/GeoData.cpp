@@ -34,7 +34,7 @@ namespace gip {
 			throw std::runtime_error(to_string(CPLGetLastErrorNo()) + ": " + string(CPLGetLastErrorMsg()));
 		}
 		_GDALDataset.reset(ds);
-		if (Options::Verbose() > 3)
+		if (Options::Verbose() > 4)
             std::cout << Basename() << ": GeoData Open (use_count = " << _GDALDataset.use_count() << ")" << std::endl;
 	}
 
@@ -83,7 +83,7 @@ namespace gip {
 	    // flush GDALDataset if last open pointer
 		if (_GDALDataset.unique()) {
 		    _GDALDataset->FlushCache();
-            if (Options::Verbose() > 3) std::cout << Basename() << ": ~GeoData (use_count = " << _GDALDataset.use_count() << ")" << std::endl;
+            if (Options::Verbose() > 4) std::cout << Basename() << ": ~GeoData (use_count = " << _GDALDataset.use_count() << ")" << std::endl;
         }
 	}
 

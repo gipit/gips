@@ -289,6 +289,7 @@ namespace gip {
 
         // Warp options
         GDALWarpOptions *psWarpOptions = GDALCreateWarpOptions();
+        
         psWarpOptions->hDstDS = imgout.GetGDALDataset();
         psWarpOptions->nBandCount = bsz;
         psWarpOptions->panSrcBands = (int *) CPLMalloc(sizeof(int) * psWarpOptions->nBandCount );
@@ -311,7 +312,9 @@ namespace gip {
         char **papszOptions = NULL;
         //psWarpOptions->hCutline = site;
         //papszOptions = CSLSetNameValue(papszOptions,"SKIP_NOSOURCE","YES");
-        //papszOptions = CSLSetNameValue(papszOptions,"INIT_DEST",NULL);
+        papszOptions = CSLSetNameValue(papszOptions,"INIT_DEST","NO_DATA");
+        papszOptions = CSLSetNameValue(papszOptions,"WRITE_FLUSH","YES");
+        papszOptions = CSLSetNameValue(papszOptions,"NUM_THREADS","ALL_CPUS");
         //site->exportToWkt(&wkt);
         //papszOptions = CSLSetNameValue(papszOptions,"CUTLINE",wkt);
         psWarpOptions->papszWarpOptions = CSLDuplicate(papszOptions);
@@ -321,7 +324,7 @@ namespace gip {
         // Perform warp for each input file
         vector<GeoImage>::iterator iimg;
         for (iimg=imgs.begin();iimg!=imgs.end();iimg++) {
-            if (Options::Verbose() > 2) std::cout << "Warping file " << iimg->Basename() << std::endl;
+            if (Options::Verbose() > 2) std::cout << iimg->Basename() << " warping ";
             psWarpOptions->hSrcDS = iimg->GetGDALDataset();
             psWarpOptions->pTransformerArg =
                 GDALCreateGenImgProjTransformer( iimg->GetGDALDataset(), iimg->GetGDALDataset()->GetProjectionRef(),
@@ -332,6 +335,7 @@ namespace gip {
             oOperation.ChunkAndWarpMulti( 0, 0, imgout.XSize(), imgout.YSize() );
 
             GDALDestroyGenImgProjTransformer( psWarpOptions->pTransformerArg );
+            psWarpOptions->papszWarpOptions = CSLSetNameValue(psWarpOptions->papszWarpOptions,"INIT_DEST",NULL);
         }
         GDALDestroyWarpOptions( psWarpOptions );
 
