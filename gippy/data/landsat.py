@@ -205,9 +205,8 @@ class LandsatTile(Tile):
         indices = dict(groups['Index'], **groups['Tillage'])
         if len(indices) > 0:
             start = datetime.now()
-            gippy.Indices(img, self.basename, [p.upper() for p in indices])
-            # need to return map of files from Indices, populate self.products
-            # for now, assume all surface
+            prodarr = dict(zip([p.upper() for p in indices.keys()], [p[0] for p in indices.values()]))
+            prodout = gippy.Indices(img, prodarr)
             VerboseOut(' -> %s: processed (%s) in %s' % (self.basename, indices, datetime.now()-start))
 
         img = None
