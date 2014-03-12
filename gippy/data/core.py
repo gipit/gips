@@ -454,18 +454,17 @@ class Data(object):
             for t in tiles:
                 asset_dates = cls.Tile.Asset.asset_dates(a, t, dates, days)
                 for d in asset_dates:
-                    if not find_assets(t, d, a):
+                    if not cls.Tile.Asset.find_assets(t, d, a):
                         status = cls.Tile.Asset.fetch(a, t, d)
                         VerboseOut("Fetch status: %s" % status, 2)
                         # what to do if status is nonzero?
-
                         # move files as you get them
-                        VerboseOut('Copying data to archive', 2)
-                        try:
-                            print "calling archive moving to %s" % cls._stagedir
-                            cls.archive(cls._stagedir)
-                        except:
-                            VerboseOut('archive of downloaded files was unsuccessful', 2)
+                        #VerboseOut('Copying data to archive', 2)
+                        #try:
+                        #    print "calling archive moving to %s" % cls._stagedir
+                        #    cls.archive(cls._stagedir)
+                        #except:
+                        #    VerboseOut('archive of downloaded files was unsuccessful', 2)
 
     def process(self, overwrite=False, suffix=''):
         """ Determines what products need to be processed for each tile and calls processtile """
