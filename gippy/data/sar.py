@@ -212,6 +212,9 @@ class SARTile(Tile):
             'description': 'Incident angles',
         }),
     ])
+    _productgroups = {
+        'Standard': _products.keys(),
+    }
 
     Asset = SARAsset
 

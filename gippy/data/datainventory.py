@@ -82,16 +82,11 @@ class DataInventory(object):
         self.temporal_extent(dates, days)
 
         self.data = {}
-        if products is not None:
-            if len(products) == 0:
-                products = dataclass.Tile._products.keys()
         self.products = products
 
         if fetch and products is not None:
             dataclass.fetch(products, self.tiles, (self.start_date, self.end_date), (self.start_day, self.end_day))
-            exit(1)
-            # archive
-            #dataclass.archive(os.path.join(dataclass._rootdir),'staging')
+            dataclass.archive(os.path.join(dataclass.Tile.Asset._rootpath, dataclass.Tile.Asset._stagedir))
 
         # get all potential matching dates for tiles
         dates = []
@@ -138,7 +133,6 @@ class DataInventory(object):
         VerboseOut('Completed processing in %s' % (datetime.now()-start))
 
     def project(self, *args, **kwargs):
-        self.process()
         start = datetime.now()
         VerboseOut('Projecting data for %s dates (%s - %s)' % (len(self.dates), self.dates[0], self.dates[-1]))
         # res should default to data?
@@ -158,7 +152,7 @@ class DataInventory(object):
             #for prod in data.products.keys(): prods.append(prod)
         return sorted(set(prods))
 
-    def printcalendar(self, md=False):
+    def printcalendar(self, md=False, products=False):
         """ print calendar for raw original datafiles """
         #import calendar
         #cal = calendar.TextCalendar()
@@ -184,7 +178,7 @@ class DataInventory(object):
                     daystr = '0' + daystr
             if date.year != oldyear:
                 sys.stdout.write('\n{:>5}: '.format(date.year))
-                if self.products:
+                if products:
                     sys.stdout.write('\n ')
             colors = {}
             for i, s in enumerate(self.dataclass.sensor_names()):
@@ -193,7 +187,7 @@ class DataInventory(object):
             col = colors[self.dataclass.Tile.Asset._sensors[dat.sensor]['description']]
 
             sys.stdout.write(self._colorize('{:<6}'.format(daystr), col))
-            if self.products:
+            if products:
                 sys.stdout.write('        ')
                 prods = [p for p in self.get_products(date) if p.split('_')[0] in self.products]
                 for p in prods:

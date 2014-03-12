@@ -84,6 +84,9 @@ class SARAnnualTile(Tile):
             'assets': 'FNF',
         })
     ])
+    _productgroups = {
+        'Standard': _products.keys(),
+    }
 
     Asset = SARAnnualAsset
 

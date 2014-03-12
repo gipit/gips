@@ -126,7 +126,8 @@ class LandsatTile(Tile):
         'isti': {'description': 'Inverse Standard Tillage Index'},
     }
     _productgroups = {
-        'Indices': ['bi', 'ndvi', 'evi', 'lswi', 'ndsi', 'satvi'],
+        'Standard': ['rad', 'ref', 'acca'],
+        'Index': ['bi', 'ndvi', 'evi', 'lswi', 'ndsi', 'satvi'],
         'Tillage': ['ndti', 'crc', 'sti', 'isti']
     }
 
@@ -155,71 +156,60 @@ class LandsatTile(Tile):
         # Break down by group
         groups = {}
         for group in self._productgroups:
-            print 'group', group
             groups[group] = {}
             for p in self._productgroups[group]:
-                print 'p', p
                 if p in products:
                     groups[group][p] = products[p]
-                    del products[p]
-        groups['Standard'] = {}
-        for p in products:
-            groups['Standard'][p] = products[p]
 
-        set_trace()
-        #for p in groups['Indices']:
-
-        for p, fout in products.items():
+        # Process standard products
+        for p in groups['Standard']:
+            start = datetime.now()
+            # TODO - update if no atmos desired for others
+            if (self._products[p]['atmos']):
+                for i in range(0, img.NumBands()):
+                    b = img[i]
+                    b.SetAtmosphere(atmospheres[i])
+                    img[i] = b
+                    VerboseOut('Band %i: atmospherically correcting' % (i+1), 3)
+            else:
+                img.ClearAtmosphere()
             try:
-                start = datetime.now()
-                if (self._products[p]['atmcorr']):
-                    for i in range(0, img.NumBands()):
-                        b = img[i]
-                        b.SetAtmosphere(atmospheres[i])
-                        img[i] = b
-                        VerboseOut('Band %i: atmospherically correcting' % (i+1), 3)
+                if p == 'acca':
+                    s_azim = self.metadata['geometry']['solarazimuth']
+                    s_elev = 90 - self.metadata['geometry']['solarzenith']
+                    erosion = 5
+                    dilation = 10
+                    cloudheight = 4000
+                    if len(self.products[p]) > 1:
+                        erosion = self.products[p][1]
+                        fout = fout + '_e%s' % erosion
+                    if len(self.products[p]) > 2:
+                        dilation = self.products[p][2]
+                        fout = fout + '_d%s' % dilation
+                    if len(self.products[p]) > 3:
+                        cloudheight = self.products[p][3]
+                        fout = fout + '_h%s' % cloudheight
+                    imgout = gippy.ACCA(img, products[p][0], s_azim, s_elev, erosion, dilation, cloudheight)
                 else:
-                    img.ClearAtmosphere()
-                try:
-                    # If product is ACCA, get params from suffix, if possible
-                    mat = re.match('.*acca(?:_(?P<eds>(\d+)_(\d+)_(\d+))|(?:_(?P<ed>(\d+)_(\d+)))|(?:_(?P<e>(\d+))))*', fout)
-                    if mat:
-                        if mat.group('eds'):
-                            erosion = int(mat.group(2))
-                            dilation = int(mat.group(3))
-                            cloudheight = int(mat.group(4))
-                        elif mat.group('ed'):
-                            erosion = int(mat.group(6))
-                            dilation = int(mat.group(7))
-                            cloudheight = 4000
-                        elif mat.group('e'):
-                            erosion = int(mat.group(9))
-                            dilation = 10
-                            cloudheight = 4000
-                        else:
-                            erosion = 5
-                            dilation = 10
-                            cloudheight = 4000
-                        s_azim = self.metadata['geometry']['solarazimuth']
-                        s_elev = 90 - self.metadata['geometry']['solarzenith']
-                        VerboseOut('s_elev, s_azim, erosion, dilation, cloudheight = ' +
-                                   str((s_elev, s_azim, erosion, dilation, cloudheight)))
-                        fcall = 'gippy.%s(img, fout, s_elev, s_azim, erosion, dilation, cloudheight)' % self._products[p]['function']
-                    else:
-                        fcall = 'gippy.%s(img, fout)' % self._products[p]['function']
-                    VerboseOut(fcall, 2)
-                    eval(fcall)
-                    #if overviews: imgout.AddOverviews()
-                    fname = glob.glob(fout+'*')[0]
-                    self.products[p] = fname
-                    VerboseOut(' -> %s: processed in %s' % (os.path.basename(fname), datetime.now()-start))
-                except Exception, e:
-                    VerboseOut('Error creating product %s for %s: %s' % (p, bname, e), 3)
-                    VerboseOut(traceback.format_exc(), 4)
-            # double exception? is this necessary ?
+                    func = {'rad': gippy.Rad, 'ref': gippy.Ref}
+                    imgout = func[p](img, products[p][0])
+                fname = imgout.Filename()
+                imgout = None
+                self.products[p][0] = fname
+                VerboseOut(' -> %s: processed in %s' % (os.path.basename(fname), datetime.now()-start))
             except Exception, e:
-                VerboseOut('Error processing %s: %s' % (self.basename, e), 2)
+                VerboseOut('Error creating product %s for %s: %s' % (p, bname, e), 3)
                 VerboseOut(traceback.format_exc(), 4)
+
+        # Process Indices
+        indices = dict(groups['Index'], **groups['Tillage'])
+        if len(indices) > 0:
+            start = datetime.now()
+            gippy.Indices(img, self.basename, [p.upper() for p in indices])
+            # need to return map of files from Indices, populate self.products
+            # for now, assume all surface
+            VerboseOut(' -> %s: processed (%s) in %s' % (self.basename, indices, datetime.now()-start))
+
         img = None
         # cleanup directory
         try:
