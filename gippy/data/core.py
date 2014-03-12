@@ -267,7 +267,7 @@ class Tile(object):
     _prodpattern = '*.tif'
     # dictionary of available products for this dataset
     _products = {}
-    _productgroups = {}
+    _groups = {}
 
     Asset = Asset
 
@@ -339,8 +339,8 @@ class Tile(object):
         """ Get list of assets needed for these products """
         assets = []
         for p in products:
-            if 'assets' in cls._products[p]:
-                assets.extend(cls._products[p]['assets'])
+            if 'assets' in _products[p]:
+                assets.extend(_products[p]['assets'])
             else:
                 assets.append('')
         return set(assets)
@@ -362,6 +362,8 @@ class Tile(object):
             self.products.update(asset.products)
 
             # find additional products...for each asset ?
+            #for p in self._products:
+            #    files = glob.glob(os.path.join(self.path, asset.basename, '_' + p))
             files = glob.glob(os.path.join(self.path, asset.basename+self._prodpattern))
             files2 = []
             for f in files:
@@ -636,9 +638,9 @@ class Data(object):
     @classmethod
     def product_parser(cls):
         parser = argparse.ArgumentParser(add_help=False, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-        for gname in cls.Tile._productgroups:
+        for gname in cls.Tile._groups:
             group = parser.add_argument_group('%s product arguments' % gname)
-            for p in cls.Tile._productgroups[gname]:
+            for p in cls.Tile._groups[gname]:
                 prod = cls.Tile._products[p]
                 #if 'nargs' in prod:
                 group.add_argument('--%s' % p, help=prod['description'], nargs='*')
@@ -683,7 +685,7 @@ class Data(object):
         group.add_argument('--format', help='Format for output file', default="GTiff")
 
         args = parser0.parse_args()
-        products = [p for p in cls.Tile._products if eval('args.%s' % p) not in [None, False]]
+        #products = [p for p in cls.Tile._products if eval('args.%s' % p) not in [None, False]]
         products = {}
         for p in cls.Tile._products:
             val = eval('args.%s' % p)

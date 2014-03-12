@@ -28,7 +28,7 @@ from collections import OrderedDict
 
 import gippy
 from gippy.atmosphere import atmosphere
-from gippy.data.core import Asset, Tile, Data
+from gippy.data.core import Asset, Tile, Data, RemoveFiles
 from gippy.utils import VerboseOut
 
 import traceback
@@ -125,7 +125,7 @@ class LandsatTile(Tile):
         'sti':  {'description': 'Standard Tillage Index'},
         'isti': {'description': 'Inverse Standard Tillage Index'},
     }
-    _productgroups = {
+    _groups = {
         'Standard': ['rad', 'ref', 'acca'],
         'Index': ['bi', 'ndvi', 'evi', 'lswi', 'ndsi', 'satvi'],
         'Tillage': ['ndti', 'crc', 'sti', 'isti']
@@ -155,9 +155,9 @@ class LandsatTile(Tile):
 
         # Break down by group
         groups = {}
-        for group in self._productgroups:
+        for group in self._groups:
             groups[group] = {}
-            for p in self._productgroups[group]:
+            for p in self._groups[group]:
                 if p in products:
                     groups[group][p] = products[p]
 
@@ -205,19 +205,25 @@ class LandsatTile(Tile):
         indices = dict(groups['Index'], **groups['Tillage'])
         if len(indices) > 0:
             start = datetime.now()
+            # TODO - this assumes atmospheric correct - what if mix of atmos and non-atmos?
+            for i in range(0, img.NumBands()):
+                b = img[i]
+                b.SetAtmosphere(atmospheres[i])
+                img[i] = b
+                VerboseOut('Band %i: atmospherically correcting' % (i+1), 3)
             prodarr = dict(zip([p.upper() for p in indices.keys()], [p[0] for p in indices.values()]))
             prodout = gippy.Indices(img, prodarr)
-            VerboseOut(' -> %s: processed (%s) in %s' % (self.basename, indices, datetime.now()-start))
+            VerboseOut(' -> %s: processed %s in %s' % (self.basename, indices.keys(), datetime.now()-start))
 
         img = None
         # cleanup directory
         try:
-            for bname in self.assets[''].datafiles:
+            for bname in self.assets[''].datafiles():
                 files = glob.glob(os.path.join(self.path, bname)+'*')
-                print 'remove: ', files
                 RemoveFiles(files)
             shutil.rmtree(os.path.join(self.path, 'modtran'))
         except:
+            VerboseOut(traceback.format_exc(), 4)
             pass
 
     def filter(self, maxclouds=100):

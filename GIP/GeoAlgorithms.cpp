@@ -404,13 +404,13 @@ namespace gip {
             for (ivstr=colors[iprod->first].begin();ivstr!=colors[iprod->first].end();ivstr++) {
                 used_colors.insert(*ivstr);
             }
-            if (Options::Verbose() > 2) std::cout << "Product " << iprod->first << std::endl;
         }
 
         CImg<float> red, green, blue, nir, swir1, swir2, cimgout, cimgmask;
 
         // need to add overlap
         for (unsigned int iChunk=1; iChunk<=ImageIn[0].NumChunks(); iChunk++) {
+            if (Options::Verbose() > 3) std::cout << "Chunk " << iChunk << " of " << ImageIn[0].NumChunks();
             for (isstr=used_colors.begin();isstr!=used_colors.end();isstr++) {
                 if (*isstr == "RED") red = imgin["RED"].Read(iChunk);
                 else if (*isstr == "GREEN") green = imgin["GREEN"].Read(iChunk);
@@ -427,7 +427,7 @@ namespace gip {
 
             for (iprod=products.begin(); iprod!=products.end(); iprod++) {
                 prodname = iprod->first;
-                std::cout << "product = " << prodname << std::endl;
+                //std::cout << "Products: " << prodname << std::flush;
                 //string p = iprod->toupper();
                 if (prodname == "NDVI") {
                     cimgout = (nir-red).div(nir+red);
@@ -454,7 +454,7 @@ namespace gip {
                 } else if (prodname == "STI") {
                     cimgout = swir1.div(swir2);
                 }
-                if (Options::Verbose() > 2) std::cout << "Getting mask" << std::endl;
+                //if (Options::Verbose() > 2) std::cout << "Getting mask" << std::endl;
                 // TODO don't read mask again...create here
                 cimgmask = imgin.NoDataMask(iChunk, colors[prodname]);
                 cimg_forXY(cimgout,x,y) if (!cimgmask(x,y)) cimgout(x,y) = nodataout;
