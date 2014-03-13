@@ -126,7 +126,10 @@ class SARAnnualTile(Tile):
         if 'fnf' in products.keys():
             datafiles = self.assets['FNF'].extract()
             if 'C' in datafiles:
+                img = gippy.GeoImage(datafiles['C'])
+                img.SetNoData(0)
                 self.products['fnf'] = datafiles['C']
+                img = None
 
 
 class SARAnnualData(Data):

@@ -53,7 +53,7 @@ gippy_module = Extension(name = '_gippylib',
                     include_dirs=['GIP'],
                     libraries=['gip','gdal','boost_system','boost_filesystem'], #,'X11'],
                     library_dirs=['GIP/bin/Release'], #'/usr/lib','/usr/local/lib'],
-                    extra_compile_args=['-fPIC'],
+                    extra_compile_args=['-fPIC', '-std=c++0x'],
                     #extra_compile_args=['-fPIC -std=c++0x'],
                     ) 
 
