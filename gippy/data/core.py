@@ -504,8 +504,9 @@ class Data(object):
             for product in self.products:
                 if self.products[product] == '':
                     start = datetime.now()
-                    sitebase = os.path.basename(self.site)
-                    filename = os.path.join(datadir, sitebase + self.date.strftime('%Y%j') + '_%s_%s.tif' % (product, self.sensor))
+                    sitebase = os.path.splitext(os.path.basename(self.site))[0] + '_'
+                    bname = sitebase + self.date.strftime('%Y%j') + '_%s_%s.tif' % (product, self.sensor)
+                    filename = os.path.join(datadir, bname)
                     if not os.path.exists(filename):
                         filenames = [self.tiles[t].products[product] for t in self.tiles]
                         # cookiecutter should validate pixels in image.  Throw exception if not
