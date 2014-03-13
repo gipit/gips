@@ -264,7 +264,7 @@ class LandsatTile(Tile):
                         s_azim = self.metadata['geometry']['solarazimuth']
                         s_elev = 90 - self.metadata['geometry']['solarzenith']
                         VerboseOut('s_elev, s_azim, erosion, dilation, cloudheight = ' +
-                                   str((s_elev, s_azim, erosion, dilation, cloudheight)))
+                                   str((s_elev, s_azim, erosion, dilation, cloudheight)), 2)
                         fcall = 'gippy.%s(img, fout, s_elev, s_azim, erosion, dilation, cloudheight)' % self._products[p]['function']
                     else:
                         fcall = 'gippy.%s(img, fout)' % self._products[p]['function']
