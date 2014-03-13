@@ -28,7 +28,7 @@ from collections import OrderedDict
 from pdb import set_trace
 
 import gippy
-from gippy.data.core import Asset, Tile, Data
+from gippy.data.core import Asset, Product, Tile, Data
 from gippy.utils import VerboseOut, File2List, List2File, RemoveFiles
 
 
@@ -71,8 +71,7 @@ class SARAnnualAsset(Asset):
         return datafiles
 
 
-class SARAnnualTile(Tile):
-    """ Tile of data """
+class SARAnnualProduct(Product):
     _prodpattern = '*'
     _products = OrderedDict([
         ('sign', {
@@ -84,9 +83,13 @@ class SARAnnualTile(Tile):
             'assets': 'FNF',
         })
     ])
-    _productgroups = {
+    _groups = {
         'Standard': _products.keys(),
     }
+
+
+class SARAnnualTile(Tile):
+    """ Tile of data """
 
     Asset = SARAnnualAsset
 
@@ -133,6 +136,7 @@ class SARAnnualData(Data):
     _defaultresolution = [0.00044444444, 0.00044444444]
 
     Tile = SARAnnualTile
+    Product = SARAnnualProduct
 
     _tiles_vector = 'sar_tiles'
 

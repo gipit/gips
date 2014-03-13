@@ -331,7 +331,7 @@ namespace gip {
                                                 imgout.GetGDALDataset(), imgout.GetGDALDataset()->GetProjectionRef(), TRUE, 0.0, 0 );
             psWarpOptions->pfnTransformer = GDALGenImgProjTransform;
             oOperation.Initialize( psWarpOptions );
-            //std::cout << CPLGetLastErrorMsg() << std::endl;
+            if (Options::Verbose() > 3) std::cout << "Error: " << CPLGetLastErrorMsg() << std::endl;
             oOperation.ChunkAndWarpMulti( 0, 0, imgout.XSize(), imgout.YSize() );
 
             GDALDestroyGenImgProjTransformer( psWarpOptions->pTransformerArg );

@@ -28,8 +28,8 @@ from collections import OrderedDict
 
 import gippy
 from gippy.atmosphere import atmosphere
-from gippy.data.core import Asset, Tile, Data, RemoveFiles
-from gippy.utils import VerboseOut
+from gippy.data.core import Asset, Product, Tile, Data
+from gippy.utils import VerboseOut, RemoveFiles
 
 import traceback
 from pdb import set_trace
@@ -100,18 +100,15 @@ class LandsatAsset(Asset):
         self.date = datetime.strptime(year+doy, "%Y%j")
 
 
-class LandsatTile(Tile):
-
-    Asset = LandsatAsset
-
+class LandsatProduct(Product):
+    """ Single Landsat product """
     _prodpattern = '*.tif'
-
     _products = {
         #'Standard': {
         # 'rgb': 'RGB image for viewing (quick processing)',
         'rad':  {'description': 'Surface-leaving radiance'},
         'ref':  {'description': 'Surface reflectance'},
-        'acca': {'description': 'Automated Cloud Cover Assesment', 'atmos': False},
+        'acca': {'description': 'Automated Cloud Cover Assesment', 'toa': True},
         #'Indices': {
         'bi':   {'description': 'Brightness Index'},
         'ndvi': {'description': 'Normalized Difference Vegetation Index'},
@@ -131,22 +128,24 @@ class LandsatTile(Tile):
         'Tillage': ['ndti', 'crc', 'sti', 'isti']
     }
 
+
+class LandsatTile(Tile):
+
+    Asset = LandsatAsset
+    Product = LandsatProduct
+
     def process(self, products):
         """ Make sure all products have been pre-processed """
         start = datetime.now()
         bname = os.path.basename(self.assets[''].filename)
-        #try:
         img = self._readraw()
-        #except Exception, e:
-            #VerboseOut(traceback.format_exc(), 4)
-        #    raise Exception('Error reading %s %s' % (bname, e))
 
         # running atmosphere
         runatmos = False
         for p in products:
             if p[0:3] != 'toa':
                 runatmos = True
-            elif self._products[p].get('atmos', True):
+            elif LandsatProduct._products[p].get('atmos', True):
                 runatmos = False
         if runatmos:
             start = datetime.now()
@@ -154,48 +153,36 @@ class LandsatTile(Tile):
             VerboseOut('Ran atmospheric model in %s' % str(datetime.now()-start), 3)
 
         # Break down by group
-        groups = {}
-        for group in self._groups:
-            groups[group] = {}
-            for p in self._groups[group]:
-                if p in products:
-                    groups[group][p] = products[p]
+        groups = LandsatProduct.products2groups(products)
 
         # Process standard products
         for p in groups['Standard']:
             start = datetime.now()
             # TODO - update if no atmos desired for others
-            if (self._products[p]['atmos']):
+            toa = LandsatProduct._products[p].get('toa', False) or 'toa' in products[p]
+            if toa:
+                img.ClearAtmosphere()
+            else:
                 for i in range(0, img.NumBands()):
                     b = img[i]
                     b.SetAtmosphere(atmospheres[i])
                     img[i] = b
                     VerboseOut('Band %i: atmospherically correcting' % (i+1), 3)
-            else:
-                img.ClearAtmosphere()
             try:
+                fname = products[p][0]
                 if p == 'acca':
                     s_azim = self.metadata['geometry']['solarazimuth']
                     s_elev = 90 - self.metadata['geometry']['solarzenith']
-                    erosion = 5
-                    dilation = 10
-                    cloudheight = 4000
-                    if len(self.products[p]) > 1:
-                        erosion = self.products[p][1]
-                        fout = fout + '_e%s' % erosion
-                    if len(self.products[p]) > 2:
-                        dilation = self.products[p][2]
-                        fout = fout + '_d%s' % dilation
-                    if len(self.products[p]) > 3:
-                        cloudheight = self.products[p][3]
-                        fout = fout + '_h%s' % cloudheight
-                    imgout = gippy.ACCA(img, products[p][0], s_azim, s_elev, erosion, dilation, cloudheight)
+                    erosion = int(products[p][1]) if len(products[p]) > 1 else 5
+                    dilation = int(products[p][2]) if len(products[p]) > 2 else 10
+                    cloudheight = int(products[p][3]) if len(products[p]) > 3 else 4000
+                    imgout = gippy.ACCA(img, fname, s_azim, s_elev, erosion, dilation, cloudheight)
                 else:
                     func = {'rad': gippy.Rad, 'ref': gippy.Ref}
-                    imgout = func[p](img, products[p][0])
+                    imgout = func[p](img, fname)
                 fname = imgout.Filename()
                 imgout = None
-                self.products[p][0] = fname
+                self.products[p] = fname
                 VerboseOut(' -> %s: processed in %s' % (os.path.basename(fname), datetime.now()-start))
             except Exception, e:
                 VerboseOut('Error creating product %s for %s: %s' % (p, bname, e), 3)
@@ -391,6 +378,7 @@ class LandsatData(Data):
     _defaultresolution = [30.0, 30.0]
 
     Tile = LandsatTile
+    Product = LandsatProduct
 
     _tiles_vector = 'landsat_wrs'
     _vectoratt = 'pr'

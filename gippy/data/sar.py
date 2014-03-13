@@ -28,7 +28,7 @@ from collections import OrderedDict
 from pdb import set_trace
 
 import gippy
-from gippy.data.core import Asset, Tile, Data
+from gippy.data.core import Asset, Product, Tile, Data
 from gippy.utils import VerboseOut, File2List, List2File, RemoveFiles
 
 
@@ -199,9 +199,7 @@ class SARAsset(Asset):
         return datafiles
 
 
-class SARTile(Tile):
-    """ Tile of data """
-
+class SARProduct(Product):
     _prodpattern = '*'
 
     _products = OrderedDict([
@@ -212,9 +210,13 @@ class SARTile(Tile):
             'description': 'Incident angles',
         }),
     ])
-    _productgroups = {
+    _groups = {
         'Standard': _products.keys(),
     }
+
+
+class SARTile(Tile):
+    """ Tile of data """
 
     Asset = SARAsset
 
@@ -266,6 +268,7 @@ class SARData(Data):
     _defaultresolution = [0.000834028356964, 0.000834028356964]
 
     Tile = SARTile
+    Product = SARProduct
 
     @classmethod
     def feature2tile(cls, feature):

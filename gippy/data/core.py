@@ -39,7 +39,7 @@ from gippy.settings import DATABASES
 
 
 class Asset(object):
-    """ Class for a single file asset """
+    """ Class for a single file asset (usually an original raw file or archive) """
     # root directory to data
     _rootpath = ''
     # Format code of date directories in repository
@@ -74,7 +74,7 @@ class Asset(object):
         self.basename = os.path.basename(filename)
         # sensor code (key used in cls.sensors dictionary)
         self.sensor = ''
-        # dictionary of existing products in asset {'product name': filename}
+        # dictionary of existing products in asset {'product name': [filename(s)]}
         self.products = {}
 
     @classmethod
@@ -260,16 +260,71 @@ class Asset(object):
         return os.path.basename(self.filename)
 
 
+class Product(object):
+    """ A product for a tile and date """
+    _products = {}
+    _groups = {}
+    _pattern = '*.tif'
+
+    def __init__(self, path):
+        """ Find products in path """
+        pass
+
+    @classmethod
+    def products2assets(cls, products):
+        """ Get list of assets needed for these products """
+        assets = []
+        for p in products:
+            if 'assets' in cls._products[p]:
+                assets.extend(cls._products[p]['assets'])
+            else:
+                assets.append('')
+        return set(assets)
+
+    @classmethod
+    def products2groups(cls, products):
+        """ Convert product list to groupings """
+        groups = {}
+        for group in cls._groups:
+            groups[group] = {}
+            for p in cls._groups[group]:
+                if p in products:
+                    groups[group][p] = products[p]
+        return groups
+
+    @classmethod
+    def discover(cls, basefilename):
+        """ Find products in path """
+        #badexts = ['.hdr', '.xml', 'gz', '.index']
+        products = {}
+        for p in cls._products:
+            files = glob.glob(basefilename+'_'+p+cls._pattern)
+            #if len(files) > 0:
+            #    products[p] = files
+            for f in files:
+                rootf = os.path.splitext(f)[0]
+                products[rootf[len(basefilename)+1:]] = f
+            #    ext = os.path.splitext(f)[1]
+            #    if ext not in badexts:
+            #        products[p].append(f)
+        return products
+
+    @classmethod
+    def arg_parser(cls):
+        parser = argparse.ArgumentParser(add_help=False, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        for gname in cls._groups:
+            group = parser.add_argument_group('%s product arguments' % gname)
+            for p in cls._groups[gname]:
+                prod = cls._products[p]
+                group.add_argument('--%s' % p, help=prod['description'], nargs='*')
+        return parser
+
+
 class Tile(object):
     """ A tile of data (multiple assets/products) on a single date """
 
-    # pattern of created products
-    _prodpattern = '*.tif'
-    # dictionary of available products for this dataset
-    _products = {}
-    _groups = {}
-
     Asset = Asset
+    Product = Product
 
     def process(self, products):
         """ Make sure all products exist and process if needed """
@@ -312,6 +367,7 @@ class Tile(object):
     def link(self, products, path='', copy=False):
         """ Create links in path to tile products """
         for p in products:
+            set_trace()
             fname = self.products[p]
             bname = os.path.basename(fname)
             fullbname = os.path.join(path, bname)
@@ -334,17 +390,6 @@ class Tile(object):
                 except:
                     VerboseOut('%s: Problem creating link' % bname, 2)
 
-    @classmethod
-    def products2assets(cls, products):
-        """ Get list of assets needed for these products """
-        assets = []
-        for p in products:
-            if 'assets' in _products[p]:
-                assets.extend(_products[p]['assets'])
-            else:
-                assets.append('')
-        return set(assets)
-
     def __init__(self, tile, date):
         """ Find all data and assets for this tile and date """
         self.id = tile
@@ -352,6 +397,7 @@ class Tile(object):
         self.assets = {}
         #self.basename = ''
         self.products = {}
+        # find all assets
         for asset in self.Asset.find_assets(tile, date):
             self.assets[asset.asset] = asset
             # sensor and basename assumes same value every time ?
@@ -360,24 +406,9 @@ class Tile(object):
             self.basename = asset.basename
             # products that come automatically with assets
             self.products.update(asset.products)
-
-            # find additional products...for each asset ?
-            #for p in self._products:
-            #    files = glob.glob(os.path.join(self.path, asset.basename, '_' + p))
-            files = glob.glob(os.path.join(self.path, asset.basename+self._prodpattern))
-            files2 = []
-            for f in files:
-                ext = os.path.splitext(f)[1]
-                # bad....don't check gz, this should check that is not asset
-                exts = ['.hdr', '.xml', 'gz', '.index']
-                if ext != exts:
-                    files2.append(f)
-            files = files2
-            # TODO - BASENAME IS DIFFERENT FOR EVERY ASSET !??  Because of sensor issue
-            for f in files:
-                fname, ext = os.path.splitext(os.path.split(f)[1])
-                self.products[fname[len(asset.basename)+1:]] = f
-
+        # find all products
+        prods = self.Product.discover(os.path.join(self.path, self.basename))
+        self.products.update(prods)
         if len(self.assets) == 0:
             raise Exception('no assets')
 
@@ -397,6 +428,7 @@ class Data(object):
 
     # Classes for assets and tiles of this Data
     Tile = Tile
+    Product = Product
 
     # vector of tiling/grid system
     _tiles_vector = 'tiles.shp'
@@ -471,19 +503,25 @@ class Data(object):
                         #except:
                         #    VerboseOut('archive of downloaded files was unsuccessful', 2)
 
-    def process(self, overwrite=False, suffix=''):
+    def process(self, overwrite=False):
         """ Determines what products need to be processed for each tile and calls processtile """
-        if suffix != '' and suffix[:1] != '_':
-            suffix = '_' + suffix
+        if self.suffix != '':
+            self.suffix = '_' + self.suffix if self.suffix[0] != '_' else self.suffix
         for tileid, tile in self.tiles.items():
             # Determine what needs to be processed
             toprocess = {}
             for p in self.products:
-                fout = os.path.join(tile.path, tile.basename+'_'+p+suffix)
+                fout = os.path.join(tile.path, tile.basename+'_'+p)
+                print fout
+                for i in range(1, len(self.products[p])):
+                    fout = fout + '_' + self.products[p][i]
+                fout = fout + self.suffix
                 # need to figure out extension properly
+                # TODO - this is after inventory, just check the inventory for matching filename?
                 if len(glob.glob(fout+'*')) == 0 or overwrite:
-                    self.products[p][0] = fout
+                    #TODOself.products[p][0] = fout
                     toprocess[p] = self.products[p]
+                set_trace()
             if len(toprocess) != 0:
                 VerboseOut(['Processing products for tile %s' % tileid, toprocess], 3)
                 self.tiles[tileid].process(toprocess)
@@ -507,6 +545,7 @@ class Data(object):
             for t in self.tiles:
                 self.tiles[t].link(products=self.products, path=datadir)
         else:
+            # TODO - better file naming
             for product in self.products:
                 if self.products[product][0] == '':
                     start = datetime.now()
@@ -571,7 +610,8 @@ class Data(object):
         VerboseOut('%s: vector2tiles completed in %s' % (cls.__name__, datetime.now() - start), 4)
         return tiles
 
-    def __init__(self, site=None, tiles=None, date=None, products=None, sensors=None, fetch=False, **kwargs):
+    def __init__(self, site=None, tiles=None, date=None, products=None,
+                 suffix='', sensors=None, fetch=False, **kwargs):
         """ Locate data matching vector location (or tiles) and date
         self.tile_coverage - dictionary of tile id and % coverage with site
         self.tiles - dictionary of tile id and a Tile instance
@@ -594,6 +634,7 @@ class Data(object):
         self.products = {}
         for p in products:
             self.products[p] = [''] + products[p]
+        self.suffix = suffix
 
         # For each tile locate files/products
         if sensors is None:
@@ -633,23 +674,11 @@ class Data(object):
         group.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2: debug', default=1, type=int)
         group.add_argument('--%cov', dest='pcov', help='Threshold of %% tile coverage over site', default=0, type=int)
         group.add_argument('--%tile', dest='ptile', help='Threshold of %% tile used', default=0, type=int)
+        group.add_argument('--suffix', help='Suffix on end of filename (before extension)', default='')
         return parser
 
-    @classmethod
-    def product_parser(cls):
-        parser = argparse.ArgumentParser(add_help=False, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-        for gname in cls.Tile._groups:
-            group = parser.add_argument_group('%s product arguments' % gname)
-            for p in cls.Tile._groups[gname]:
-                prod = cls.Tile._products[p]
-                #if 'nargs' in prod:
-                group.add_argument('--%s' % p, help=prod['description'], nargs='*')
-                #else:
-                #    group.add_argument('--%s' % p, help=prod['description'], action='store_true')
-        return parser
-
-    def __str__(self):
-        return self.sensor + ': ' + str(self.date)
+    #def __str__(self):
+    #    return self.sensor + ': ' + str(self.date)
 
     @classmethod
     def main(cls):
@@ -664,7 +693,7 @@ class Data(object):
         parser.add_argument('--recursive', help='Iterate through subdirectories', default=False, action='store_true')
         parser.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2: debug', default=1, type=int)
 
-        parents = [cls.args_inventory(), cls.product_parser()]
+        parents = [cls.args_inventory(), cls.Product.arg_parser()]
 
         # Inventory
         parser = subparser.add_parser('inventory', help='Get Inventory', parents=parents, formatter_class=dhf)
@@ -675,7 +704,6 @@ class Data(object):
         parserp = subparser.add_parser('process', help='Process scenes', parents=parents, formatter_class=dhf)
         group = parserp.add_argument_group('Processing Options')
         group.add_argument('--overwrite', help='Overwrite exiting output file(s)', default=False, action='store_true')
-        group.add_argument('--suffix', help='Append string to end of filename (before extension)', default='')
 
         # Project
         parser = subparser.add_parser('project', help='Create project', parents=parents, formatter_class=dhf)
@@ -687,7 +715,7 @@ class Data(object):
         args = parser0.parse_args()
         #products = [p for p in cls.Tile._products if eval('args.%s' % p) not in [None, False]]
         products = {}
-        for p in cls.Tile._products:
+        for p in cls.Product._products:
             val = eval('args.%s' % p)
             if val not in [None, False]:
                 products[p] = val
@@ -707,13 +735,13 @@ class Data(object):
                 exit(1)
             inv = cls.inventory(
                 site=args.site, dates=args.dates, days=args.days, tiles=args.tiles,
-                products=products, pcov=args.pcov, ptile=args.ptile, fetch=args.fetch)
+                products=products, pcov=args.pcov, ptile=args.ptile, fetch=args.fetch, suffix=args.suffix)
             if args.command == 'inventory':
                 inv.printcalendar(args.md, products=args.products)
             elif args.command == 'link':
                 inv.links(args.hard)
             elif args.command == 'process':
-                inv.process(overwrite=args.overwrite, suffix=args.suffix)
+                inv.process(overwrite=args.overwrite)
             elif args.command == 'project':
                 inv.project(args.res, datadir=args.datadir)
             else:

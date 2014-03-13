@@ -22,10 +22,16 @@ import os
 import glob
 from datetime import datetime
 
-from gippy.data.core import Asset, Tile, Data
+from gippy.data.core import Asset, Product, Tile, Data
 from agspy.utils.table import Table
 
 from pdb import set_trace
+
+
+class CDLProduct(Product):
+    _products = {
+        'cdl': {'description': 'Crop Data Layer'}
+    }
 
 
 class CDLAsset(Asset):
@@ -69,12 +75,7 @@ class CDLAsset(Asset):
 
 class CDLTile(Tile):
     """ A tile (CONUS State) of CDL """
-
     Asset = CDLAsset
-
-    _products = {
-        'cdl': {'description': 'Crop Data Layer'}
-    }
 
 
 class CDLData(Data):
@@ -84,6 +85,7 @@ class CDLData(Data):
     _defaultresolution = [30.0, 30.0]
 
     Tile = CDLTile
+    Product = CDLProduct
 
     _tiles_vector = 'usa_states'
     _vectoratt = 'state_name'
