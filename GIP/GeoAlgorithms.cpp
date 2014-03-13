@@ -318,13 +318,12 @@ namespace gip {
         //site->exportToWkt(&wkt);
         //papszOptions = CSLSetNameValue(papszOptions,"CUTLINE",wkt);
         psWarpOptions->papszWarpOptions = CSLDuplicate(papszOptions);
-        //psWarpOptions->hCutline = site;
 
         GDALWarpOperation oOperation;
         // Perform warp for each input file
         vector<GeoImage>::iterator iimg;
         for (iimg=imgs.begin();iimg!=imgs.end();iimg++) {
-            if (Options::Verbose() > 2) std::cout << iimg->Basename() << " warping ";
+            if (Options::Verbose() > 2) std::cout << iimg->Basename() << " warping " << std::flush;
             psWarpOptions->hSrcDS = iimg->GetGDALDataset();
             psWarpOptions->pTransformerArg =
                 GDALCreateGenImgProjTransformer( iimg->GetGDALDataset(), iimg->GetGDALDataset()->GetProjectionRef(),
