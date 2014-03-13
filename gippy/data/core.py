@@ -519,9 +519,7 @@ class Data(object):
                 # need to figure out extension properly
                 # TODO - this is after inventory, just check the inventory for matching filename?
                 if len(glob.glob(fout+'*')) == 0 or overwrite:
-                    #TODOself.products[p][0] = fout
                     toprocess[p] = self.products[p]
-                set_trace()
             if len(toprocess) != 0:
                 VerboseOut(['Processing products for tile %s' % tileid, toprocess], 3)
                 self.tiles[tileid].process(toprocess)
@@ -539,7 +537,6 @@ class Data(object):
         if not hasattr(res, "__len__"):
             res = [res, res]
         #elif len(res) == 1: res = [res[0],res[0]]
-        self.process()
         if self.site is None:
             # Link files instead
             for t in self.tiles:
