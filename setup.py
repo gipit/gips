@@ -66,7 +66,8 @@ setup (name = 'gippy',
     packages = ['gippy','gippy.algorithms','gippy.data'],
     py_modules = ['gippy.gippylib','gippy.atmosphere','gippy.GeoVector','gippy.gipit'],
     dependency_links = ['https://github.com/matthewhanson/Py6S.git'],
-    install_requires = ['Py6S','shapely==1.2.18'],
+    #install_requires = ['Py6S','shapely==1.2.18'],
+    install_requires = ['Py6S','shapely'],
     #data_files = [('/usr/local/lib',['GIP/bin/Release/libgip.so'])],
     entry_points = {
         'console_scripts': [
