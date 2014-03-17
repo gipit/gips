@@ -666,7 +666,7 @@ namespace gip {
             clouds = imgout[b_pass1].Read(iChunk);
             // should this be a |= ?
             if (addclouds) clouds += imgout[b_ambclouds].Read(iChunk);
-            clouds|=(imgin.SaturationMask(iChunk));
+            clouds|=(imgin.SaturationMask(iChunk, bands_used));
             // Majority filter
             //clouds|=clouds.get_convolve(filter).threshold(majority));
             if (erode > 0)
