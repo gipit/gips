@@ -33,9 +33,6 @@
     #include "gip/GeoRasterIO.h"
     #include "gip/GeoImageIO.h"
 
-    #include <boost/geometry/geometry.hpp>
-    #include <boost/geometry/geometries/point_xy.hpp>
-
     using namespace gip;
 
     namespace gip {
