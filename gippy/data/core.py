@@ -38,12 +38,128 @@ from gippy.data.datainventory import DataInventory
 from gippy.settings import DATABASES
 
 
-class Asset(object):
-    """ Class for a single file asset (usually an original raw file or archive) """
+class Repository(object):
+    """ Singleton (all classmethods) of file locations and sensor tiling system  """
     # root directory to data
     _rootpath = ''
     # Format code of date directories in repository
     _datedir = '%Y%j'
+
+    _tilesdir = 'tiles'
+    _qdir = 'quarantine'
+    _vdir = 'vectors'
+    _sdir = 'stage'
+
+    _tiles_vector = 'tiles.shp'
+    _tile_attribute = 'tile'
+
+    @classmethod
+    def feature2tile(cls, feature):
+        """ Get tile designation from a geospatial feature (i.e. a row) """
+        fldindex = feature.GetFieldIndex(cls._tile_attribute)
+        return str(feature.GetField(fldindex))
+
+    ##########################################################################
+    # Override these functions if not using a tile/date directory structure
+    ##########################################################################
+    @classmethod
+    def path(cls, tile='', date=''):
+        path = os.path.join(cls._rootpath, cls._tilesdir)
+        if tile != '':
+            path = os.path.join(path, tile)
+        if date != '':
+            path = os.path.join(path, str(date.strftime(cls._datedir)))
+        return path
+
+    @classmethod
+    def find_tiles(cls):
+        """ Get list of all available tiles """
+        return os.listdir(os.path.join(cls._rootpath, cls._tilesdir))
+
+    @classmethod
+    def find_dates(cls, tile):
+        """ Get list of dates available in repository for a tile """
+        tdir = cls.path(tile=tile)
+        if os.path.exists(tdir):
+            return [datetime.strptime(os.path.basename(d), cls._datedir).date() for d in os.listdir(tdir)]
+        else:
+            return []
+
+    ##########################################################################
+    # Child classes should not generally have to override anything below here
+    ##########################################################################
+    @classmethod
+    def qpath(cls):
+        """ quarantine path """
+        return os.path.join(cls._rootpath, cls._qdir)
+
+    @classmethod
+    def vpath(cls):
+        """ vectors path """
+        return os.path.join(cls._rootpath, cls._vdir)
+
+    @classmethod
+    def spath(cls):
+        """ staging path """
+        return os.path.join(cls._rootpath, cls._sdir)
+
+    @classmethod
+    def tiles_vector(cls):
+        """ Get GeoVector of sensor grid """
+        fname = os.path.join(cls.vpath(), cls._tiles_vector)
+        if os.path.isfile(fname):
+            VerboseOut('%s: tiles vector %s' % (cls.__name__, fname), 4)
+            tiles = gippy.GeoVector(fname)
+        else:
+            try:
+                VerboseOut('%s: tiles vector %s' % (cls.__name__, cls._tiles_vector), 4)
+                db = DATABASES['tiles']
+                dbstr = ("PG:dbname=%s host=%s port=%s user=%s password=%s" %
+                        (db['NAME'], db['HOST'], db['PORT'], db['USER'], db['PASSWORD']))
+                print dbstr
+                tiles = gippy.GeoVector(dbstr, layer=cls._tiles_vector)
+            except:
+                raise Exception('unable to access %s tiles (file or database)' % cls.__name__)
+        return tiles
+
+    @classmethod
+    def vector2tiles(cls, vector, pcov=0.0, ptile=0.0, **kwargs):
+        """ Return matching tiles and coverage % for provided vector """
+        start = datetime.now()
+        import osr
+        geom = vector.union()
+        ogrgeom = ogr.CreateGeometryFromWkb(geom.wkb)
+        tvector = cls.tiles_vector()
+        tlayer = tvector.layer
+        trans = osr.CoordinateTransformation(vector.layer.GetSpatialRef(), tlayer.GetSpatialRef())
+        ogrgeom.Transform(trans)
+        geom = loads(ogrgeom.ExportToWkb())
+        tlayer.SetSpatialFilter(ogrgeom)
+        tiles = {}
+        tlayer.ResetReading()
+        feat = tlayer.GetNextFeature()
+        #fldindex = feat.GetFieldIndex(cls._tiles_attribute)
+        while feat is not None:
+            tgeom = loads(feat.GetGeometryRef().ExportToWkb())
+            area = geom.intersection(tgeom).area
+            if area != 0:
+                tile = cls.feature2tile(feat)
+                tiles[tile] = (area/geom.area, area/tgeom.area)
+            feat = tlayer.GetNextFeature()
+        remove_tiles = []
+        for t in tiles:
+            if (tiles[t][0] < pcov/100.0) or (tiles[t][1] < ptile/100.0):
+                remove_tiles.append(t)
+        for t in remove_tiles:
+            tiles.pop(t, None)
+        VerboseOut('%s: vector2tiles completed in %s' % (cls.__name__, datetime.now() - start), 4)
+        return tiles
+
+
+class Asset(object):
+    """ Class for a single file asset (usually an original raw file or archive) """
+    Repository = Repository
+
     # Sensors
     _sensors = {
         '': {'description': ''},
@@ -55,11 +171,11 @@ class Asset(object):
         }
     }
 
+    # TODO - move to be per asset ?
+    _defaultresolution = [30.0, 30.0]
+
     def __init__(self, filename):
         """ Inspect a single file and populate variables. Needs to be extended """
-        _tilespath = os.path.join(self._rootpath, self._tilesdir)
-        _stagepath = os.path.join(self._rootpath, self._stagedir)
-        _qpath = os.path.join(self._rootpath, self._qdir)
         # full filename to asset
         self.filename = filename
         # the asset code
@@ -77,145 +193,11 @@ class Asset(object):
         # dictionary of existing products in asset {'product name': [filename(s)]}
         self.products = {}
 
-    @classmethod
-    def asset_dates(cls, asset, tile, dates, days):
-        """ For a given asset get all dates possible (in repo or not) - used for fetch """
-        from dateutil.rrule import rrule, DAILY
-        # default assumes daily regardless of asset or tile
-        datearr = rrule(DAILY, dtstart=dates[0], until=dates[1])
-        dates = [dt for dt in datearr if days[0] <= int(dt.strftime('%j')) <= days[1]]
-        return dates
-
-    @classmethod
-    def fetch(cls, asset, tile, date):
-        """ Get this asset for this tile and date """
-        raise Exception("Fetch not implemented for %s" % cls.__name__)
-
-    ##########################################################################
-    # Override these functions if not using a tile/date directory structure
-    ##########################################################################
-    @property
-    def path(self):
-        """ Return repository path to this asset """
-        return os.path.join(self._tilespath, self.tile, str(date.strftime(cls._datedir)))
-
-    @classmethod
-    def path(cls, tile, date):
-        return os.path.join(cls._rootpath, cls._tilesdir, tile, str(date.strftime(cls._datedir)))
-
     ##########################################################################
     # Child classes should not generally have to override anything below here
     ##########################################################################
-    _tilesdir = 'tiles'
-    _qdir = 'quarantine'
-    _stagedir = 'stage'
-    _vectordir = 'vectors'
-
     def sensor_meta(self):
         return self._sensors[self.sensor]
-
-    @classmethod
-    def find_assets(cls, tile, date, asset=None):
-        """ Find assets in this path and return list of Asset objects """
-        path = cls.path(tile, date)
-        if asset is not None:
-            assets = [asset]
-        else:
-            assets = cls._assets.keys()
-        found = []
-        for a in assets:
-            files = glob.glob(os.path.join(path, cls._assets[a]['pattern']))
-            # more than 1 asset??
-            if len(files) > 1:
-                VerboseOut(files, 3)
-                raise Exception("Duplicate(?) assets found")
-            if len(files) == 1:
-                found.append(cls(files[0]))
-        return found
-
-    @classmethod
-    def archive(cls, path='', recursive=False, keep=False):
-        """ Move assets from directory to archive location """
-        start = datetime.now()
-
-        try:
-            os.makedirs(cls._qpath)
-        except:
-            pass
-
-        if recursirve:
-            for root, subdirs, files in os.walk(path):
-                fnames = []
-                for a in cls._assets.values():
-                    fnames.extend(glob.glob(os.path.join(root, a['pattern'])))
-        else:
-            fnames = glob.glob(os.path.join(path, a['pattern']))
-
-        numlinks = 0
-        numfiles = 0
-        for f in fnames:
-            links = cls._archivefile(f)
-            if links >= 0:
-                numfiles = numfiles + 1
-                numlinks = numlinks + added
-                if not keep:
-                    RemoveFiles(f, ['.index', '.aux.xml'])
-
-        # Summarize
-        VerboseOut('%s files (%s links) from %s added to archive in %s' %
-                  (numfiles, numlinks, os.path.abspath(path), datetime.now()-start))
-        if numfiles != len(fnames):
-            VerboseOut('%s files not added to archive' % (len(fnames)-numfiles))
-
-    @classmethod
-    def _archivefile(cls, filename):
-        """ archive specific file """
-        bname = os.path.basename(filename)
-        try:
-            asset = cls(filename)
-        except Exception, e:
-            # if problem with inspection, move to quarantine
-            qname = os.path.join(qdir, bname)
-            if not os.path.exists(qname):
-                os.link(os.path.abspath(filename), qname)
-            VerboseOut('%s -> quarantine (file error)' % filename, 2)
-            VerboseOut(traceback.format_exc(), 4)
-            return 0
-
-        if not hasattr(asset.date, '__len__'):
-            asset.date = asset.date
-        numlinks = 0
-        otherversions = False
-        for d in asset.date:
-            tpath = cls.path(asset.tile, d)
-            newfilename = os.path.join(tpath, bname)
-            if not os.path.exists(newfilename):
-                # check if another asset exists
-                existing = cls.find_assets(asset.tile, d, asset.asset)
-                if len(existing) > 0:
-                    VerboseOut('%s: other version(s) already exists:' % bname, 2)
-                    for ef in existing:
-                        VerboseOut('\t%s' % os.path.basename(ef), 2)
-                    otherversions = True
-                else:
-                    try:
-                        os.makedirs(tpath)
-                    except OSError as exc:
-                        if exc.errno == errno.EEXIST and os.path.isdir(tpath):
-                            pass
-                        else:
-                            raise Exception('Unable to make data directory %s' % tpath)
-                    os.link(os.path.abspath(filename), newfilename)
-                    #shutil.move(os.path.abspath(f),newfilename)
-                    VerboseOut(bname + ' -> ' + newfilename, 2)
-                    numlinks = numlinks + 1
-            else:
-                VerboseOut('%s already in archive' % filename, 2)
-        if otherversions and numlinks == 0:
-            return -1
-        else:
-            return numlinks
-        # should return asset instance
 
     def datafiles(self):
         """ Get list of datafiles from asset (if archive file) """
@@ -256,79 +238,145 @@ class Asset(object):
             extracted_files.append(fname)
         return extracted_files
 
-    def __str__(self):
-        return os.path.basename(self.filename)
-
-
-class Product(object):
-    """ A product for a tile and date """
-    _products = {}
-    _groups = {}
-    _pattern = '*.tif'
-
-    def __init__(self, path):
-        """ Find products in path """
-        pass
+    ##########################################################################
+    # Class methods
+    ##########################################################################
+    @classmethod
+    def fetch(cls, asset, tile, date):
+        """ Get this asset for this tile and date """
+        raise Exception("Fetch not implemented for %s" % cls.__name__)
 
     @classmethod
-    def products2assets(cls, products):
-        """ Get list of assets needed for these products """
-        assets = []
-        for p in products:
-            if 'assets' in cls._products[p]:
-                assets.extend(cls._products[p]['assets'])
+    def dates(cls, asset, tile, dates, days):
+        """ For a given asset get all dates possible (in repo or not) - used for fetch """
+        from dateutil.rrule import rrule, DAILY
+        # default assumes daily regardless of asset or tile
+        datearr = rrule(DAILY, dtstart=dates[0], until=dates[1])
+        dates = [dt for dt in datearr if days[0] <= int(dt.strftime('%j')) <= days[1]]
+        return dates
+
+    @classmethod
+    def discover(cls, tile, date, asset=None):
+        """ Factory function returns list of Assets """
+        tpath = cls.Repository.path(tile, date)
+        if asset is not None:
+            assets = [asset]
+        else:
+            assets = cls._assets.keys()
+        found = []
+        for a in assets:
+            files = glob.glob(os.path.join(tpath, cls._assets[a]['pattern']))
+            # more than 1 asset??
+            if len(files) > 1:
+                VerboseOut(files, 3)
+                raise Exception("Duplicate(?) assets found")
+            if len(files) == 1:
+                found.append(cls(files[0]))
+        return found
+
+    # TODO - not sure if this is needed
+    @classmethod
+    def sensor_names(cls):
+        """ All possible sensor names """
+        return sorted([s['description'] for s in cls._sensors.values()])
+
+    @classmethod
+    def archive(cls, path='', recursive=False, keep=False):
+        """ Move assets from directory to archive location """
+        start = datetime.now()
+
+        try:
+            os.makedirs(cls._qpath)
+        except:
+            pass
+
+        fnames = []
+        if recursive:
+            for root, subdirs, files in os.walk(path):
+                for a in cls._assets.values():
+                    fnames.extend(glob.glob(os.path.join(root, a['pattern'])))
+        else:
+            for a in cls._assets.values():
+                fnames.extend(glob.glob(os.path.join(path, a['pattern'])))
+
+        numlinks = 0
+        numfiles = 0
+        for f in fnames:
+            links = cls._archivefile(f)
+            if links >= 0:
+                if not keep:
+                    RemoveFiles([f], ['.index', '.aux.xml'])
+            if links > 0:
+                numfiles = numfiles + 1
+                numlinks = numlinks + links
+
+        # Summarize
+        VerboseOut('%s files (%s links) from %s added to archive in %s' %
+                  (numfiles, numlinks, os.path.abspath(path), datetime.now()-start))
+        if numfiles != len(fnames):
+            VerboseOut('%s files not added to archive' % (len(fnames)-numfiles))
+
+    @classmethod
+    def _archivefile(cls, filename):
+        """ archive specific file """
+        bname = os.path.basename(filename)
+        try:
+            asset = cls(filename)
+        except Exception, e:
+            # if problem with inspection, move to quarantine
+            qname = os.path.join(cls.Repository.qpath(), bname)
+            if not os.path.exists(qname):
+                os.link(os.path.abspath(filename), qname)
+            VerboseOut('%s -> quarantine (file error)' % filename, 2)
+            VerboseOut(traceback.format_exc(), 4)
+            return 0
+
+        if not hasattr(asset.date, '__len__'):
+            asset.date = [asset.date]
+        numlinks = 0
+        otherversions = False
+        for d in asset.date:
+            tpath = cls.Repository.path(asset.tile, d)
+            newfilename = os.path.join(tpath, bname)
+            if not os.path.exists(newfilename):
+                # check if another asset exists
+                existing = cls.discover(asset.tile, d, asset.asset)
+                if len(existing) > 0:
+                    VerboseOut('%s: other version(s) already exists:' % bname, 2)
+                    for ef in existing:
+                        VerboseOut('\t%s' % os.path.basename(ef), 2)
+                    otherversions = True
+                else:
+                    try:
+                        os.makedirs(tpath)
+                    except OSError as exc:
+                        if exc.errno == errno.EEXIST and os.path.isdir(tpath):
+                            pass
+                        else:
+                            raise Exception('Unable to make data directory %s' % tpath)
+                    os.link(os.path.abspath(filename), newfilename)
+                    #shutil.move(os.path.abspath(f),newfilename)
+                    VerboseOut(bname + ' -> ' + newfilename, 2)
+                    numlinks = numlinks + 1
             else:
-                assets.append('')
-        return set(assets)
+                VerboseOut('%s already in archive' % filename, 2)
+        if otherversions and numlinks == 0:
+            return -1
+        else:
+            return numlinks
+        # should return asset instance
 
-    @classmethod
-    def products2groups(cls, products):
-        """ Convert product list to groupings """
-        groups = {}
-        for group in cls._groups:
-            groups[group] = {}
-            for p in cls._groups[group]:
-                if p in products:
-                    groups[group][p] = products[p]
-        return groups
-
-    @classmethod
-    def discover(cls, basefilename):
-        """ Find products in path """
-        #badexts = ['.hdr', '.xml', 'gz', '.index']
-        products = {}
-        for p in cls._products:
-            files = glob.glob(basefilename+'_'+p+cls._pattern)
-            #if len(files) > 0:
-            #    products[p] = files
-            for f in files:
-                rootf = os.path.splitext(f)[0]
-                products[rootf[len(basefilename)+1:]] = f
-            #    ext = os.path.splitext(f)[1]
-            #    if ext not in badexts:
-            #        products[p].append(f)
-        return products
-
-    @classmethod
-    def arg_parser(cls):
-        parser = argparse.ArgumentParser(add_help=False, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-        for gname in cls._groups:
-            group = parser.add_argument_group('%s product arguments' % gname)
-            for p in cls._groups[gname]:
-                prod = cls._products[p]
-                group.add_argument('--%s' % p, help=prod['description'], nargs='*')
-        return parser
+    #def __str__(self):
+    #    return os.path.basename(self.filename)
 
 
 class Tile(object):
     """ A tile of data (multiple assets/products) on a single date """
-
     Asset = Asset
-    Product = Product
 
-    def process(self, products):
-        """ Make sure all products exist and process if needed """
-        pass
+    _pattern = '*.tif'
+    _products = {}
+    _groups = {'': ''}
 
     def meta(self):
         """ Retrieve metadata for this tile """
@@ -337,6 +385,10 @@ class Tile(object):
         # add metadata to dictionary
         return {}
 
+    def process(self, products):
+        """ Make sure all products exist and process if needed """
+        pass
+
     #def filter(self, **kwargs):
     #    """ Check if tile passes filter """
     #    return True
@@ -344,15 +396,46 @@ class Tile(object):
     ##########################################################################
     # Override these functions if not using a tile/date directory structure
     ##########################################################################
-    @property
-    def path(self):
-        """ Return repository path to this tile dir """
-        return os.path.join(self.Asset._rootpath, self.Asset._tilesdir,
-                            self.id, str(self.date.strftime(self.Asset._datedir)))
+    #@property
+    #def path(self):
+    #    """ Return repository path to this tile dir """
+    #    return os.path.join(self.Data._rootpath, self.Data._tilesdir,
+    #                        self.id, str(self.date.strftime(self.Data._datedir)))
 
     ##########################################################################
     # Child classes should not generally have to override anything below here
     ##########################################################################
+    def __init__(self, tile, date):
+        """ Find all data and assets for this tile and date """
+        self.path = self.Repository.path(tile, date)
+        self.id = tile
+        self.date = date
+        self.assets = {}
+        self.products = {}
+        self.basename = ''
+        # find all assets
+        for asset in self.Asset.discover(tile, date):
+            self.assets[asset.asset] = asset
+            # sensor and basename assumes same value every time ?
+            self.sensor = asset.sensor
+            # should this be property of tile date, sensor?  same for all assets ?
+            self.basename = asset.basename
+            # products that come automatically with assets
+            self.products.update(asset.products)
+        # find all products
+        prods = self.discover(os.path.join(self.path, self.basename))
+        self.products.update(prods)
+        if len(self.assets) == 0:
+            raise Exception('no assets')
+
+        #VerboseOut('%s %s: assets and products found' % (tile, date), 5)
+        VerboseOut(self.assets, 5)
+        VerboseOut(self.products, 5)
+
+    @property
+    def Repository(self):
+        return self.Asset.Repository
+
     def open(self, product=''):
         if len(self.products) == 0:
             raise Exception("No products available to open!")
@@ -367,7 +450,6 @@ class Tile(object):
     def link(self, products, path='', copy=False):
         """ Create links in path to tile products """
         for p in products:
-            set_trace()
             fname = self.products[p]
             bname = os.path.basename(fname)
             fullbname = os.path.join(path, bname)
@@ -390,87 +472,135 @@ class Tile(object):
                 except:
                     VerboseOut('%s: Problem creating link' % bname, 2)
 
-    def __init__(self, tile, date):
-        """ Find all data and assets for this tile and date """
-        self.id = tile
-        self.date = date
-        self.assets = {}
-        #self.basename = ''
-        self.products = {}
-        # find all assets
-        for asset in self.Asset.find_assets(tile, date):
-            self.assets[asset.asset] = asset
-            # sensor and basename assumes same value every time ?
-            self.sensor = asset.sensor
-            # should this be property of tile date, sensor?  same for all assets ?
-            self.basename = asset.basename
-            # products that come automatically with assets
-            self.products.update(asset.products)
-        # find all products
-        prods = self.Product.discover(os.path.join(self.path, self.basename))
-        self.products.update(prods)
-        if len(self.assets) == 0:
-            raise Exception('no assets')
+    ##########################################################################
+    # Class methods
+    ##########################################################################
+    # TODO - factory function of Tiles ?
+    @classmethod
+    def discover(cls, basefilename):
+        """ Find products in path """
+        badexts = ['.hdr', '.xml', 'gz', '.index']
+        products = {}
+        for p in cls._products:
+            files = glob.glob(basefilename+'_'+p+cls._pattern)
+            #if len(files) > 0:
+            #    products[p] = files
+            for f in files:
+                rootf = os.path.splitext(f)[0]
+                ext = os.path.splitext(f)[1]
+                if ext not in badexts:
+                    products[rootf[len(basefilename)+1:]] = f
+        return products
 
-        VerboseOut('%s %s: assets and products found' % (tile, date), 5)
-        VerboseOut(self.assets, 5)
-        VerboseOut(self.products, 5)
+    @classmethod
+    def products2assets(cls, products):
+        """ Get list of assets needed for these products """
+        assets = []
+        for p in products:
+            if 'assets' in cls._products[p]:
+                assets.extend(cls._products[p]['assets'])
+            else:
+                assets.append('')
+        return set(assets)
+
+    @classmethod
+    def fetch(cls, products, tiles, dates, days):
+        """ Download data for tiles and add to archive """
+        assets = cls.products2assets(products)
+        for a in assets:
+            for t in tiles:
+                asset_dates = cls.Asset.dates(a, t, dates, days)
+                for d in asset_dates:
+                    if not cls.Asset.discover(t, d, a):
+                        status = cls.Asset.fetch(a, t, d)
+                        VerboseOut("Fetch status: %s" % status, 2)
+
+    @classmethod
+    def products2groups(cls, products):
+        """ Convert product list to groupings """
+        groups = {}
+        for group in cls._groups:
+            groups[group] = {}
+            for p in cls._groups[group]:
+                if p in products:
+                    groups[group][p] = products[p]
+        return groups
+
+    @classmethod
+    def arg_parser(cls):
+        parser = argparse.ArgumentParser(add_help=False, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        for gname in cls._groups:
+            if gname == '':
+                gname = 'Standard'
+                products = cls._products.keys()
+            else:
+                products = cls._groups[gname]
+            group = parser.add_argument_group('%s product arguments' % gname)
+            for p in products:
+                prod = cls._products[p]
+                group.add_argument('--%s' % p, help=prod['description'], nargs='*')
+        return parser
 
 
 class Data(object):
     """ Base class for data objects """
-    # name of this dataset
-    name = ''
-
-    # best resolution of data (default used in Data.project)
-    # better off in Asset...per asset , or per product?
-    _defaultresolution = [30.0, 30.0]
-
     # Classes for assets and tiles of this Data
     Tile = Tile
-    Product = Product
 
-    # vector of tiling/grid system
-    _tiles_vector = 'tiles.shp'
-    # column name in _tiles_vector holding tile designation
-    _vectoratt = 'tile'
-
-    @classmethod
-    def feature2tile(cls, feature):
-        """ Get tile designaation from a geospatial feature (i.e. a row) """
-        fldindex = feature.GetFieldIndex(cls._vectoratt)
-        return str(feature.GetField(fldindex))
-
-    ##########################################################################
-    # Override these functions if not using a tile/date directory structure
-    ##########################################################################
-    @classmethod
-    def find_tiles(cls):
-        """ Get list of all available tiles """
-        return os.listdir(os.path.join(cls.Tile.Asset._rootpath, cls.Tile.Asset._tilesdir))
-
-    @classmethod
-    def find_dates(cls, tile):
-        """ Get list of dates available in repository for a tile """
-        # TODO - ugly getting path info from cls.Tile.Asset
-        tdir = os.path.join(cls.Tile.Asset._rootpath, cls.Tile.Asset._tilesdir, tile)
-        if os.path.exists(tdir):
-            return [datetime.strptime(os.path.basename(d), cls.Tile.Asset._datedir).date() for d in os.listdir(tdir)]
-        else:
-            return []
-
-    ##########################################################################
-    # Child classes should not generally have to override anything below here
-    ##########################################################################
     @classmethod
     def inventory(cls, **kwargs):
         return DataInventory(cls, **kwargs)
 
-    # TODO - not sure if this is needed
-    @classmethod
-    def sensor_names(cls):
-        """ All possible sensor names """
-        return sorted([s['description'] for s in cls.Tile.Asset._sensors.values()])
+    def __init__(self, site=None, tiles=None, date=None, products=None,
+                 suffix='', sensors=None, fetch=False, **kwargs):
+        """ Locate data matching vector location (or tiles) and date
+        self.tile_coverage - dictionary of tile id and % coverage with site
+        self.tiles - dictionary of tile id and a Tile instance
+        self.products - dictionary of product name and final product filename
+        """
+
+        self.site = site
+        # Calculate spatial extent
+        if tiles is not None:
+            self.tile_coverage = dict((t, 1) for t in tiles)
+        elif site is not None:
+            self.tile_coverage = self.Repository.vector2tiles(gippy.GeoVector(site), **kwargs)
+        else:
+            self.tile_coverage = dict((t, (1, 1)) for t in self.Repository.find_tiles())
+        self.date = date
+
+        #VerboseOut("Locating matching data for %s" % self.date, 3)
+
+        # Create product dictionaries for use by child class
+        self.products = {}
+        for p in products:
+            self.products[p] = [''] + products[p]
+        self.suffix = suffix
+
+        # For each tile locate files/products
+        if sensors is None:
+            sensors = self.Tile.Asset._sensors.keys()
+        self.used_sensors = {s: self.Tile.Asset._sensors.get(s, None) for s in sensors}
+
+        # TODO - expand verbose text: tiles, date, etc.
+        #VerboseOut('Finding products for %s tiles ' % (len(self.tile_coverage)), 4)
+        self.tiles = {}
+        for t in self.tile_coverage.keys():
+            #VerboseOut("Tile %s" % t, 4)
+            try:
+                tile = self.Tile(t, self.date)
+                # Custom filter based on dataclass
+                #good = self.filter(t,filename, **kwargs)
+                #if good == False:
+                #    empty_tiles.append(t)
+                self.tiles[t] = tile
+                # check all tiles - should be same sensor - MODIS?
+                self.sensor = tile.sensor
+            except:
+                VerboseOut(traceback.format_exc(), 5)
+                continue
+        if len(self.tiles) == 0:
+            raise Exception('No valid data found')
 
     def open(self, product='', update=True):
         """ Open and return final product GeoImage """
@@ -482,26 +612,6 @@ class Data(object):
             return gippy.GeoImage(fname, update)
         else:
             raise Exception('%s product does not exist' % product)
-
-    @classmethod
-    def fetch(cls, products, tiles, dates, days):
-        """ Download data for tiles and add to archive """
-        assets = cls.Tile.products2assets(products)
-        for a in assets:
-            for t in tiles:
-                asset_dates = cls.Tile.Asset.asset_dates(a, t, dates, days)
-                for d in asset_dates:
-                    if not cls.Tile.Asset.find_assets(t, d, a):
-                        status = cls.Tile.Asset.fetch(a, t, d)
-                        VerboseOut("Fetch status: %s" % status, 2)
-                        # what to do if status is nonzero?
-                        # move files as you get them
-                        #VerboseOut('Copying data to archive', 2)
-                        #try:
-                        #    print "calling archive moving to %s" % cls._stagedir
-                        #    cls.archive(cls._stagedir)
-                        #except:
-                        #    VerboseOut('archive of downloaded files was unsuccessful', 2)
 
     def process(self, overwrite=False):
         """ Determines what products need to be processed for each tile and calls processtile """
@@ -520,6 +630,8 @@ class Data(object):
                 # TODO - this is after inventory, just check the inventory for matching filename?
                 if len(glob.glob(fout+'*')) == 0 or overwrite:
                     toprocess[p] = self.products[p]
+                    toprocess[p][0] = fout
+                    # TODO - this needs tile name
             if len(toprocess) != 0:
                 VerboseOut(['Processing products for tile %s' % tileid, toprocess], 3)
                 self.tiles[tileid].process(toprocess)
@@ -557,109 +669,6 @@ class Data(object):
                                    imgout.Basename(), datetime.now() - start))
                     self.products[product][0] = filename
 
-    @classmethod
-    def get_tiles_vector(cls):
-        """ Get GeoVector of sensor grid """
-        fname = os.path.join(cls.Tile.Asset._rootpath, cls.Tile.Asset._vectordir, cls._tiles_vector)
-        if os.path.isfile(fname):
-            VerboseOut('%s: tiles vector %s' % (cls.__name__, fname), 4)
-            tiles = gippy.GeoVector(fname)
-        else:
-            try:
-                VerboseOut('%s: tiles vector %s' % (cls.__name__, cls._tiles_vector), 4)
-                db = DATABASES['tiles']
-                dbstr = ("PG:dbname=%s host=%s port=%s user=%s password=%s" %
-                        (db['NAME'], db['HOST'], db['PORT'], db['USER'], db['PASSWORD']))
-                print dbstr
-                tiles = gippy.GeoVector(dbstr, layer=cls._tiles_vector)
-            except:
-                raise Exception('unable to access %s tiles (file or database)' % cls.__name__)
-        return tiles
-
-    @classmethod
-    def vector2tiles(cls, vector, pcov=0.0, ptile=0.0):
-        """ Return matching tiles and coverage % for provided vector """
-        start = datetime.now()
-        import osr
-        geom = vector.union()
-        ogrgeom = ogr.CreateGeometryFromWkb(geom.wkb)
-        tvector = cls.get_tiles_vector()
-        tlayer = tvector.layer
-        trans = osr.CoordinateTransformation(vector.layer.GetSpatialRef(), tlayer.GetSpatialRef())
-        ogrgeom.Transform(trans)
-        geom = loads(ogrgeom.ExportToWkb())
-        tlayer.SetSpatialFilter(ogrgeom)
-        tiles = {}
-        tlayer.ResetReading()
-        feat = tlayer.GetNextFeature()
-        #fldindex = feat.GetFieldIndex(cls._tiles_attribute)
-        while feat is not None:
-            tgeom = loads(feat.GetGeometryRef().ExportToWkb())
-            area = geom.intersection(tgeom).area
-            if area != 0:
-                tile = cls.feature2tile(feat)
-                tiles[tile] = (area/geom.area, area/tgeom.area)
-            feat = tlayer.GetNextFeature()
-        remove_tiles = []
-        for t in tiles:
-            if (tiles[t][0] < pcov/100.0) or (tiles[t][1] < ptile/100.0):
-                remove_tiles.append(t)
-        for t in remove_tiles:
-            tiles.pop(t, None)
-        VerboseOut('%s: vector2tiles completed in %s' % (cls.__name__, datetime.now() - start), 4)
-        return tiles
-
-    def __init__(self, site=None, tiles=None, date=None, products=None,
-                 suffix='', sensors=None, fetch=False, **kwargs):
-        """ Locate data matching vector location (or tiles) and date
-        self.tile_coverage - dictionary of tile id and % coverage with site
-        self.tiles - dictionary of tile id and a Tile instance
-        self.products - dictionary of product name and final product filename
-        """
-
-        self.site = site
-        # Calculate spatial extent
-        if tiles is not None:
-            self.tile_coverage = dict((t, 1) for t in tiles)
-        elif site is not None:
-            self.tile_coverage = self.vector2tiles(gippy.GeoVector(site), **kwargs)
-        else:
-            self.tile_coverage = dict((t, (1, 1)) for t in self.find_tiles())
-        self.date = date
-
-        #VerboseOut("Locating matching data for %s" % self.date, 3)
-
-        # Create product dictionaries for use by child class
-        self.products = {}
-        for p in products:
-            self.products[p] = [''] + products[p]
-        self.suffix = suffix
-
-        # For each tile locate files/products
-        if sensors is None:
-            sensors = self.Tile.Asset._sensors.keys()
-        self.used_sensors = {s: self.Tile.Asset._sensors.get(s, None) for s in sensors}
-
-        # TODO - expand verbose text: tiles, date, etc.
-        #VerboseOut('Finding products for %s tiles ' % (len(self.tile_coverage)), 4)
-        self.tiles = {}
-        for t in self.tile_coverage.keys():
-            #VerboseOut("Tile %s" % t, 4)
-            try:
-                tile = self.Tile(t, self.date)
-                # Custom filter based on dataclass
-                #good = self.filter(t,filename, **kwargs)
-                #if good == False:
-                #    empty_tiles.append(t)
-                self.tiles[t] = tile
-                # check all tiles - should be same sensor - MODIS?
-                self.sensor = tile.sensor
-            except:
-                #print traceback.format_exc()
-                continue
-        if len(self.tiles) == 0:
-            raise Exception('No valid data found')
-
     @staticmethod
     def args_inventory():
         parser = argparse.ArgumentParser(add_help=False, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -676,9 +685,6 @@ class Data(object):
         group.add_argument('--suffix', help='Suffix on end of filename (before extension)', default='')
         return parser
 
-    #def __str__(self):
-    #    return self.sensor + ': ' + str(self.date)
-
     @classmethod
     def main(cls):
         dhf = argparse.ArgumentDefaultsHelpFormatter
@@ -692,7 +698,7 @@ class Data(object):
         parser.add_argument('--recursive', help='Iterate through subdirectories', default=False, action='store_true')
         parser.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2: debug', default=1, type=int)
 
-        parents = [cls.args_inventory(), cls.Product.arg_parser()]
+        parents = [cls.args_inventory(), cls.Tile.arg_parser()]
 
         # Inventory
         parser = subparser.add_parser('inventory', help='Get Inventory', parents=parents, formatter_class=dhf)
@@ -712,12 +718,6 @@ class Data(object):
         group.add_argument('--format', help='Format for output file', default="GTiff")
 
         args = parser0.parse_args()
-        #products = [p for p in cls.Tile._products if eval('args.%s' % p) not in [None, False]]
-        products = {}
-        for p in cls.Product._products:
-            val = eval('args.%s' % p)
-            if val not in [None, False]:
-                products[p] = val
 
         gippy.Options.SetVerbose(args.verbose)
         # TODO - replace with option
@@ -727,11 +727,20 @@ class Data(object):
 
         VerboseOut('GIPPY %s command line utility' % cls.name)
 
+        if args.command == 'archive':
+            # TODO - take in path argument
+            cls.archive(recursive=args.recursive, keep=args.keep)
+            exit(1)
+
+        #products = [p for p in cls.Tile._products if eval('args.%s' % p) not in [None, False]]
+        products = {}
+        for p in cls.Tile._products:
+            if p != '':
+                val = eval('args.%s' % p)
+                if val not in [None, False]:
+                    products[p] = val
+
         try:
-            if args.command == 'archive':
-                # TODO - take in path argument
-                cls.archive(recursive=args.recursive, keep=args.keep)
-                exit(1)
             inv = cls.inventory(
                 site=args.site, dates=args.dates, days=args.days, tiles=args.tiles,
                 products=products, pcov=args.pcov, ptile=args.ptile, fetch=args.fetch, suffix=args.suffix)

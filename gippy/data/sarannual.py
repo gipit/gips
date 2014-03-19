@@ -28,13 +28,38 @@ from collections import OrderedDict
 from pdb import set_trace
 
 import gippy
-from gippy.data.core import Asset, Product, Tile, Data
+from gippy.data.core import Repository, Asset, Tile, Data
 from gippy.utils import VerboseOut, File2List, List2File, RemoveFiles
 
 
-class SARAnnualAsset(Asset):
+class SARAnnualRepository(Repository):
     _rootpath = '/titan/data/SARannual'
     _datedir = '%Y'
+    #_tilesdir = 'tiles.dev'
+
+    _tiles_vector = 'sar_tiles'
+
+    @classmethod
+    def feature2tile(cls, feature):
+        """ Get tile designation from a geospatial feature (i.e. a row) """
+        fldindex_lat = feature.GetFieldIndex("lat")
+        fldindex_lon = feature.GetFieldIndex("lon")
+        lat = int(feature.GetField(fldindex_lat)+0.5)
+        lon = int(feature.GetField(fldindex_lon)-0.5)
+        if lat < 0:
+            lat_h = 'S'
+        else:
+            lat_h = 'N'
+        if lon < 0:
+            lon_h = 'W'
+        else:
+            lon_h = 'E'
+        tile = lat_h + str(abs(lat)).zfill(2) + lon_h + str(abs(lon)).zfill(3)
+        return tile
+
+
+class SARAnnualAsset(Asset):
+    Repository = SARAnnualRepository
     _sensors = {
         #'AFBS': 'PALSAR FineBeam Single Polarization',
         'PALSAR': {'description': 'PALSAR Mosaic (FineBeam Dual Polarization)'},
@@ -49,6 +74,8 @@ class SARAnnualAsset(Asset):
             'pattern': '???????_??_FNF.tar.gz'
         },
     }
+
+    _defaultresolution = [0.00044444444, 0.00044444444]
 
     def __init__(self, filename):
         """ Inspect a single file and get some basic info """
@@ -71,8 +98,12 @@ class SARAnnualAsset(Asset):
         return datafiles
 
 
-class SARAnnualProduct(Product):
-    _prodpattern = '*'
+class SARAnnualTile(Tile):
+    """ Tile of data """
+
+    Asset = SARAnnualAsset
+
+    _pattern = '*'
     _products = OrderedDict([
         ('sign', {
             'description': 'Sigma nought (radar backscatter coefficient)',
@@ -87,18 +118,12 @@ class SARAnnualProduct(Product):
         'Standard': _products.keys(),
     }
 
-
-class SARAnnualTile(Tile):
-    """ Tile of data """
-
-    Asset = SARAnnualAsset
-
     def meta(self, tile):
         """ Get metadata for this tile """
         return {'CF': -83.0}
 
     def process(self, products):
-        """ Make sure all products have been pre-processed """
+        """ Process all requested products for this tile """
         if len(products) == 0:
             raise Exception('Tile %s: No products specified' % tile)
 
@@ -115,7 +140,7 @@ class SARAnnualTile(Tile):
                 img.SetNoData(0)
                 mask = gippy.GeoImage(datafiles['mask'], False)
                 img.AddMask(mask[0] == 255)
-                imgout = gippy.SigmaNought(img, products['sign'], -83.0)
+                imgout = gippy.SigmaNought(img, products['sign'][0], -83.0)
                 self.products['sign'] = imgout.Filename()
                 img = None
                 imgout = None
@@ -126,40 +151,20 @@ class SARAnnualTile(Tile):
         if 'fnf' in products.keys():
             datafiles = self.assets['FNF'].extract()
             if 'C' in datafiles:
-                img = gippy.GeoImage(datafiles['C'])
+                # rename both files to product name
+                newfilename = datafiles['C'][:-1]+'fnf'
+                os.rename(datafiles['C'], newfilename)
+                os.rename(datafiles['C']+'.hdr', newfilename+'.hdr')
+                img = gippy.GeoImage(newfilename)
                 img.SetNoData(0)
-                self.products['fnf'] = datafiles['C']
+                self.products['fnf'] = newfilename
                 img = None
 
 
 class SARAnnualData(Data):
     """ Represents a single date and temporal extent along with (existing) product variations """
-    name = 'SARannual'
-
-    _defaultresolution = [0.00044444444, 0.00044444444]
 
     Tile = SARAnnualTile
-    Product = SARAnnualProduct
-
-    _tiles_vector = 'sar_tiles'
-
-    @classmethod
-    def feature2tile(cls, feature):
-        """ Get tile designation from a geospatial feature (i.e. a row) """
-        fldindex_lat = feature.GetFieldIndex("lat")
-        fldindex_lon = feature.GetFieldIndex("lon")
-        lat = int(feature.GetField(fldindex_lat)+0.5)
-        lon = int(feature.GetField(fldindex_lon)-0.5)
-        if lat < 0:
-            lat_h = 'S'
-        else:
-            lat_h = 'N'
-        if lon < 0:
-            lon_h = 'W'
-        else:
-            lon_h = 'E'
-        tile = lat_h + str(abs(lat)).zfill(2) + lon_h + str(abs(lon)).zfill(3)
-        return tile
 
 
 def main():

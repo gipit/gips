@@ -26,14 +26,29 @@ import urllib
 from osgeo import gdal
 from collections import OrderedDict
 
-from gippy.data.core import Asset, Tile, Data
+from gippy.data.core import Repository, Asset, Tile, Data
 from gippy.utils import File2List, List2File, VerboseOut
 
 from pdb import set_trace
 
 
-class ModisAsset(Asset):
+class ModisRepository(Repository):
     _rootpath = '/titan/data/modis'
+    _tiles_vector = 'modis_sinusoidal_grid_world.shp'
+
+    @classmethod
+    def feature2tile(cls, feature):
+        """ convert tile field attributes to tile identifier """
+        fldindex_h = feature.GetFieldIndex("h")
+        fldindex_v = feature.GetFieldIndex("v")
+        h = str(int(feature.GetField(fldindex_h))).zfill(2)
+        v = str(int(feature.GetField(fldindex_v))).zfill(2)
+        tile = "h%sv%s" % (h, v)
+        return tile
+
+
+class ModisAsset(Asset):
+    Repository = ModisRepository
     _sensors = {
         'MOD': {'description': 'Terra'},
         'MYD': {'description': 'Aqua'},
@@ -55,6 +70,8 @@ class ModisAsset(Asset):
         'MYD': datetime.date(2002, 5, 1),
         'MCD': None
     }
+
+    _defaultresolution = [926.625433138333392, -926.625433139166944]
 
     def __init__(self, filename):
         """ Inspect a single file and get some metadata """
@@ -140,7 +157,7 @@ class ModisAsset(Asset):
 class ModisTile(Tile):
     """ A tile of data (all assets and products) """
     Asset = ModisAsset
-    _prodpattern = '*.tif'
+    _pattern = '*.tif'
     _products = OrderedDict([
         ('temp', {
             'description': 'Surface temperature observations',
@@ -157,24 +174,9 @@ class ModisTile(Tile):
 
 class ModisData(Data):
     """ Represent a single day and temporal extent of MODIS data along with product variations """
-
-    name = 'Modis'
-
-    _tiles_vector = 'modis_sinusoidal_grid_world.shp'
-
-    _defaultresolution = [926.625433138333392, -926.625433139166944]
-
     Tile = ModisTile
 
-    @classmethod
-    def feature2tile(cls, feature):
-        """ convert tile field attributes to tile identifier """
-        fldindex_h = feature.GetFieldIndex("h")
-        fldindex_v = feature.GetFieldIndex("v")
-        h = str(int(feature.GetField(fldindex_h))).zfill(2)
-        v = str(int(feature.GetField(fldindex_v))).zfill(2)
-        tile = "h%sv%s" % (h, v)
-        return tile
+    name = 'Modis'
 
 
 def main():

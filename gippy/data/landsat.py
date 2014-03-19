@@ -28,16 +28,31 @@ from collections import OrderedDict
 
 import gippy
 from gippy.atmosphere import atmosphere
-from gippy.data.core import Asset, Product, Tile, Data
+from gippy.data.core import Repository, Asset, Tile, Data
 from gippy.utils import VerboseOut, RemoveFiles
 
 import traceback
 from pdb import set_trace
 
 
+class LandsatRepository(Repository):
+    """ Singleton (all class methods) to be overridden by child data classes """
+    _rootpath = '/titan/data/landsat'
+    _tiles_vector = 'landsat_wrs'
+    #_tilesdir = 'tiles.dev'
+
+    # attribute (column) in tiles vector giving tile id
+    _tile_attribute = 'pr'
+
+    @classmethod
+    def feature2tile(cls, feature):
+        tile = super(LandsatRepository, cls).feature2tile(feature)
+        return tile.zfill(6)
+
+
 class LandsatAsset(Asset):
     """ Landsat asset (original raw tar file) """
-    _rootpath = '/titan/data/landsat'
+    Repository = LandsatRepository
 
     # combine sensormeta with sensor
     _sensors = {
@@ -89,6 +104,8 @@ class LandsatAsset(Asset):
         }
     }
 
+    _defaultresolution = [30.0, 30.0]
+
     def __init__(self, filename):
         """ Inspect a single file and get some metadata """
         super(LandsatAsset, self).__init__(filename)
@@ -100,8 +117,10 @@ class LandsatAsset(Asset):
         self.date = datetime.strptime(year+doy, "%Y%j")
 
 
-class LandsatProduct(Product):
-    """ Single Landsat product """
+class LandsatTile(Tile):
+
+    Asset = LandsatAsset
+
     _prodpattern = '*.tif'
     _products = {
         #'Standard': {
@@ -128,12 +147,6 @@ class LandsatProduct(Product):
         'Tillage': ['ndti', 'crc', 'sti', 'isti']
     }
 
-
-class LandsatTile(Tile):
-
-    Asset = LandsatAsset
-    Product = LandsatProduct
-
     def process(self, products):
         """ Make sure all products have been pre-processed """
         start = datetime.now()
@@ -141,25 +154,22 @@ class LandsatTile(Tile):
         img = self._readraw()
 
         # running atmosphere
-        runatmos = False
+        toa = True
         for p in products:
-            if p[0:3] != 'toa':
-                runatmos = True
-            elif LandsatProduct._products[p].get('atmos', True):
-                runatmos = False
-        if runatmos:
+            toa = toa and (self._products[p].get('toa', False) or 'toa' in products[p])
+        if not toa:
             start = datetime.now()
             atmospheres = [atmosphere(i, self.metadata) for i in range(1, img.NumBands()+1)]
             VerboseOut('Ran atmospheric model in %s' % str(datetime.now()-start), 3)
 
         # Break down by group
-        groups = LandsatProduct.products2groups(products)
+        groups = self.products2groups(products)
 
         # Process standard products
         for p in groups['Standard']:
             start = datetime.now()
             # TODO - update if no atmos desired for others
-            toa = LandsatProduct._products[p].get('toa', False) or 'toa' in products[p]
+            toa = self._products[p].get('toa', False) or 'toa' in products[p]
             if toa:
                 img.ClearAtmosphere()
             else:
@@ -210,7 +220,7 @@ class LandsatTile(Tile):
                 RemoveFiles(files)
             shutil.rmtree(os.path.join(self.path, 'modtran'))
         except:
-            VerboseOut(traceback.format_exc(), 4)
+            #VerboseOut(traceback.format_exc(), 4)
             pass
 
     def filter(self, maxclouds=100):
@@ -228,8 +238,9 @@ class LandsatTile(Tile):
         # test if metadata already read in, if so, return
 
         datafiles = self.assets[''].datafiles()
-        mtlfilename = self.assets[''].extract(([f for f in datafiles if 'MTL.txt' in f]))[0]
-
+        mtlfilename = [f for f in datafiles if 'MTL.txt' in f][0]
+        if not os.path.exists(mtlfilename):
+            mtlfilename = self.assets[''].extract([mtlfilename])[0]
         VerboseOut('reading %s' % mtlfilename, 3)
         # Read MTL file
         try:
@@ -373,26 +384,7 @@ class LandsatTile(Tile):
 
 class LandsatData(Data):
     """ Single date and temporal extent with all assets and products (ref, toaref, ind, ndvi, etc) """
-    name = 'Landsat'
-
-    _defaultresolution = [30.0, 30.0]
-
     Tile = LandsatTile
-    Product = LandsatProduct
-
-    _tiles_vector = 'landsat_wrs'
-    _vectoratt = 'pr'
-
-    @classmethod
-    def feature2tile(cls, feature):
-        tile = super(LandsatData, cls).feature2tile(feature)
-        return tile.zfill(6)
-
-    def project(self, res=[30, 30], datadir='data_landsat'):
-        """ Create reprojected, mosaiced images for this site and date """
-        if res is None:
-            res = [30, 30]
-        super(LandsatData, self).project(res=res, datadir=datadir)
 
 
 def main():

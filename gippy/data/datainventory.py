@@ -65,19 +65,21 @@ class DataInventory(object):
 
     def __init__(self, dataclass, site=None, tiles=None, dates=None, days=None, products=None, fetch=False, **kwargs):
         self.dataclass = dataclass
+        Tile = dataclass.Tile
+        Repository = dataclass.Tile.Asset.Repository
 
         self.site = site
         # default to all tiles
         if tiles is None and self.site is None:
-            tiles = dataclass.find_tiles()
+            tiles = Repository.find_tiles()
 
         # if tiles provided, make coverage all 100%
         if tiles is not None:
             self.tiles = {}
             for t in tiles:
-                self.tiles[t] = (1, 1)
+                self.tiles[t] = (1, 1)2adelorstvw
         elif tiles is None and self.site is not None:
-            self.tiles = dataclass.vector2tiles(gippy.GeoVector(self.site), **kwargs)
+            self.tiles = Repository.vector2tiles(gippy.GeoVector(self.site), **kwargs)
 
         self.temporal_extent(dates, days)
 
@@ -89,15 +91,15 @@ class DataInventory(object):
         #    self.products = dataclass.Tile._products.keys()
 
         if fetch and products is not None:
-            dataclass.fetch(products, self.tiles, (self.start_date, self.end_date), (self.start_day, self.end_day))
-            dataclass.archive(os.path.join(dataclass.Tile.Asset._rootpath, dataclass.Tile.Asset._stagedir))
+            Tile.fetch(products, self.tiles, (self.start_date, self.end_date), (self.start_day, self.end_day))
+            Repository.archive(Repository.spath())
 
         # get all potential matching dates for tiles
         dates = []
         for t in self.tiles:
             #VerboseOut('locating matching dates', 5)
             try:
-                for date in dataclass.find_dates(t):
+                for date in Repository.find_dates(t):
                     day = int(date.strftime('%j'))
                     if (self.start_date <= date <= self.end_date) and (self.start_day <= day <= self.end_day):
                         if date not in dates:
@@ -185,7 +187,7 @@ class DataInventory(object):
                 if products:
                     sys.stdout.write('\n ')
             colors = {}
-            for i, s in enumerate(self.dataclass.sensor_names()):
+            for i, s in enumerate(self.dataclass.Tile.Asset.sensor_names()):
                 colors[s] = self._colororder[i]
             #for dat in self.data[date]:
             col = colors[self.dataclass.Tile.Asset._sensors[dat.sensor]['description']]
@@ -209,7 +211,7 @@ class DataInventory(object):
     def legend(self):
         print '\nSENSORS'
         #sensors = sorted(self.dataclass.Tile.Asset._sensors.values())
-        for i, s in enumerate(self.dataclass.sensor_names()):
+        for i, s in enumerate(self.dataclass.Tile.Asset.sensor_names()):
             print self._colorize(s, self._colororder[i])
             #print self._colorize(self.dataclass.sensors[s], self._colororder[s])
 
