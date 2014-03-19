@@ -571,7 +571,7 @@ class Data(object):
 
         #VerboseOut("Locating matching data for %s" % self.date, 3)
 
-        # Create product dictionaries for use by child class
+        # Create product dictionary of requested products and filename
         self.products = {}
         for p in products:
             self.products[p] = [''] + products[p]
