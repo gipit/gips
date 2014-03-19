@@ -27,6 +27,7 @@ from osgeo import gdal
 from collections import OrderedDict
 
 from gippy.data.core import Repository, Asset, Data
+from gippy.data.inventory import DataInventory
 from gippy.utils import File2List, List2File, VerboseOut
 
 from pdb import set_trace
@@ -174,4 +175,4 @@ class ModisData(Data):
 
 
 def main():
-    ModisData.main()
+    DataInventory.main(ModisData)

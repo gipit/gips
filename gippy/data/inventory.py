@@ -19,6 +19,8 @@
 ################################################################################
 
 import sys
+import os
+import glob
 import argparse
 import gippy
 from gippy.utils import VerboseOut, parse_dates
@@ -31,8 +33,6 @@ from pdb import set_trace
 
 class Tiles(object):
     """ Base class for groups of tiles """
-    # Classes for assets and tiles of this Data
-    #Tile = Tile
 
     def __init__(self, dataclass, site=None, tiles=None, date=None, products=None,
                  suffix='', sensors=None, fetch=False, **kwargs):

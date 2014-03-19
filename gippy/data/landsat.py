@@ -29,7 +29,7 @@ from collections import OrderedDict
 import gippy
 from gippy.atmosphere import atmosphere
 from gippy.data.core import Repository, Asset, Data
-from gippy.data.datainventory import DataInventory
+from gippy.data.inventory import DataInventory
 from gippy.utils import VerboseOut, RemoveFiles
 
 import traceback
@@ -40,7 +40,7 @@ class LandsatRepository(Repository):
     """ Singleton (all class methods) to be overridden by child data classes """
     _rootpath = '/titan/data/landsat'
     _tiles_vector = 'landsat_wrs'
-    #_tilesdir = 'tiles.dev'
+    _tilesdir = 'tiles.dev'
 
     # attribute (column) in tiles vector giving tile id
     _tile_attribute = 'pr'

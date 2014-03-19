@@ -34,7 +34,7 @@ from pdb import set_trace
 
 import gippy
 from gippy.utils import VerboseOut, RemoveFiles, File2List, List2File
-from gippy.data.datainventory import DataInventory
+from gippy.data.inventory import DataInventory
 from gippy.settings import DATABASES
 
 
@@ -281,7 +281,7 @@ class Asset(object):
         return sorted([s['description'] for s in cls._sensors.values()])
 
     @classmethod
-    def archive(cls, path='', recursive=False, keep=False):
+    def archive(cls, path='.', recursive=False, keep=False):
         """ Move assets from directory to archive location """
         start = datetime.now()
 
@@ -298,7 +298,6 @@ class Asset(object):
         else:
             for a in cls._assets.values():
                 fnames.extend(glob.glob(os.path.join(path, a['pattern'])))
-
         numlinks = 0
         numfiles = 0
         for f in fnames:
@@ -545,3 +544,10 @@ class Data(object):
                 prod = cls._products[p]
                 group.add_argument('--%s' % p, help=prod['description'], nargs='*')
         return parser
+
+    @classmethod
+    def test(cls):
+        VerboseOut("%s: running tests" % cls.name)
+        # archive
+        # inventory
+        # process

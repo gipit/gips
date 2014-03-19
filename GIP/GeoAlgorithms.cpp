@@ -118,7 +118,7 @@ namespace gip {
     //! Calculate reflectance assuming read image is radiance
     GeoImage Ref(const GeoImage& image, string filename) {
         if (Options::Verbose() > 1)
-            std::cout << "Reflectance(" << image.Basename() << ") -> " << filename << std::endl;
+            cout << "Reflectance(" << image.Basename() << ") -> " << filename << endl;
         if ((image[0].Units() != "radiance") && (image[0].Units() != "reflectance")) {
             throw std::runtime_error("image not in compatible units for reflectance");
         }
@@ -198,7 +198,7 @@ namespace gip {
     GeoImage CookieCutter(vector<std::string> imgnames, string filename, string vectorname, float xres, float yres) {
         // TODO - pass in vector of GeoRaster's instead
         if (Options::Verbose() > 2) {
-            std::cout << filename << ": CookieCutter" << std::endl;
+            cout << filename << ": CookieCutter" << endl;
         }
 
         // Open input images
@@ -324,14 +324,14 @@ namespace gip {
         // Perform warp for each input file
         vector<GeoImage>::iterator iimg;
         for (iimg=imgs.begin();iimg!=imgs.end();iimg++) {
-            if (Options::Verbose() > 2) std::cout << iimg->Basename() << " warping " << std::flush;
+            if (Options::Verbose() > 2) cout << iimg->Basename() << " warping " << std::flush;
             psWarpOptions->hSrcDS = iimg->GetGDALDataset();
             psWarpOptions->pTransformerArg =
                 GDALCreateGenImgProjTransformer( iimg->GetGDALDataset(), iimg->GetGDALDataset()->GetProjectionRef(),
                                                 imgout.GetGDALDataset(), imgout.GetGDALDataset()->GetProjectionRef(), TRUE, 0.0, 0 );
             psWarpOptions->pfnTransformer = GDALGenImgProjTransform;
             oOperation.Initialize( psWarpOptions );
-            if (Options::Verbose() > 3) std::cout << "Error: " << CPLGetLastErrorMsg() << std::endl;
+            if (Options::Verbose() > 3) cout << "Error: " << CPLGetLastErrorMsg() << endl;
             oOperation.ChunkAndWarpMulti( 0, 0, imgout.XSize(), imgout.YSize() );
 
             GDALDestroyGenImgProjTransformer( psWarpOptions->pTransformerArg );
@@ -410,7 +410,7 @@ namespace gip {
 
         // need to add overlap
         for (unsigned int iChunk=1; iChunk<=ImageIn[0].NumChunks(); iChunk++) {
-            if (Options::Verbose() > 3) std::cout << "Chunk " << iChunk << " of " << ImageIn[0].NumChunks();
+            if (Options::Verbose() > 3) cout << "Chunk " << iChunk << " of " << ImageIn[0].NumChunks() << endl;
             for (isstr=used_colors.begin();isstr!=used_colors.end();isstr++) {
                 if (*isstr == "RED") red = imgin["RED"].Read(iChunk);
                 else if (*isstr == "GREEN") green = imgin["GREEN"].Read(iChunk);
@@ -420,14 +420,14 @@ namespace gip {
                 else if (*isstr == "SWIR2") swir2 = imgin["SWIR2"].Read(iChunk);
             }
             if (Options::Verbose() > 2) {
-                std::cout << "Colors used: ";
-                for (isstr=used_colors.begin();isstr!=used_colors.end();isstr++) std::cout << " " << *isstr;
-                std::cout << std::endl;
+                cout << "Colors used: ";
+                for (isstr=used_colors.begin();isstr!=used_colors.end();isstr++) cout << " " << *isstr;
+                cout << endl;
             }
 
             for (iprod=products.begin(); iprod!=products.end(); iprod++) {
                 prodname = iprod->first;
-                //std::cout << "Products: " << prodname << std::flush;
+                //cout << "Products: " << prodname << std::flush;
                 //string p = iprod->toupper();
                 if (prodname == "NDVI") {
                     cimgout = (nir-red).div(nir+red);
@@ -454,7 +454,7 @@ namespace gip {
                 } else if (prodname == "STI") {
                     cimgout = swir1.div(swir2);
                 }
-                //if (Options::Verbose() > 2) std::cout << "Getting mask" << std::endl;
+                //if (Options::Verbose() > 2) cout << "Getting mask" << endl;
                 // TODO don't read mask again...create here
                 cimgmask = imgin.NoDataMask(iChunk, colors[prodname]);
                 cimg_forXY(cimgout,x,y) if (!cimgmask(x,y)) cimgout(x,y) = nodataout;
@@ -585,7 +585,7 @@ namespace gip {
             imgout[b_pass1].Write(clouds,iChunk);
             imgout[b_ambclouds].Write(ambclouds,iChunk);
             //imgout[0].Write(nonclouds,iChunk);
-            if (Options::Verbose() > 3) std::cout << "Processed chunk " << iChunk << " of " << imgin[0].NumChunks() << std::endl;
+            if (Options::Verbose() > 3) cout << "Processed chunk " << iChunk << " of " << imgin[0].NumChunks() << endl;
         }
         // Cloud statistics
         float cloudcover = cloudsum / scenesize;
@@ -662,7 +662,7 @@ namespace gip {
         for (unsigned int b=0;b<imgin.NumBands();b++) imgin[b].Chunk(padding);
 
         for (unsigned int iChunk=1; iChunk<=imgout[0].NumChunks(); iChunk++) {
-            if (Options::Verbose() > 3) std::cout << "Chunk " << iChunk << " of " << imgout[0].NumChunks() << std::endl;
+            if (Options::Verbose() > 3) cout << "Chunk " << iChunk << " of " << imgout[0].NumChunks() << endl;
             clouds = imgout[b_pass1].Read(iChunk);
             // should this be a |= ?
             if (addclouds) clouds += imgout[b_ambclouds].Read(iChunk);
@@ -825,9 +825,9 @@ namespace gip {
         float lthresh( zhi*stats(3) + stats(2) + 0.2 + tol );
 
         if (Options::Verbose() > 1) {
-            std::cout << "Cloud probability thresholds:" << std::endl;
-            std::cout << "  Over Water = " << wthresh << std::endl;
-            std::cout << "  Over Land = " << lthresh << std::endl;
+            cout << "Cloud probability thresholds:" << endl;
+            cout << "  Over Water = " << wthresh << endl;
+            cout << "  Over Land = " << lthresh << endl;
         }
 
         // 3x3 filter of 1's for majority filter
@@ -974,7 +974,7 @@ namespace gip {
 
     //! Rice detection algorithm
     GeoImage RiceDetect(const GeoImage& image, string filename, vector<int> days, float th0, float th1, int dth0, int dth1) {
-        if (Options::Verbose() > 1) std::cout << "RiceDetect(" << image.Basename() << ") -> " << filename << std::endl;
+        if (Options::Verbose() > 1) cout << "RiceDetect(" << image.Basename() << ") -> " << filename << endl;
 
         GeoImageIO<float> img(image);
         GeoImageIO<unsigned char> imgout(GeoImage(filename, image, GDT_Byte, img.NumBands()));
@@ -989,7 +989,7 @@ namespace gip {
         CImg<int> cimg_th0, cimg_flood;
 
         for (unsigned int iChunk=1; iChunk<=img[0].NumChunks(); iChunk++) {
-            if (Options::Verbose() > 3) std::cout << "Chunk " << iChunk << " of " << img[0].NumChunks() << std::endl;
+            if (Options::Verbose() > 3) cout << "Chunk " << iChunk << " of " << img[0].NumChunks() << endl;
             cimg = img[0].Read(iChunk);
             cimg_nodata = img[0].NoDataMask(iChunk);
             int delta_day(0);
@@ -998,7 +998,7 @@ namespace gip {
             cimg_flood = (cimg.get_threshold(th0)^=1).mul(cimg_nodata);
 
             for (unsigned int b=1;b<image.NumBands();b++) {
-                if (Options::Verbose() > 3) std::cout << "Day " << days[b] << std::endl;
+                if (Options::Verbose() > 3) cout << "Day " << days[b] << endl;
                 delta_day = days[b]-days[b-1];
                 cimg = img[b].Read(iChunk);
                 cimg_nodata = img[b].NoDataMask(iChunk);

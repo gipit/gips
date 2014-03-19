@@ -29,6 +29,7 @@ from pdb import set_trace
 
 import gippy
 from gippy.data.core import Repository, Asset, Data
+from gippy.data.inventory import DataInventory
 from gippy.utils import VerboseOut, File2List, List2File, RemoveFiles
 
 
@@ -286,4 +287,4 @@ class SARData(Data):
 
 
 def main():
-    SARData.main()
+    DataInventory.main(SARData)
