@@ -28,7 +28,7 @@ from collections import OrderedDict
 from pdb import set_trace
 
 import gippy
-from gippy.data.core import Repository, Asset, Tile, Data
+from gippy.data.core import Repository, Asset, Data
 from gippy.utils import VerboseOut, File2List, List2File, RemoveFiles
 
 
@@ -98,9 +98,9 @@ class SARAnnualAsset(Asset):
         return datafiles
 
 
-class SARAnnualTile(Tile):
+class SARAnnualData(Data):
     """ Tile of data """
-
+    name = 'SARAnnual'
     Asset = SARAnnualAsset
 
     _pattern = '*'
@@ -159,12 +159,6 @@ class SARAnnualTile(Tile):
                 img.SetNoData(0)
                 self.products['fnf'] = newfilename
                 img = None
-
-
-class SARAnnualData(Data):
-    """ Represents a single date and temporal extent along with (existing) product variations """
-
-    Tile = SARAnnualTile
 
 
 def main():

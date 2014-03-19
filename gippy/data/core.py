@@ -370,8 +370,9 @@ class Asset(object):
     #    return os.path.basename(self.filename)
 
 
-class Tile(object):
-    """ A tile of data (multiple assets/products) on a single date """
+class Data(object):
+    """ Collection of assets/products for one tile and date """
+    name = 'Data'
     Asset = Asset
 
     _pattern = '*.tif'
@@ -475,6 +476,10 @@ class Tile(object):
     ##########################################################################
     # Class methods
     ##########################################################################
+    @classmethod
+    def inventory(cls, **kwargs):
+        return DataInventory(cls, **kwargs)
+
     # TODO - factory function of Tiles ?
     @classmethod
     def discover(cls, basefilename):
@@ -540,220 +545,3 @@ class Tile(object):
                 prod = cls._products[p]
                 group.add_argument('--%s' % p, help=prod['description'], nargs='*')
         return parser
-
-
-class Data(object):
-    """ Base class for data objects """
-    # Classes for assets and tiles of this Data
-    Tile = Tile
-
-    @classmethod
-    def inventory(cls, **kwargs):
-        return DataInventory(cls, **kwargs)
-
-    def __init__(self, site=None, tiles=None, date=None, products=None,
-                 suffix='', sensors=None, fetch=False, **kwargs):
-        """ Locate data matching vector location (or tiles) and date
-        self.tile_coverage - dictionary of tile id and % coverage with site
-        self.tiles - dictionary of tile id and a Tile instance
-        self.products - dictionary of product name and final product filename
-        """
-
-        self.site = site
-        # Calculate spatial extent
-        if tiles is not None:
-            self.tile_coverage = dict((t, 1) for t in tiles)
-        elif site is not None:
-            self.tile_coverage = self.Repository.vector2tiles(gippy.GeoVector(site), **kwargs)
-        else:
-            self.tile_coverage = dict((t, (1, 1)) for t in self.Repository.find_tiles())
-        self.date = date
-
-        #VerboseOut("Locating matching data for %s" % self.date, 3)
-
-        # Create product dictionary of requested products and filename
-        self.products = {}
-        for p in products:
-            self.products[p] = [''] + products[p]
-        self.suffix = suffix
-
-        # For each tile locate files/products
-        if sensors is None:
-            sensors = self.Tile.Asset._sensors.keys()
-        self.used_sensors = {s: self.Tile.Asset._sensors.get(s, None) for s in sensors}
-
-        # TODO - expand verbose text: tiles, date, etc.
-        #VerboseOut('Finding products for %s tiles ' % (len(self.tile_coverage)), 4)
-        self.tiles = {}
-        for t in self.tile_coverage.keys():
-            #VerboseOut("Tile %s" % t, 4)
-            try:
-                tile = self.Tile(t, self.date)
-                # Custom filter based on dataclass
-                #good = self.filter(t,filename, **kwargs)
-                #if good == False:
-                #    empty_tiles.append(t)
-                self.tiles[t] = tile
-                # check all tiles - should be same sensor - MODIS?
-                self.sensor = tile.sensor
-            except:
-                VerboseOut(traceback.format_exc(), 5)
-                continue
-        if len(self.tiles) == 0:
-            raise Exception('No valid data found')
-
-    def open(self, product='', update=True):
-        """ Open and return final product GeoImage """
-        if product == '':
-            # default to initial product?
-            product = self.products.keys()[0]
-        fname = self.products[product][0]
-        if os.path.exists(fname):
-            return gippy.GeoImage(fname, update)
-        else:
-            raise Exception('%s product does not exist' % product)
-
-    def process(self, overwrite=False):
-        """ Determines what products need to be processed for each tile and calls processtile """
-        if self.suffix != '':
-            self.suffix = '_' + self.suffix if self.suffix[0] != '_' else self.suffix
-        for tileid, tile in self.tiles.items():
-            # Determine what needs to be processed
-            toprocess = {}
-            for p in self.products:
-                fout = os.path.join(tile.path, tile.basename+'_'+p)
-                print fout
-                for i in range(1, len(self.products[p])):
-                    fout = fout + '_' + self.products[p][i]
-                fout = fout + self.suffix
-                # need to figure out extension properly
-                # TODO - this is after inventory, just check the inventory for matching filename?
-                if len(glob.glob(fout+'*')) == 0 or overwrite:
-                    toprocess[p] = self.products[p]
-                    toprocess[p][0] = fout
-                    # TODO - this needs tile name
-            if len(toprocess) != 0:
-                VerboseOut(['Processing products for tile %s' % tileid, toprocess], 3)
-                self.tiles[tileid].process(toprocess)
-
-    def project(self, res=None, datadir=''):
-        """ Create image of final product (reprojected/mosaiced) """
-        if datadir == '':
-            datadir = self.name+'_data'
-        self.process()
-        if not os.path.exists(datadir):
-            os.makedirs(datadir)
-        datadir = os.path.abspath(datadir)
-        if res is None:
-            res = self._defaultresolution
-        if not hasattr(res, "__len__"):
-            res = [res, res]
-        #elif len(res) == 1: res = [res[0],res[0]]
-        if self.site is None:
-            # Link files instead
-            for t in self.tiles:
-                self.tiles[t].link(products=self.products, path=datadir)
-        else:
-            # TODO - better file naming
-            for product in self.products:
-                if self.products[product][0] == '':
-                    start = datetime.now()
-                    sitebase = os.path.splitext(os.path.basename(self.site))[0] + '_'
-                    bname = sitebase + self.date.strftime('%Y%j') + '_%s_%s.tif' % (product, self.sensor)
-                    filename = os.path.join(datadir, bname)
-                    if not os.path.exists(filename):
-                        filenames = [self.tiles[t].products[product] for t in self.tiles]
-                        # cookiecutter should validate pixels in image.  Throw exception if not
-                        imgout = gippy.CookieCutter(filenames, filename, self.site, res[0], res[1])
-                        VerboseOut('Projected and cropped %s files -> %s in %s' % (len(filenames),
-                                   imgout.Basename(), datetime.now() - start))
-                    self.products[product][0] = filename
-
-    @staticmethod
-    def args_inventory():
-        parser = argparse.ArgumentParser(add_help=False, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-        group = parser.add_argument_group('inventory arguments')
-        group.add_argument('-s', '--site', help='Vector file for region of interest', default=None)
-        group.add_argument('-t', '--tiles', nargs='*', help='Tile designations', default=None)
-        group.add_argument('-d', '--dates', help='Range of dates (YYYY-MM-DD,YYYY-MM-DD)')
-        group.add_argument('--days', help='Include data within these days of year (doy1,doy2)', default=None)
-        group.add_argument('--fetch', help='Fetch any missing data (if supported)', default=False, action='store_true')
-        #group.add_argument('-p', '--products', nargs='*', help='Process/filter these products', default=None)
-        group.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2: debug', default=1, type=int)
-        group.add_argument('--%cov', dest='pcov', help='Threshold of %% tile coverage over site', default=0, type=int)
-        group.add_argument('--%tile', dest='ptile', help='Threshold of %% tile used', default=0, type=int)
-        group.add_argument('--suffix', help='Suffix on end of filename (before extension)', default='')
-        return parser
-
-    @classmethod
-    def main(cls):
-        dhf = argparse.ArgumentDefaultsHelpFormatter
-        parser0 = argparse.ArgumentParser(description='%s Data Utility' % cls.name,
-                                          formatter_class=argparse.RawTextHelpFormatter)
-        subparser = parser0.add_subparsers(dest='command')
-
-        # Archive
-        parser = subparser.add_parser('archive', help='Move files from current directory to data archive')
-        parser.add_argument('--keep', help='Keep files after adding to archive', default=False, action='store_true')
-        parser.add_argument('--recursive', help='Iterate through subdirectories', default=False, action='store_true')
-        parser.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2: debug', default=1, type=int)
-
-        parents = [cls.args_inventory(), cls.Tile.arg_parser()]
-
-        # Inventory
-        parser = subparser.add_parser('inventory', help='Get Inventory', parents=parents, formatter_class=dhf)
-        parser.add_argument('--md', help='Show dates using MM-DD', action='store_true', default=False)
-        parser.add_argument('-p', '--products', help='Show products', default=False, action='store_true')
-
-        # Processing
-        parserp = subparser.add_parser('process', help='Process scenes', parents=parents, formatter_class=dhf)
-        group = parserp.add_argument_group('Processing Options')
-        group.add_argument('--overwrite', help='Overwrite exiting output file(s)', default=False, action='store_true')
-
-        # Project
-        parser = subparser.add_parser('project', help='Create project', parents=parents, formatter_class=dhf)
-        group = parser.add_argument_group('Project options')
-        group.add_argument('--res', nargs=2, help='Resolution of output rasters', default=None, type=float)
-        group.add_argument('--datadir', help='Directory to save project files', default=cls.name+'_data')
-        group.add_argument('--format', help='Format for output file', default="GTiff")
-
-        args = parser0.parse_args()
-
-        gippy.Options.SetVerbose(args.verbose)
-        # TODO - replace with option
-        gippy.Options.SetChunkSize(128.0)
-        if 'format' in args:
-            gippy.Options.SetDefaultFormat(args.format)
-
-        VerboseOut('GIPPY %s command line utility' % cls.name)
-
-        if args.command == 'archive':
-            # TODO - take in path argument
-            cls.archive(recursive=args.recursive, keep=args.keep)
-            exit(1)
-
-        #products = [p for p in cls.Tile._products if eval('args.%s' % p) not in [None, False]]
-        products = {}
-        for p in cls.Tile._products:
-            if p != '':
-                val = eval('args.%s' % p)
-                if val not in [None, False]:
-                    products[p] = val
-
-        try:
-            inv = cls.inventory(
-                site=args.site, dates=args.dates, days=args.days, tiles=args.tiles,
-                products=products, pcov=args.pcov, ptile=args.ptile, fetch=args.fetch, suffix=args.suffix)
-            if args.command == 'inventory':
-                inv.printcalendar(args.md, products=args.products)
-            elif args.command == 'link':
-                inv.links(args.hard)
-            elif args.command == 'process':
-                inv.process(overwrite=args.overwrite)
-            elif args.command == 'project':
-                inv.project(args.res, datadir=args.datadir)
-            else:
-                VerboseOut('Command %s not recognized' % cmd)
-        except Exception, e:
-            VerboseOut('Error in %s: %s' % (args.command, e))
-            VerboseOut(traceback.format_exc(), 4)

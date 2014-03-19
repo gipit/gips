@@ -26,7 +26,7 @@ import urllib
 from osgeo import gdal
 from collections import OrderedDict
 
-from gippy.data.core import Repository, Asset, Tile, Data
+from gippy.data.core import Repository, Asset, Data
 from gippy.utils import File2List, List2File, VerboseOut
 
 from pdb import set_trace
@@ -154,8 +154,9 @@ class ModisAsset(Asset):
             return 0
 
 
-class ModisTile(Tile):
+class ModisData(Data):
     """ A tile of data (all assets and products) """
+    name = 'Modis'
     Asset = ModisAsset
     _pattern = '*.tif'
     _products = OrderedDict([
@@ -170,13 +171,6 @@ class ModisTile(Tile):
             'assets': ['MOD11A1'],
         }),
     ])
-
-
-class ModisData(Data):
-    """ Represent a single day and temporal extent of MODIS data along with product variations """
-    Tile = ModisTile
-
-    name = 'Modis'
 
 
 def main():

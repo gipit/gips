@@ -28,7 +28,7 @@ from collections import OrderedDict
 from pdb import set_trace
 
 import gippy
-from gippy.data.core import Repository, Asset, Tile, Data
+from gippy.data.core import Repository, Asset, Data
 from gippy.utils import VerboseOut, File2List, List2File, RemoveFiles
 
 
@@ -225,9 +225,9 @@ class SARAsset(Asset):
         return datafiles
 
 
-class SARTile(Tile):
+class SARData(Data):
     """ Tile of data """
-
+    name = 'SAR'
     Asset = SARAsset
 
     _pattern = '*'
@@ -283,13 +283,6 @@ class SARTile(Tile):
         for key, f in datafiles.items():
             if key not in self.products and key != 'hdr':
                 RemoveFiles([f], ['.hdr', '.aux.xml'])
-
-
-class SARData(Data):
-    """ Represents a single date and temporal extent along with (existing) product variations """
-    name = 'SAR'
-
-    Tile = SARTile
 
 
 def main():

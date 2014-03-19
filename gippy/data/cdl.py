@@ -22,7 +22,7 @@ import os
 import glob
 from datetime import datetime
 
-from gippy.data.core import Repository, Asset, Tile, Data
+from gippy.data.core import Repository, Asset, Data
 from agspy.utils.table import Table
 
 from pdb import set_trace
@@ -83,19 +83,13 @@ class CDLAsset(Asset):
         raise Exception('Archive not supported')
 
 
-class CDLTile(Tile):
+class CDLData(Data):
     """ A tile (CONUS State) of CDL """
+    name = 'CDL'
     Asset = CDLAsset
     _products = {
         '': {'description': 'Crop Data Layer'}
     }
-
-
-class CDLData(Data):
-    """ A CDL (Crop Data Layer) object """
-    name = 'CDL'
-
-    Tile = CDLTile
 
     _legend_file = os.path.join(CDLRepository._rootpath, 'CDL_Legend.csv')
     _legend = map(lambda x: x.lower(), Table(csvfile=_legend_file)['ClassName'])
@@ -115,4 +109,5 @@ class CDLData(Data):
 
 
 def main():
-    CDLData.main()
+    #CDLData.main()
+    DataInventory.main(LandsatData)

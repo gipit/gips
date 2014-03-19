@@ -28,7 +28,8 @@ from collections import OrderedDict
 
 import gippy
 from gippy.atmosphere import atmosphere
-from gippy.data.core import Repository, Asset, Tile, Data
+from gippy.data.core import Repository, Asset, Data
+from gippy.data.datainventory import DataInventory
 from gippy.utils import VerboseOut, RemoveFiles
 
 import traceback
@@ -117,7 +118,8 @@ class LandsatAsset(Asset):
         self.date = datetime.strptime(year+doy, "%Y%j")
 
 
-class LandsatTile(Tile):
+class LandsatData(Data):
+    name = 'Landsat'
 
     Asset = LandsatAsset
 
@@ -382,10 +384,5 @@ class LandsatTile(Tile):
         return image
 
 
-class LandsatData(Data):
-    """ Single date and temporal extent with all assets and products (ref, toaref, ind, ndvi, etc) """
-    Tile = LandsatTile
-
-
 def main():
-    LandsatData.main()
+    DataInventory.main(LandsatData)
