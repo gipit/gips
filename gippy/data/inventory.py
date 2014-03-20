@@ -56,7 +56,10 @@ class Tiles(object):
 
         # Create product dictionary of requested products and filename
         self.products = {}
-        self.requested_products = products
+        if isinstance(products, list):
+            self.requested_products = dict([p, []] for p in products)
+        else:
+            self.requested_products = products
 
         #for p in products:
         #    key = p
@@ -187,7 +190,7 @@ class DataInventory(object):
     def __init__(self, dataclass, site=None, tiles=None, dates=None, days=None, products=None, fetch=False, **kwargs):
         self.dataclass = dataclass
         Repository = dataclass.Asset.Repository
-
+        set_trace()
         self.site = site
         # default to all tiles
         if tiles is None and self.site is None:
@@ -415,7 +418,7 @@ class DataInventory(object):
         try:
             inv = cls.inventory(
                 site=args.site, dates=args.dates, days=args.days, tiles=args.tiles,
-                products=products, pcov=args.pcov, ptile=args.ptile, fetch=args.fetch, suffix=args.suffix)
+                products=['rad'], pcov=args.pcov, ptile=args.ptile, fetch=args.fetch, suffix=args.suffix)
             if args.command == 'inventory':
                 inv.printcalendar(args.md, products=args.products)
             elif args.command == 'link':
