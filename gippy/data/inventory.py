@@ -60,6 +60,8 @@ class Tiles(object):
             self.requested_products = dict([p, []] for p in products)
         else:
             self.requested_products = products
+        if len(self.requested_products) == 0 and len(dataclass._products) == 1:
+            self.requested_products = {dataclass._products.keys()[0]: []}
 
         #for p in products:
         #    key = p
@@ -133,7 +135,8 @@ class Tiles(object):
             for product in self.requested_products:
                 start = datetime.now()
                 sitebase = os.path.splitext(os.path.basename(self.site))[0] + '_'
-                bname = sitebase + self.date.strftime('%Y%j') + '_%s_%s.tif' % (product, self.sensor)
+                sensor = '_' + self.sensor if self.sensor != '' else ''
+                bname = sitebase + self.date.strftime('%Y%j') + '_%s%s.tif' % (product, sensor)
                 filename = os.path.join(datadir, bname)
                 if not os.path.exists(filename):
                     filenames = [self.tiles[t].products[product] for t in self.tiles]
@@ -190,7 +193,7 @@ class DataInventory(object):
     def __init__(self, dataclass, site=None, tiles=None, dates=None, days=None, products=None, fetch=False, **kwargs):
         self.dataclass = dataclass
         Repository = dataclass.Asset.Repository
-        set_trace()
+
         self.site = site
         # default to all tiles
         if tiles is None and self.site is None:
@@ -372,6 +375,8 @@ class DataInventory(object):
         group.add_argument('--%cov', dest='pcov', help='Threshold of %% tile coverage over site', default=0, type=int)
         group.add_argument('--%tile', dest='ptile', help='Threshold of %% tile used', default=0, type=int)
         group.add_argument('--suffix', help='Suffix on end of filename (before extension)', default='')
+        for arg, kwargs in cls.extra_arguments().items():
+            group.add_argument(arg, **kwargs)
 
         parents = [invparser, cls.arg_parser()]
 
@@ -418,7 +423,7 @@ class DataInventory(object):
         try:
             inv = cls.inventory(
                 site=args.site, dates=args.dates, days=args.days, tiles=args.tiles,
-                products=['rad'], pcov=args.pcov, ptile=args.ptile, fetch=args.fetch, suffix=args.suffix)
+                products=products, pcov=args.pcov, ptile=args.ptile, fetch=args.fetch, suffix=args.suffix)
             if args.command == 'inventory':
                 inv.printcalendar(args.md, products=args.products)
             elif args.command == 'link':

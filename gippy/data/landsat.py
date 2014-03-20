@@ -127,9 +127,9 @@ class LandsatData(Data):
     _products = {
         #'Standard': {
         # 'rgb': 'RGB image for viewing (quick processing)',
-        'rad':  {'description': 'Surface-leaving radiance'},
-        'ref':  {'description': 'Surface reflectance'},
-        'acca': {'description': 'Automated Cloud Cover Assesment', 'toa': True},
+        'rad':  {'description': 'Surface-leaving radiance', 'args': '?'},
+        'ref':  {'description': 'Surface reflectance', 'args': '?'},
+        'acca': {'description': 'Automated Cloud Cover Assesment', 'args': '*', 'toa': True},
         #'Indices': {
         'bi':   {'description': 'Brightness Index'},
         'ndvi': {'description': 'Normalized Difference Vegetation Index'},
@@ -148,6 +148,7 @@ class LandsatData(Data):
         'Index': ['bi', 'ndvi', 'evi', 'lswi', 'ndsi', 'satvi'],
         'Tillage': ['ndti', 'crc', 'sti', 'isti']
     }
+    _defaultproduct = 'ref'
 
     def process(self, products):
         """ Make sure all products have been processed """
@@ -384,6 +385,13 @@ class LandsatData(Data):
 
         VerboseOut('%s: read in %s' % (image.Basename(), datetime.now() - start), 3)
         return image
+
+    @classmethod
+    def extra_arguments(cls):
+        return {'--noatmos': {
+                'help': 'No atmospheric correction for any products',
+                'default': False, 'action': 'store_true'
+                }}
 
 
 def main():

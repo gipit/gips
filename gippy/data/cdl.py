@@ -52,7 +52,7 @@ class CDLRepository(Repository):
 class CDLAsset(Asset):
     Repository = CDLRepository
     _sensors = {
-        'cdl': {'description': 'Crop Data Layer'}
+        '': {'description': 'Crop Data Layer'}
     }
     _assets = {
         '': {
@@ -64,7 +64,6 @@ class CDLAsset(Asset):
         """ Inspect a CDL file """
         super(CDLAsset, self).__init__(filename)
         # TODO - get tile (state) so we can archive
-        self.sensor = 'cdl'
         self.basename = self.basename[0:9]
         self.date = datetime.strptime(self.basename[4:8], self.Repository._datedir)
         self.products['cdl'] = filename
@@ -89,14 +88,11 @@ class CDLData(Data):
     name = 'CDL'
     Asset = CDLAsset
     _products = {
-        '': {'description': 'Crop Data Layer'}
+        'cdl': {'description': 'Crop Data Layer'}
     }
 
     _legend_file = os.path.join(CDLRepository._rootpath, 'CDL_Legend.csv')
     _legend = map(lambda x: x.lower(), Table(csvfile=_legend_file)['ClassName'])
-
-    def process(self, **kwargs):
-        pass
 
     @classmethod
     def get_code(cls, cropname):

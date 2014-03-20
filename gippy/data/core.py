@@ -541,9 +541,18 @@ class Data(object):
                 products = cls._groups[gname]
             group = parser.add_argument_group('%s product arguments' % gname)
             for p in products:
-                prod = cls._products[p]
-                group.add_argument('--%s' % p, help=prod['description'], nargs='*')
+                if p != '':
+                    product = cls._products[p]
+                    nargs = product.get('args', None)
+                    if nargs:
+                        group.add_argument('--%s' % p, help=product['description'], nargs=nargs)
+                    else:
+                        group.add_argument('--%s' % p, help=product['description'], action='store_true')
         return parser
+
+    @classmethod
+    def extra_arguments(cls):
+        return {}
 
     @classmethod
     def test(cls):
