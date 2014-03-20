@@ -148,7 +148,7 @@ class Tiles(object):
 
     def open(self, product='', update=True):
         """ Open and return final product GeoImage """
-        fname = self.products[product][0]
+        fname = self.products[product]
         if os.path.exists(fname):
             return gippy.GeoImage(fname, update)
         else:
