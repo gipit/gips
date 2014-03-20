@@ -103,6 +103,7 @@ namespace gip {
 	    if (datatype == GDT_Unknown) datatype = this->DataType();
 		GeoImage imgout(filename, *this, datatype);
         for (unsigned int i=0; i<imgout.NumBands(); i++) {
+        	imgout[i].CopyMeta((*this)[i]);
             imgout[i].Process((*this)[i]);
         }
 		Colors colors = this->GetColors();

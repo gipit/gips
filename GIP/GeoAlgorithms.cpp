@@ -216,7 +216,6 @@ namespace gip {
         // Need to convert extent to resolution units
         int xsize = (int)(0.5 + (extent.MaxX - extent.MinX) / xres);
         int ysize = (int)(0.5 + (extent.MaxY - extent.MinY) / yres);
-        cout << xsize << ", " << extent.MaxX << ", " << extent.MinX << ", " << xres << endl;
         GeoImage imgout(filename, xsize, ysize, bsz, dtype);
         imgout.CopyMeta(imgs[0]);
         imgout.CopyColorTable(imgs[0]);

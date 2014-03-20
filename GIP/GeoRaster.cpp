@@ -42,7 +42,8 @@ namespace gip {
 
     //! Process passed raster band into this raster band
     GeoRaster& GeoRaster::Process(const GeoRaster& img) {
-        switch (DataType()) {
+        return GeoRasterIO<double>(*this).Process(img);
+        /*switch (DataType()) {
             case GDT_Byte: return GeoRasterIO<unsigned char>(*this).Process(img);
             case GDT_UInt16: return GeoRasterIO<unsigned short>(*this).Process(img);
             case GDT_Int16: return GeoRasterIO<short>(*this).Process(img);
@@ -52,7 +53,7 @@ namespace gip {
             case GDT_Float64: return GeoRasterIO<double>(*this).Process(img);
             default: return GeoRasterIO<unsigned char>(*this).Process(img);
             // TODO - remove default. This should throw exception
-        }
+        }*/
     }
 
 	string GeoRaster::Info(bool showstats) const {
