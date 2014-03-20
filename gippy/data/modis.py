@@ -36,6 +36,8 @@ from pdb import set_trace
 class ModisRepository(Repository):
     _rootpath = '/titan/data/modis'
     _tiles_vector = 'modis_sinusoidal_grid_world.shp'
+    _tilesdir = 'tiles.dev'
+    _sdir = 'work'
 
     @classmethod
     def feature2tile(cls, feature):
@@ -141,7 +143,7 @@ class ModisAsset(Asset):
                 url = ''.join([mainurl, '/', name])
                 print 'the url is', url
                 try:
-                    urllib.urlretrieve(url, os.path.join(cls._stagedir, name))
+                    urllib.urlretrieve(url, os.path.join(cls.Repository.spath(), name))
                     print "retrieved %s" % name
                     success = True
                 except Exception, e:

@@ -227,7 +227,7 @@ class SARAsset(Asset):
 
 
 class SARData(Data):
-    """ Tile of data """
+    """ Assets and products for a tile and date """
     name = 'SAR'
     Asset = SARAsset
 
@@ -260,27 +260,30 @@ class SARData(Data):
         # extract all data from archive
         datafiles = self.assets[''].extract()
         meta = self.meta()
-        if 'sign' in products.keys():
-            bands = [b for b in ["sl_HH", "sl_HV"] if b in datafiles]
-            img = gippy.GeoImage(datafiles[bands[0]])
-            del bands[0]
-            for b in bands:
-                img.AddBand(gippy.GeoImage(datafiles[b])[0])
-            img.SetNoData(0)
-            mask = gippy.GeoImage(datafiles['mask'], False)
-            img.AddMask(mask[0] == 255)
-            # apply date mask
-            dateimg = gippy.GeoImage(datafiles['date'], False)
-            dateday = (self.date - SARAsset._launchdate[self.sensor[0]]).days
-            img.AddMask(dateimg[0] == dateday)
-            set_trace()
-            imgout = gippy.SigmaNought(img, products['sign'][0], meta['CF'])
-            self.products['sign'] = imgout.Filename()
-            img = None
-            imgout = None
-        if 'linci' in products.keys():
-            self.products['linci'] = datafiles['linci']
-        # Remove unused stuff
+        for key, val in products.items():
+            fname = os.path.join(self.path, self.basename + '_' + key)
+            if val[0] == 'sign':
+                bands = [b for b in ["sl_HH", "sl_HV"] if b in datafiles]
+                img = gippy.GeoImage(datafiles[bands[0]])
+                del bands[0]
+                for b in bands:
+                    img.AddBand(gippy.GeoImage(datafiles[b])[0])
+                img.SetNoData(0)
+                mask = gippy.GeoImage(datafiles['mask'], False)
+                img.AddMask(mask[0] == 255)
+                # apply date mask
+                dateimg = gippy.GeoImage(datafiles['date'], False)
+                dateday = (self.date - SARAsset._launchdate[self.sensor[0]]).days
+                img.AddMask(dateimg[0] == dateday)
+                imgout = gippy.SigmaNought(img, fname, meta['CF'])
+                self.products['sign'] = imgout.Filename()
+                img = None
+                imgout = None
+            if val[0] == 'linci':
+                self.products['linci'] = datafiles['linci']
+
+        # Remove unused files
+        # TODO - checking key rather than val[0] (the full product suffix)
         for key, f in datafiles.items():
             if key not in self.products and key != 'hdr':
                 RemoveFiles([f], ['.hdr', '.aux.xml'])

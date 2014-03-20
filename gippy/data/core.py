@@ -525,8 +525,9 @@ class Data(object):
         groups = {}
         for group in cls._groups:
             groups[group] = {}
-            for p in cls._groups[group]:
-                if p in products:
+            for p in products:
+                p0 = p.split('_')[0]
+                if p0 in cls._groups[group]:
                     groups[group][p] = products[p]
         return groups
 

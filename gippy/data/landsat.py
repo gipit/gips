@@ -40,7 +40,7 @@ class LandsatRepository(Repository):
     """ Singleton (all class methods) to be overridden by child data classes """
     _rootpath = '/titan/data/landsat'
     _tiles_vector = 'landsat_wrs'
-    _tilesdir = 'tiles.dev'
+    #_tilesdir = 'tiles.dev'
 
     # attribute (column) in tiles vector giving tile id
     _tile_attribute = 'pr'
@@ -150,15 +150,15 @@ class LandsatData(Data):
     }
 
     def process(self, products):
-        """ Make sure all products have been pre-processed """
+        """ Make sure all products have been processed """
         start = datetime.now()
         bname = os.path.basename(self.assets[''].filename)
         img = self._readraw()
 
         # running atmosphere
         toa = True
-        for p in products:
-            toa = toa and (self._products[p].get('toa', False) or 'toa' in products[p])
+        for val in products.values():
+            toa = toa and (self._products[val[0]].get('toa', False) or 'toa' in val)
         if not toa:
             start = datetime.now()
             atmospheres = [atmosphere(i, self.metadata) for i in range(1, img.NumBands()+1)]
@@ -168,10 +168,10 @@ class LandsatData(Data):
         groups = self.products2groups(products)
 
         # Process standard products
-        for p in groups['Standard']:
+        for key, val in groups['Standard'].items():
             start = datetime.now()
             # TODO - update if no atmos desired for others
-            toa = self._products[p].get('toa', False) or 'toa' in products[p]
+            toa = self._products[val[0]].get('toa', False) or 'toa' in val
             if toa:
                 img.ClearAtmosphere()
             else:
@@ -181,20 +181,20 @@ class LandsatData(Data):
                     img[i] = b
                     VerboseOut('Band %i: atmospherically correcting' % (i+1), 3)
             try:
-                fname = products[p][0]
-                if p == 'acca':
+                fname = os.path.join(self.path, self.basename + '_' + key)
+                if val[0] == 'acca':
                     s_azim = self.metadata['geometry']['solarazimuth']
                     s_elev = 90 - self.metadata['geometry']['solarzenith']
-                    erosion = int(products[p][1]) if len(products[p]) > 1 else 5
-                    dilation = int(products[p][2]) if len(products[p]) > 2 else 10
-                    cloudheight = int(products[p][3]) if len(products[p]) > 3 else 4000
+                    erosion = int(val[1]) if len(val) > 1 else 5
+                    dilation = int(val[2]) if len(val) > 2 else 10
+                    cloudheight = int(val[3]) if len(val) > 3 else 4000
                     imgout = gippy.ACCA(img, fname, s_azim, s_elev, erosion, dilation, cloudheight)
                 else:
                     func = {'rad': gippy.Rad, 'ref': gippy.Ref}
-                    imgout = func[p](img, fname)
+                    imgout = func[val[0]](img, fname)
                 fname = imgout.Filename()
                 imgout = None
-                self.products[p] = fname
+                self.products[key] = fname
                 VerboseOut(' -> %s: processed in %s' % (os.path.basename(fname), datetime.now()-start))
             except Exception, e:
                 VerboseOut('Error creating product %s for %s: %s' % (p, bname, e), 3)
@@ -210,8 +210,10 @@ class LandsatData(Data):
                 b.SetAtmosphere(atmospheres[i])
                 img[i] = b
                 VerboseOut('Band %i: atmospherically correcting' % (i+1), 3)
-            prodarr = dict(zip([p.upper() for p in indices.keys()], [p[0] for p in indices.values()]))
+            fnames = [os.path.join(self.path, self.basename + '_' + key) for key in indices]
+            prodarr = dict(zip([p for p in indices.keys()], fnames))
             prodout = gippy.Indices(img, prodarr)
+            self.products.update(prodout)
             VerboseOut(' -> %s: processed %s in %s' % (self.basename, indices.keys(), datetime.now()-start))
 
         img = None

@@ -23,6 +23,7 @@ import os
 import glob
 import argparse
 import gippy
+from copy import deepcopy
 from gippy.utils import VerboseOut, parse_dates
 
 from datetime import datetime
@@ -32,7 +33,7 @@ from pdb import set_trace
 
 
 class Tiles(object):
-    """ Base class for groups of tiles """
+    """ Collection of tiles for a single date """
 
     def __init__(self, dataclass, site=None, tiles=None, date=None, products=None,
                  suffix='', sensors=None, fetch=False, **kwargs):
@@ -41,6 +42,7 @@ class Tiles(object):
         self.tiles - dictionary of tile id and a Tile instance
         self.products - dictionary of product name and final product filename
         """
+        self.dataclass = dataclass
 
         self.site = site
         # Calculate spatial extent
@@ -52,13 +54,17 @@ class Tiles(object):
             self.tile_coverage = dict((t, (1, 1)) for t in self.Repository.find_tiles())
         self.date = date
 
-        #VerboseOut("Locating matching data for %s" % self.date, 3)
-
         # Create product dictionary of requested products and filename
         self.products = {}
-        for p in products:
-            self.products[p] = [''] + products[p]
-        self.suffix = suffix
+        self.requested_products = products
+
+        #for p in products:
+        #    key = p
+        #    for arg in products[p]:
+        #        key = key + '_' + arg
+        #    self.products[key] = ''
+
+        self.suffix = '' if suffix == '' else '_' + suffix if suffix[0] != '_' else suffix
 
         # For each tile locate files/products
         if sensors is None:
@@ -85,50 +91,33 @@ class Tiles(object):
         if len(self.tiles) == 0:
             raise Exception('No valid data found')
 
-    def open(self, product='', update=True):
-        """ Open and return final product GeoImage """
-        if product == '':
-            # default to initial product?
-            product = self.products.keys()[0]
-        fname = self.products[product][0]
-        if os.path.exists(fname):
-            return gippy.GeoImage(fname, update)
-        else:
-            raise Exception('%s product does not exist' % product)
-
     def process(self, overwrite=False):
-        """ Determines what products need to be processed for each tile and calls processtile """
-        if self.suffix != '':
-            self.suffix = '_' + self.suffix if self.suffix[0] != '_' else self.suffix
+        """ Determines what products need to be processed for each tile and calls Data.process """
         for tileid, tile in self.tiles.items():
             # Determine what needs to be processed
             toprocess = {}
-            for p in self.products:
-                fout = os.path.join(tile.path, tile.basename+'_'+p)
-                print fout
-                for i in range(1, len(self.products[p])):
-                    fout = fout + '_' + self.products[p][i]
-                fout = fout + self.suffix
-                # need to figure out extension properly
-                # TODO - this is after inventory, just check the inventory for matching filename?
-                if len(glob.glob(fout+'*')) == 0 or overwrite:
-                    toprocess[p] = self.products[p]
-                    toprocess[p][0] = fout
-                    # TODO - this needs tile name
+            for p, args in self.requested_products.items():
+                pname = p
+                for arg in args:
+                    pname = pname + '_' + arg
+                pname = pname + self.suffix
+                if pname not in tile.products or overwrite:
+                    toprocess[pname] = [p]
+                    toprocess[pname].extend(args)
             if len(toprocess) != 0:
-                VerboseOut(['Processing products for tile %s' % tileid, toprocess], 3)
+                VerboseOut(['Processing products for tile %s' % tileid, toprocess.keys()], 3)
                 self.tiles[tileid].process(toprocess)
 
     def project(self, res=None, datadir=''):
         """ Create image of final product (reprojected/mosaiced) """
         if datadir == '':
-            datadir = self.name+'_data'
+            datadir = self.dataclass.name+'_data'
         self.process()
         if not os.path.exists(datadir):
             os.makedirs(datadir)
         datadir = os.path.abspath(datadir)
         if res is None:
-            res = self._defaultresolution
+            res = self.dataclass.Asset._defaultresolution
         if not hasattr(res, "__len__"):
             res = [res, res]
         #elif len(res) == 1: res = [res[0],res[0]]
@@ -138,19 +127,26 @@ class Tiles(object):
                 self.tiles[t].link(products=self.products, path=datadir)
         else:
             # TODO - better file naming
-            for product in self.products:
-                if self.products[product][0] == '':
-                    start = datetime.now()
-                    sitebase = os.path.splitext(os.path.basename(self.site))[0] + '_'
-                    bname = sitebase + self.date.strftime('%Y%j') + '_%s_%s.tif' % (product, self.sensor)
-                    filename = os.path.join(datadir, bname)
-                    if not os.path.exists(filename):
-                        filenames = [self.tiles[t].products[product] for t in self.tiles]
-                        # cookiecutter should validate pixels in image.  Throw exception if not
-                        imgout = gippy.CookieCutter(filenames, filename, self.site, res[0], res[1])
-                        VerboseOut('Projected and cropped %s files -> %s in %s' % (len(filenames),
-                                   imgout.Basename(), datetime.now() - start))
-                    self.products[product][0] = filename
+            for product in self.requested_products:
+                start = datetime.now()
+                sitebase = os.path.splitext(os.path.basename(self.site))[0] + '_'
+                bname = sitebase + self.date.strftime('%Y%j') + '_%s_%s.tif' % (product, self.sensor)
+                filename = os.path.join(datadir, bname)
+                if not os.path.exists(filename):
+                    filenames = [self.tiles[t].products[product] for t in self.tiles]
+                    # cookiecutter should validate pixels in image.  Throw exception if not
+                    imgout = gippy.CookieCutter(filenames, filename, self.site, res[0], res[1])
+                    VerboseOut('Projected and cropped %s files -> %s in %s' % (len(filenames),
+                               imgout.Basename(), datetime.now() - start))
+                self.products[product] = filename
+
+    def open(self, product='', update=True):
+        """ Open and return final product GeoImage """
+        fname = self.products[product][0]
+        if os.path.exists(fname):
+            return gippy.GeoImage(fname, update)
+        else:
+            raise Exception('%s product does not exist' % product)
 
 
 class DataInventory(object):
@@ -216,7 +212,7 @@ class DataInventory(object):
 
         if fetch and products is not None:
             dataclass.fetch(products, self.tiles, (self.start_date, self.end_date), (self.start_day, self.end_day))
-            Repository.archive(Repository.spath())
+            dataclass.Asset.archive(Repository.spath())
 
         # get all potential matching dates for tiles
         dates = []
@@ -234,7 +230,8 @@ class DataInventory(object):
         self.numfiles = 0
         for date in sorted(dates):
             try:
-                dat = Tiles(dataclass=dataclass, site=self.site, tiles=self.tiles.keys(), date=date, products=self.products, **kwargs)
+                dat = Tiles(dataclass=dataclass, site=self.site, tiles=self.tiles.keys(),
+                            date=date, products=self.products, **kwargs)
                 self.data[date] = dat
                 self.numfiles = self.numfiles + len(dat.tiles)
             except Exception, e:

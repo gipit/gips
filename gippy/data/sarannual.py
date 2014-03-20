@@ -128,38 +128,39 @@ class SARAnnualData(Data):
         if len(products) == 0:
             raise Exception('Tile %s: No products specified' % tile)
 
-        if 'sign' in products.keys():
-            datafiles = self.assets['MOS'].extract()
-            bands = [b for b in ["sl_HH", "sl_HV"] if b in datafiles]
-            print datafiles
-            print bands
-            if len(bands) > 0:
-                img = gippy.GeoImage(datafiles[bands[0]])
-                del bands[0]
-                for b in bands:
-                    img.AddBand(gippy.GeoImage(datafiles[b])[0])
-                img.SetNoData(0)
-                mask = gippy.GeoImage(datafiles['mask'], False)
-                img.AddMask(mask[0] == 255)
-                imgout = gippy.SigmaNought(img, products['sign'][0], -83.0)
-                self.products['sign'] = imgout.Filename()
-                img = None
-                imgout = None
-                for key, f in datafiles.items():
-                    if key != 'hdr':
-                        RemoveFiles([f], ['.hdr', '.aux.xml'])
-
-        if 'fnf' in products.keys():
-            datafiles = self.assets['FNF'].extract()
-            if 'C' in datafiles:
-                # rename both files to product name
-                newfilename = datafiles['C'][:-1]+'fnf'
-                os.rename(datafiles['C'], newfilename)
-                os.rename(datafiles['C']+'.hdr', newfilename+'.hdr')
-                img = gippy.GeoImage(newfilename)
-                img.SetNoData(0)
-                self.products['fnf'] = newfilename
-                img = None
+        for key, val in products.items():
+            fname = os.path.join(self.path, self.basename + '_' + key)
+            if val[0] == 'sign':
+                datafiles = self.assets['MOS'].extract()
+                bands = [b for b in ["sl_HH", "sl_HV"] if b in datafiles]
+                print datafiles
+                print bands
+                if len(bands) > 0:
+                    img = gippy.GeoImage(datafiles[bands[0]])
+                    del bands[0]
+                    for b in bands:
+                        img.AddBand(gippy.GeoImage(datafiles[b])[0])
+                    img.SetNoData(0)
+                    mask = gippy.GeoImage(datafiles['mask'], False)
+                    img.AddMask(mask[0] == 255)
+                    imgout = gippy.SigmaNought(img, fname, -83.0)
+                    fname = imgout.Filename()
+                    img = None
+                    imgout = None
+                    for key, f in datafiles.items():
+                        if key != 'hdr':
+                            RemoveFiles([f], ['.hdr', '.aux.xml'])
+            if val[0] == 'fnf':
+                datafiles = self.assets['FNF'].extract()
+                if 'C' in datafiles:
+                    # rename both files to product name
+                    newfilename = datafiles['C'][:-1]+'fnf'
+                    os.rename(datafiles['C'], fname)
+                    os.rename(datafiles['C']+'.hdr', fname+'.hdr')
+                    img = gippy.GeoImage(fname)
+                    img.SetNoData(0)
+                    img = None
+            self.products[key] = fname
 
 
 def main():

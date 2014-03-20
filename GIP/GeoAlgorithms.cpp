@@ -216,6 +216,7 @@ namespace gip {
         // Need to convert extent to resolution units
         int xsize = (int)(0.5 + (extent.MaxX - extent.MinX) / xres);
         int ysize = (int)(0.5 + (extent.MaxY - extent.MinY) / yres);
+        cout << xsize << ", " << extent.MaxX << ", " << extent.MinX << ", " << xres << endl;
         GeoImage imgout(filename, xsize, ysize, bsz, dtype);
         imgout.CopyMeta(imgs[0]);
         imgout.CopyColorTable(imgs[0]);
@@ -331,7 +332,7 @@ namespace gip {
                                                 imgout.GetGDALDataset(), imgout.GetGDALDataset()->GetProjectionRef(), TRUE, 0.0, 0 );
             psWarpOptions->pfnTransformer = GDALGenImgProjTransform;
             oOperation.Initialize( psWarpOptions );
-            if (Options::Verbose() > 3) cout << "Error: " << CPLGetLastErrorMsg() << endl;
+            //if (Options::Verbose() > 3) cout << "Error: " << CPLGetLastErrorMsg() << endl;
             oOperation.ChunkAndWarpMulti( 0, 0, imgout.XSize(), imgout.YSize() );
 
             GDALDestroyGenImgProjTransformer( psWarpOptions->pTransformerArg );
@@ -383,18 +384,18 @@ namespace gip {
         if (imagesout.size() == 0) throw std::runtime_error("No indices selected for calculation!");
 
         std::map< string, std::vector<string> > colors;
-        colors["NDVI"] = {"NIR","RED"};
-        colors["EVI"] = {"NIR","RED","BLUE"};
-        colors["LSWI"] = {"NIR","SWIR1"};
-        colors["NDSI"] = {"SWIR1","GREEN"};
-        colors["BI"] = {"BLUE","NIR"};
-        colors["SATVI"] = {"SWIR1","RED"};
+        colors["ndvi"] = {"NIR","RED"};
+        colors["evi"] = {"NIR","RED","BLUE"};
+        colors["lswi"] = {"NIR","SWIR1"};
+        colors["ndsi"] = {"SWIR1","GREEN"};
+        colors["bi"] = {"BLUE","NIR"};
+        colors["satvi"] = {"SWIR1","RED"};
         // Tillage indices
-        colors["NDTI"] = {"SWIR2","SWIR1"};
-        colors["CRC"] = {"SWIR1","SWIR2","BLUE"};
-        colors["CRCM"] = {"SWIR1","SWIR2","GREEN"};
-        colors["ISTI"] = {"SWIR1","SWIR2"};
-        colors["STI"] = {"SWIR1","SWIR2"};
+        colors["ndti"] = {"SWIR2","SWIR1"};
+        colors["crc"] = {"SWIR1","SWIR2","BLUE"};
+        colors["crcm"] = {"SWIR1","SWIR2","GREEN"};
+        colors["isti"] = {"SWIR1","SWIR2"};
+        colors["sti"] = {"SWIR1","SWIR2"};
 
         // Figure out what colors are needed
         std::set< string > used_colors;
@@ -428,30 +429,30 @@ namespace gip {
             for (iprod=products.begin(); iprod!=products.end(); iprod++) {
                 prodname = iprod->first;
                 //cout << "Products: " << prodname << std::flush;
-                //string p = iprod->toupper();
-                if (prodname == "NDVI") {
+                //string pname = iprod->toupper();
+                if (prodname == "ndvi") {
                     cimgout = (nir-red).div(nir+red);
-                } else if (prodname == "EVI") {
+                } else if (prodname == "evi") {
                     cimgout = 2.5*(nir-red).div(nir + 6*red - 7.5*blue + 1);
-                } else if (prodname == "LSWI") {
+                } else if (prodname == "lswi") {
                     cimgout = (nir-swir1).div(nir+swir1);
-                } else if (prodname == "NDSI") {
+                } else if (prodname == "ndsi") {
                     cimgout = (green-swir1).div(green+swir1);
-                } else if (prodname == "BI") {
+                } else if (prodname == "bi") {
                     cimgout = 0.5*(blue+nir);
-                } else if (prodname == "SATVI") {
+                } else if (prodname == "satvi") {
                     float L(0.5);
                     cimgout = (((1.0+L)*(swir1 - red)).div(swir1+red+L)) - (0.5*swir2);
                 // Tillage indices
-                } else if (prodname == "NDTI") {
+                } else if (prodname == "ndti") {
                     cimgout = (swir1-swir2).div(swir1+swir2);
-                } else if (prodname == "CRC") {
+                } else if (prodname == "crc") {
                     cimgout = (swir1-blue).div(swir2+blue);
-                } else if (prodname == "CRCM") {
+                } else if (prodname == "crcm") {
                     cimgout = (swir1-green).div(swir2+green);
-                } else if (prodname == "ISTI") {
+                } else if (prodname == "isti") {
                     cimgout = swir2.div(swir1);
-                } else if (prodname == "STI") {
+                } else if (prodname == "sti") {
                     cimgout = swir1.div(swir2);
                 }
                 //if (Options::Verbose() > 2) cout << "Getting mask" << endl;
