@@ -36,8 +36,7 @@ from pdb import set_trace
 class ModisRepository(Repository):
     _rootpath = '/titan/data/modis'
     _tiles_vector = 'modis_sinusoidal_grid_world.shp'
-    _tilesdir = 'tiles.dev'
-    _sdir = 'work'
+    #_tilesdir = 'tiles.dev'
 
     @classmethod
     def feature2tile(cls, feature):
@@ -174,6 +173,9 @@ class ModisData(Data):
             'assets': ['MOD11A1'],
         }),
     ])
+
+    def process(self, products):
+        pass
 
 
 def main():

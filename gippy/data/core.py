@@ -116,7 +116,6 @@ class Repository(object):
                 db = DATABASES['tiles']
                 dbstr = ("PG:dbname=%s host=%s port=%s user=%s password=%s" %
                         (db['NAME'], db['HOST'], db['PORT'], db['USER'], db['PASSWORD']))
-                print dbstr
                 tiles = gippy.GeoVector(dbstr, layer=cls._tiles_vector)
             except:
                 raise Exception('unable to access %s tiles (file or database)' % cls.__name__)
@@ -343,7 +342,7 @@ class Asset(object):
                 if len(existing) > 0:
                     VerboseOut('%s: other version(s) already exists:' % bname, 2)
                     for ef in existing:
-                        VerboseOut('\t%s' % os.path.basename(ef), 2)
+                        VerboseOut('\t%s' % os.path.basename(ef.filename), 2)
                     otherversions = True
                 else:
                     try:
