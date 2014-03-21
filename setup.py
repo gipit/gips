@@ -23,6 +23,7 @@ setup for GIP and gippy
 """
 
 import os
+import shutil
 from setuptools import setup, Extension
 from setuptools.command.install import install
 from setuptools.command.develop import develop
@@ -32,6 +33,7 @@ import numpy
 class GIPinstall(install):
     def run(self):
         os.system('cd GIP; make; cd ..')
+        shutil.copy('GIP/bin/Release/libgip.so', '/usr/lib/')
         install.run(self)
 
 
@@ -79,7 +81,7 @@ setup(
     dependency_links=['https://github.com/matthewhanson/Py6S.git'],
     #install_requires = ['Py6S','shapely==1.2.18'],
     install_requires=['Py6S', 'shapely'],
-    data_files=[('/usr/lib', ['GIP/bin/Release/libgip.so'])],
+    #data_files=[('/usr/lib', ['GIP/bin/Release/libgip.so'])],
     entry_points={
         'console_scripts': [
             'gipit = gippy.gipit:main',
