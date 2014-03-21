@@ -459,7 +459,7 @@ namespace gip {
 		}
 
 		//! Process input band into this
-		template<class T> GeoRaster& Process(const GeoRaster& raster) {
+		GeoRaster& Process(const GeoRaster& raster) {
 		    using cimg_library::CImg;
             for (unsigned int iChunk=1; iChunk<=NumChunks(); iChunk++) {
                     CImg<double> cimg = raster.Read<double>(iChunk);
@@ -470,7 +470,7 @@ namespace gip {
                     //    cimg_forXY(cimg,x,y) { if (mask(x,y)) cimg(x,y) = NoDataValue(); }
                     //}
                     //WriteChunk(CImg<T>().assign(cimg.round()),*iChunk, RAW);
-                    Write(CImg<T>().assign(cimg),iChunk); //, RAW);
+                    Write(cimg,iChunk); //, RAW);
             }
             // Copy relevant metadata
             GDALRasterBand* band = raster.GetGDALRasterBand();
