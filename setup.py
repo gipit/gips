@@ -22,55 +22,65 @@
 setup for GIP and gippy
 """
 
-#from distutils.core import setup, Extension
+import os
 from setuptools import setup, Extension
-import os, glob, filecmp, shutil
+from setuptools.command.install import install
+from setuptools.command.develop import develop
 import numpy
-#os.environ['CC'] = 'g++';
-#os.environ['CXX'] = 'g++';
-#os.environ['CPP'] = 'g++';
-#os.environ['LDSHARED'] = 'g++';
 
-# Install GIP files
-def install_gip(install):
-    src = glob.glob('GIP/giputils/bin/Release/*')
-    dst = [os.path.join('/usr/local/bin',os.path.basename(b)) for b in src]
-    src.append('GIP/bin/Release/libgip.so')
-    dst.append('/usr/lib/libgip.so')
-    for b in zip(src,dst):
-        if not os.path.exists(b[1]) or not filecmp.cmp(b[0],b[1]): shutil.copy(b[0],b[1])
 
-libgip = Extension(name = 'libgip',
-            sources=['GIP/Atmosphere.cpp','GIP/GeoAlgorithms.cpp','GIP/GeoData.cpp',
-                'GIP/GeoImage.cpp','GIP/GeoRaster.cpp','GIP/GeoVector.cpp'],
-            include_dirs=['GIP'],
-            extra_compile_args=['-std=c++0x','-Wall','-fexceptions','-fPIC','-O2']
-        )
+class GIPinstall(install):
+    def run(self):
+        os.system('cd GIP; make; cd ..')
+        install.run(self)
 
-gippy_module = Extension(name = '_gippylib',
-                    #compiler='g++',
-                    sources=['gippy/gippylib.i'],
-                    swig_opts=['-c++', '-w509','-IGIP'],
-                    include_dirs=['GIP',numpy.get_include()],
-                    libraries=['gip','gdal','boost_system','boost_filesystem'], #,'X11'],
-                    library_dirs=['GIP/bin/Release'], #'/usr/lib','/usr/local/lib'],
-                    extra_compile_args=['-fPIC'], #, '-std=c++0x'],
-                    #extra_compile_args=['-fPIC -std=c++0x'],
-                    ) 
 
-setup (name = 'gippy',
-    version = '1.0',
+class GIPdevelop(develop):
+    def initialize_options(self):
+        #self.runtime_library_dirs = [os.path.abspath('GIP/bin/Release')]
+        develop.initialize_options(self)
+        #set_trace()
+        self.ext_modules = [gippydev_module]
+
+    def run(self):
+        os.system('cd GIP; make; cd ..')
+        develop.run(self)
+
+#libgip = Extension(
+#    name='libgip',
+#    sources=['GIP/Atmosphere.cpp', 'GIP/GeoAlgorithms.cpp', 'GIP/GeoData.cpp',
+#             'GIP/GeoImage.cpp', 'GIP/GeoRaster.cpp', 'GIP/GeoVector.cpp'],
+#    include_dirs=['GIP'],
+#    extra_compile_args=['-std=c++0x', '-Wall', '-fexceptions', '-fPIC', '-O2']
+#)
+
+gippy_module = Extension(
+    name='_gippylib',
+    sources=['gippy/gippylib.i'],
+    swig_opts=['-c++', '-w509', '-IGIP'],
+    include_dirs=['GIP', numpy.get_include()],
+    libraries=['gip', 'gdal', 'boost_system', 'boost_filesystem'],  # ,'X11'],
+    library_dirs=['GIP/bin/Release'],  # '/usr/lib','/usr/local/lib'],
+    extra_compile_args=['-fPIC'],  # , '-std=c++0x'],
+    #extra_compile_args=['-fPIC -std=c++0x'],
+)
+gippydev_module = gippy_module
+gippydev_module.runtime_library_dirs = [os.path.abspath('GIP/bin/Release')]
+
+setup(
+    name='gippy',
+    version='1.0',
     description='Python bindings for GIP library',
     author='Matthew Hanson',
     author_email='mhanson@appliedgeosolutions.com',
-    ext_modules = [gippy_module],
-    packages = ['gippy','gippy.algorithms','gippy.data'],
-    py_modules = ['gippy.gippylib','gippy.atmosphere','gippy.GeoVector','gippy.gipit'],
-    dependency_links = ['https://github.com/matthewhanson/Py6S.git'],
+    ext_modules=[gippy_module],
+    packages=['gippy', 'gippy.algorithms', 'gippy.data'],
+    py_modules=['gippy.gippylib', 'gippy.atmosphere', 'gippy.GeoVector', 'gippy.gipit'],
+    dependency_links=['https://github.com/matthewhanson/Py6S.git'],
     #install_requires = ['Py6S','shapely==1.2.18'],
-    install_requires = ['Py6S','shapely'],
-    data_files = [('/usr/lib',['GIP/bin/Release/libgip.so'])],
-    entry_points = {
+    install_requires=['Py6S', 'shapely'],
+    data_files=[('/usr/lib', ['GIP/bin/Release/libgip.so'])],
+    entry_points={
         'console_scripts': [
             'gipit = gippy.gipit:main',
             # Data scripts TODO - auto find and add
@@ -81,5 +91,8 @@ setup (name = 'gippy',
             'modis = gippy.data.modis:main',
         ],
     },
-    #cmdclass = {"install_gip": install_gip},
+    cmdclass={
+        "develop": GIPdevelop,
+        "install": GIPinstall
+    }
 )
