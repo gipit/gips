@@ -1,8 +1,6 @@
 #include <gip/GeoRaster.h>
 #include <gip/GeoImage.h>
 
-#include <gip/GeoRasterIO.h>
-
 using namespace std;
 
 namespace gip {
@@ -40,22 +38,6 @@ namespace gip {
 		return *this;
 	}
 
-    //! Process passed raster band into this raster band
-    GeoRaster& GeoRaster::Process(const GeoRaster& img) {
-        return GeoRasterIO<double>(*this).Process(img);
-        /*switch (DataType()) {
-            case GDT_Byte: return GeoRasterIO<unsigned char>(*this).Process(img);
-            case GDT_UInt16: return GeoRasterIO<unsigned short>(*this).Process(img);
-            case GDT_Int16: return GeoRasterIO<short>(*this).Process(img);
-            case GDT_UInt32: return GeoRasterIO<unsigned int>(*this).Process(img);
-            case GDT_Int32: return GeoRasterIO<int>(*this).Process(img);
-            case GDT_Float32: return GeoRasterIO<float>(*this).Process(img);
-            case GDT_Float64: return GeoRasterIO<double>(*this).Process(img);
-            default: return GeoRasterIO<unsigned char>(*this).Process(img);
-            // TODO - remove default. This should throw exception
-        }*/
-    }
-
 	string GeoRaster::Info(bool showstats) const {
 		std::stringstream info;
 		//info << _GeoImage->Basename() << " - b" << _GDALRasterBand->GetBand() << ":" << endl;
@@ -87,13 +69,12 @@ namespace gip {
 
         if (_ValidStats) return _Stats;
 
-        GeoRasterIO<double> img(*this);
         CImg<double> cimg;
         double count(0), total(0), val;
         double min(MaxValue()), max(MinValue());
 
         for (unsigned int iChunk=1; iChunk<=NumChunks(); iChunk++) {
-            cimg = img.Read(iChunk);
+            cimg = Read<double>(iChunk);
             cimg_for(cimg,ptr,double) {
                 if (*ptr != NoDataValue()) {
                     total += *ptr;
@@ -107,7 +88,7 @@ namespace gip {
         total = 0;
         double total3(0);
         for (unsigned int iChunk=1; iChunk<=NumChunks(); iChunk++) {
-            cimg = img.Read(iChunk);
+            cimg = Read<double>(iChunk);
             cimg_for(cimg,ptr,double) {
                 if (*ptr != NoDataValue()) {
                     val = *ptr-mean;
@@ -147,9 +128,8 @@ namespace gip {
         CImg<float> hist(bins,1,1,1,0);
         long numpixels(0);
         float nodata = NoDataValue();
-        GeoRasterIO<double> img(*this);
         for (unsigned int iChunk=1; iChunk<=NumChunks(); iChunk++) {
-            cimg = img.Read(iChunk);
+            cimg = Read<double>(iChunk);
             cimg_for(cimg,ptr,double) {
                 if (*ptr != nodata) {
                     hist[(unsigned int)( (*ptr-stats(0))*bins / (stats(1)-stats(0)) )]++;

@@ -1,6 +1,5 @@
 #include <gip/GeoImage.h>
 #include <gip/GeoRaster.h>
-#include <gip/GeoRasterIO.h>
 
 //#include <sstream>
 
@@ -116,12 +115,11 @@ namespace gip {
 	GeoImage& GeoImage::FixBadPixels() {
 		typedef float T;
 		for (unsigned int b=0;b<NumBands();b++) {
-			GeoRasterIO<T> band((*this)[b]);
 			for (unsigned int iChunk=1; iChunk<=NumChunks(); iChunk++) {
-				CImg<T> img = band.ReadRaw(iChunk);
-				T nodata = band.NoDataValue();
+				CImg<T> img = (*this)[b].ReadRaw<T>(iChunk);
+				T nodata = (*this)[b].NoDataValue();
 				cimg_for(img,ptr,T)	if ( std::isinf(*ptr) || std::isnan(*ptr) ) *ptr = nodata;
-				band.WriteRaw(img,iChunk);
+				(*this)[b].WriteRaw(img,iChunk);
 			}
 		}
 		return *this;

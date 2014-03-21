@@ -191,6 +191,210 @@ namespace gip {
 			for (unsigned int b=0;b<NumBands();b++) _RasterBands.
 		}*/
 
+		//! \name File I/O
+		//! Read raw chunk, across all bands
+		template<class T> cimg_library::CImg<T> ReadRaw(int chunk=0) const { //, bool RAW=false) const {
+			cimg_library::CImgList<T> images;
+			typename std::vector< GeoRaster >::const_iterator iBand;
+			for (iBand=_RasterBands.begin();iBand!=_RasterBands.end();iBand++) {
+				images.insert( iBand->ReadRaw<T>(chunk) );
+			}
+			//return images.get_append('c','p');
+			return images.get_append('v','p');
+		}
+		//! Read chunk, across all bands
+		template<class T> cimg_library::CImg<T> Read(int chunk=0) const { //, bool RAW=false) const {
+			cimg_library::CImgList<T> images;
+			typename std::vector< GeoRaster >::const_iterator iBand;
+			for (iBand=_RasterBands.begin();iBand!=_RasterBands.end();iBand++) {
+				images.insert( iBand->Read<T>(chunk) );
+			}
+			//return images.get_append('c','p');
+			return images.get_append('v','p');
+		}
+
+        //GeoImageIO& Write(const CImg<T> img, int chunk=0, bool BadValCheck=false) {
+        //    return Write(img, chunk, BadValCheck);
+        //}
+
+		//! Write cube across all bands
+		template<class T> GeoImage& Write(const CImg<T> img, int chunk=0) { //, bool BadValCheck=false) {
+			typename std::vector< GeoRaster >::iterator iBand;
+			int i(0);
+			for (iBand=_RasterBands.begin();iBand!=_RasterBands.end();iBand++) {
+				CImg<T> tmp = img.get_channel(i++);
+				iBand->Write(tmp, chunk); //, BadValCheck);
+			}
+			return *this;
+		}
+		// Read Cube as list
+		template<class T> cimg_library::CImgList<T> ReadAsList(int chunk=0) const {
+			cimg_library::CImgList<T> images;
+			typename std::vector< GeoRaster >::const_iterator iBand;
+			for (iBand=_RasterBands.begin();iBand!=_RasterBands.end();iBand++) {
+				images.insert( iBand->Read<T>(chunk) );
+			}
+			return images;
+		}
+
+		//! NoData mask (all bands).  1's where it is good data
+		template<class T> CImg<unsigned char> NoDataMask(int chunk=0, std::vector<std::string> bands=std::vector<std::string>()) const {
+		    unsigned int c;
+		    CImg<T> cube = ReadRaw<T>(chunk);
+		    CImg<unsigned char> mask(cube.width(),cube.height(),1,1,1);
+		    std::vector<int> ibands;
+		    std::vector<int>::const_iterator b;
+		    if (bands.empty()) {
+		        for (c=0; c<NumBands(); c++) ibands.push_back(c);
+            } else {
+                for (std::vector<std::string>::const_iterator i=bands.begin(); i!=bands.end(); i++) {
+                    ibands.push_back(_Colors[*i]-1);
+                }
+            }
+            /*if (Options::Verbose() > 2) {
+                std::cout << "Retrieving nodata mask for bands ";
+                for (b=ibands.begin();b!=ibands.end();b++) std::cout << *b << " ";
+                std::cout << std::endl;
+            }*/
+            cimg_forXY(cube,x,y) {
+                for (std::vector<int>::const_iterator i=ibands.begin(); i!=ibands.end(); i++) {
+                    if ( (*this)[*i].NoData() && (cube(x,y,*i) == (*this)[*i].NoDataValue())) mask(x,y) = 0;
+                }
+            }
+            return mask;
+		}
+
+        //! NoData mask (all bands).  1's where it is good data
+        // TODO - doesn't need to template?
+        template<class T> CImg<unsigned char> SaturationMask(int chunk=0, std::vector<std::string> bands=std::vector<std::string>()) const {
+            // TODO - utilize bands parameter like in NoDataMask
+            CImg<unsigned char> mask(_RasterBands[0].SaturationMask<T>(chunk));
+            for (unsigned int b=1;b<NumBands();b++)
+                mask|=_RasterBands[b].SaturationMask<T>(chunk);
+            return mask;
+        }
+
+        //! Extract, and interpolate, time series (C is time axis)
+        template<class T> cimg_library::CImg<T> TimeSeries(cimg_library::CImg<double> C) {
+            cimg_library::CImg<T> cimg = Read<T>();
+            T nodata = _RasterBands[0].NoDataValue();
+            if (cimg.spectrum() > 2) {
+                int lowi, highi;
+                float y0, y1, x0, x1;
+                for (int c=1; c<cimg.spectrum()-1;c++) {
+                    if (Options::Verbose() > 3) cimg_print(C, "days vector");
+                    cimg_forXY(cimg,x,y) {
+                        if (cimg(x,y,c) == nodata) {
+                            // Find next lowest point
+                            lowi = highi = 1;
+                            while ((cimg(x,y,c-lowi) == nodata) && (lowi<c)) lowi++;
+                            while ((cimg(x,y,c+highi) == nodata) && (c+highi < cimg.spectrum()-1) ) highi++;
+                            y0 = cimg(x,y,c-lowi);
+                            y1 = cimg(x,y,c+highi);
+                            x0 = C(c-lowi);
+                            x1 = C(c+highi);
+                            if ((y0 != nodata) && (y1 != nodata)) {
+                                cimg(x,y,c) = y0 + (y1-y0) * ((C(c)-x0)/(x1-x0));
+                            }
+                        } else if (cimg(x,y,c-1) == nodata) {
+                            T val = cimg(x,y,c);
+                            for (int i=c-1; i>=0; i--) {
+                                if (cimg(x,y,i) == nodata) cimg(x,y,i) = val;
+                            }
+                        }
+                    }
+                }
+            }
+            return cimg;
+        }
+
+        //! Extract spectra from select pixels (where mask > 0)
+        template<class T> cimg_library::CImg<T> Extract(const GeoRaster& mask) {
+            if (Options::Verbose() > 2 ) std::cout << "Pixel spectral extraction" << std::endl;
+            cimg_library::CImg<unsigned char> cmask;
+            cimg_library::CImg<T> cimg;
+            long count = 0;
+
+            for (int iChunk=1; iChunk<=NumChunks(); iChunk++) {
+                cmask = mask.Read<unsigned char>(iChunk);
+                cimg_for(cmask,ptr,unsigned char) if (*ptr > 0) count++;
+            }
+            cimg_library::CImg<T> pixels(count,NumBands()+1,1,1,_RasterBands[0].NoDataValue());
+            count = 0;
+            int ch(0);
+            unsigned int c;
+            for (int iChunk=1; iChunk<=NumChunks(); iChunk++) {
+                cimg = Read<T>(iChunk);
+                cmask = mask.Read<unsigned char>(iChunk);
+                cimg_forXY(cimg,x,y) {
+                    if (cmask(x,y) > 0) {
+                        for (c=0;c<NumBands();c++) pixels(count,c+1) = cimg(x,y,c);
+                        pixels(count++,0) = cmask(x,y);
+                    }
+                }
+                if (Options::Verbose() > 2) std::cout << "  Chunk " << ch++ << std::endl;
+            }
+            return pixels;
+        }
+
+        //! Get a number of random pixel vectors (spectral vectors)
+        template<class T> CImg<T> GetRandomPixels(int NumPixels) const {
+            CImg<T> Pixels(NumBands(), NumPixels);
+            srand( time(NULL) );
+            bool badpix;
+            int p = 0;
+            while(p < NumPixels) {
+                int col = (double)rand()/RAND_MAX * (XSize()-1);
+                int row = (double)rand()/RAND_MAX * (YSize()-1);
+                T pix[1];
+                badpix = false;
+                for (unsigned int j=0; j<NumBands(); j++) {
+                    _RasterBands[j].GetGDALRasterBand()->RasterIO(GF_Read, col, row, 1, 1, &pix, 1, 1, type2GDALtype(typeid(T)), 0, 0);
+                    if (_RasterBands[j].NoData() && pix[0] == _RasterBands[j].NoDataValue()) {
+                        badpix = true;
+                    } else {
+                        Pixels(j,p) = pix[0];
+                    }
+                }
+                if (!badpix) p++;
+            }
+            return Pixels;
+        }
+
+        //! Get a number of pixel vectors that are spectrally distant from each other
+        template<class T> CImg<T> GetPixelClasses(int NumClasses) const {
+            int RandPixelsPerClass = 500;
+            CImg<T> stats;
+            CImg<T> ClassMeans(NumBands(), NumClasses);
+            // Get Random Pixels
+            CImg<T> RandomPixels = GetRandomPixels<T>(NumClasses * RandPixelsPerClass);
+            // First pixel becomes first class
+            cimg_forX(ClassMeans,x) ClassMeans(x,0) = RandomPixels(x,0);
+            for (int i=1; i<NumClasses; i++) {
+                CImg<T> ThisClass = ClassMeans.get_row(i-1);
+                long validpixels = 0;
+                CImg<T> Dist(RandomPixels.height());
+                for (long j=0; j<RandomPixels.height(); j++) {
+                    // Get current pixel vector
+                    CImg<T> ThisPixel = RandomPixels.get_row(j);
+                    // Find distance to last class
+                    Dist(j) = ThisPixel.sum() ? (ThisPixel-ThisClass).dot( (ThisPixel-ThisClass).transpose() ) : 0;
+                    if (Dist(j) != 0) validpixels++;
+                }
+                stats = Dist.get_stats();
+                // The pixel farthest away from last class make the new class
+                cimg_forX(ClassMeans,x) ClassMeans(x,i) = RandomPixels(x,stats(8));
+                // Toss a bunch of pixels away (make zero)
+                CImg<T> DistSort = Dist.get_sort();
+                T cutoff = DistSort[RandPixelsPerClass*i]; //(stats.max-stats.min)/10 + stats.min;
+                cimg_forX(Dist,x) if (Dist(x) < cutoff) cimg_forX(RandomPixels,x1) RandomPixels(x1,x) = 0;
+            }
+            // Output Class Vectors
+            //if (Options::Verbose()>1) cimg_printclasses(ClassMeans, "Initial Class");
+            return ClassMeans;
+        }
+
+
 	protected:
 		//! Vector of raster bands
 		std::vector< GeoRaster > _RasterBands;
