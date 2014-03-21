@@ -41,9 +41,8 @@ class GIPinstall(install):
 class GIPdevelop(develop):
     def initialize_options(self):
         #self.runtime_library_dirs = [os.path.abspath('GIP/bin/Release')]
+        gippy_module.runtime_library_dirs = [os.path.abspath('GIP/bin/Release')]
         develop.initialize_options(self)
-        #set_trace()
-        self.ext_modules = [gippydev_module]
 
     def run(self):
         os.system('cd GIP; make; cd ..')
@@ -67,8 +66,8 @@ gippy_module = Extension(
     extra_compile_args=['-fPIC'],  # , '-std=c++0x'],
     #extra_compile_args=['-fPIC -std=c++0x'],
 )
-gippydev_module = deepcopy(gippy_module)
-gippydev_module.runtime_library_dirs = [os.path.abspath('GIP/bin/Release')]
+#gippydev_module = deepcopy(gippy_module)
+#gippydev_module.runtime_library_dirs = [os.path.abspath('GIP/bin/Release')]
 
 setup(
     name='gippy',
