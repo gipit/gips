@@ -128,8 +128,14 @@ class Tiles(object):
         #elif len(res) == 1: res = [res[0],res[0]]
         if self.site is None:
             # Link files instead
+            products = []
+            for p, args in self.requested_products.items():
+                pname = p
+                for arg in args:
+                    pname = pname + '_' + arg
+                products.append(pname + self.suffix)
             for t in self.tiles:
-                self.tiles[t].link(products=self.products, path=datadir)
+                self.tiles[t].link(products=products, path=datadir)
         else:
             # TODO - better file naming
             for product in self.requested_products:
