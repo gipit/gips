@@ -27,6 +27,7 @@ import shutil
 from setuptools import setup, Extension
 from setuptools.command.install import install
 from setuptools.command.develop import develop
+from copy import deepcopy
 import numpy
 
 
@@ -66,7 +67,7 @@ gippy_module = Extension(
     extra_compile_args=['-fPIC'],  # , '-std=c++0x'],
     #extra_compile_args=['-fPIC -std=c++0x'],
 )
-gippydev_module = gippy_module
+gippydev_module = deepcopy(gippy_module)
 gippydev_module.runtime_library_dirs = [os.path.abspath('GIP/bin/Release')]
 
 setup(
