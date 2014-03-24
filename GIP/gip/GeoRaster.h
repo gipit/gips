@@ -220,13 +220,13 @@ namespace gip {
         //! \name Processing functions
 
         //! Adds a mask band (1 for valid), applied on read
-        GeoRaster& AddMask(const GeoRaster& band) {
+        const GeoRaster& AddMask(const GeoRaster& band) const {
             _ValidStats = false;
             _Masks.push_back(band);
             return *this;
         }
         //! Remove all masks from band
-        GeoRaster& ClearMasks() {
+        const GeoRaster& ClearMasks() const {
             if (!_Masks.empty()) _ValidStats = false;
             _Masks.clear();
             return *this;
@@ -245,20 +245,20 @@ namespace gip {
 
         // Logical functions
         //! Greater than
-        GeoRaster operator>(double val) { return GeoRaster(*this, GeoFunction(">",val)); }
+        GeoRaster operator>(double val) const { return GeoRaster(*this, GeoFunction(">",val)); }
         //! Greater than or equal to
-        GeoRaster operator>=(double val) { return GeoRaster(*this, GeoFunction(">=",val)); }
+        GeoRaster operator>=(double val) const { return GeoRaster(*this, GeoFunction(">=",val)); }
         //! Less than
-        GeoRaster operator<(double val) { return GeoRaster(*this, GeoFunction("<",val)); }
+        GeoRaster operator<(double val) const { return GeoRaster(*this, GeoFunction("<",val)); }
         //! Less than or equal to
-        GeoRaster operator<=(double val) { return GeoRaster(*this, GeoFunction("<=",val)); }
+        GeoRaster operator<=(double val) const { return GeoRaster(*this, GeoFunction("<=",val)); }
         //! Equal to
-        GeoRaster operator==(double val) { return GeoRaster(*this, GeoFunction("==",val)); }
+        GeoRaster operator==(double val) const { return GeoRaster(*this, GeoFunction("==",val)); }
         // Basic math
         //! Add constant to every pixel
-        GeoRaster operator+(double val) { return GeoRaster(*this, GeoFunction("+",val)); }
+        GeoRaster operator+(double val) const { return GeoRaster(*this, GeoFunction("+",val)); }
         //! Subtract constant from every pixel
-        GeoRaster operator-(double val) { return GeoRaster(*this, GeoFunction("-",val)); }
+        GeoRaster operator-(double val) const { return GeoRaster(*this, GeoFunction("-",val)); }
 
         // Statistics - should these be stored?
         //double Min() const { return (GetGDALStats())[0]; }
@@ -342,7 +342,7 @@ namespace gip {
         GDALRasterBand* _GDALRasterBand;
 
         //! Vector of masks to apply
-        std::vector< GeoRaster > _Masks;
+        mutable std::vector< GeoRaster > _Masks;
 
         //! Bool if nodata value is used
         bool _NoData;

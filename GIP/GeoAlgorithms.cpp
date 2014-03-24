@@ -463,7 +463,7 @@ namespace gip {
      * temperature, sun elevation, solar azimuth, and number of pixels to
      * dilate.
      */
-    GeoImage ACCA(GeoImage& image, string filename, float se_degrees,
+    GeoImage ACCA(const GeoImage& image, std::string filename, float se_degrees,
                   float sa_degrees, int erode, int dilate, int cloudheight ) {
         image.SetUnitsOut("reflectance");
 

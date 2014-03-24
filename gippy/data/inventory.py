@@ -62,7 +62,6 @@ class Tiles(object):
             self.requested_products = products
         if len(self.requested_products) == 0 and len(dataclass._products) == 1:
             self.requested_products = {dataclass._products.keys()[0]: []}
-
         #for p in products:
         #    key = p
         #    for arg in products[p]:
@@ -424,7 +423,10 @@ class DataInventory(object):
             if p != '':
                 val = eval('args.%s' % p)
                 if val not in [None, False]:
-                    products[p] = val
+                    if val is True:
+                        products[p] = []
+                    else:
+                        products[p] = val
 
         try:
             inv = cls.inventory(
