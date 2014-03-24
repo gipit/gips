@@ -133,8 +133,6 @@ class SARAnnualData(Data):
             if val[0] == 'sign':
                 datafiles = self.assets['MOS'].extract()
                 bands = [b for b in ["sl_HH", "sl_HV"] if b in datafiles]
-                print datafiles
-                print bands
                 if len(bands) > 0:
                     img = gippy.GeoImage(datafiles[bands[0]])
                     del bands[0]
