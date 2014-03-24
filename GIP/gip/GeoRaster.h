@@ -285,56 +285,56 @@ namespace gip {
             return stats;
         }*/
 
-    //! \name File I/O
-    template<class T> cimg_library::CImg<T> ReadRaw(int chunknum=0) const;
-    template<class T> cimg_library::CImg<T> ReadRaw(iRect chunk) const;
-    template<class T> cimg_library::CImg<T> Read(int chunknum=0) const;
-    template<class T> cimg_library::CImg<T> Read(iRect chunk) const;
-    template<class T> GeoRaster& WriteRaw(cimg_library::CImg<T> img, int chunknum=0);
-    template<class T> GeoRaster& WriteRaw(cimg_library::CImg<T> img, iRect chunk);
-    template<class T> GeoRaster& Write(cimg_library::CImg<T> img, int chunknum=0);
-    template<class T> GeoRaster& Process(const GeoRaster& raster);
+        //! \name File I/O
+        template<class T> cimg_library::CImg<T> ReadRaw(int chunknum=0) const;
+        template<class T> cimg_library::CImg<T> ReadRaw(iRect chunk) const;
+        template<class T> cimg_library::CImg<T> Read(int chunknum=0) const;
+        template<class T> cimg_library::CImg<T> Read(iRect chunk) const;
+        template<class T> GeoRaster& WriteRaw(cimg_library::CImg<T> img, int chunknum=0);
+        template<class T> GeoRaster& WriteRaw(cimg_library::CImg<T> img, iRect chunk);
+        template<class T> GeoRaster& Write(cimg_library::CImg<T> img, int chunknum=0);
+        template<class T> GeoRaster& Process(const GeoRaster& raster);
 
-     //! Get Saturation mask: 1's where it's saturated
-    cimg_library::CImg<unsigned char> SaturationMask(int chunk=0) const {
-        switch (DataType()) {
-            case GDT_Byte: return _Mask<unsigned char>(_maxDC, chunk);
-            case GDT_UInt16: return _Mask<unsigned short>(_maxDC, chunk);
-            case GDT_Int16: return _Mask<short>(_maxDC, chunk);
-            case GDT_UInt32: return _Mask<unsigned int>(_maxDC, chunk);
-            case GDT_Int32: return _Mask<int>(_maxDC, chunk);
-            case GDT_Float32: return _Mask<float>(_maxDC, chunk);
-            case GDT_Float64: return _Mask<double>(_maxDC, chunk);
-            default: return _Mask<double>(_maxDC, chunk);
-        }
-    }
-
-    //! NoData mask: 1's where it's good data
-    cimg_library::CImg<unsigned char> NoDataMask(int chunk=0) const {
-        // TODO - if NoData not set, return all 1s
-        if (!NoData()) {
-            int width, height;
-            if (chunk == 0) {
-                width = XSize();
-                height = YSize();
-            } else {
-                iRect ch = _PadChunks[chunk-1];
-                width = ch.x1()-ch.x0()+1;
-                height = ch.y1()-ch.y0()+1;
+         //! Get Saturation mask: 1's where it's saturated
+        cimg_library::CImg<unsigned char> SaturationMask(int chunk=0) const {
+            switch (DataType()) {
+                case GDT_Byte: return _Mask<unsigned char>(_maxDC, chunk);
+                case GDT_UInt16: return _Mask<unsigned short>(_maxDC, chunk);
+                case GDT_Int16: return _Mask<short>(_maxDC, chunk);
+                case GDT_UInt32: return _Mask<unsigned int>(_maxDC, chunk);
+                case GDT_Int32: return _Mask<int>(_maxDC, chunk);
+                case GDT_Float32: return _Mask<float>(_maxDC, chunk);
+                case GDT_Float64: return _Mask<double>(_maxDC, chunk);
+                default: return _Mask<double>(_maxDC, chunk);
             }
-            return CImg<unsigned char>(width,height,1,1,0);
         }
-        switch (DataType()) {
-            case GDT_Byte: return _Mask<unsigned char>(NoDataValue(), chunk);
-            case GDT_UInt16: return _Mask<unsigned short>(NoDataValue(), chunk);
-            case GDT_Int16: return _Mask<short>(NoDataValue(), chunk);
-            case GDT_UInt32: return _Mask<unsigned int>(NoDataValue(), chunk);
-            case GDT_Int32: return _Mask<int>(NoDataValue(), chunk);
-            case GDT_Float32: return _Mask<float>(NoDataValue(), chunk);
-            case GDT_Float64: return _Mask<double>(NoDataValue(), chunk);
-            default: return _Mask<double>(NoDataValue(), chunk);
+
+        //! NoData mask: 1's where it's good data
+        cimg_library::CImg<unsigned char> NoDataMask(int chunk=0) const {
+            // TODO - if NoData not set, return all 1s
+            if (!NoData()) {
+                int width, height;
+                if (chunk == 0) {
+                    width = XSize();
+                    height = YSize();
+                } else {
+                    iRect ch = _PadChunks[chunk-1];
+                    width = ch.x1()-ch.x0()+1;
+                    height = ch.y1()-ch.y0()+1;
+                }
+                return CImg<unsigned char>(width,height,1,1,0);
+            }
+            switch (DataType()) {
+                case GDT_Byte: return _Mask<unsigned char>(NoDataValue(), chunk);
+                case GDT_UInt16: return _Mask<unsigned short>(NoDataValue(), chunk);
+                case GDT_Int16: return _Mask<short>(NoDataValue(), chunk);
+                case GDT_UInt32: return _Mask<unsigned int>(NoDataValue(), chunk);
+                case GDT_Int32: return _Mask<int>(NoDataValue(), chunk);
+                case GDT_Float32: return _Mask<float>(NoDataValue(), chunk);
+                case GDT_Float64: return _Mask<double>(NoDataValue(), chunk);
+                default: return _Mask<double>(NoDataValue(), chunk);
+            }
         }
-    }
 
     protected:
         // TODO - examine why not shared pointer? (I think because it's managed by GDALDataset class)
