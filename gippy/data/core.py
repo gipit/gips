@@ -545,7 +545,7 @@ class Data(object):
                     product = cls._products[p]
                     nargs = product.get('args', None)
                     if nargs:
-                        group.add_argument('--%s' % p, help=product['description'], nargs=nargs, default=[])
+                        group.add_argument('--%s' % p, help=product['description'], nargs=nargs)
                     else:
                         group.add_argument('--%s' % p, help=product['description'], action='store_true')
         return parser
