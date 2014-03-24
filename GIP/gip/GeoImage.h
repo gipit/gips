@@ -6,63 +6,63 @@
 #include <gip/GeoRaster.h>
 
 namespace gip {
-	// Forward declaration
-	class GeoRaster;
+    // Forward declaration
+    class GeoRaster;
 
-	//! GeoImage class
-	/*!
-		The GeoImage is a collection of GeoRaster objects
-	*/
-	class GeoImage : public GeoData {
-		// friend so GeoRaster can access GeoImage freely
-		//friend class GeoRaster;
-	public:
-		//! \name Constructors/Destructor
-		//! Default constructor
-		explicit GeoImage() : GeoData() {}
-		//! Open file constructor
-		explicit GeoImage(std::string filename, bool Update=true)
-			: GeoData(filename, Update) {
-			LoadBands();
-		}
-		//! Constructor for creating new file
-		explicit GeoImage(std::string filename, int xsz, int ysz, int bsz, GDALDataType datatype=GDT_Byte) :
-			GeoData(xsz, ysz, bsz, datatype, filename) {
-			LoadBands();
-		}
-		//! Constructor for creating new file with same properties (xsize, ysize, metadata) as existing file
-		explicit GeoImage(std::string filename, const GeoImage& image, GDALDataType datatype, int bsz) :
-			GeoData(image.XSize(), image.YSize(), bsz, datatype, filename) {
-			//if (datatype == GDT_Unknown) datatype = image->GetDataType();
-			CopyMeta(image);
-			CopyCoordinateSystem(image);
-			LoadBands();
-			//_Colors = image.GetColors();
-		}
-		//! Constructor for creating new file with same properties (xsize, ysize, bsize) as existing file
-		explicit GeoImage(std::string filename, const GeoImage& image, GDALDataType datatype) :
-			GeoData(image.XSize(), image.YSize(), image.NumBands(), datatype, filename) {
-			//if (datatype == GDT_Unknown) datatype = image->GetDataType();
-			CopyMeta(image);
-			CopyCoordinateSystem(image);
-			LoadBands();
-			_Colors = image.GetColors();
-		}
-		//! Constructor for creating new file with given properties (xsize, ysize, bsize,datatype) as existing file
-		explicit GeoImage(std::string filename, const GeoImage& image) :
-			GeoData(image.XSize(), image.YSize(), image.NumBands(), image.DataType(), filename) {
-			//if (datatype == GDT_Unknown) datatype = image->GetDataType();
-			CopyMeta(image);
-			CopyCoordinateSystem(image);
-			LoadBands();
-			//_Colors = image.GetColors();
-		}
-		//! Constructor to create new file based on input vector extents
-		/*explicit GeoImage(std::string filename, std::string vector, float xres, float yres, GDALDataType datatype=GDT_Byte, int bsz=1) {
-		    OGRDataSource *poDS = OGRSFDriverRegistrar::Open(vector.c_str());
+    //! GeoImage class
+    /*!
+        The GeoImage is a collection of GeoRaster objects
+    */
+    class GeoImage : public GeoData {
+        // friend so GeoRaster can access GeoImage freely
+        //friend class GeoRaster;
+    public:
+        //! \name Constructors/Destructor
+        //! Default constructor
+        explicit GeoImage() : GeoData() {}
+        //! Open file constructor
+        explicit GeoImage(std::string filename, bool Update=true)
+            : GeoData(filename, Update) {
+            LoadBands();
+        }
+        //! Constructor for creating new file
+        explicit GeoImage(std::string filename, int xsz, int ysz, int bsz, GDALDataType datatype=GDT_Byte) :
+            GeoData(xsz, ysz, bsz, datatype, filename) {
+            LoadBands();
+        }
+        //! Constructor for creating new file with same properties (xsize, ysize, metadata) as existing file
+        explicit GeoImage(std::string filename, const GeoImage& image, GDALDataType datatype, int bsz) :
+            GeoData(image.XSize(), image.YSize(), bsz, datatype, filename) {
+            //if (datatype == GDT_Unknown) datatype = image->GetDataType();
+            CopyMeta(image);
+            CopyCoordinateSystem(image);
+            LoadBands();
+            //_Colors = image.GetColors();
+        }
+        //! Constructor for creating new file with same properties (xsize, ysize, bsize) as existing file
+        explicit GeoImage(std::string filename, const GeoImage& image, GDALDataType datatype) :
+            GeoData(image.XSize(), image.YSize(), image.NumBands(), datatype, filename) {
+            //if (datatype == GDT_Unknown) datatype = image->GetDataType();
+            CopyMeta(image);
+            CopyCoordinateSystem(image);
+            LoadBands();
+            _Colors = image.GetColors();
+        }
+        //! Constructor for creating new file with given properties (xsize, ysize, bsize,datatype) as existing file
+        explicit GeoImage(std::string filename, const GeoImage& image) :
+            GeoData(image.XSize(), image.YSize(), image.NumBands(), image.DataType(), filename) {
+            //if (datatype == GDT_Unknown) datatype = image->GetDataType();
+            CopyMeta(image);
+            CopyCoordinateSystem(image);
+            LoadBands();
+            //_Colors = image.GetColors();
+        }
+        //! Constructor to create new file based on input vector extents
+        /*explicit GeoImage(std::string filename, std::string vector, float xres, float yres, GDALDataType datatype=GDT_Byte, int bsz=1) {
+            OGRDataSource *poDS = OGRSFDriverRegistrar::Open(vector.c_str());
             OGRLayer *poLayer = poDS->GetLayer(0);
-		    OGREnvelope extent;
-		    poLayer->GetExtent(&extent, true);
+            OGREnvelope extent;
+            poLayer->GetExtent(&extent, true);
             int xsize = (int)(0.5 + (extent.MaxX - extent.MinX) / xres);
             int ysize = (int)(0.5 + (extent.MaxY - extent.MinY) / yres);
             GeoData::CreateNew(xsize, ysize, bsz, datatype, filename);
@@ -78,58 +78,58 @@ namespace gip {
             poLayer->GetSpatialRef()->exportToWkt(&wkt);
             _GDALDataset->SetProjection(wkt);
             OGRDataSource::DestroyDataSource( poDS );
-		}*/
-		//! Copy constructor - copies GeoData and all bands
-		GeoImage(const GeoImage& image);
-		//! Assignment Operator
-		GeoImage& operator=(const GeoImage& image) ;
-		//! Destructor
-		~GeoImage() { _RasterBands.clear(); }
+        }*/
+        //! Copy constructor - copies GeoData and all bands
+        GeoImage(const GeoImage& image);
+        //! Assignment Operator
+        GeoImage& operator=(const GeoImage& image) ;
+        //! Destructor
+        ~GeoImage() { _RasterBands.clear(); }
 
-		//! \name File Information
-		//! Number of bands
-		unsigned int NumBands() const { return _RasterBands.size(); }
-		//! Get datatype of image (check all raster bands, return 'largest')
-		GDALDataType DataType() const { return _RasterBands[0].DataType(); }
-		//! Return information on image as string
-		std::string Info(bool=true, bool=false) const;
+        //! \name File Information
+        //! Number of bands
+        unsigned int NumBands() const { return _RasterBands.size(); }
+        //! Get datatype of image (check all raster bands, return 'largest')
+        GDALDataType DataType() const { return _RasterBands[0].DataType(); }
+        //! Return information on image as string
+        std::string Info(bool=true, bool=false) const;
 
-		//! \name Bands and colors
-		//! Get vector of band names
-		std::vector<std::string> BandNames() const;
-		//! Get raster band (0-based index)
-		GeoRaster& operator[](int band) { return _RasterBands[band]; }
-		//! Get raster band, const version
-		const GeoRaster& operator[](int band) const { return _RasterBands[band]; }
-		//! Get raster band by color
-		GeoRaster& operator[](std::string col) {
-			// Call const version
-			return const_cast<GeoRaster&>(static_cast<const GeoImage&>(*this)[col]);
-		}
-		//! Get raster band by color, const version
-		const GeoRaster& operator[](std::string col) const;
-		//! Adds a band, at position bandnum (0-based)
-		GeoImage& AddBand(const GeoRaster& band); //, unsigned int bandnum=0);
-		//! Remove band
-		GeoImage& RemoveBand(unsigned int bandnum);
-		//! Prune bands to only provided colors
-		GeoImage& PruneBands(std::vector<std::string>);
-		//! Prune bands to RGB
-		GeoImage& PruneToRGB() {
-		    // TODO - get initializer_list working (c++11 standard)
-		    std::vector<std::string> cols; cols.push_back("Red"); cols.push_back("Green"); cols.push_back("Blue");
-		    return PruneBands(cols);
+        //! \name Bands and colors
+        //! Get vector of band names
+        std::vector<std::string> BandNames() const;
+        //! Get raster band (0-based index)
+        GeoRaster& operator[](int band) { return _RasterBands[band]; }
+        //! Get raster band, const version
+        const GeoRaster& operator[](int band) const { return _RasterBands[band]; }
+        //! Get raster band by color
+        GeoRaster& operator[](std::string col) {
+            // Call const version
+            return const_cast<GeoRaster&>(static_cast<const GeoImage&>(*this)[col]);
         }
-		//! Retrieve colors class
-		Colors GetColors() const { return _Colors; }
-		//! Set a color
-		void SetColor(std::string col,int bandnum) {
-		    _Colors.SetColor(col,bandnum);
-		    // Set color on individual band
+        //! Get raster band by color, const version
+        const GeoRaster& operator[](std::string col) const;
+        //! Adds a band, at position bandnum (0-based)
+        GeoImage& AddBand(const GeoRaster& band); //, unsigned int bandnum=0);
+        //! Remove band
+        GeoImage& RemoveBand(unsigned int bandnum);
+        //! Prune bands to only provided colors
+        GeoImage& PruneBands(std::vector<std::string>);
+        //! Prune bands to RGB
+        GeoImage& PruneToRGB() {
+            // TODO - get initializer_list working (c++11 standard)
+            std::vector<std::string> cols; cols.push_back("Red"); cols.push_back("Green"); cols.push_back("Blue");
+            return PruneBands(cols);
+        }
+        //! Retrieve colors class
+        Colors GetColors() const { return _Colors; }
+        //! Set a color
+        void SetColor(std::string col,int bandnum) {
+            _Colors.SetColor(col,bandnum);
+            // Set color on individual band
             _RasterBands[bandnum-1].SetColor(col);
             _RasterBands[bandnum-1].SetDescription(col);
         }
-		// TODO - dictionary?
+        // TODO - dictionary?
         /*void SetColors(int blue, int green, int red, int nir=0) {
             SetColor("Blue",blue);
             SetColor("Green",green);
@@ -137,12 +137,12 @@ namespace gip {
             if (nir > 0) SetColor("NIR",nir);
         }*/
         //! Copy color table from another image
-		void CopyColorTable(const GeoImage& raster) {
-		    if (NumBands() == 1) {
+        void CopyColorTable(const GeoImage& raster) {
+            if (NumBands() == 1) {
                 GDALColorTable* table( raster[0].GetGDALRasterBand()->GetColorTable() );
                 if (table != NULL) _RasterBands[0].GetGDALRasterBand()->SetColorTable(table);
-		    }
-		}
+            }
+        }
 
         //! \name Multiple band convenience functions
         //! Set gain for all bands
@@ -155,122 +155,111 @@ namespace gip {
         void SetUnitsOut(std::string units) const { for (unsigned int i=0;i<_RasterBands.size();i++) _RasterBands[i].SetUnitsOut(units); }
         //! Clear atmosphere from all bands
         void ClearAtmosphere() { for(unsigned int i=0;i<_RasterBands.size();i++) _RasterBands[i].ClearAtmosphere(); }
-		//! Set NoData for all bands
-		void SetNoData(double val) { for (unsigned int i=0;i<_RasterBands.size();i++) _RasterBands[i].SetNoData(val); }
-		//! Unset NoData for all bands
-		void ClearNoData() { for (unsigned int i=0;i<_RasterBands.size();i++) _RasterBands[i].ClearNoData(); }
+        //! Set NoData for all bands
+        void SetNoData(double val) { for (unsigned int i=0;i<_RasterBands.size();i++) _RasterBands[i].SetNoData(val); }
+        //! Unset NoData for all bands
+        void ClearNoData() { for (unsigned int i=0;i<_RasterBands.size();i++) _RasterBands[i].ClearNoData(); }
 
-		//! \name Processing functions
+        //! \name Processing functions
         //! Process band into new file (copy and apply processing functions)
-		GeoImage Process(std::string, GDALDataType = GDT_Unknown);
+        template<class T> GeoImage Process(std::string, GDALDataType = GDT_Unknown);
 
-		//! Adds a mask band (1 for valid) to every band in image
-		GeoImage& AddMask(const GeoRaster& band) {
-		    for (unsigned int i=0;i<_RasterBands.size();i++) _RasterBands[i].AddMask(band);
-		    return *this;
+        //! Adds a mask band (1 for valid) to every band in image
+        GeoImage& AddMask(const GeoRaster& band) {
+            for (unsigned int i=0;i<_RasterBands.size();i++) _RasterBands[i].AddMask(band);
+            return *this;
         }
-		//! Clear all masks
-		void ClearMasks() { for (unsigned int i=0;i<_RasterBands.size();i++) _RasterBands[i].ClearMasks(); }
+        //! Clear all masks
+        void ClearMasks() { for (unsigned int i=0;i<_RasterBands.size();i++) _RasterBands[i].ClearMasks(); }
 
-		//! Replace all 'Inf' or 'NaN' results with the bands NoData value
-		GeoImage& FixBadPixels();
+        //! Replace all 'Inf' or 'NaN' results with the bands NoData value
+        GeoImage& FixBadPixels();
 
         // hmm, what's this do?
-		//const GeoImage& ComputeStats() const;
+        //const GeoImage& ComputeStats() const;
 
-		//! Add overviews
-		GeoData& AddOverviews() {
+        //! Add overviews
+        GeoData& AddOverviews() {
             int panOverviewList[3] = { 2, 4, 8 };
             _GDALDataset->BuildOverviews( "NEAREST", 3, panOverviewList, 0, NULL, GDALDummyProgress, NULL );
             return *this;
-		}
+        }
 
-		//! Break up image into chunks
-		/*void Chunk(unsigned int pad=0) const {
-			GeoData::Chunk(pad);
-			for (unsigned int b=0;b<NumBands();b++) _RasterBands.
-		}*/
+        //! Break up image into chunks
+        /*void Chunk(unsigned int pad=0) const {
+            GeoData::Chunk(pad);
+            for (unsigned int b=0;b<NumBands();b++) _RasterBands.
+        }*/
 
-		//! \name File I/O
-		//! Read raw chunk, across all bands
-		template<class T> cimg_library::CImg<T> ReadRaw(int chunk=0) const { //, bool RAW=false) const {
-			cimg_library::CImgList<T> images;
-			typename std::vector< GeoRaster >::const_iterator iBand;
-			for (iBand=_RasterBands.begin();iBand!=_RasterBands.end();iBand++) {
-				images.insert( iBand->ReadRaw<T>(chunk) );
-			}
-			//return images.get_append('c','p');
-			return images.get_append('v','p');
-		}
-		//! Read chunk, across all bands
-		template<class T> cimg_library::CImg<T> Read(int chunk=0) const { //, bool RAW=false) const {
-			cimg_library::CImgList<T> images;
-			typename std::vector< GeoRaster >::const_iterator iBand;
-			for (iBand=_RasterBands.begin();iBand!=_RasterBands.end();iBand++) {
-				images.insert( iBand->Read<T>(chunk) );
-			}
-			//return images.get_append('c','p');
-			return images.get_append('v','p');
-		}
+        //! \name File I/O
+        //! Read raw chunk, across all bands
+        template<class T> cimg_library::CImg<T> ReadRaw(int chunk=0) const { //, bool RAW=false) const {
+            cimg_library::CImgList<T> images;
+            typename std::vector< GeoRaster >::const_iterator iBand;
+            for (iBand=_RasterBands.begin();iBand!=_RasterBands.end();iBand++) {
+                images.insert( iBand->ReadRaw<T>(chunk) );
+            }
+            //return images.get_append('c','p');
+            return images.get_append('v','p');
+        }
+        //! Read chunk, across all bands
+        template<class T> cimg_library::CImg<T> Read(int chunk=0) const { //, bool RAW=false) const {
+            cimg_library::CImgList<T> images;
+            typename std::vector< GeoRaster >::const_iterator iBand;
+            for (iBand=_RasterBands.begin();iBand!=_RasterBands.end();iBand++) {
+                images.insert( iBand->Read<T>(chunk) );
+            }
+            //return images.get_append('c','p');
+            return images.get_append('v','p');
+        }
 
         //GeoImageIO& Write(const CImg<T> img, int chunk=0, bool BadValCheck=false) {
         //    return Write(img, chunk, BadValCheck);
         //}
 
-		//! Write cube across all bands
-		template<class T> GeoImage& Write(const CImg<T> img, int chunk=0) { //, bool BadValCheck=false) {
-			typename std::vector< GeoRaster >::iterator iBand;
-			int i(0);
-			for (iBand=_RasterBands.begin();iBand!=_RasterBands.end();iBand++) {
-				CImg<T> tmp = img.get_channel(i++);
-				iBand->Write(tmp, chunk); //, BadValCheck);
-			}
-			return *this;
-		}
-		// Read Cube as list
-		template<class T> cimg_library::CImgList<T> ReadAsList(int chunk=0) const {
-			cimg_library::CImgList<T> images;
-			typename std::vector< GeoRaster >::const_iterator iBand;
-			for (iBand=_RasterBands.begin();iBand!=_RasterBands.end();iBand++) {
-				images.insert( iBand->Read<T>(chunk) );
-			}
-			return images;
-		}
-
-		//! NoData mask (all bands).  1's where it is good data
-		template<class T> CImg<unsigned char> NoDataMask(int chunk=0, std::vector<std::string> bands=std::vector<std::string>()) const {
-		    unsigned int c;
-		    CImg<T> cube = ReadRaw<T>(chunk);
-		    CImg<unsigned char> mask(cube.width(),cube.height(),1,1,1);
-		    std::vector<int> ibands;
-		    std::vector<int>::const_iterator b;
-		    if (bands.empty()) {
-		        for (c=0; c<NumBands(); c++) ibands.push_back(c);
-            } else {
-                for (std::vector<std::string>::const_iterator i=bands.begin(); i!=bands.end(); i++) {
-                    ibands.push_back(_Colors[*i]-1);
-                }
+        //! Write cube across all bands
+        template<class T> GeoImage& Write(const CImg<T> img, int chunk=0) { //, bool BadValCheck=false) {
+            typename std::vector< GeoRaster >::iterator iBand;
+            int i(0);
+            for (iBand=_RasterBands.begin();iBand!=_RasterBands.end();iBand++) {
+                CImg<T> tmp = img.get_channel(i++);
+                iBand->Write(tmp, chunk); //, BadValCheck);
             }
-            /*if (Options::Verbose() > 2) {
-                std::cout << "Retrieving nodata mask for bands ";
-                for (b=ibands.begin();b!=ibands.end();b++) std::cout << *b << " ";
-                std::cout << std::endl;
-            }*/
-            cimg_forXY(cube,x,y) {
-                for (std::vector<int>::const_iterator i=ibands.begin(); i!=ibands.end(); i++) {
-                    if ( (*this)[*i].NoData() && (cube(x,y,*i) == (*this)[*i].NoDataValue())) mask(x,y) = 0;
-                }
+            return *this;
+        }
+        // Read Cube as list
+        template<class T> cimg_library::CImgList<T> ReadAsList(int chunk=0) const {
+            cimg_library::CImgList<T> images;
+            typename std::vector< GeoRaster >::const_iterator iBand;
+            for (iBand=_RasterBands.begin();iBand!=_RasterBands.end();iBand++) {
+                images.insert( iBand->Read<T>(chunk) );
+            }
+            return images;
+        }
+
+        //! NoData mask (all bands).  1's where it is nodata
+        CImg<unsigned char> NoDataMask(int chunk=0, std::vector<std::string> bands=std::vector<std::string>()) const {
+            std::vector<int> ibands = Descriptions2Indices(bands);
+            CImg<unsigned char> mask;
+            for (std::vector<int>::const_iterator i=ibands.begin(); i!=ibands.end(); i++) {
+                if (i==ibands.begin()) 
+                    mask = CImg<unsigned char>(_RasterBands[*i].NoDataMask(chunk));
+                else
+                    mask|=_RasterBands[*i].NoDataMask(chunk);
             }
             return mask;
-		}
+        }
 
-        //! NoData mask (all bands).  1's where it is good data
-        // TODO - doesn't need to template?
-        template<class T> CImg<unsigned char> SaturationMask(int chunk=0, std::vector<std::string> bands=std::vector<std::string>()) const {
-            // TODO - utilize bands parameter like in NoDataMask
-            CImg<unsigned char> mask(_RasterBands[0].SaturationMask<T>(chunk));
-            for (unsigned int b=1;b<NumBands();b++)
-                mask|=_RasterBands[b].SaturationMask<T>(chunk);
+        //! Saturation mask (all bands).  1's where it is saturated
+        CImg<unsigned char> SaturationMask(int chunk=0, std::vector<std::string> bands=std::vector<std::string>()) const {
+            std::vector<int> ibands = Descriptions2Indices(bands);
+            CImg<unsigned char> mask;
+            for (std::vector<int>::const_iterator i=ibands.begin(); i!=ibands.end(); i++) {
+                if (i==ibands.begin()) 
+                    mask = CImg<unsigned char>(_RasterBands[*i].SaturationMask(chunk));
+                else
+                    mask|=_RasterBands[*i].SaturationMask(chunk);
+            }
             return mask;
         }
 
@@ -395,16 +384,47 @@ namespace gip {
         }
 
 
-	protected:
-		//! Vector of raster bands
-		std::vector< GeoRaster > _RasterBands;
+    protected:
+        //! Vector of raster bands
+        std::vector< GeoRaster > _RasterBands;
 
-		//! Map indicating which bands are what colors
-		Colors _Colors;
+        //! Map indicating which bands are what colors
+        Colors _Colors;
 
-		//! Loads Raster Bands of this GDALDataset into _RasterBands vector
-		void LoadBands();
-	};
+        //! Loads Raster Bands of this GDALDataset into _RasterBands vector
+        void LoadBands();
+
+        // Convert vector of band descriptions to band indices
+        std::vector<int> Descriptions2Indices(std::vector<std::string> bands) const {
+            std::vector<int> ibands;
+            std::vector<int>::const_iterator b;
+            if (bands.empty()) {
+                for (unsigned int c=0; c<NumBands(); c++) ibands.push_back(c);
+            } else {
+                for (std::vector<std::string>::const_iterator i=bands.begin(); i!=bands.end(); i++) {
+                    ibands.push_back(_Colors[*i]-1);
+                }
+            }
+            return ibands;
+        }
+
+    }; // class GeoImage
+
+    // Copy input file into new output file
+    template<class T> GeoImage GeoImage::Process(std::string filename, GDALDataType datatype) {
+        // TODO: if not supplied base output datatype on units?
+        if (datatype == GDT_Unknown) datatype = this->DataType();
+        GeoImage imgout(filename, *this, datatype);
+        for (unsigned int i=0; i<imgout.NumBands(); i++) {
+            imgout[i].CopyMeta((*this)[i]);
+            imgout[i].Process<T>((*this)[i]);
+        }
+        Colors colors = this->GetColors();
+        for (unsigned int i=0;i<this->NumBands();i++) imgout.SetColor(colors[i+1], i+1);
+        imgout.CopyColorTable(*this);
+        return imgout;
+    }
 
 } // namespace gip
+
 #endif

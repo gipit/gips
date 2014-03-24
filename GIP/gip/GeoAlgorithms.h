@@ -15,7 +15,7 @@
 namespace gip {
 
     //! Create a mask of NoData values
-    GeoRaster CreateMask(const GeoImage&, std::string);
+    //GeoRaster CreateMask(const GeoImage&, std::string);
 
     // TODO - Rad and Ref can be combined into some sort of product
     //! Calculate and output radiance

@@ -46,7 +46,7 @@ namespace gip {
     using std::endl;
 
     //! Create mask based on NoData values for all bands
-    GeoRaster CreateMask(const GeoImage& image, string filename) {
+    /*GeoRaster CreateMask(const GeoImage& image, string filename) {
         typedef float T;
 
         //CImg<T> imgchunk;
@@ -63,12 +63,12 @@ namespace gip {
             //        imgout &= Pbands[b].NoDataMask( Pbands[b].Read(*iChunk) );
             //}
             //validpixels += imgout.sum();
-            imgout = image.NoDataMask<T>(iChunk);
+            imgout = image.NoDataMask(iChunk);
             mask[0].Write(imgout,iChunk);
         }
         //mask[0].SetValidSize(validpixels);
         return mask[0];
-    }
+    }*/
 
     //! Calculate Radiance
     // TODO - combine with Copy/Process
@@ -88,9 +88,9 @@ namespace gip {
             imgout.SetColor(colors[b+1], b+1);
             for (unsigned int iChunk=1; iChunk<=image[b].NumChunks(); iChunk++) {
                 cimg = image[b].Read<float>(iChunk);
-                nodata = image[b].NoDataMask<float>(iChunk);
+                nodata = image[b].NoDataMask(iChunk);
                 // only if nodata not same between input and output images
-                cimg_forXY(cimg,x,y) { if (!nodata(x,y)) cimg(x,y) = imgout[b].NoDataValue(); }
+                cimg_forXY(cimg,x,y) { if (nodata(x,y)) cimg(x,y) = imgout[b].NoDataValue(); }
                 imgout[b].Write(cimg,iChunk);
             }
         }
@@ -116,8 +116,8 @@ namespace gip {
             imgout.SetColor(colors[b+1], b+1);
             for (unsigned int iChunk=1; iChunk<=image[b].NumChunks(); iChunk++) {
                 cimg = image[b].Read<float>(iChunk);
-                nodata = image[b].NoDataMask<float>(iChunk);
-                cimg_forXY(cimg,x,y) { if (!nodata(x,y)) cimg(x,y) = imgout[b].NoDataValue(); }
+                nodata = image[b].NoDataMask(iChunk);
+                cimg_forXY(cimg,x,y) { if (nodata(x,y)) cimg(x,y) = imgout[b].NoDataValue(); }
                 imgout[b].Write(cimg,iChunk);
             }
         }
@@ -139,8 +139,8 @@ namespace gip {
             for (unsigned int iChunk=1; iChunk<=image[b].NumChunks(); iChunk++) {
                 cimg = image[b].Read<float>(iChunk);
                 cimg = cimg.pow(2).log10() * 10 + CF;
-                nodata = image[b].NoDataMask<float>(iChunk);
-                cimg_forXY(cimg,x,y) { if (!nodata(x,y)) cimg(x,y) = nodataval; }
+                nodata = image[b].NoDataMask(iChunk);
+                cimg_forXY(cimg,x,y) { if (nodata(x,y)) cimg(x,y) = nodataval; }
                 imgout[b].Write(cimg,iChunk);
                 //imgoutIO[b].Write(nodata,iChunk);
             }
@@ -417,8 +417,8 @@ namespace gip {
                 }
                 //if (Options::Verbose() > 2) cout << "Getting mask" << endl;
                 // TODO don't read mask again...create here
-                cimgmask = image.NoDataMask<float>(iChunk, colors[prodname]);
-                cimg_forXY(cimgout,x,y) if (!cimgmask(x,y)) cimgout(x,y) = nodataout;
+                cimgmask = image.NoDataMask(iChunk, colors[prodname]);
+                cimg_forXY(cimgout,x,y) if (cimgmask(x,y)) cimgout(x,y) = nodataout;
                 imagesout[prodname].Write(cimgout,iChunk);
             }
         }
@@ -504,7 +504,7 @@ namespace gip {
             swir1 = image["SWIR1"].Read<float>(iChunk);
             temp = image["LWIR"].Read<float>(iChunk);
 
-            mask = image.NoDataMask<float>(iChunk, bands_used);
+            mask = image.NoDataMask(iChunk, bands_used)^=1;
 
             ndsi = (green - swir1).div(green + swir1);
             b56comp = (1.0 - swir1).mul(temp + 273.15);
@@ -626,7 +626,7 @@ namespace gip {
             clouds = imgout[b_pass1].Read<unsigned char>(iChunk);
             // should this be a |= ?
             if (addclouds) clouds += imgout[b_ambclouds].Read<unsigned char>(iChunk);
-            clouds|=(image.SaturationMask<float>(iChunk, bands_used));
+            clouds|=(image.SaturationMask(iChunk, bands_used));
             // Majority filter
             //clouds|=clouds.get_convolve(filter).threshold(majority));
             if (erode > 0)
@@ -641,7 +641,7 @@ namespace gip {
             }
             imgout[b_cloudmask].Write<unsigned char>(clouds,iChunk);
             // Inverse and multiply by nodata mask to get good data mask
-            imgout[b_finalmask].Write<unsigned char>((clouds^=1).mul(image.NoDataMask<float>(iChunk, bands_used)), iChunk);
+            imgout[b_finalmask].Write<unsigned char>((clouds^=1).mul(image.NoDataMask(iChunk, bands_used)^=1), iChunk);
             // TODO - add in snow mask
         }
         return imgout;

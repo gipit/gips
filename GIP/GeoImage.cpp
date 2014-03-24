@@ -96,21 +96,6 @@ namespace gip {
         return *this;
     }
 
-	// Copy input file into new output file
-	GeoImage GeoImage::Process(string filename, GDALDataType datatype) {
-	    // TODO: if not supplied base output datatype on units?
-	    if (datatype == GDT_Unknown) datatype = this->DataType();
-		GeoImage imgout(filename, *this, datatype);
-        for (unsigned int i=0; i<imgout.NumBands(); i++) {
-        	imgout[i].CopyMeta((*this)[i]);
-            imgout[i].Process((*this)[i]);
-        }
-		Colors colors = this->GetColors();
-		for (unsigned int i=0;i<this->NumBands();i++) imgout.SetColor(colors[i+1], i+1);
-		imgout.CopyColorTable(*this);
-		return imgout;
-	}
-
 	// Replaces all Inf or NaN pixels with NoDataValue
 	GeoImage& GeoImage::FixBadPixels() {
 		typedef float T;
