@@ -2,11 +2,12 @@
 #define GIP_GEORASTER_H
 
 #include <boost/filesystem.hpp>
-//#include <boost/geometry/geometry.hpp>
-//#include <boost/geometry/geometries/point_xy.hpp>
+#include <boost/function.hpp>
 
 #include <gip/gip_CImg.h>
 #include <gip/GeoData.h>
+#include <gip/Function.h>
+#include <boost/bind.hpp>
 #include <gip/Atmosphere.h>
 
 #include <iostream>
@@ -23,7 +24,7 @@ namespace gip {
     //enum UNITS {RAW, RADIANCE, REFLECTIVITY};
     //enum READMODE {NORMAL, RAW, ATMOSPHERE};
 
-    class GeoFunction {
+    /*class GeoFunction {
     public:
         GeoFunction()
             : _Function("") {}
@@ -37,7 +38,7 @@ namespace gip {
         std::string _Function;
         //string _Operand;
         double _dOperand;
-    };
+    };*/
 
     //! Extended GDALRasterBand class
     /*!
@@ -55,7 +56,7 @@ namespace gip {
             LoadBand(bandnum);
         }
         //! Copy constructor
-        GeoRaster(const GeoRaster& image, GeoFunction func=GeoFunction());
+        GeoRaster(const GeoRaster& image, Function func=Function());
         // Copy and add new function
         //GeoRaster(const GeoRaster& image, GeoFunction func);
         //! Assignment Operator
@@ -232,7 +233,7 @@ namespace gip {
             return *this;
         }
 
-        GeoRaster& AddFunction(GeoFunction func) {
+        /*GeoRaster& AddFunction(Function func) {
             _ValidStats = false;
             _Functions.push_back(func);
             return *this;
@@ -241,24 +242,47 @@ namespace gip {
             if (!_Functions.empty()) _ValidStats = false;
             _Functions.clear();
             return *this;
+        }*/
+
+        //! \name Processing functions
+
+        GeoRaster operator>(const double &val) const {
+            return GeoRaster(*this, Function(boost::bind(&CImg<double>::threshold, _1, val, false, true)));
         }
+/*
+            if (iFunc->Function() == ">") {
+                img.threshold(iFunc->Operand(),false,true);
+            } else if (iFunc->Function() == ">=") {
+                img.threshold(iFunc->Operand(),false,false);
+            } else if (iFunc->Function() == "<") {
+                img.threshold(iFunc->Operand(),false,false)^=1;
+            } else if (iFunc->Function() == "<=") {
+                img.threshold(iFunc->Operand(),false,true)^=1;
+            } else if (iFunc->Function() == "==") {
+                cimg_for(img,ptr,T) if (*ptr == iFunc->Operand()) *ptr = 1; else *ptr = 0;
+                //img = img.get_threshold(iFunc->Operand(),false,false) - img.get_threshold(iFunc->Operand(),false,true);
+            } else if (iFunc->Function() == "+") {
+                img = img + iFunc->Operand();
+            } else if (iFunc->Function() == "-") {
+                img = img - iFunc->Operand();
+*/
 
         // Logical functions
         //! Greater than
-        GeoRaster operator>(double val) const { return GeoRaster(*this, GeoFunction(">",val)); }
+        //GeoRaster operator>(double val) const { return GeoRaster(*this, GeoFunction(">",val)); }
         //! Greater than or equal to
-        GeoRaster operator>=(double val) const { return GeoRaster(*this, GeoFunction(">=",val)); }
+        //GeoRaster operator>=(double val) const { return GeoRaster(*this, GeoFunction(">=",val)); }
         //! Less than
-        GeoRaster operator<(double val) const { return GeoRaster(*this, GeoFunction("<",val)); }
+        //GeoRaster operator<(double val) const { return GeoRaster(*this, GeoFunction("<",val)); }
         //! Less than or equal to
-        GeoRaster operator<=(double val) const { return GeoRaster(*this, GeoFunction("<=",val)); }
+        //GeoRaster operator<=(double val) const { return GeoRaster(*this, GeoFunction("<=",val)); }
         //! Equal to
-        GeoRaster operator==(double val) const { return GeoRaster(*this, GeoFunction("==",val)); }
+        //GeoRaster operator==(double val) const { return GeoRaster(*this, GeoFunction("==",val)); }
         // Basic math
         //! Add constant to every pixel
-        GeoRaster operator+(double val) const { return GeoRaster(*this, GeoFunction("+",val)); }
+        //GeoRaster operator+(double val) const { return GeoRaster(*this, GeoFunction("+",val)); }
         //! Subtract constant from every pixel
-        GeoRaster operator-(double val) const { return GeoRaster(*this, GeoFunction("-",val)); }
+        //GeoRaster operator-(double val) const { return GeoRaster(*this, GeoFunction("-",val)); }
 
         // Statistics - should these be stored?
         //double Min() const { return (GetGDALStats())[0]; }
@@ -365,7 +389,7 @@ namespace gip {
         gip::Atmosphere _Atmosphere;
 
         //! List of processing functions to apply on reads (in class GeoProcess)
-        std::vector<GeoFunction> _Functions;
+        std::vector< boost::function< CImg<double>& > > _Functions;
 
     private:
         //! Default constructor - private so not callable
@@ -483,29 +507,15 @@ namespace gip {
             updatenodata = true;
         }
 
-        // Apply Processing functions
-        std::vector<GeoFunction>::const_iterator iFunc;
+        std::vector<Function>::const_iterator iFunc;
         for (iFunc=_Functions.begin();iFunc!=_Functions.end();iFunc++) {
             if (Options::Verbose() > 3 && (chunk.p0()==iPoint(0,0)))
-                std::cout << Basename() << ": Applying function " << iFunc->Function() << " " << iFunc->Operand() << std::endl;
-            if (iFunc->Function() == ">") {
-                img.threshold(iFunc->Operand(),false,true);
-            } else if (iFunc->Function() == ">=") {
-                img.threshold(iFunc->Operand(),false,false);
-            } else if (iFunc->Function() == "<") {
-                img.threshold(iFunc->Operand(),false,false)^=1;
-            } else if (iFunc->Function() == "<=") {
-                img.threshold(iFunc->Operand(),false,true)^=1;
-            } else if (iFunc->Function() == "==") {
-                cimg_for(img,ptr,T) if (*ptr == iFunc->Operand()) *ptr = 1; else *ptr = 0;
-                //img = img.get_threshold(iFunc->Operand(),false,false) - img.get_threshold(iFunc->Operand(),false,true);
-            } else if (iFunc->Function() == "+") {
-                img = img + iFunc->Operand();
-            } else if (iFunc->Function() == "-") {
-                img = img - iFunc->Operand();
-            }
+                std::cout << Basename() << ": Applying function " << iFunc->Function() << std::endl;
+            ifunc->Function()(img);
             updatenodata = true;
         }
+
+        // Apply Processing functions
 
         // If processing was applied update NoData values where needed
         if (NoData() && updatenodata) {
