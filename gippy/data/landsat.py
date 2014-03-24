@@ -127,8 +127,8 @@ class LandsatData(Data):
     _products = {
         #'Standard': {
         # 'rgb': 'RGB image for viewing (quick processing)',
-        'rad':  {'description': 'Surface-leaving radiance', 'args': '?'},
-        'ref':  {'description': 'Surface reflectance', 'args': '?'},
+        'rad':  {'description': 'Surface-leaving radiance'}, # , 'args': '?'},
+        'ref':  {'description': 'Surface reflectance'}, #, 'args': '?'},
         'acca': {'description': 'Automated Cloud Cover Assesment', 'args': '*', 'toa': True},
         #'Indices': {
         'bi':   {'description': 'Brightness Index'},
@@ -388,6 +388,7 @@ class LandsatData(Data):
 
     @classmethod
     def extra_arguments(cls):
+        return {}
         return {'--noatmos': {
                 'help': 'No atmospheric correction for any products',
                 'default': False, 'action': 'store_true'
