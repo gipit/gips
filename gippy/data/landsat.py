@@ -212,7 +212,7 @@ class LandsatData(Data):
                 img[i] = b
                 VerboseOut('Band %i: atmospherically correcting' % (i+1), 3)
             fnames = [os.path.join(self.path, self.basename + '_' + key) for key in indices]
-            prodarr = dict(zip([p for p in indices.keys()], fnames))
+            prodarr = dict(zip([indices[p][0] for p in indices.keys()], fnames))
             prodout = gippy.Indices(img, prodarr)
             self.products.update(prodout)
             VerboseOut(' -> %s: processed %s in %s' % (self.basename, indices.keys(), datetime.now()-start))
