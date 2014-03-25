@@ -223,6 +223,7 @@ namespace gip {
         }
 
         //! \name Processing functions
+        // Logical operators
         GeoRaster operator>(const double &val) const {
             return GeoRaster(*this, boost::bind(&CImg<double>::threshold, _1, val, false, true));
         }
@@ -237,6 +238,8 @@ namespace gip {
             GeoRaster r(*this, boost::bind(&CImg<double>::threshold, _1, val, false, true));
             return r^=1;
         }
+
+        // Arithmetic
         GeoRaster operator^=(const double &val) const {
             return GeoRaster(*this, boost::bind(boost::mem_fn<CImg<double>&,CImg<double>,const double&>(&CImg<double>::operator^=), _1, 1) );
         }
@@ -246,6 +249,39 @@ namespace gip {
         GeoRaster operator-(const double &val) const {
             return GeoRaster(*this, boost::bind(boost::mem_fn<CImg<double>&,CImg<double>,const double&>(&CImg<double>::operator-=), _1, val));
         }
+        GeoRaster operator*(const double &val) const {
+            return GeoRaster(*this, boost::bind(boost::mem_fn<CImg<double>&,CImg<double>,const double&>(&CImg<double>::operator*=), _1, val));
+        }
+        GeoRaster operator/(const double &val) const {
+            return GeoRaster(*this, boost::bind(boost::mem_fn<CImg<double>&,CImg<double>,const double&>(&CImg<double>::operator/=), _1, val));
+        }
+        //friend GeoRaster operator/(const double &val, GeoRaster raster) const {
+        //    return GeoRaster(raster, boost::bind(boost::mem_fn<CImg<double>&,CImg<double>,const double&>(&CImg<double>::operator/=), _1, val));
+        //}
+
+        // Trig functions and the like
+        GeoRaster sqrt() const {
+            return GeoRaster(*this, boost::bind(&CImg<double>::sqrt, _1));
+        }
+        GeoRaster log() const {
+            return GeoRaster(*this, boost::bind(&CImg<double>::log, _1));
+        }
+        GeoRaster log10() const {
+            return GeoRaster(*this, boost::bind(&CImg<double>::log10, _1));
+        }
+        GeoRaster abs() const {
+            return GeoRaster(*this, boost::bind(&CImg<double>::abs, _1));
+        }
+        GeoRaster cos() const {
+            return GeoRaster(*this, boost::bind(&CImg<double>::cos, _1));
+        }
+        GeoRaster sin() const {
+            return GeoRaster(*this, boost::bind(&CImg<double>::sin, _1));
+        }
+        GeoRaster tan() const {
+            return GeoRaster(*this, boost::bind(&CImg<double>::tan, _1));
+        }
+
 
         // Statistics - should these be stored?
         //double Min() const { return (GetGDALStats())[0]; }
@@ -463,7 +499,7 @@ namespace gip {
             if (Options::Verbose() > 3 && (chunk.p0()==iPoint(0,0)))
                 std::cout << Basename() << ": converting radiance to reflectance" << std::endl;
             if (Thermal()) {
-                cimg_for(img,ptr,T) *ptr = (_K2/log(_K1/(*ptr)+1)) - 273.15;
+                cimg_for(img,ptr,T) *ptr = (_K2/std::log(_K1/(*ptr)+1)) - 273.15;
             } else {
                 float normrad = Atmosphere() ? (1.0/_Atmosphere.Ld()) : (1.0/_Esun);
                 cimg_for(img,ptr,T) *ptr = *ptr * normrad;

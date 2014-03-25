@@ -105,8 +105,8 @@ namespace gip {
             }
         }
         float var = total/count;
-        float stdev = sqrt(var);
-        float skew = (total3/count)/sqrt(var*var*var);
+        float stdev = std::sqrt(var);
+        float skew = (total3/count)/std::sqrt(var*var*var);
         _Stats = CImg<float>(6,1,1,1,(float)min,(float)max,mean,stdev,skew,count);
         _ValidStats = true;
 
