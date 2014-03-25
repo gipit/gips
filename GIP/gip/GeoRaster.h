@@ -6,7 +6,6 @@
 
 #include <gip/gip_CImg.h>
 #include <gip/GeoData.h>
-#include <gip/Function.h>
 #include <boost/bind.hpp>
 #include <gip/Atmosphere.h>
 
@@ -19,36 +18,14 @@
 #include <typeinfo>
 
 namespace gip {
-    //typedef bgeo::model::d2::point_xy<float> point;
-
-
-    //enum UNITS {RAW, RADIANCE, REFLECTIVITY};
-    //enum READMODE {NORMAL, RAW, ATMOSPHERE};
-
-    /*class GeoFunction {
-    public:
-        GeoFunction()
-            : _Function("") {}
-        GeoFunction(std::string f, double v)
-            : _Function(f), _dOperand(v) {
-        }
-        std::string Function() const { return _Function; }
-        //string Operand() const { return _Operand; }
-        double Operand() const { return _dOperand; }
-    private:
-        std::string _Function;
-        //string _Operand;
-        double _dOperand;
-    };*/
-
     //! Extended GDALRasterBand class
     /*!
         The GeoRaster class wraps the GDALRasterBand class
     */
     class GeoRaster : public GeoData {
         friend class GeoImage;
-        typedef boost::function< CImg<double>& (CImg<double>&) > func;
     public:
+        typedef boost::function< CImg<double>& (CImg<double>&) > func;
         //! \name Constructors/Destructors
         //! Constructor for new band
         GeoRaster(const GeoData& geodata, int bandnum=1)
@@ -59,9 +36,7 @@ namespace gip {
         }
         //! Copy constructor
         GeoRaster(const GeoRaster& image);
-        GeoRaster(const GeoRaster& image, Function func);
-        // Copy and add new function
-        //GeoRaster(const GeoRaster& image, GeoFunction func);
+        GeoRaster(const GeoRaster& image, func f);
         //! Assignment Operator
         GeoRaster& operator=(const GeoRaster& image);
         //! Destructor
@@ -236,9 +211,9 @@ namespace gip {
             return *this;
         }
 
-        GeoRaster& AddFunction(Function func) {
+        GeoRaster& AddFunction(func f) {
             _ValidStats = false;
-            _Functions.push_back(func);
+            _Functions.push_back(f);
             return *this;
         }
         GeoRaster& ClearFunctions() {
@@ -249,29 +224,29 @@ namespace gip {
 
         //! \name Processing functions
         GeoRaster operator>(const double &val) const {
-            return GeoRaster(*this, Function(boost::bind(&CImg<double>::threshold, _1, val, false, true)));
+            return GeoRaster(*this, boost::bind(&CImg<double>::threshold, _1, val, false, true));
         }
         GeoRaster operator>=(const double &val) const {
-            return GeoRaster(*this, Function(boost::bind(&CImg<double>::threshold, _1, val, false, false)));
+            return GeoRaster(*this, boost::bind(&CImg<double>::threshold, _1, val, false, false));
         }
         GeoRaster operator<(const double &val) const {
-            GeoRaster r(*this, Function(boost::bind(&CImg<double>::threshold, _1, val, false, false)) );
+            GeoRaster r(*this, boost::bind(&CImg<double>::threshold, _1, val, false, false) );
             return r^=1;
         }
         GeoRaster operator<=(const double &val) const {
-            GeoRaster r(*this, Function(boost::bind(&CImg<double>::threshold, _1, val, false, true)));
+            GeoRaster r(*this, boost::bind(&CImg<double>::threshold, _1, val, false, true));
             return r^=1;
         }
         GeoRaster operator^=(const double &val) const {
-            return GeoRaster(*this, Function(boost::bind(boost::mem_fn<CImg<double>&,CImg<double>,const double&>(&CImg<double>::operator^=), _1, 1) ));
+            return GeoRaster(*this, boost::bind(boost::mem_fn<CImg<double>&,CImg<double>,const double&>(&CImg<double>::operator^=), _1, 1) );
         }
         GeoRaster operator+(const double &val) const {
-            return GeoRaster(*this, Function(boost::bind(boost::mem_fn<CImg<double>&,CImg<double>,const double&>(&CImg<double>::operator+=), _1, val)));
+            return GeoRaster(*this, boost::bind(boost::mem_fn<CImg<double>&,CImg<double>,const double&>(&CImg<double>::operator+=), _1, val));
         }
         GeoRaster operator-(const double &val) const {
-            return GeoRaster(*this, Function(boost::bind(boost::mem_fn<CImg<double>&,CImg<double>,const double&>(&CImg<double>::operator-=), _1, val)));
+            return GeoRaster(*this, boost::bind(boost::mem_fn<CImg<double>&,CImg<double>,const double&>(&CImg<double>::operator-=), _1, val));
         }
-        
+
         // Statistics - should these be stored?
         //double Min() const { return (GetGDALStats())[0]; }
         //double Max() const { return (GetGDALStats())[1]; }
@@ -378,7 +353,7 @@ namespace gip {
 
         //! List of processing functions to apply on reads (in class GeoProcess)
         //std::vector< boost::function< CImg<double>& (CImg<double>&) > > _Functions;
-        std::vector<Function> _Functions;
+        std::vector<func> _Functions;
 
     private:
         //! Default constructor - private so not callable
@@ -502,8 +477,8 @@ namespace gip {
             //if (Options::Verbose() > 3 && (chunk.p0()==iPoint(0,0)))
                 //    std::cout << Basename() << ": Applying function " << std::endl;
                     //std::cout << Basename() << ": Applying function " << iFunc->F() << std::endl;
-            for (std::vector<Function>::const_iterator iFunc=_Functions.begin();iFunc!=_Functions.end();iFunc++) {
-                iFunc->F(imgd);
+            for (std::vector<func>::const_iterator iFunc=_Functions.begin();iFunc!=_Functions.end();iFunc++) {
+                (*iFunc)(imgd);
             }
             updatenodata = true;
             img.assign(imgd);

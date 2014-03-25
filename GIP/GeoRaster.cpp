@@ -12,12 +12,12 @@ namespace gip {
             _Atmosphere(image._Atmosphere), _Functions(image._Functions) {}
 
 	// Copy constructor
-	GeoRaster::GeoRaster(const GeoRaster& image, Function func)
+	GeoRaster::GeoRaster(const GeoRaster& image, func f)
 		: GeoData(image), _GDALRasterBand(image._GDALRasterBand), _Masks(image._Masks), _NoData(image._NoData), _ValidStats(image._ValidStats), _Stats(image._Stats), //_ValidSize(image._ValidSize),
             _UnitsOut(image._UnitsOut), _minDC(image._minDC), _maxDC(image._maxDC), _K1(image._K1), _K2(image._K2), _Esun(image._Esun),
             _Atmosphere(image._Atmosphere), _Functions(image._Functions) {
         //if (func.Function() != "") AddFunction(func);
-        _Functions.push_back(func);
+        _Functions.push_back(f);
 		//std::cout << Basename() << ": GeoRaster copy (" << this << ")" << std::endl;
 	}
 
