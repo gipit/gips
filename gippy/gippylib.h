@@ -146,7 +146,7 @@ namespace std {
 %ignore gip::GeoData::operator=;
 %ignore gip::Colors::operator[];
 %ignore gip::GeoImage::operator[];
-%ignore gip::GeoRaster::operator==;
+//%ignore gip::GeoRaster::operator==;
 
 // GIP headers and classes to be wrapped
 %include "gip/GeoData.h"
@@ -195,9 +195,9 @@ namespace gip {
 
     %extend GeoRaster {
         // Processing functions
-        GeoRaster __eq__(double val) {
-            return self->operator==(val);
-        }
+        //GeoRaster __eq__(double val) {
+        //    return self->operator==(val);
+        //}
 		%feature("docstring",
 				 "PyObject returned is a numpy.array.\n"
 				 "Enjoy!\n ");
