@@ -333,6 +333,7 @@ namespace gip {
         string prodname;
         for (iprod=products.begin(); iprod!=products.end(); iprod++) {
             //imagesout[*iprod] = GeoImageIO<float>(GeoImage(basename + '_' + *iprod, image, GDT_Int16));
+            if (Options::Verbose() > 2) cout << iprod->first << ", " << iprod->second << endl;
             prodname = iprod->first;
             imagesout[prodname] = GeoImage(iprod->second, image, GDT_Int16, 1);
             imagesout[prodname].SetNoData(nodataout);
@@ -366,6 +367,11 @@ namespace gip {
                 used_colors.insert(*ivstr);
             }
         }
+        if (Options::Verbose() > 2) {
+            cout << "Colors used: ";
+            for (isstr=used_colors.begin();isstr!=used_colors.end();isstr++) cout << " " << *isstr;
+            cout << endl;
+        }
 
         CImg<float> red, green, blue, nir, swir1, swir2, cimgout, cimgmask;
 
@@ -380,14 +386,10 @@ namespace gip {
                 else if (*isstr == "SWIR1") swir1 = image["SWIR1"].Read<float>(iChunk);
                 else if (*isstr == "SWIR2") swir2 = image["SWIR2"].Read<float>(iChunk);
             }
-            if (Options::Verbose() > 2) {
-                cout << "Colors used: ";
-                for (isstr=used_colors.begin();isstr!=used_colors.end();isstr++) cout << " " << *isstr;
-                cout << endl;
-            }
 
             for (iprod=products.begin(); iprod!=products.end(); iprod++) {
                 prodname = iprod->first;
+                if (Options::Verbose() > 4) cout << "Product " << prodname << endl;
                 //cout << "Products: " << prodname << std::flush;
                 //string pname = iprod->toupper();
                 if (prodname == "ndvi") {

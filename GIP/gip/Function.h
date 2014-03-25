@@ -11,12 +11,13 @@ namespace gip {
 
 	public:
 		Function() {}
+		Function(boost::function<CImg<double>& (CImg<double>&)> f) 
+			: F(f) {}
 		~Function() {}
 
 		//! Unary member function
 		boost::function< CImg<double>& (CImg<double>&) > F;
 	private:
-
 
 	}; // class Function
 
