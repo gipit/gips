@@ -36,16 +36,7 @@ class DNAMEAsset(Asset):
     }
 
 
-class DNAMEProduct(Product):
-
+class DNAMEData(Data):
+    Asset = DNAMEAsset
     _products = {}
     _groups = {}
-
-
-class DNAMETile(Tile):
-    Asset = DNAMEAsset
-
-
-class DNAMEData(Data):
-    Tile = DNAMETile
-    Product = DNAMETile
