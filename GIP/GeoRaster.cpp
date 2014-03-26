@@ -56,7 +56,7 @@ namespace gip {
 			info << ", NoData = " << NoDataValue() << endl;
         else info << endl;
         if (showstats) {
-            cimg_library::CImg<float> stats = this->ComputeStats();
+            cimg_library::CImg<float> stats = this->Stats();
         	info << "\t\tMin = " << stats(0) << ", Max = " << stats(1) << ", Mean = " << stats(2) << " =/- " << stats(3) << endl;
         }
         if (!_Functions.empty()) info << "\t\tFunctions:" << endl;
@@ -71,7 +71,7 @@ namespace gip {
 	}
 
     //! Compute stats
-    cimg_library::CImg<float> GeoRaster::ComputeStats() const {
+    cimg_library::CImg<float> GeoRaster::Stats() const {
         using cimg_library::CImg;
 
         if (_ValidStats) return _Stats;
@@ -114,7 +114,7 @@ namespace gip {
     }
 
     float GeoRaster::Percentile(float p) const {
-        CImg<float> stats = ComputeStats();
+        CImg<float> stats = Stats();
         unsigned int bins(100);
         CImg<float> hist = Histogram(bins,true) * 100;
         CImg<float> xaxis(bins);
@@ -131,7 +131,7 @@ namespace gip {
     //! Compute histogram
     cimg_library::CImg<float> GeoRaster::Histogram(int bins, bool cumulative) const {
         CImg<double> cimg;
-        CImg<float> stats = ComputeStats();
+        CImg<float> stats = Stats();
         CImg<float> hist(bins,1,1,1,0);
         long numpixels(0);
         float nodata = NoDataValue();

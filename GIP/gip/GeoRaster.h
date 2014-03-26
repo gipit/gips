@@ -16,6 +16,7 @@
 #include <boost/algorithm/string.hpp>
 
 #include <typeinfo>
+#include <ctime>
 
 namespace gip {
     //! Extended GDALRasterBand class
@@ -232,17 +233,18 @@ namespace gip {
         }
         GeoRaster operator<(const double &val) const {
             GeoRaster r(*this, boost::bind(&CImg<double>::threshold, _1, val, false, false) );
-            return r^=1;
+            return r.BXOR(1);
         }
         GeoRaster operator<=(const double &val) const {
             GeoRaster r(*this, boost::bind(&CImg<double>::threshold, _1, val, false, true));
-            return r^=1;
+            return r.BXOR(1);
+        }
+        //! Bitwise XOR
+        GeoRaster BXOR(const double &val) const {
+            return GeoRaster(*this, boost::bind(boost::mem_fn<CImg<double>&,CImg<double>,const double&>(&CImg<double>::operator^=), _1, 1) );
         }
 
         // Arithmetic
-        GeoRaster operator^=(const double &val) const {
-            return GeoRaster(*this, boost::bind(boost::mem_fn<CImg<double>&,CImg<double>,const double&>(&CImg<double>::operator^=), _1, 1) );
-        }
         GeoRaster operator+(const double &val) const {
             return GeoRaster(*this, boost::bind(boost::mem_fn<CImg<double>&,CImg<double>,const double&>(&CImg<double>::operator+=), _1, val));
         }
@@ -255,40 +257,50 @@ namespace gip {
         GeoRaster operator/(const double &val) const {
             return GeoRaster(*this, boost::bind(boost::mem_fn<CImg<double>&,CImg<double>,const double&>(&CImg<double>::operator/=), _1, val));
         }
-        //friend GeoRaster operator/(const double &val, GeoRaster raster) const {
-        //    return GeoRaster(raster, boost::bind(boost::mem_fn<CImg<double>&,CImg<double>,const double&>(&CImg<double>::operator/=), _1, val));
+        //friend GeoRaster operator/(const double &val, const GeoRaster& raster) {
+        //    return raster.pow(-1)*val;
         //}
 
-        // Trig functions and the like
+        //! Exponent
+        GeoRaster operator^(const double &val) const {
+            return GeoRaster(*this, boost::bind(boost::mem_fn<CImg<double>&,CImg<double>,const double>(&CImg<double>::pow), _1, val));
+        }
+        //! Square root
         GeoRaster sqrt() const {
             return GeoRaster(*this, boost::bind(&CImg<double>::sqrt, _1));
         }
+        //! Natural logarithm
         GeoRaster log() const {
             return GeoRaster(*this, boost::bind(&CImg<double>::log, _1));
         }
+        //! Log (base 10)
         GeoRaster log10() const {
             return GeoRaster(*this, boost::bind(&CImg<double>::log10, _1));
         }
+        //! Absolute value
         GeoRaster abs() const {
             return GeoRaster(*this, boost::bind(&CImg<double>::abs, _1));
         }
+
+        // Cosine
         GeoRaster cos() const {
             return GeoRaster(*this, boost::bind(&CImg<double>::cos, _1));
         }
+        //! Sine
         GeoRaster sin() const {
             return GeoRaster(*this, boost::bind(&CImg<double>::sin, _1));
         }
+        //! Tangent
         GeoRaster tan() const {
             return GeoRaster(*this, boost::bind(&CImg<double>::tan, _1));
         }
-
 
         // Statistics - should these be stored?
         //double Min() const { return (GetGDALStats())[0]; }
         //double Max() const { return (GetGDALStats())[1]; }
         //double Mean() const { return (GetGDALStats())[2]; }
         //double StdDev() const { return (GetGDALStats())[3]; }
-        cimg_library::CImg<float> ComputeStats() const;
+        cimg_library::CImg<float> Stats() const;
 
         cimg_library::CImg<float> Histogram(int bins=100, bool cumulative=false) const;
 
@@ -459,8 +471,6 @@ namespace gip {
             }
         }
 
-        if (Options::Verbose() > 3) std::cout << Basename() << ": read " << chunk << std::endl;
-
         delete ptrPixels;
         return img;
     }
@@ -474,6 +484,7 @@ namespace gip {
 
     //! Retrieve a piece of the image as a CImg
     template<class T> cimg_library::CImg<T> GeoRaster::Read(iRect chunk) const {
+        time_t start = time(NULL);
         using cimg_library::CImg;
 
         CImg<T> img(ReadRaw<T>(chunk));
@@ -528,6 +539,9 @@ namespace gip {
                 if (imgorig(x,y) == NoDataValue()) img(x,y) = NoDataValue();
             }
         }
+        if (Options::Verbose() > 3)
+            std::cout << Basename() << ": read " << chunk << " in " << difftime(time(NULL),start) << " seconds" << std::endl;
+
         return img;
     }
 

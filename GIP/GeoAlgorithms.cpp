@@ -159,7 +159,7 @@ namespace gip {
         CImg<float> stats, cimg;
         CImg<unsigned char> mask;
         for (unsigned int b=0;b<img.NumBands();b++) {
-            stats = img[b].ComputeStats();
+            stats = img[b].Stats();
             float lo = std::max(stats(2) - 3*stats(3), stats(0)-1);
             float hi = std::min(stats(2) + 3*stats(3), stats(1));
             for (unsigned int iChunk=1; iChunk<=img[b].NumChunks(); iChunk++) {
@@ -551,7 +551,7 @@ namespace gip {
         }
         // Cloud statistics
         float cloudcover = cloudsum / scenesize;
-        CImg<float> tstats = image["LWIR"].AddMask(imgout[b_pass1]).ComputeStats();
+        CImg<float> tstats = image["LWIR"].AddMask(imgout[b_pass1]).Stats();
         if (Options::Verbose() > 1) {
             cout.precision(4);
             cout << "   Cloud Cover = " << cloudcover*100 << "%" << endl;
@@ -573,7 +573,7 @@ namespace gip {
                 th1 += shift;
             }
             image["LWIR"].ClearMasks();
-            CImg<float> warm_stats = image["LWIR"].AddMask(imgout[b_ambclouds]).AddMask(image["LWIR"] < th1).AddMask(image["LWIR"] > th0).ComputeStats();
+            CImg<float> warm_stats = image["LWIR"].AddMask(imgout[b_ambclouds]).AddMask(image["LWIR"] < th1).AddMask(image["LWIR"] > th0).Stats();
             if (Options::Verbose() > 1) cimg_print(warm_stats, "Warm Cloud stats(min,max,mean,sd,skew,count)");
             image["LWIR"].ClearMasks();
             if (((warm_stats(5)/scenesize) < 0.4) && (warm_stats(2) < 22)) {
@@ -582,7 +582,7 @@ namespace gip {
                 addclouds = true;
             } else {
                 // Cold clouds
-                CImg<float> cold_stats = image["LWIR"].AddMask(imgout[b_ambclouds]).AddMask(image["LWIR"] < th0).ComputeStats();
+                CImg<float> cold_stats = image["LWIR"].AddMask(imgout[b_ambclouds]).AddMask(image["LWIR"] < th0).Stats();
                 if (Options::Verbose() > 1) cimg_print(cold_stats, "Cold Cloud stats(min,max,mean,sd,skew,count)");
                 image["LWIR"].ClearMasks();
                 if (((cold_stats(5)/scenesize) < 0.4) && (cold_stats(2) < 22)) {
@@ -743,8 +743,8 @@ namespace gip {
 
         CImg<double> _wstats( wstats.crop(0,0,0,0, wloc-1,0,0,0).stats() );
         CImg<double> _lstats( lstats.crop(0,0,0,0, lloc-1,0,0,0).stats() );
-        //CImg<double> _wstats = probout[0].ComputeStats();
-        //CImg<double> _lstats = probout[1].ComputeStats();
+        //CImg<double> _wstats = probout[0].Stats();
+        //CImg<double> _lstats = probout[1].Stats();
         double wmean(_wstats(2)), wstddev(sqrt(_wstats(3)));
         double lmean(_lstats(2)), lstddev(sqrt(_lstats(3)));
         double Twater(zhi*wstddev + wmean);
@@ -783,7 +783,7 @@ namespace gip {
         // Apply thresholds to get final max
         float tol = (tolerance-3)*0.1;
         float wthresh = 0.5 + tol;
-        CImg<double> stats = probout[0].ComputeStats();
+        CImg<double> stats = probout[0].Stats();
         float lthresh( zhi*stats(3) + stats(2) + 0.2 + tol );
 
         if (Options::Verbose() > 1) {
