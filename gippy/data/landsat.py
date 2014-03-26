@@ -198,7 +198,7 @@ class LandsatData(Data):
                 self.products[key] = fname
                 VerboseOut(' -> %s: processed in %s' % (os.path.basename(fname), datetime.now()-start))
             except Exception, e:
-                VerboseOut('Error creating product %s for %s: %s' % (p, bname, e), 3)
+                VerboseOut('Error creating product %s for %s: %s' % (key, bname, e), 3)
                 VerboseOut(traceback.format_exc(), 4)
 
         # Process Indices

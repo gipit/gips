@@ -67,6 +67,7 @@ class ModisAsset(Asset):
         }
     }
 
+    # TODO - should be temporal extent
     _launchdate = {
         'MOD': datetime.date(1999, 12, 1),
         'MYD': datetime.date(2002, 5, 1),
