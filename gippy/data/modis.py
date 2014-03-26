@@ -34,6 +34,9 @@ from pdb import set_trace
 
 class ModisAsset(Asset):
     _rootpath = '/titan/data/modis'
+
+    _stagedir = os.path.join(_rootpath, 'stage')
+
     _sensors = {
         'MOD': {'description': 'Terra'},
         'MYD': {'description': 'Aqua'},
@@ -60,6 +63,9 @@ class ModisAsset(Asset):
         """ Inspect a single file and get some metadata """
         super(ModisAsset, self).__init__(filename)
 
+        print "asset. filename"
+        print filename
+
         self.asset = self.basename[0:7]
         self.tile = self.basename[17:23]
         year = self.basename[9:13]
@@ -69,10 +75,17 @@ class ModisAsset(Asset):
         self.basename = 'MODIS'+self.tile+'_'+year+doy
 
         datafiles = self.datafiles()
+
+        # I don't understand what this is used for
+        # because the asset could be many different things
         self.products = {'sds1': datafiles[0]}
+
 
     def datafiles(self):
         indexfile = self.filename + '.index'
+
+        print indexfile
+
         if os.path.exists(indexfile):
             datafiles = File2List(indexfile)
         else:
