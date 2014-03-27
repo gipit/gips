@@ -141,7 +141,7 @@ class Tiles(object):
                 start = datetime.now()
                 sitebase = os.path.splitext(os.path.basename(self.site))[0] + '_'
                 sensor = '_' + self.sensor if self.sensor != '' else ''
-                bname = sitebase + self.date.strftime('%Y%j') + '_%s%s.tif' % (product, sensor)
+                bname = sitebase + self.date.strftime('%Y%j') + '_%s%s.tif' % (sensor, product)
                 filename = os.path.join(datadir, bname)
                 if not os.path.exists(filename):
                     filenames = [self.tiles[t].products[product] for t in self.tiles]
