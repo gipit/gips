@@ -160,6 +160,7 @@ namespace std {
 enum GDALDataType { GDT_Unknown, GDT_Byte, GDT_UInt16, GDT_Int16, GDT_UInt32, GDT_Int32,
     GDT_Float32, GDT_Float64 };
     #GDT_CInt16, GDT_CInt32, GDT_CFloat32, GDT_Float64
+//enum UNITS { RAW, RADIANCE, REFLECTIVITY };
 
 namespace gip {
 
@@ -232,10 +233,9 @@ namespace gip {
             }
             return *self;
         }
-        GeoRaster& Process(GeoRaster& raster) {
+        GeoRaster& Process(const GeoRaster& raster) {
             return self->Process<double>(raster);
         }
-
     }
 
     %extend GeoImage {

@@ -25,6 +25,7 @@ from datetime import datetime
 import shutil
 import numpy
 from collections import OrderedDict
+from copy import deepcopy
 
 import gippy
 from gippy.atmosphere import atmosphere
