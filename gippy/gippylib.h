@@ -155,14 +155,11 @@ namespace std {
 %include "gip/GeoAlgorithms.h"
 // TODO - Not sure this really needs to be wrapped
 %include "gip/Colors.h"
-// TODO - Not sure this really needs to be wrapped
-%include "gip/Atmosphere.h"
 
 // TODO - improve enums.  C++0x scoped enums ?
 enum GDALDataType { GDT_Unknown, GDT_Byte, GDT_UInt16, GDT_Int16, GDT_UInt32, GDT_Int32,
     GDT_Float32, GDT_Float64 };
     #GDT_CInt16, GDT_CInt32, GDT_CFloat32, GDT_Float64
-//enum UNITS { RAW, RADIANCE, REFLECTIVITY };
 
 namespace gip {
 
@@ -235,6 +232,9 @@ namespace gip {
             }
             return *self;
         }
+        GeoRaster& Process(GeoRaster& raster) {
+            return self->Process<double>(raster);
+        }
 
     }
 
@@ -252,6 +252,9 @@ namespace gip {
         GeoRaster& __setitem__(std::string col, const GeoRaster& raster) {
             self->operator[](col) = raster;
             return self->operator[](col);
+        }
+        GeoImage Process(std::string filename) {
+            return self->Process<double>(filename, GDT_Float32);
         }
 		%feature("docstring",
 				 "PyObject returned is a numpy.array.\n"

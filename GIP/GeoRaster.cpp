@@ -7,68 +7,63 @@ namespace gip {
 
     // Copy constructor
     GeoRaster::GeoRaster(const GeoRaster& image)
-        : GeoData(image), _GDALRasterBand(image._GDALRasterBand), _Masks(image._Masks), _NoData(image._NoData), _ValidStats(image._ValidStats), _Stats(image._Stats), //_ValidSize(image._ValidSize),
-            _UnitsOut(image._UnitsOut), _minDC(image._minDC), _maxDC(image._maxDC), _K1(image._K1), _K2(image._K2), _Esun(image._Esun),
-            _Atmosphere(image._Atmosphere), _Functions(image._Functions) {}
+        : GeoData(image), _GDALRasterBand(image._GDALRasterBand), _Masks(image._Masks), _NoData(image._NoData), 
+            _ValidStats(image._ValidStats), _Stats(image._Stats), //_ValidSize(image._ValidSize),
+            _minDC(image._minDC), _maxDC(image._maxDC), _Functions(image._Functions) {}
 
-	// Copy constructor
-	GeoRaster::GeoRaster(const GeoRaster& image, func f)
-		: GeoData(image), _GDALRasterBand(image._GDALRasterBand), _Masks(image._Masks), _NoData(image._NoData), _ValidStats(image._ValidStats), _Stats(image._Stats), //_ValidSize(image._ValidSize),
-            _UnitsOut(image._UnitsOut), _minDC(image._minDC), _maxDC(image._maxDC), _K1(image._K1), _K2(image._K2), _Esun(image._Esun),
-            _Atmosphere(image._Atmosphere), _Functions(image._Functions) {
+    // Copy constructor
+    GeoRaster::GeoRaster(const GeoRaster& image, func f)
+        : GeoData(image), _GDALRasterBand(image._GDALRasterBand), _Masks(image._Masks), _NoData(image._NoData), 
+            _ValidStats(image._ValidStats), _Stats(image._Stats), //_ValidSize(image._ValidSize),
+            _minDC(image._minDC), _maxDC(image._maxDC), _Functions(image._Functions) {
         //if (func.Function() != "") AddFunction(func);
         _Functions.push_back(f);
-		//std::cout << Basename() << ": GeoRaster copy (" << this << ")" << std::endl;
-	}
+        //std::cout << Basename() << ": GeoRaster copy (" << this << ")" << std::endl;
+    }
 
-	// Assignment
-	GeoRaster& GeoRaster::operator=(const GeoRaster& image) {
-		// Check for self assignment
-		if (this == &image) return *this;
-		//_GeoData = image._GeoData;
-		GeoData::operator=(image);
-		_GDALRasterBand = image._GDALRasterBand;
-		_Masks = image._Masks;
-		_NoData = image._NoData;
-		_ValidStats = image._ValidStats;
-		_Stats = image._Stats;
-		_UnitsOut = image._UnitsOut;
-		//_ValidSize = image._ValidSize;
-		_minDC = image._minDC;
-		_maxDC = image._maxDC;
-		_K1 = image._K1;
-		_K2 = image._K2;
-		_Esun = image._Esun;
-		_Functions = image._Functions;
-		_Atmosphere = image._Atmosphere;
-		//cout << _GeoImage->Basename() << ": " << ref << " references (GeoRaster Assignment)" << endl;
-		return *this;
-	}
+    // Assignment
+    GeoRaster& GeoRaster::operator=(const GeoRaster& image) {
+        // Check for self assignment
+        if (this == &image) return *this;
+        //_GeoData = image._GeoData;
+        GeoData::operator=(image);
+        _GDALRasterBand = image._GDALRasterBand;
+        _Masks = image._Masks;
+        _NoData = image._NoData;
+        _ValidStats = image._ValidStats;
+        _Stats = image._Stats;
+        //_ValidSize = image._ValidSize;
+        _minDC = image._minDC;
+        _maxDC = image._maxDC;
+        _Functions = image._Functions;
+        //cout << _GeoImage->Basename() << ": " << ref << " references (GeoRaster Assignment)" << endl;
+        return *this;
+    }
 
-	string GeoRaster::Info(bool showstats) const {
-		std::stringstream info;
-		//info << _GeoImage->Basename() << " - b" << _GDALRasterBand->GetBand() << ":" << endl;
-		info << XSize() << " x " << YSize() << " " << DataType() << ": " << Description();
-		//info << " (GeoData: " << _GDALDataset.use_count() << " " << _GDALDataset << ")";
-		//info << " RasterBand &" << _GDALRasterBand << endl;
+    string GeoRaster::Info(bool showstats) const {
+        std::stringstream info;
+        //info << _GeoImage->Basename() << " - b" << _GDALRasterBand->GetBand() << ":" << endl;
+        info << XSize() << " x " << YSize() << " " << DataType() << ": " << Description();
+        //info << " (GeoData: " << _GDALDataset.use_count() << " " << _GDALDataset << ")";
+        //info << " RasterBand &" << _GDALRasterBand << endl;
         info << "\t\tGain = " << Gain() << ", Offset = " << Offset(); //<< ", Units = " << Units();
         if (_NoData)
-			info << ", NoData = " << NoDataValue() << endl;
+            info << ", NoData = " << NoDataValue() << endl;
         else info << endl;
         if (showstats) {
             cimg_library::CImg<float> stats = this->Stats();
-        	info << "\t\tMin = " << stats(0) << ", Max = " << stats(1) << ", Mean = " << stats(2) << " =/- " << stats(3) << endl;
+            info << "\t\tMin = " << stats(0) << ", Max = " << stats(1) << ", Mean = " << stats(2) << " =/- " << stats(3) << endl;
         }
         if (!_Functions.empty()) info << "\t\tFunctions:" << endl;
         //for (unsigned int i=0;i<_Functions.size();i++) {
-        //	info << "\t\t\t" << _Functions[i].F() << endl; //" " << _Functions[i].Operand() << endl;
+        //  info << "\t\t\t" << _Functions[i].F() << endl; //" " << _Functions[i].Operand() << endl;
         //}
         if (!_Masks.empty()) info << "\tMasks:" << endl;
         for (unsigned int i=0;i<_Masks.size();i++) info << "\t\t\t" << _Masks[i].Info() << endl;
-		//_GeoImage->GetGDALDataset()->Reference(); int ref = _GeoImage->GetGDALDataset()->Dereference();
-		//info << "  GDALDataset: " << _GDALDataset.use_count() << " (&" << _GDALDataset << ")" << endl;
+        //_GeoImage->GetGDALDataset()->Reference(); int ref = _GeoImage->GetGDALDataset()->Dereference();
+        //info << "  GDALDataset: " << _GDALDataset.use_count() << " (&" << _GDALDataset << ")" << endl;
         return info.str();
-	}
+    }
 
     //! Compute stats
     cimg_library::CImg<float> GeoRaster::Stats() const {

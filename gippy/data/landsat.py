@@ -129,6 +129,7 @@ class LandsatData(Data):
         # 'rgb': 'RGB image for viewing (quick processing)',
         'rad':  {'description': 'Surface-leaving radiance'}, # , 'args': '?'},
         'ref':  {'description': 'Surface reflectance'}, #, 'args': '?'},
+        'temp': {'description': 'Apparent temperature', 'toa': True},
         'acca': {'description': 'Automated Cloud Cover Assesment', 'args': '*', 'toa': True},
         #'Indices': {
         'bi':   {'description': 'Brightness Index'},
@@ -144,7 +145,7 @@ class LandsatData(Data):
         'isti': {'description': 'Inverse Standard Tillage Index'},
     }
     _groups = {
-        'Standard': ['rad', 'ref', 'acca'],
+        'Standard': ['rad', 'ref', 'temp', 'acca'],
         'Index': ['bi', 'ndvi', 'evi', 'lswi', 'ndsi', 'satvi'],
         'Tillage': ['ndti', 'crc', 'sti', 'isti']
     }
@@ -162,25 +163,34 @@ class LandsatData(Data):
             toa = toa and (self._products[val[0]].get('toa', False) or 'toa' in val)
         if not toa:
             start = datetime.now()
-            atmospheres = [atmosphere(i, self.metadata) for i in range(1, img.NumBands()+1)]
+            atmospheres = {}
+            for i in range(0,img.NumBands()):
+                atmospheres[img[i].Description()] = atmosphere(i+1, self.metadata)
             VerboseOut('Ran atmospheric model in %s' % str(datetime.now()-start), 3)
 
         # Break down by group
         groups = self.products2groups(products)
+        smeta = self.assets[''].sensor_meta()
+
+        visbands = [b for b in smeta['colors'] if b[0:4] != "LWIR"]
+        lwbands = [b for b in smeta['colors'] if b[0:4] == "LWIR"]
+
+        # create non-atmospherically corrected apparent reflectance and temperature image
+        reflimg = img
+        theta = numpy.pi * self.metadata['geometry']['solarzenith']/180.0
+        sundist = (1.0 - 0.016728 * numpy.cos(numpy.pi * 0.9856 * (self.metadata['datetime']['JulianDay']-4.0)/180.0))
+        Esuns = dict(zip(smeta['colors'],smeta['E']))
+        for b in visbands:
+            reflimg[b] = img[b] * (1.0/((Esuns[b] * numpy.cos(theta)) / (numpy.pi * sundist * sundist)))
+        for b in lwbands:
+            reflimg[b] = (((img[b]^(-1))*smeta['K1'][5]+1).log()^(-1))*smeta['K2'][5] - 273.15;
 
         # Process standard products
         for key, val in groups['Standard'].items():
             start = datetime.now()
             # TODO - update if no atmos desired for others
             toa = self._products[val[0]].get('toa', False) or 'toa' in val
-            if toa:
-                img.ClearAtmosphere()
-            else:
-                for i in range(0, img.NumBands()):
-                    b = img[i]
-                    b.SetAtmosphere(atmospheres[i])
-                    img[i] = b
-                    VerboseOut('Band %i: atmospherically correcting' % (i+1), 3)
+            # Create product
             try:
                 fname = os.path.join(self.path, self.basename + '_' + key)
                 if val[0] == 'acca':
@@ -189,10 +199,44 @@ class LandsatData(Data):
                     erosion = int(val[1]) if len(val) > 1 else 5
                     dilation = int(val[2]) if len(val) > 2 else 10
                     cloudheight = int(val[3]) if len(val) > 3 else 4000
-                    imgout = gippy.ACCA(img, fname, s_azim, s_elev, erosion, dilation, cloudheight)
-                else:
-                    func = {'rad': gippy.Rad, 'ref': gippy.Ref}
-                    imgout = func[val[0]](img, fname)
+                    imgout = gippy.ACCA(reflimg, fname, s_azim, s_elev, erosion, dilation, cloudheight)
+                elif val[0] == 'rad':
+                    imgout = gippy.GeoImage(fname, img, gippy.GDT_Int16, len(visbands))
+                    for i in range(0,imgout.NumBands()):
+                        imgout.SetColor(visbands[i],i+1)
+                    imgout.SetNoData(-32768)
+                    imgout.SetGain(0.1)
+                    if toa:
+                        for b in visbands:
+                            imgout[b].Process(img[b])
+                    else:
+                        for b in visbands:
+                            imgout[b].Process( ((img[b]-atmospheres[b][1])/atmospheres[b][0]) )
+                elif val[0] == 'ref':
+                    imgout = gippy.GeoImage(fname, img, gippy.GDT_Int16, len(visbands))
+                    for i in range(0,imgout.NumBands()):
+                        imgout.SetColor(visbands[i],i+1)
+                    imgout.SetNoData(-32768)
+                    imgout.SetGain(0.0001)
+                    if toa:
+                        for b in visbands:
+                            imgout[b].Process(reflimg[b])
+                    else:
+                        for b in visbands:
+                            imgout[b].Process(((img[b]-atmospheres[b][1])/atmospheres[b][0]) * (1.0/atmospheres[b][2]))
+                elif val[0] == 'temp':
+                    lwbands = [b for b in smeta['colors'] if b[0:4] == "LWIR"]
+                    imgout = gippy.GeoImage(fname, img, gippy.GDT_Int16, len(lwbands))
+                    imgout.SetNoData(-32768)
+                    imgout.SetGain(0.1)
+                    e = 0.95
+                    for b in lwbands:
+                        if toa:
+                            band = img[b]
+                        else:
+                            band = (img[b] - (atmospheres[b][1] + (1-e) * atmospheres[b][2])) / (atmospheres[b][0] * e)
+                        band = (((band^(-1))*smeta['K1'][5]+1).log()^(-1))*smeta['K2'][5] - 273.15;
+                        imgout[b].Process(band)
                 fname = imgout.Filename()
                 imgout = None
                 self.products[key] = fname
@@ -206,11 +250,8 @@ class LandsatData(Data):
         if len(indices) > 0:
             start = datetime.now()
             # TODO - this assumes atmospheric correct - what if mix of atmos and non-atmos?
-            for i in range(0, img.NumBands()):
-                b = img[i]
-                b.SetAtmosphere(atmospheres[i])
-                img[i] = b
-                VerboseOut('Band %i: atmospherically correcting' % (i+1), 3)
+            for b in visbands:
+                img[b] = ((img[b]-atmospheres[b][1])/atmospheres[b][0]) * (1.0/atmospheres[b][2])
             fnames = [os.path.join(self.path, self.basename + '_' + key) for key in indices]
             prodarr = dict(zip([indices[p][0] for p in indices.keys()], fnames))
             prodout = gippy.Indices(img, prodarr)
@@ -369,8 +410,6 @@ class LandsatData(Data):
 
         # TODO - most setting here removed when GIP updated with late binding
         # Geometry used for calculating incident irradiance
-        theta = numpy.pi * self.metadata['geometry']['solarzenith']/180.0
-        sundist = (1.0 - 0.016728 * numpy.cos(numpy.pi * 0.9856 * (self.metadata['datetime']['JulianDay']-4.0)/180.0))
         for bi in range(0, len(self.metadata['filenames'])):
             image.SetColor(self.metadata['colors'][bi], bi+1)
             # need to do this or can we index correctly?
@@ -379,8 +418,6 @@ class LandsatData(Data):
             band.SetOffset(self.metadata['offset'][bi])
             dynrange = self.metadata['dynrange'][bi]
             band.SetDynamicRange(dynrange[0], dynrange[1])
-            band.SetEsun((self.metadata['E'][bi] * numpy.cos(theta)) / (numpy.pi * sundist * sundist))
-            band.SetThermal(self.metadata['K1'][bi], self.metadata['K2'][bi])
             image[bi] = band
 
         VerboseOut('%s: read in %s' % (image.Basename(), datetime.now() - start), 3)

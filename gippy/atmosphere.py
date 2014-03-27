@@ -22,7 +22,6 @@ import os, sys
 import numpy as np
 import commands
 import datetime
-import gippy
 
     #import Pysolar
     #el = Pysolar.GetAltitude(meta['lat'],meta['lon'],dt)
@@ -498,4 +497,4 @@ def atmosphere(bandnum, meta=None, merraprofile=False):
         else:
             raise Exception('unknown atm model %s' % model)
     os.chdir(curdir)
-    return gippy.Atmosphere(atm['t'],atm['Lu'],atm['Ld'])
+    return (atm['t'],atm['Lu'],atm['Ld'])

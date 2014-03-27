@@ -7,7 +7,6 @@
 #include <gip/gip_CImg.h>
 #include <gip/GeoData.h>
 #include <boost/bind.hpp>
-#include <gip/Atmosphere.h>
 
 #include <iostream>
 #include <iomanip>
@@ -30,9 +29,8 @@ namespace gip {
         //! \name Constructors/Destructors
         //! Constructor for new band
         GeoRaster(const GeoData& geodata, int bandnum=1)
-            : GeoData(geodata), _NoData(false), _ValidStats(false), _UnitsOut(""),
-            _minDC(1), _maxDC(255), _K1(0), _K2(0), _Esun(0),
-            _Atmosphere() {
+            : GeoData(geodata), _NoData(false), _ValidStats(false),
+            _minDC(1), _maxDC(255) {
             LoadBand(bandnum);
         }
         //! Copy constructor
@@ -102,8 +100,6 @@ namespace gip {
         float Offset() const { return _GDALRasterBand->GetOffset(); }
         //! Set Unit type
         GeoRaster& SetUnits(std::string units) { _GDALRasterBand->SetUnitType(units.c_str()); return *this; }
-        //! Set units out
-        void SetUnitsOut(std::string units) const { _UnitsOut = units; } //return *this; }
         //! Set gain
         GeoRaster& SetGain(float gain) { _GDALRasterBand->SetScale(gain); return *this; }
         //! Set offset
@@ -177,25 +173,11 @@ namespace gip {
         }*/
 
         //! \name Calibration and atmospheric functions
-
-        //! Is this a thermal sensor band?
-        bool Thermal() const { if (_K1*_K2 == 0) return false; else return true; }
-        //! Set thermal band, calling wth no arguments will clear thermal band status
-        void SetThermal(float k1=0, float k2=0) { _K1=k1; _K2=k2; }
         //! Sets dyanmic range of sensor (min to max digital counts)
         void SetDynamicRange(int min, int max) {
             _minDC = min;
             _maxDC = max;
         }
-        //! Set exo-atmospheric solar irradiance
-        void SetEsun(float E) { _Esun = E; }
-        // TODO - Does there need to be an atmospheric class???
-        //! Is there an atmospheric correction supplied?
-        bool Atmosphere() const { return _Atmosphere.Valid(); }
-        //! Set atmospheric correction parameters
-        GeoRaster& SetAtmosphere(gip::Atmosphere atm) { _Atmosphere = atm; return *this; }
-        //! Clear atmospheric correction
-        GeoRaster& ClearAtmosphere() { _Atmosphere = gip::Atmosphere(); return *this; }
 
         //! \name Processing functions
 
@@ -387,17 +369,9 @@ namespace gip {
         //! Statistics
         mutable CImg<double> _Stats;
 
-        mutable std::string _UnitsOut;
-
         // Constants
         int _minDC;
         int _maxDC;
-        double _K1;
-        double _K2;
-        //! in-band exo-atmospheric solar irradiance
-        double _Esun;
-
-        gip::Atmosphere _Atmosphere;
 
         //! List of processing functions to apply on reads (in class GeoProcess)
         //std::vector< boost::function< CImg<double>& (CImg<double>&) > > _Functions;
@@ -496,27 +470,6 @@ namespace gip {
             img = Gain() * (img-_minDC) + Offset();
             updatenodata = true;
         }
-        // apply atmosphere if there is one (which would data is radiance units) TODO - check units
-        if (Atmosphere()) {
-            if (Options::Verbose() > 3 && (chunk.p0()==iPoint(0,0)))
-                std::cout << Basename() << ": applying atmosphere" << std::endl;
-            double e = (Thermal()) ? 0.95 : 1;  // For thermal band, currently water only
-            img = (img - (_Atmosphere.Lu() + (1-e)*_Atmosphere.Ld())) / (_Atmosphere.t() * e);
-            updatenodata = true;
-        }
-
-        // Convert to reflectance
-        if ((Units() == "radiance") && (_UnitsOut == "reflectance")) {
-            if (Options::Verbose() > 3 && (chunk.p0()==iPoint(0,0)))
-                std::cout << Basename() << ": converting radiance to reflectance" << std::endl;
-            if (Thermal()) {
-                cimg_for(img,ptr,T) *ptr = (_K2/std::log(_K1/(*ptr)+1)) - 273.15;
-            } else {
-                float normrad = Atmosphere() ? (1.0/_Atmosphere.Ld()) : (1.0/_Esun);
-                cimg_for(img,ptr,T) *ptr = *ptr * normrad;
-            }
-            updatenodata = true;
-        }
 
         if (_Functions.size() > 0) {
             CImg<double> imgd;
@@ -598,17 +551,19 @@ namespace gip {
     //! Process input band into this
     template<class T> GeoRaster& GeoRaster::Process(const GeoRaster& raster) {
         using cimg_library::CImg;
-        for (unsigned int iChunk=1; iChunk<=NumChunks(); iChunk++) {
-                CImg<T> cimg = raster.Read<T>(iChunk);
-                //WriteChunk(CImg<T>().assign(cimg.round()),*iChunk, RAW);
-                Write(cimg,iChunk); //, RAW);
-        }
         GDALRasterBand* band = raster.GetGDALRasterBand();
         CopyCategoryNames(raster);
         _GDALRasterBand->SetDescription(band->GetDescription());
         _GDALRasterBand->SetColorInterpretation(band->GetColorInterpretation());
         _GDALRasterBand->SetMetadata(band->GetMetadata());
         CopyCoordinateSystem(raster);
+        for (unsigned int iChunk=1; iChunk<=NumChunks(); iChunk++) {
+                CImg<T> cimg = raster.Read<T>(iChunk);
+                if (NoDataValue() != raster.NoDataValue()) {
+                    cimg_for(cimg,ptr,T) { if (*ptr == raster.NoDataValue()) *ptr = NoDataValue(); }
+                }
+                Write(cimg,iChunk);
+        }
         return *this;
     }
 

@@ -70,67 +70,11 @@ namespace gip {
         return mask[0];
     }*/
 
-    //! Calculate Radiance
-    // TODO - combine with Copy/Process
-    GeoImage Rad(const GeoImage& image, string filename) {
-        if (image[0].Units() != "radiance") {
-            throw std::runtime_error("image not in radiance units");
-        }
-        image.SetUnitsOut("radiance");
-        GeoImage imgout(filename, image, GDT_Int16);
-        imgout.SetNoData(-32768); // TODO - set nodata option
-        imgout.SetGain(0.1);
-        imgout.SetUnits("radiance");
-        CImg<float> cimg;
-        Colors colors = image.GetColors();
-        CImg<unsigned char> nodata;
-        for (unsigned int b=0;b<image.NumBands();b++) {
-            imgout.SetColor(colors[b+1], b+1);
-            for (unsigned int iChunk=1; iChunk<=image[b].NumChunks(); iChunk++) {
-                cimg = image[b].Read<float>(iChunk);
-                nodata = image[b].NoDataMask(iChunk);
-                // only if nodata not same between input and output images
-                cimg_forXY(cimg,x,y) { if (nodata(x,y)) cimg(x,y) = imgout[b].NoDataValue(); }
-                imgout[b].Write(cimg,iChunk);
-            }
-        }
-        return imgout;
-    }
-
-    //! Calculate reflectance assuming read image is radiance
-    GeoImage Ref(const GeoImage& image, string filename) {
-        if (Options::Verbose() > 1)
-            cout << "Reflectance(" << image.Basename() << ") -> " << filename << endl;
-        if ((image[0].Units() != "radiance") && (image[0].Units() != "reflectance")) {
-            throw std::runtime_error("image not in compatible units for reflectance");
-        }
-        image.SetUnitsOut("reflectance");
-        GeoImage imgout(filename, image, GDT_Int16);
-        imgout.SetNoData(-32768); // TODO - set nodata option
-        imgout.SetUnits("reflectance");
-        CImg<float> cimg;
-        CImg<unsigned char> nodata;
-        Colors colors = image.GetColors();
-        for (unsigned int b=0;b<image.NumBands();b++) {
-            if (image[b].Thermal()) imgout[b].SetGain(0.01); else imgout[b].SetGain(0.0001);
-            imgout.SetColor(colors[b+1], b+1);
-            for (unsigned int iChunk=1; iChunk<=image[b].NumChunks(); iChunk++) {
-                cimg = image[b].Read<float>(iChunk);
-                nodata = image[b].NoDataMask(iChunk);
-                cimg_forXY(cimg,x,y) { if (nodata(x,y)) cimg(x,y) = imgout[b].NoDataValue(); }
-                imgout[b].Write(cimg,iChunk);
-            }
-        }
-        return imgout;
-    }
-
     //! Calculate radar backscatter for all bands
     GeoImage SigmaNought(const GeoImage& image, string filename, float CF) {
         GeoImage imgout(filename, image, GDT_Float32);
         float nodataval = -32768;
         imgout.SetNoData(nodataval);
-        image.SetUnitsOut("other");
-        imgout.SetUnits("other");
         CImg<float> cimg;
         CImg<unsigned char> nodata;
         Colors colors = image.GetColors();
@@ -324,7 +268,6 @@ namespace gip {
 
     //void Indices(const GeoImage& ImageIn, string basename, std::vector<std::string> products) {
     std::map<std::string, std::string> Indices(const GeoImage& image, std::map<std::string, std::string> products) {
-        image.SetUnitsOut("reflectance");
         float nodataout = -32768;
 
         std::map< string, GeoImage > imagesout;
@@ -467,8 +410,6 @@ namespace gip {
      */
     GeoImage ACCA(const GeoImage& image, std::string filename, float se_degrees,
                   float sa_degrees, int erode, int dilate, int cloudheight ) {
-        image.SetUnitsOut("reflectance");
-
         float th_red(0.08);
         float th_ndsi(0.7);
         float th_temp(27);
