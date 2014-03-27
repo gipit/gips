@@ -275,7 +275,12 @@ class SARData(Data):
                 dateimg = gippy.GeoImage(datafiles['date'], False)
                 dateday = (self.date - SARAsset._launchdate[self.sensor[0]]).days
                 img.AddMask(dateimg[0] == dateday)
-                imgout = gippy.SigmaNought(img, fname, meta['CF'])
+                #imgout = gippy.SigmaNought(img, fname, meta['CF'])
+                imgout = gippy.GeoImage(fname, img, gippy.GDT_Float32)
+                imgout.SetNoData(-32768)
+                for b in range(0,imgout.NumBands()):
+                    imgout.SetColor(img[b].Description(),b+1)
+                    imgout[b].Process((img[b]^2).log10() * 10 + meta['CF'])
                 self.products['sign'] = imgout.Filename()
                 img = None
                 imgout = None

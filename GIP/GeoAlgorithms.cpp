@@ -70,28 +70,6 @@ namespace gip {
         return mask[0];
     }*/
 
-    //! Calculate radar backscatter for all bands
-    GeoImage SigmaNought(const GeoImage& image, string filename, float CF) {
-        GeoImage imgout(filename, image, GDT_Float32);
-        float nodataval = -32768;
-        imgout.SetNoData(nodataval);
-        CImg<float> cimg;
-        CImg<unsigned char> nodata;
-        Colors colors = image.GetColors();
-        for (unsigned int b=0;b<image.NumBands();b++) {
-            imgout.SetColor(colors[b+1], b+1);
-            for (unsigned int iChunk=1; iChunk<=image[b].NumChunks(); iChunk++) {
-                cimg = image[b].Read<float>(iChunk);
-                cimg = cimg.pow(2).log10() * 10 + CF;
-                nodata = image[b].NoDataMask(iChunk);
-                cimg_forXY(cimg,x,y) { if (nodata(x,y)) cimg(x,y) = nodataval; }
-                imgout[b].Write(cimg,iChunk);
-                //imgoutIO[b].Write(nodata,iChunk);
-            }
-        }
-        return imgout;
-    }
-
     //! Generate 3-band RGB image scaled to 1 byte for easy viewing
     /*GeoImage RGB(const GeoImage& image, string filename) {
         GeoImageIO<float> img(image);

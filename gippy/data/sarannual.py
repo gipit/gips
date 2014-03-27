@@ -141,7 +141,11 @@ class SARAnnualData(Data):
                     img.SetNoData(0)
                     mask = gippy.GeoImage(datafiles['mask'], False)
                     img.AddMask(mask[0] == 255)
-                    imgout = gippy.SigmaNought(img, fname, -83.0)
+                    imgout = gippy.GeoImage(fname, img, gippy.GDT_Float32)
+                    imgout.SetNoData(-32768)
+                    for b in range(0,imgout.NumBands()):
+                        imgout.SetColor(img[b].Description(),b+1)
+                        imgout[b].Process((img[b]^2).log10() * 10 - 83.0)
                     fname = imgout.Filename()
                     img = None
                     imgout = None
