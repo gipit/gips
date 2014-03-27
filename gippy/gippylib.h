@@ -253,8 +253,8 @@ namespace gip {
             self->operator[](col) = raster;
             return self->operator[](col);
         }
-        GeoImage Process(std::string filename) {
-            return self->Process<double>(filename, GDT_Float32);
+        GeoImage Process(std::string filename, GDALDataType dtype=GDT_Unknown) {
+            return self->Process<double>(filename, dtype);
         }
 		%feature("docstring",
 				 "PyObject returned is a numpy.array.\n"
