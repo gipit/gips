@@ -264,11 +264,8 @@ class SARData(Data):
         for key, val in products.items():
             fname = os.path.join(self.path, self.basename + '_' + key)
             if val[0] == 'sign':
-                bands = [b for b in ["sl_HH", "sl_HV"] if b in datafiles]
-                img = gippy.GeoImage(datafiles[bands[0]])
-                del bands[0]
-                for b in bands:
-                    img.AddBand(gippy.GeoImage(datafiles[b])[0])
+                bands = [datafiles[b] for b in ["sl_HH", "sl_HV"] if b in datafiles]
+                img = gippy.GeoImage(bands)
                 img.SetNoData(0)
                 mask = gippy.GeoImage(datafiles['mask'], False)
                 img.AddMask(mask[0] == 255)
@@ -286,6 +283,7 @@ class SARData(Data):
                 img = None
                 imgout = None
             if val[0] == 'linci':
+                # Note the linci product DOES NOT mask by date
                 os.rename(datafiles['linci'], fname)
                 os.rename(datafiles['linci']+'.hdr', fname+'.hdr')
                 self.products['linci'] = fname

@@ -7,6 +7,18 @@ namespace gip {
     using std::string;
     using std::vector;
 
+    GeoImage::GeoImage(vector<string> filenames)
+    	: GeoData(filenames[0]) {
+    	vector<string>::const_iterator f;
+    	LoadBands();
+    	for (f=filenames.begin()+1; f!=filenames.end(); f++) {
+    		GeoImage img(*f);
+    		for (unsigned int b=0;b<img.NumBands(); b++) {
+    			AddBand(img[b]);
+    		}
+    	}
+    }
+
 	// Copy constructor
 	GeoImage::GeoImage(const GeoImage& image)
 		: GeoData(image), _Colors(image.GetColors()) {

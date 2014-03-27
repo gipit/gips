@@ -409,6 +409,7 @@ class Data(object):
         self.date = date
         self.assets = {}
         self.products = {}
+        self.sensor = ''
         # find all assets
         for asset in self.Asset.discover(tile, date):
             self.assets[asset.asset] = asset

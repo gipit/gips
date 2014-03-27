@@ -380,37 +380,24 @@ class LandsatData(Data):
         }
         self.metadata.update(sensor_meta)
 
-    def _readraw(self):  # , bandnums=[]):
+    def _readraw(self):
         """ Read in Landsat bands using original tar.gz file """
         start = datetime.now()
         # make sure metadata is loaded
         self.meta()
-
-        # TODO - allow for band numbers
-        #if len(bandnums) != 0:
-        #    bandnums = numpy.array(bandnums)
-        #else:
-        #    bandnums = numpy.arange(0, len(self.metadata['bands'])) + 1
 
         # Extract all files
         datafiles = self.assets[''].extract(self.metadata['filenames'])
         VerboseOut('Extracted Landsat files:', 3)
         VerboseOut(datafiles, 3)
 
-        # TODO - replace with single call (add GeoImage(vector<string> to GIP)
-        image = gippy.GeoImage(datafiles[0])
-        del datafiles[0]
-        for f in datafiles:
-            image.AddBand(gippy.GeoImage(f)[0])
-        # Set metadata
+        image = gippy.GeoImage(datafiles)
         image.SetNoData(0)
-        image.SetUnits('radiance')
 
         # TODO - set appropriate metadata
         #for key,val in meta.iteritems():
         #    image.SetMeta(key,str(val))
 
-        # TODO - most setting here removed when GIP updated with late binding
         # Geometry used for calculating incident irradiance
         for bi in range(0, len(self.metadata['filenames'])):
             image.SetColor(self.metadata['colors'][bi], bi+1)

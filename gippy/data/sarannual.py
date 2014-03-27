@@ -133,12 +133,9 @@ class SARAnnualData(Data):
             fname = os.path.join(self.path, self.basename + '_' + key)
             if val[0] == 'sign':
                 datafiles = self.assets['MOS'].extract()
-                bands = [b for b in ["sl_HH", "sl_HV"] if b in datafiles]
+                bands = [datafiles[b] for b in ["sl_HH", "sl_HV"] if b in datafiles]
                 if len(bands) > 0:
-                    img = gippy.GeoImage(datafiles[bands[0]])
-                    del bands[0]
-                    for b in bands:
-                        img.AddBand(gippy.GeoImage(datafiles[b])[0])
+                    img = gippy.GeoImage(bands)
                     img.SetNoData(0)
                     mask = gippy.GeoImage(datafiles['mask'], False)
                     img.AddMask(mask[0] == 255)

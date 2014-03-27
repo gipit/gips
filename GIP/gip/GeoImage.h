@@ -25,6 +25,8 @@ namespace gip {
             : GeoData(filename, Update) {
             LoadBands();
         }
+        //! Open file from vector of individual files
+        explicit GeoImage(std::vector<std::string> filenames);
         //! Constructor for creating new file
         explicit GeoImage(std::string filename, int xsz, int ysz, int bsz, GDALDataType datatype=GDT_Byte) :
             GeoData(xsz, ysz, bsz, datatype, filename) {
