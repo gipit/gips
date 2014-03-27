@@ -221,6 +221,9 @@ namespace gip {
             GeoRaster r(*this, boost::bind(&CImg<double>::threshold, _1, val, false, true));
             return r.BXOR(1);
         }
+        GeoRaster operator==(const double &val) const {
+            return GeoRaster(*this, boost::bind(boost::mem_fn<CImg<double>&,CImg<double>,const double&>(&CImg<double>::operator==), _1, val));
+        }        
         //! Bitwise XOR
         GeoRaster BXOR(const double &val) const {
             return GeoRaster(*this, boost::bind(boost::mem_fn<CImg<double>&,CImg<double>,const double&>(&CImg<double>::operator^=), _1, 1) );
