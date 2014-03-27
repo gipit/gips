@@ -177,7 +177,8 @@ class LandsatData(Data):
         lwbands = [b for b in smeta['colors'] if b[0:4] == "LWIR"]
 
         # create non-atmospherically corrected apparent reflectance and temperature image
-        reflimg = img
+        reflimg = gippy.GeoImage(img)
+        #reflimg = deepcopy(img)
         theta = numpy.pi * self.metadata['geometry']['solarzenith']/180.0
         sundist = (1.0 - 0.016728 * numpy.cos(numpy.pi * 0.9856 * (self.metadata['datetime']['JulianDay']-4.0)/180.0))
         Esuns = dict(zip(smeta['colors'],smeta['E']))
