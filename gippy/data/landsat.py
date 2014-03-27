@@ -111,11 +111,11 @@ class LandsatAsset(Asset):
     def __init__(self, filename):
         """ Inspect a single file and get some metadata """
         super(LandsatAsset, self).__init__(filename)
-        self.basename = self.basename[:-12]
-        self.sensor = self.basename[0:3]
-        self.tile = self.basename[3:9]
-        year = self.basename[9:13]
-        doy = self.basename[13:16]
+        fname = os.path.basename(filename)
+        self.sensor = fname[0:3]
+        self.tile = fname[3:9]
+        year = fname[9:13]
+        doy = fname[13:16]
         self.date = datetime.strptime(year+doy, "%Y%j")
 
 

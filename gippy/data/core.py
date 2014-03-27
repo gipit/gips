@@ -185,8 +185,6 @@ class Asset(object):
         self.tile = ''
         # full date
         self.date = datetime.now()
-         # base/root name of this tile/date (used for product naming)
-        self.basename = os.path.basename(filename)
         # sensor code (key used in cls.sensors dictionary)
         self.sensor = ''
         # dictionary of existing products in asset {'product name': [filename(s)]}
@@ -411,17 +409,15 @@ class Data(object):
         self.date = date
         self.assets = {}
         self.products = {}
-        self.basename = ''
         # find all assets
         for asset in self.Asset.discover(tile, date):
             self.assets[asset.asset] = asset
             # sensor and basename assumes same value every time ?
             self.sensor = asset.sensor
-            # should this be property of tile date, sensor?  same for all assets ?
-            self.basename = asset.basename
             # products that come automatically with assets
             self.products.update(asset.products)
         # find all products
+        self.basename = self.id + '_' + self.date.strftime(self.Repository._datedir) + '_' + self.sensor
         prods = self.discover(os.path.join(self.path, self.basename))
         self.products.update(prods)
         if len(self.assets) == 0:

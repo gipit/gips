@@ -80,13 +80,13 @@ class ModisAsset(Asset):
         """ Inspect a single file and get some metadata """
         super(ModisAsset, self).__init__(filename)
 
-        self.asset = self.basename[0:7]
-        self.tile = self.basename[17:23]
-        year = self.basename[9:13]
-        doy = self.basename[13:16]
+        bname = os.path.basename(filename)
+        self.asset = bname[0:7]
+        self.tile = bname[17:23]
+        year = bname[9:13]
+        doy = bname[13:16]
         self.date = datetime.datetime.strptime(year+doy, "%Y%j").date()
-        self.sensor = self.basename[:3]
-        self.basename = 'MODIS'+self.tile+'_'+year+doy
+        self.sensor = bname[:3]
 
         datafiles = self.datafiles()
         self.products = {'sds1': datafiles[0]}

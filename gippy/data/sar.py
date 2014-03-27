@@ -121,8 +121,9 @@ class SARAsset(Asset):
         """ Inspect a single file and get some basic info """
         super(SARAsset, self).__init__(filename)
 
-        self.tile = self.basename[10:17]
-        self.sensor = self.basename[-9:-8] + self.basename[-15:-12]
+        bname = os.path.basename(filename)
+        self.tile = bname[10:17]
+        self.sensor = bname[-9:-8] + bname[-15:-12]
 
         datafiles = self.datafiles()
         for f in datafiles:
@@ -130,7 +131,7 @@ class SARAsset(Asset):
                 hdrfile = f
             if f[-4:] == 'date':
                 datefile = f
-                bname = f[:-5]
+                rootname = f[:-5]
 
         # unique to SARData (TODO - is this still used later?)
         self.hdrfile = hdrfile
@@ -159,7 +160,7 @@ class SARAsset(Asset):
             dates = [self._launchdate[self.sensor[0]] + datetime.timedelta(days=int(d)) for d in datevals if d != 0]
             if not dates:
                 RemoveFiles([hdrfile, datefile], ['.hdr', '.aux.xml'])
-                raise Exception('%s: no valid dates' % self.basename)
+                raise Exception('%s: no valid dates' % bname)
             date = min(dates)
             dateimg = None
             RemoveFiles([hdrfile, datefile], ['.hdr', '.aux.xml'])
@@ -170,12 +171,12 @@ class SARAsset(Asset):
             #    if date.year != ydate.year:
             #        raise Exception('%s: Date %s outside of expected year (%s)' % (fname, str(date),str(ydate)))
             # If widebeam check cycle dates
-            if self.basename[7] == 'C':
-                cdate = datetime.datetime.strptime(self._cycledates[int(self.basename[8:10])], '%d-%b-%y').date()
+            if bname[7] == 'C':
+                cdate = datetime.datetime.strptime(self._cycledates[int(bname[8:10])], '%d-%b-%y').date()
                 if not (cdate <= date <= (cdate + datetime.timedelta(days=45))):
-                    raise Exception('%s: Date %s outside of cycle range (%s)' % (self.basename, str(date), str(cdate)))
+                    raise Exception('%s: Date %s outside of cycle range (%s)' % (bname, str(date), str(cdate)))
             #VerboseOut('%s: inspect %s' % (fname,datetime.datetime.now()-start), 4)
-        self.basename = bname
+        self.rootname = rootname
 
     @classmethod
     def _meta(cls, hdrfile):
@@ -214,7 +215,7 @@ class SARAsset(Asset):
         for f in files:
             bname = os.path.basename(f)
             if f[-3:] != 'hdr':
-                bandname = bname[len(self.basename)+1:]
+                bandname = bname[len(self.rootname)+1:]
                 envihdr = copy.deepcopy(meta['envihdr'])
                 if bandname in ['mask', 'linci']:
                     envihdr[6] = 'data type = 1'
@@ -285,7 +286,9 @@ class SARData(Data):
                 img = None
                 imgout = None
             if val[0] == 'linci':
-                self.products['linci'] = datafiles['linci']
+                os.rename(datafiles['linci'], fname)
+                os.rename(datafiles['linci']+'.hdr', fname+'.hdr')
+                self.products['linci'] = fname
 
         # Remove unused files
         # TODO - checking key rather than val[0] (the full product suffix)

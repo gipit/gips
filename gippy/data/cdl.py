@@ -64,8 +64,8 @@ class CDLAsset(Asset):
         """ Inspect a CDL file """
         super(CDLAsset, self).__init__(filename)
         # TODO - get tile (state) so we can archive
-        self.basename = self.basename[0:9]
-        self.date = datetime.strptime(self.basename[4:8], self.Repository._datedir)
+        bname = os.path.basename(filename)
+        self.date = datetime.strptime(bname[4:8], self.Repository._datedir)
         self.products['cdl'] = filename
 
     # _datedir used inappropriately elsewhere. if it wasn't this could be removed

@@ -81,11 +81,12 @@ class SARAnnualAsset(Asset):
     def __init__(self, filename):
         """ Inspect a single file and get some basic info """
         super(SARAnnualAsset, self).__init__(filename)
-        self.asset = self.basename[11:14]
-        self.tile = self.basename[0:7]
+        bname = os.path.basename(filename)
+        self.asset = bname[11:14]
+        self.tile = bname[0:7]
         self.sensor = 'PALSAR'
-        self.date = datetime.datetime.strptime(self.basename[8:10], '%y')
-        self.basename = self.basename[0:10]
+        self.date = datetime.datetime.strptime(bname[8:10], '%y')
+        self.rootname = bname[0:10]
 
     def extract(self, filenames=[]):
         """ Extract filesnames from asset """
@@ -94,7 +95,7 @@ class SARAnnualAsset(Asset):
         for f in files:
             bname = os.path.basename(f)
             if f[-3:] != 'hdr':
-                bandname = bname[len(self.basename)+1:]
+                bandname = bname[len(self.rootname)+1:]
                 datafiles[bandname] = f
         return datafiles
 
@@ -156,7 +157,6 @@ class SARAnnualData(Data):
                 datafiles = self.assets['FNF'].extract()
                 if 'C' in datafiles:
                     # rename both files to product name
-                    newfilename = datafiles['C'][:-1]+'fnf'
                     os.rename(datafiles['C'], fname)
                     os.rename(datafiles['C']+'.hdr', fname+'.hdr')
                     img = gippy.GeoImage(fname)
