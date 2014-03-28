@@ -425,8 +425,10 @@ class DataInventory(object):
                 if val not in [None, False]:
                     if val is True:
                         products[p] = []
-                    else:
+                    elif isinstance(val, list):
                         products[p] = val
+                    else:
+                        products[p] = [val]
 
         try:
             inv = cls.inventory(

@@ -128,9 +128,9 @@ class LandsatData(Data):
     _products = {
         #'Standard': {
         # 'rgb': 'RGB image for viewing (quick processing)',
-        'rad':  {'description': 'Surface-leaving radiance'},  # , 'args': '?'},
-        'ref':  {'description': 'Surface reflectance'},  # ,  'args': '?'},
-        'temp': {'description': 'Apparent temperature', 'toa': True},
+        'rad':  {'description': 'Surface-leaving radiance',  'args': '?'},
+        'ref':  {'description': 'Surface reflectance', 'args': '?'},
+        'temp': {'description': 'Apparent temperature', 'args': '?'},
         'acca': {'description': 'Automated Cloud Cover Assesment', 'args': '*', 'toa': True},
         #'Indices': {
         'bi':   {'description': 'Brightness Index'},
@@ -165,7 +165,11 @@ class LandsatData(Data):
         if not toa:
             start = datetime.now()
             atmospheres = {}
-            for i in range(0, img.NumBands()):
+            if self.sensor == 'LC8':
+                numbands = img.NumBands()-2
+            else:
+                numbands = img.NumBands()
+            for i in range(0, numbands):
                 atmospheres[img[i].Description()] = atmosphere(i+1, self.metadata)
             VerboseOut('Ran atmospheric model in %s' % str(datetime.now()-start), 3)
 
@@ -267,7 +271,7 @@ class LandsatData(Data):
                 RemoveFiles(files)
             shutil.rmtree(os.path.join(self.path, 'modtran'))
         except:
-            #VerboseOut(traceback.format_exc(), 4)
+            VerboseOut(traceback.format_exc(), 4)
             pass
 
     def filter(self, maxclouds=100):

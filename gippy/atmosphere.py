@@ -23,6 +23,8 @@ import numpy as np
 import commands
 import datetime
 
+from pdb import set_trace
+
     #import Pysolar
     #el = Pysolar.GetAltitude(meta['lat'],meta['lon'],dt)
     #az = Pysolar.GetAzimuth(meta['lat'],meta['lon'],dt)

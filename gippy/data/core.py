@@ -541,7 +541,9 @@ class Data(object):
                 if p != '':
                     product = cls._products[p]
                     nargs = product.get('args', None)
-                    if nargs:
+                    if nargs == '?':
+                        group.add_argument('--%s' % p, help=product['description'], nargs=nargs, const=[])
+                    elif nargs == '*':
                         group.add_argument('--%s' % p, help=product['description'], nargs=nargs)
                     else:
                         group.add_argument('--%s' % p, help=product['description'], action='store_true')
