@@ -87,14 +87,14 @@ class LandsatAsset(Asset):
         },
         'LC8': {
             'description': 'Landsat 8',
-            'bands': ['1', '2', '3', '4', '5', '6', '7', '9'],  # ,'10','11']
-            'oldbands': ['1', '2', '3', '4', '5', '6', '7', '9'],  # ,'10','11']
-            'colors': ["COASTAL", "BLUE", "GREEN", "RED", "NIR", "SWIR1", "SWIR2", "CIRRUS"],     # ,"LWIR1","LWIR2"]
-            'bandlocs': [0.443, 0.4825, 0.5625, 0.655, 0.865, 1.610, 2.2, 1.375],    # , 10.8, 12.0]
-            'bandwidths': [0.01, 0.0325, 0.0375, 0.025, 0.02, 0.05, 0.1, 0.015],        # , 0.5, 0.5]
-            'E': [2638.35, 2031.08, 1821.09, 2075.48, 1272.96, 246.94, 90.61, 369.36],   # , 0, 0]
-            'K1': [0, 0, 0, 0, 0, 0, 0, 0],  # 774.89, 480.89]
-            'K2': [0, 0, 0, 0, 0, 0, 0, 0],  # 1 321.08, 1201.14]
+            'bands': ['1', '2', '3', '4', '5', '6', '7', '9', '10', '11'],
+            'oldbands': ['1', '2', '3', '4', '5', '6', '7', '9', '10', '11'],
+            'colors': ["COASTAL", "BLUE", "GREEN", "RED", "NIR", "SWIR1", "SWIR2", "CIRRUS", "LWIR", "LWIR2"],
+            'bandlocs': [0.443, 0.4825, 0.5625, 0.655, 0.865, 1.610, 2.2, 1.375, 10.8, 12.0],
+            'bandwidths': [0.01, 0.0325, 0.0375, 0.025, 0.02, 0.05, 0.1, 0.015, 0.5, 0.5],
+            'E': [2638.35, 2031.08, 1821.09, 2075.48, 1272.96, 246.94, 90.61, 369.36, 0, 0],
+            'K1': [0, 0, 0, 0, 0, 0, 0, 0, 774.89, 480.89],
+            'K2': [0, 0, 0, 0, 0, 0, 0, 0, 1321.08, 1201.14],
         }
     }
 
@@ -128,8 +128,8 @@ class LandsatData(Data):
     _products = {
         #'Standard': {
         # 'rgb': 'RGB image for viewing (quick processing)',
-        'rad':  {'description': 'Surface-leaving radiance'}, # , 'args': '?'},
-        'ref':  {'description': 'Surface reflectance'}, #, 'args': '?'},
+        'rad':  {'description': 'Surface-leaving radiance'},  # , 'args': '?'},
+        'ref':  {'description': 'Surface reflectance'},  # ,  'args': '?'},
         'temp': {'description': 'Apparent temperature', 'toa': True},
         'acca': {'description': 'Automated Cloud Cover Assesment', 'args': '*', 'toa': True},
         #'Indices': {
@@ -165,7 +165,7 @@ class LandsatData(Data):
         if not toa:
             start = datetime.now()
             atmospheres = {}
-            for i in range(0,img.NumBands()):
+            for i in range(0, img.NumBands()):
                 atmospheres[img[i].Description()] = atmosphere(i+1, self.metadata)
             VerboseOut('Ran atmospheric model in %s' % str(datetime.now()-start), 3)
 
@@ -178,14 +178,13 @@ class LandsatData(Data):
 
         # create non-atmospherically corrected apparent reflectance and temperature image
         reflimg = gippy.GeoImage(img)
-        #reflimg = deepcopy(img)
         theta = numpy.pi * self.metadata['geometry']['solarzenith']/180.0
         sundist = (1.0 - 0.016728 * numpy.cos(numpy.pi * 0.9856 * (self.metadata['datetime']['JulianDay']-4.0)/180.0))
-        Esuns = dict(zip(smeta['colors'],smeta['E']))
+        Esuns = dict(zip(smeta['colors'], smeta['E']))
         for b in visbands:
             reflimg[b] = img[b] * (1.0/((Esuns[b] * numpy.cos(theta)) / (numpy.pi * sundist * sundist)))
         for b in lwbands:
-            reflimg[b] = (((img[b]^(-1))*smeta['K1'][5]+1).log()^(-1))*smeta['K2'][5] - 273.15;
+            reflimg[b] = (((img[b].pow(-1))*smeta['K1'][5]+1).log().pow(-1))*smeta['K2'][5] - 273.15
 
         # Process standard products
         for key, val in groups['Standard'].items():
@@ -204,8 +203,8 @@ class LandsatData(Data):
                     imgout = gippy.ACCA(reflimg, fname, s_azim, s_elev, erosion, dilation, cloudheight)
                 elif val[0] == 'rad':
                     imgout = gippy.GeoImage(fname, img, gippy.GDT_Int16, len(visbands))
-                    for i in range(0,imgout.NumBands()):
-                        imgout.SetColor(visbands[i],i+1)
+                    for i in range(0, imgout.NumBands()):
+                        imgout.SetColor(visbands[i], i+1)
                     imgout.SetNoData(-32768)
                     imgout.SetGain(0.1)
                     if toa:
@@ -213,11 +212,11 @@ class LandsatData(Data):
                             imgout[b].Process(img[b])
                     else:
                         for b in visbands:
-                            imgout[b].Process( ((img[b]-atmospheres[b][1])/atmospheres[b][0]) )
+                            imgout[b].Process(((img[b]-atmospheres[b][1])/atmospheres[b][0]))
                 elif val[0] == 'ref':
                     imgout = gippy.GeoImage(fname, img, gippy.GDT_Int16, len(visbands))
-                    for i in range(0,imgout.NumBands()):
-                        imgout.SetColor(visbands[i],i+1)
+                    for i in range(0, imgout.NumBands()):
+                        imgout.SetColor(visbands[i], i+1)
                     imgout.SetNoData(-32768)
                     imgout.SetGain(0.0001)
                     if toa:
@@ -237,7 +236,7 @@ class LandsatData(Data):
                             band = img[b]
                         else:
                             band = (img[b] - (atmospheres[b][1] + (1-e) * atmospheres[b][2])) / (atmospheres[b][0] * e)
-                        band = (((band^(-1))*smeta['K1'][5]+1).log()^(-1))*smeta['K2'][5] - 273.15;
+                        band = (((band.pow(-1))*smeta['K1'][5]+1).log().pow(-1))*smeta['K2'][5] - 273.15
                         imgout[b].Process(band)
                 fname = imgout.Filename()
                 imgout = None

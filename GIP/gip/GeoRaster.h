@@ -247,7 +247,7 @@ namespace gip {
         //}
 
         //! Exponent
-        GeoRaster operator^(const double &val) const {
+        GeoRaster pow(const double &val) const {
             return GeoRaster(*this, boost::bind(boost::mem_fn<CImg<double>&,CImg<double>,const double>(&CImg<double>::pow), _1, val));
         }
         //! Square root
