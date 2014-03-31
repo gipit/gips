@@ -205,7 +205,7 @@ class LandsatData(Data):
                     erosion = int(val[1]) if len(val) > 1 else 5
                     dilation = int(val[2]) if len(val) > 2 else 10
                     cloudheight = int(val[3]) if len(val) > 3 else 4000
-                    imgout = gippy.ACCA(reflimg, fname, s_azim, s_elev, erosion, dilation, cloudheight)
+                    imgout = gippy.ACCA(reflimg, fname, s_elev, s_azim, erosion, dilation, cloudheight)
                 elif val[0] == 'fmask':
                     imgout = gippy.Fmask(reflimg, fname)
                 elif val[0] == 'rad':
