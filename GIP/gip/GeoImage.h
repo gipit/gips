@@ -261,6 +261,22 @@ namespace gip {
             return mask;
         }
 
+        //! Whiteness (created from red, green, blue)
+        CImg<float> Whiteness(int chunk=0) const {
+            // RAW or RADIANCE ?
+            CImg<float> red = operator[]("RED").ReadRaw<float>(chunk);
+            CImg<float> green = operator[]("GREEN").ReadRaw<float>(chunk);
+            CImg<float> blue = operator[]("BLUE").ReadRaw<float>(chunk);
+            CImg<float> white(red.width(),red.height());
+            float mu;
+            cimg_forXY(white,x,y) {
+                mu = (red(x,y) + green(x,y) + blue(x,y))/3;
+                white(x,y) = (abs(red(x,y)-mu) + abs(green(x,y)-mu) + abs(blue(x,y)-mu))/mu;
+            }
+            // Saturation?  If pixel saturated make Whiteness 0 ?
+            return white;
+        }
+
         //! Extract, and interpolate, time series (C is time axis)
         template<class T> cimg_library::CImg<T> TimeSeries(cimg_library::CImg<double> C) {
             cimg_library::CImg<T> cimg = Read<T>();
