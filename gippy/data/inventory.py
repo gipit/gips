@@ -195,7 +195,7 @@ class DataInventory(object):
     def __getitem__(self, date):
         return self.data[date]
 
-    def __init__(self, dataclass, site=None, tiles=None, dates=None, days=None, products=None, fetch=False, **kwargs):
+    def __init__(self, dataclass, site=None, tiles=None, dates=None, days=None, products=[], fetch=False, **kwargs):
         self.dataclass = dataclass
         Repository = dataclass.Asset.Repository
 
