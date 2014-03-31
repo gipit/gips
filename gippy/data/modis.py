@@ -34,7 +34,11 @@ from pdb import set_trace
 
 
 class ModisRepository(Repository):
+
     _rootpath = '/titan/data/modis'
+    _stagedir = os.path.join(_rootpath, 'stage')
+
+
     _tiles_vector = 'modis_sinusoidal_grid_world.shp'
     #_tilesdir = 'tiles.dev'
 
@@ -51,6 +55,7 @@ class ModisRepository(Repository):
 
 class ModisAsset(Asset):
     Repository = ModisRepository
+
     _sensors = {
         'MOD': {'description': 'Terra'},
         'MYD': {'description': 'Aqua'},
@@ -85,14 +90,22 @@ class ModisAsset(Asset):
         self.tile = bname[17:23]
         year = bname[9:13]
         doy = bname[13:16]
+
         self.date = datetime.datetime.strptime(year+doy, "%Y%j").date()
         self.sensor = bname[:3]
 
         datafiles = self.datafiles()
+
+        # I don't understand what this is used for
+        # because the asset could be many different things
         self.products = {'sds1': datafiles[0]}
+
 
     def datafiles(self):
         indexfile = self.filename + '.index'
+
+        print indexfile
+
         if os.path.exists(indexfile):
             datafiles = File2List(indexfile)
         else:
