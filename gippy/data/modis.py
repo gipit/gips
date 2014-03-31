@@ -26,16 +26,35 @@ import urllib
 from osgeo import gdal
 from collections import OrderedDict
 
-from gippy.data.core import Asset, Tile, Data
+from gippy.data.core import Repository, Asset, Data
+from gippy.data.inventory import DataInventory
 from gippy.utils import File2List, List2File, VerboseOut
 
 from pdb import set_trace
 
 
-class ModisAsset(Asset):
-    _rootpath = '/titan/data/modis'
+class ModisRepository(Repository):
 
+    _rootpath = '/titan/data/modis'
     _stagedir = os.path.join(_rootpath, 'stage')
+
+
+    _tiles_vector = 'modis_sinusoidal_grid_world.shp'
+    #_tilesdir = 'tiles.dev'
+
+    @classmethod
+    def feature2tile(cls, feature):
+        """ convert tile field attributes to tile identifier """
+        fldindex_h = feature.GetFieldIndex("h")
+        fldindex_v = feature.GetFieldIndex("v")
+        h = str(int(feature.GetField(fldindex_h))).zfill(2)
+        v = str(int(feature.GetField(fldindex_v))).zfill(2)
+        tile = "h%sv%s" % (h, v)
+        return tile
+
+
+class ModisAsset(Asset):
+    Repository = ModisRepository
 
     _sensors = {
         'MOD': {'description': 'Terra'},
@@ -53,26 +72,27 @@ class ModisAsset(Asset):
         }
     }
 
+    # TODO - should be temporal extent
     _launchdate = {
         'MOD': datetime.date(1999, 12, 1),
         'MYD': datetime.date(2002, 5, 1),
         'MCD': None
     }
 
+    _defaultresolution = [926.625433138333392, -926.625433139166944]
+
     def __init__(self, filename):
         """ Inspect a single file and get some metadata """
         super(ModisAsset, self).__init__(filename)
 
-        print "asset. filename"
-        print filename
+        bname = os.path.basename(filename)
+        self.asset = bname[0:7]
+        self.tile = bname[17:23]
+        year = bname[9:13]
+        doy = bname[13:16]
 
-        self.asset = self.basename[0:7]
-        self.tile = self.basename[17:23]
-        year = self.basename[9:13]
-        doy = self.basename[13:16]
         self.date = datetime.datetime.strptime(year+doy, "%Y%j").date()
-        self.sensor = self.basename[:3]
-        self.basename = 'MODIS'+self.tile+'_'+year+doy
+        self.sensor = bname[:3]
 
         datafiles = self.datafiles()
 
@@ -136,7 +156,7 @@ class ModisAsset(Asset):
                 url = ''.join([mainurl, '/', name])
                 print 'the url is', url
                 try:
-                    urllib.urlretrieve(url, os.path.join(cls._stagedir, name))
+                    urllib.urlretrieve(url, os.path.join(cls.Repository.spath(), name))
                     print "retrieved %s" % name
                     success = True
                 except Exception, e:
@@ -150,10 +170,11 @@ class ModisAsset(Asset):
             return 0
 
 
-class ModisTile(Tile):
+class ModisData(Data):
     """ A tile of data (all assets and products) """
+    name = 'Modis'
     Asset = ModisAsset
-    _prodpattern = '*.tif'
+    _pattern = '*.tif'
     _products = OrderedDict([
         ('temp', {
             'description': 'Surface temperature observations',
@@ -167,28 +188,9 @@ class ModisTile(Tile):
         }),
     ])
 
-
-class ModisData(Data):
-    """ Represent a single day and temporal extent of MODIS data along with product variations """
-
-    name = 'Modis'
-
-    _tiles_vector = 'modis_sinusoidal_grid_world.shp'
-
-    _defaultresolution = [926.625433138333392, -926.625433139166944]
-
-    Tile = ModisTile
-
-    @classmethod
-    def feature2tile(cls, feature):
-        """ convert tile field attributes to tile identifier """
-        fldindex_h = feature.GetFieldIndex("h")
-        fldindex_v = feature.GetFieldIndex("v")
-        h = str(int(feature.GetField(fldindex_h))).zfill(2)
-        v = str(int(feature.GetField(fldindex_v))).zfill(2)
-        tile = "h%sv%s" % (h, v)
-        return tile
+    def process(self, products):
+        pass
 
 
 def main():
-    ModisData.main()
+    DataInventory.main(ModisData)

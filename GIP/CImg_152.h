@@ -11319,6 +11319,12 @@ namespace cimg_library_suffixed {
       return res;
     }
 
+    template<typename t>
+    CImg<T>& operator==(const t value) {
+      cimg_for(*this,ptr,T) { if (*ptr == value) *ptr = 1; else *ptr = 0; }
+      return *this;
+    }
+
     //! Test if all pixels of an image have the same value.
     /**
        Return \c true is all pixels of the image instance are equal to the specified \c value.

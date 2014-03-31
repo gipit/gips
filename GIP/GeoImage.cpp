@@ -1,12 +1,23 @@
 #include <gip/GeoImage.h>
 #include <gip/GeoRaster.h>
-#include <gip/GeoRasterIO.h>
 
 //#include <sstream>
 
 namespace gip {
     using std::string;
     using std::vector;
+
+    GeoImage::GeoImage(vector<string> filenames)
+    	: GeoData(filenames[0]) {
+    	vector<string>::const_iterator f;
+    	LoadBands();
+    	for (f=filenames.begin()+1; f!=filenames.end(); f++) {
+    		GeoImage img(*f);
+    		for (unsigned int b=0;b<img.NumBands(); b++) {
+    			AddBand(img[b]);
+    		}
+    	}
+    }
 
 	// Copy constructor
 	GeoImage::GeoImage(const GeoImage& image)
@@ -97,30 +108,15 @@ namespace gip {
         return *this;
     }
 
-	// Copy input file into new output file
-	GeoImage GeoImage::Process(string filename, GDALDataType datatype) {
-	    // TODO: if not supplied base output datatype on units?
-	    if (datatype == GDT_Unknown) datatype = this->DataType();
-		GeoImage imgout(filename, *this, datatype);
-        for (unsigned int i=0; i<imgout.NumBands(); i++) {
-            imgout[i].Process((*this)[i]);
-        }
-		Colors colors = this->GetColors();
-		for (unsigned int i=0;i<this->NumBands();i++) imgout.SetColor(colors[i+1], i+1);
-		imgout.CopyColorTable(*this);
-		return imgout;
-	}
-
 	// Replaces all Inf or NaN pixels with NoDataValue
 	GeoImage& GeoImage::FixBadPixels() {
 		typedef float T;
 		for (unsigned int b=0;b<NumBands();b++) {
-			GeoRasterIO<T> band((*this)[b]);
 			for (unsigned int iChunk=1; iChunk<=NumChunks(); iChunk++) {
-				CImg<T> img = band.ReadRaw(iChunk);
-				T nodata = band.NoDataValue();
+				CImg<T> img = (*this)[b].ReadRaw<T>(iChunk);
+				T nodata = (*this)[b].NoDataValue();
 				cimg_for(img,ptr,T)	if ( std::isinf(*ptr) || std::isnan(*ptr) ) *ptr = nodata;
-				band.WriteRaw(img,iChunk);
+				(*this)[b].WriteRaw(img,iChunk);
 			}
 		}
 		return *this;

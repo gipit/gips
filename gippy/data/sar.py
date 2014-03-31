@@ -28,13 +28,38 @@ from collections import OrderedDict
 from pdb import set_trace
 
 import gippy
-from gippy.data.core import Asset, Tile, Data
+from gippy.data.core import Repository, Asset, Data
+from gippy.data.inventory import DataInventory
 from gippy.utils import VerboseOut, File2List, List2File, RemoveFiles
+
+
+class SARRepository(Repository):
+    _rootpath = '/titan/data/SAR'
+    #_tilesdir = 'tiles.dev'
+
+    @classmethod
+    def feature2tile(cls, feature):
+        """ Get tile designation from a geospatial feature (i.e. a row) """
+        fldindex_lat = feature.GetFieldIndex("lat")
+        fldindex_lon = feature.GetFieldIndex("lon")
+        lat = int(feature.GetField(fldindex_lat)+0.5)
+        lon = int(feature.GetField(fldindex_lon)-0.5)
+        if lat < 0:
+            lat_h = 'S'
+        else:
+            lat_h = 'N'
+        if lon < 0:
+            lon_h = 'W'
+        else:
+            lon_h = 'E'
+        tile = lat_h + str(abs(lat)).zfill(2) + lon_h + str(abs(lon)).zfill(3)
+        return tile
 
 
 class SARAsset(Asset):
     """ Single original file """
-    _rootpath = '/titan/data/SAR'
+    Repository = SARRepository
+
     _sensors = {
         'AFBS': {'description': 'PALSAR FineBeam Single Polarization'},
         'AFBD': {'description': 'PALSAR FineBeam Dual Polarization'},
@@ -46,6 +71,8 @@ class SARAsset(Asset):
             'pattern': 'KC_*.tar.gz'
         }
     }
+
+    _defaultresolution = [0.000834028356964, 0.000834028356964]
 
     # launch dates for PALSAR (A) and JERS-1 (J)
     _launchdate = {'A': datetime.date(2006, 1, 24), 'J': datetime.date(1992, 2, 11)}
@@ -94,8 +121,9 @@ class SARAsset(Asset):
         """ Inspect a single file and get some basic info """
         super(SARAsset, self).__init__(filename)
 
-        self.tile = self.basename[10:17]
-        self.sensor = self.basename[-9:-8] + self.basename[-15:-12]
+        bname = os.path.basename(filename)
+        self.tile = bname[10:17]
+        self.sensor = bname[-9:-8] + bname[-15:-12]
 
         datafiles = self.datafiles()
         for f in datafiles:
@@ -103,16 +131,15 @@ class SARAsset(Asset):
                 hdrfile = f
             if f[-4:] == 'date':
                 datefile = f
-                bname = f[:-5]
+                rootname = f[:-5]
 
-        self.basename = bname
         # unique to SARData (TODO - is this still used later?)
         self.hdrfile = hdrfile
 
         # Check if inspecting a file in the repository
         path = os.path.dirname(filename)
-        if self._rootpath in path:
-            date = datetime.datetime.strptime(os.path.basename(path), self._datedir).date()
+        if self.Repository._rootpath in path:
+            date = datetime.datetime.strptime(os.path.basename(path), self.Repository._datedir).date()
             dates = date
             #VerboseOut('Date from repository = '+str(dates),4)
         else:
@@ -130,10 +157,10 @@ class SARAsset(Asset):
             dateimg = gippy.GeoImage(datefile)
             dateimg.SetNoData(0)
             datevals = numpy.unique(dateimg.Read())
-            dates = [self._launchdate[fname[-9]] + datetime.timedelta(days=int(d)) for d in datevals if d != 0]
+            dates = [self._launchdate[self.sensor[0]] + datetime.timedelta(days=int(d)) for d in datevals if d != 0]
             if not dates:
                 RemoveFiles([hdrfile, datefile], ['.hdr', '.aux.xml'])
-                raise Exception('%s: no valid dates' % fname)
+                raise Exception('%s: no valid dates' % bname)
             date = min(dates)
             dateimg = None
             RemoveFiles([hdrfile, datefile], ['.hdr', '.aux.xml'])
@@ -144,11 +171,12 @@ class SARAsset(Asset):
             #    if date.year != ydate.year:
             #        raise Exception('%s: Date %s outside of expected year (%s)' % (fname, str(date),str(ydate)))
             # If widebeam check cycle dates
-            if fname[7] == 'C':
-                cdate = datetime.datetime.strptime(self._cycledates[int(fname[8:10])], '%d-%b-%y').date()
+            if bname[7] == 'C':
+                cdate = datetime.datetime.strptime(self._cycledates[int(bname[8:10])], '%d-%b-%y').date()
                 if not (cdate <= date <= (cdate + datetime.timedelta(days=45))):
-                    raise Exception('%s: Date %s outside of cycle range (%s)' % (fname, str(date), str(cdate)))
+                    raise Exception('%s: Date %s outside of cycle range (%s)' % (bname, str(date), str(cdate)))
             #VerboseOut('%s: inspect %s' % (fname,datetime.datetime.now()-start), 4)
+        self.rootname = rootname
 
     @classmethod
     def _meta(cls, hdrfile):
@@ -187,7 +215,7 @@ class SARAsset(Asset):
         for f in files:
             bname = os.path.basename(f)
             if f[-3:] != 'hdr':
-                bandname = bname[len(self.basename)+1:]
+                bandname = bname[len(self.rootname)+1:]
                 envihdr = copy.deepcopy(meta['envihdr'])
                 if bandname in ['mask', 'linci']:
                     envihdr[6] = 'data type = 1'
@@ -199,11 +227,12 @@ class SARAsset(Asset):
         return datafiles
 
 
-class SARTile(Tile):
-    """ Tile of data """
+class SARData(Data):
+    """ Assets and products for a tile and date """
+    name = 'SAR'
+    Asset = SARAsset
 
-    _prodpattern = '*'
-
+    _pattern = '*'
     _products = OrderedDict([
         ('sign', {
             'description': 'Sigma nought (radar backscatter coefficient)',
@@ -212,8 +241,9 @@ class SARTile(Tile):
             'description': 'Incident angles',
         }),
     ])
-
-    Asset = SARAsset
+    _groups = {
+        'Standard': _products.keys(),
+    }
 
     def meta(self):
         """ Get metadata from headerfile """
@@ -231,57 +261,39 @@ class SARTile(Tile):
         # extract all data from archive
         datafiles = self.assets[''].extract()
         meta = self.meta()
-        if 'sign' in products.keys():
-            bands = [b for b in ["sl_HH", "sl_HV"] if b in datafiles]
-            img = gippy.GeoImage(datafiles[bands[0]])
-            del bands[0]
-            for b in bands:
-                img.AddBand(gippy.GeoImage(datafiles[b])[0])
-            img.SetNoData(0)
-            mask = gippy.GeoImage(datafiles['mask'], False)
-            img.AddMask(mask[0] == 255)
-            # apply date mask
-            dateimg = gippy.GeoImage(datafiles['date'], False)
-            dateday = (self.date - SARAsset._launchdate[self.sensor[0]]).days
-            img.AddMask(dateimg[0] == dateday)
-            imgout = gippy.SigmaNought(img, products['sign'], meta['CF'])
-            self.products['sign'] = imgout.Filename()
-            img = None
-            imgout = None
-        if 'linci' in products.keys():
-            self.products['linci'] = datafiles['linci']
-        # Remove unused stuff
+        for key, val in products.items():
+            fname = os.path.join(self.path, self.basename + '_' + key)
+            if val[0] == 'sign':
+                bands = [datafiles[b] for b in ["sl_HH", "sl_HV"] if b in datafiles]
+                img = gippy.GeoImage(bands)
+                img.SetNoData(0)
+                mask = gippy.GeoImage(datafiles['mask'], False)
+                img.AddMask(mask[0] == 255)
+                # apply date mask
+                dateimg = gippy.GeoImage(datafiles['date'], False)
+                dateday = (self.date - SARAsset._launchdate[self.sensor[0]]).days
+                img.AddMask(dateimg[0] == dateday)
+                #imgout = gippy.SigmaNought(img, fname, meta['CF'])
+                imgout = gippy.GeoImage(fname, img, gippy.GDT_Float32)
+                imgout.SetNoData(-32768)
+                for b in range(0, imgout.NumBands()):
+                    imgout.SetColor(img[b].Description(), b+1)
+                    imgout[b].Process(img[b].pow(2).log10() * 10 + meta['CF'])
+                self.products['sign'] = imgout.Filename()
+                img = None
+                imgout = None
+            if val[0] == 'linci':
+                # Note the linci product DOES NOT mask by date
+                os.rename(datafiles['linci'], fname)
+                os.rename(datafiles['linci']+'.hdr', fname+'.hdr')
+                self.products['linci'] = fname
+
+        # Remove unused files
+        # TODO - checking key rather than val[0] (the full product suffix)
         for key, f in datafiles.items():
             if key not in self.products and key != 'hdr':
                 RemoveFiles([f], ['.hdr', '.aux.xml'])
 
 
-class SARData(Data):
-    """ Represents a single date and temporal extent along with (existing) product variations """
-    name = 'SAR'
-
-    _defaultresolution = [0.000834028356964, 0.000834028356964]
-
-    Tile = SARTile
-
-    @classmethod
-    def feature2tile(cls, feature):
-        """ Get tile designation from a geospatial feature (i.e. a row) """
-        fldindex_lat = feature.GetFieldIndex("lat")
-        fldindex_lon = feature.GetFieldIndex("lon")
-        lat = int(feature.GetField(fldindex_lat)+0.5)
-        lon = int(feature.GetField(fldindex_lon)-0.5)
-        if lat < 0:
-            lat_h = 'S'
-        else:
-            lat_h = 'N'
-        if lon < 0:
-            lon_h = 'W'
-        else:
-            lon_h = 'E'
-        tile = lat_h + str(abs(lat)).zfill(2) + lon_h + str(abs(lon)).zfill(3)
-        return tile
-
-
 def main():
-    SARData.main()
+    DataInventory.main(SARData)

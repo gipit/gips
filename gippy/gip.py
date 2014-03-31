@@ -75,7 +75,7 @@ if __name__ == "__main__":
 
     if args.command == 'inventory':
         for s in sensors:
-            tiles = 
+            #tiles = 
             tile_vector = GeoVector(dbstr, layer=eval('%s.tiles_vector' % s))
             #tiles = intersection(GeoVector(args.site),GeoVector(dbstr,layer=eval('%s.tile_vector' % s))
             #for tile,cover in tiles.items():
