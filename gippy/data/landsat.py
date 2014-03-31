@@ -232,6 +232,8 @@ class LandsatData(Data):
                 elif val[0] == 'temp':
                     lwbands = [b for b in smeta['colors'] if b[0:4] == "LWIR"]
                     imgout = gippy.GeoImage(fname, img, gippy.GDT_Int16, len(lwbands))
+                    for i in range(0, imgout.NumBands()):
+                        imgout.SetColor(lwbands[i], i+1)
                     imgout.SetNoData(-32768)
                     imgout.SetGain(0.1)
                     e = 0.95
@@ -241,6 +243,7 @@ class LandsatData(Data):
                         else:
                             band = (img[b] - (atmospheres[b][1] + (1-e) * atmospheres[b][2])) / (atmospheres[b][0] * e)
                         band = (((band.pow(-1))*smeta['K1'][5]+1).log().pow(-1))*smeta['K2'][5] - 273.15
+                        #set_trace()
                         imgout[b].Process(band)
                 fname = imgout.Filename()
                 imgout = None
@@ -271,7 +274,7 @@ class LandsatData(Data):
                 RemoveFiles(files)
             shutil.rmtree(os.path.join(self.path, 'modtran'))
         except:
-            VerboseOut(traceback.format_exc(), 4)
+            #VerboseOut(traceback.format_exc(), 4)
             pass
 
     def filter(self, maxclouds=100):
