@@ -570,7 +570,8 @@ namespace gip {
 
     //! Fmask cloud mask
     GeoImage Fmask(const GeoImage& image, string filename, int dilate) {
-        if (Options::Verbose() > 1) std::cout << "Fmask" << std::endl;
+        if (Options::Verbose() > 1)
+            std::cout << image.Basename() << ": Fmask - dilate(" << dilate << ")" << std::endl;
 
         GeoImage imgout(filename, image, GDT_Byte, 4);
         int b_final(0);
@@ -581,8 +582,6 @@ namespace gip {
         // Output probabilties (for debugging/analysis)
         GeoImage probout(filename + "_prob", image, GDT_Float32, 2);
         probout.SetNoData(-32768);
-
-        //vector<string> bands_used({"RED","GREEN","BLUE","NIR","SWIR1","LWIR"});
 
         CImg<unsigned char> clouds, pcp, wmask, lmask, mask, redsatmask, greensatmask;
         CImg<float> red, nir, green, blue, swir1, swir2, BT, ndvi, ndsi, white, vprob;
