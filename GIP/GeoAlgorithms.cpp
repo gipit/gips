@@ -569,189 +569,166 @@ namespace gip {
     }
 
     //! Fmask cloud mask
-    /*GeoImage Fmask(const GeoImage& image, string filename, int tolerance, int dilate) {
-        image.SetUnitsOut("reflectance");
-        GeoImageIO<float> imgin(image);
+    GeoImage Fmask(const GeoImage& image, string filename, int tolerance, int dilate) {
+        if (Options::Verbose() > 1)
+            std::cout << image.Basename() << ": Fmask - dilate(" << dilate << ")" << std::endl;
 
-        // Output masks
-        GeoImageIO<unsigned char> imgout(GeoImage(filename,image,GDT_Byte,2));
+        GeoImage imgout(filename, image, GDT_Byte, 5);
+        int b_final(0); imgout[b_final].SetDescription("finalmask");
+        int b_clouds(1);  imgout[b_clouds].SetDescription("cloudmask");
+        int b_pcp(2);   imgout[b_pcp].SetDescription("PCP");
+        int b_water(3); imgout[b_water].SetDescription("clearskywater");
+        int b_land(4);  imgout[b_land].SetDescription("clearskyland");
         imgout.SetNoData(0);
-
+        float nodataval(-32768);
         // Output probabilties (for debugging/analysis)
-        GeoImageIO<float> probout(GeoImage(filename + "_prob", image, GDT_Float32, 1));
-        float nodata = -32768;
-        probout.SetNoData(nodata);
+        GeoImage probout(filename + "_prob", image, GDT_Float32, 2);
+        probout[0].SetDescription("wcloud");
+        probout[1].SetDescription("lcloud");
+        probout.SetNoData(nodataval);
 
-        CImg<unsigned char> mask, wmask, lmask, nodatamask, redsatmask, greensatmask;
+        CImg<unsigned char> clouds, pcp, wmask, lmask, mask, redsatmask, greensatmask;
         CImg<float> red, nir, green, blue, swir1, swir2, BT, ndvi, ndsi, white, vprob;
         float _ndvi, _ndsi;
-        //int cloudpixels(0);
-        CImg<double> wstats(image.Size()), lstats(image.Size());
-        int wloc(0), lloc(0);
+        long datapixels(0);
+        long cloudpixels(0);
+        long landpixels(0);
+        //CImg<double> wstats(image.Size()), lstats(image.Size());
+        //int wloc(0), lloc(0);
 
         for (unsigned int iChunk=1; iChunk<=image[0].NumChunks(); iChunk++) {
-            blue = imgin["BLUE"].Read(iChunk);
-            red = imgin["RED"].Read(iChunk);
-            green = imgin["GREEN"].Read(iChunk);
-            nir = imgin["NIR"].Read(iChunk);
-            swir1 = imgin["SWIR1"].Read(iChunk);
-            swir2 = imgin["SWIR2"].Read(iChunk);
-            BT = imgin["LWIR"].Read(iChunk);
-            nodatamask = imgin.NoDataMask(iChunk);
-            // floodfill....seems bad way
-            //shadowmask = nir.draw_fill(nir.width()/2,nir.height()/2,)
+            blue = image["BLUE"].Read<double>(iChunk);
+            red = image["RED"].Read<double>(iChunk);
+            green = image["GREEN"].Read<double>(iChunk);
+            nir = image["NIR"].Read<double>(iChunk);
+            swir1 = image["SWIR1"].Read<double>(iChunk);
+            swir2 = image["SWIR2"].Read<double>(iChunk);
+            BT = image["LWIR"].Read<double>(iChunk);
+            mask = image.NoDataMask(iChunk)^=1;
             ndvi = (nir-red).div(nir+red);
             ndsi = (green-swir1).div(green+swir1);
-            redsatmask = imgin["RED"].SaturationMask(iChunk);
-            greensatmask = imgin["GREEN"].SaturationMask(iChunk);
-            white = imgin.Whiteness(iChunk);
-            vprob = red;
+            white = image.Whiteness(iChunk);
 
+            // Potential cloud pixels
+            pcp =
+                swir2.get_threshold(0.03)
+                & BT.get_threshold(27,false,true)^=1
+                // NDVI
+                & ndvi.get_threshold(0.8,false,true)^=1
+                // NDSI
+                & ndsi.get_threshold(0.8,false,true)^=1
+                // HazeMask
+                & (blue - 0.5*red).threshold(0.08)
+                & white.get_threshold(0.7,false,true)^=1
+                & nir.get_div(swir1).threshold(0.75);
+
+            redsatmask = image["RED"].SaturationMask(iChunk);
+            greensatmask = image["GREEN"].SaturationMask(iChunk);
+            vprob = red;
             // Calculate "variability probability"
             cimg_forXY(vprob,x,y) {
                 _ndvi = (redsatmask(x,y) && nir(x,y) > red(x,y)) ? 0 : abs(ndvi(x,y));
                 _ndsi = (greensatmask(x,y) && swir1(x,y) > green(x,y)) ? 0 : abs(ndsi(x,y));
                 vprob(x,y) = 1 - std::max(white(x,y), std::max(_ndsi, _ndvi));
             }
-            probout[0].Write(vprob, iChunk);
+            probout[1].Write(vprob, iChunk);
 
-            // Potential cloud layer
-            mask =
-                swir2.threshold(0.03)
-                & BT.get_threshold(27,false,true)^=1
-                // NDVI
-                & ndvi.threshold(0.8,false,true)^=1
-                // NDSI
-                & ndsi.threshold(0.8,false,true)^=1
-                // HazeMask
-                & (blue - 0.5*red - 0.08).threshold(0.0)
-                & imgin.Whiteness(iChunk).threshold(0.7,false,true)^=1
-                & nir.div(swir1).threshold(0.75);
+            datapixels += mask.sum();
+            cloudpixels += pcp.sum();
+            wmask = ((ndvi.get_threshold(0.01,false,true)^=1) &= (nir.get_threshold(0.01,false,true)^=1))|=
+                    ((ndvi.get_threshold(0.1,false,true)^=1) &= (nir.get_threshold(0.05,false,true)^=1));
 
-            //cloudpixels += mask.sum();
-
-            // Water and land masks
-            CImg<bool> wmask(red.width(),red.height(),1,1,false);
-            cimg_forXY(wmask,x,y) {
-                if ( ((ndvi(x,y) < 0.01) && (nir(x,y) < 0.11)) || ((ndvi(x,y) < 0.1) && (nir(x,y) < 0.05)) ) wmask(x,y) = true;
-            }
-            imgout[0].Write(mask, iChunk);
-            imgout[1].Write(wmask, iChunk);
-
-            //lmask = wmask^=1 & mask^=1;
-            lmask = (wmask^1) & (mask^=1) & nodatamask;
-            wmask = wmask & swir2^=1 & nodatamask;
-
-            cimg_forXY(BT,x,y) if (wmask(x,y)) wstats[wloc++] = BT(x,y);
-            cimg_forXY(BT,x,y) if (lmask(x,y)) lstats[lloc++] = BT(x,y);
-
-            //lBT = BT;
-            //wBT = BT;
-            //cimg_forXY(BT,x,y) if (!wmask(x,y)) wBT(x,y) = nodata;
-            //cimg_forXY(BT,x,y) if (!mask(x,y)) lBT(x,y) = nodata;
-            //probout[0].WriteChunk(wBT,*iChunk);
-            //probout[1].WriteChunk(lBT,*iChunk);
+            imgout[b_pcp].Write(pcp.mul(mask), iChunk);        // Potential cloud pixels
+            imgout[b_water].Write(wmask.get_mul(mask), iChunk);   // Clear-sky water
+            CImg<unsigned char> landimg((wmask^1).mul(pcp^1).mul(mask));
+            landpixels += landimg.sum();
+            imgout[b_land].Write(landimg, iChunk);    // Clear-sky land
         }
+        // floodfill....seems bad way
+        //shadowmask = nir.draw_fill(nir.width()/2,nir.height()/2,)
 
         // If not enough non-cloud pixels then return existing mask
-        //if (cloudpixels >= (0.999*imgout[0].Size())) return imgout;
+        if (cloudpixels >= (0.999*imgout[0].Size())) return imgout;
+        // If not enough clear-sky land pixels then use all
+        //GeoRaster msk;
+        //if (landpixels < (0.001*imgout[0].Size())) msk = imgout[1];
 
-        // Calculate some thresholds
-        double zlo(-0.9345);
-        double zhi(0.9345);
+        // Clear-sky water
+        double Twater(image["LWIR"].AddMask(image["SWIR2"] < 0.03).AddMask(imgout[b_water]).AddMask(imgout[b_pcp]).Percentile(82.5));
+        image["LWIR"].ClearMasks();
+        GeoRaster landBT(image["LWIR"].AddMask(imgout[b_land]));
+        image["LWIR"].ClearMasks();
+        double Tlo(landBT.Percentile(17.5));
+        double Thi(landBT.Percentile(82.5));
 
-        CImg<double> _wstats( wstats.crop(0,0,0,0, wloc-1,0,0,0).stats() );
-        CImg<double> _lstats( lstats.crop(0,0,0,0, lloc-1,0,0,0).stats() );
-        //CImg<double> _wstats = probout[0].Stats();
-        //CImg<double> _lstats = probout[1].Stats();
-        double wmean(_wstats(2)), wstddev(sqrt(_wstats(3)));
-        double lmean(_lstats(2)), lstddev(sqrt(_lstats(3)));
-        double Twater(zhi*wstddev + wmean);
-        double Tlo(zlo*lstddev + lmean);
-        double Thi(zhi*lstddev + lmean);
-
-        if (Options::Verbose() > 1) {
-            cout << "Running fmask in " << image[0].NumChunks() << " chunks with tolerance of " << tolerance << endl;
-            cout << "Temperature stats:" << endl;
-            cout << "  Water: " << wmean << " s = " << wstddev << endl;
-            cout << "  Water: " << lmean << " s = " << lstddev << endl;
-            cout << "  Twater (82.5%) = " << Twater << endl;
-            cout << "  Tlo (17.5%) = " << Tlo << endl;
-            cout << "  Thi (82.5%) = " << Thi << endl;
+        if (Options::Verbose() > 2) {
+            cout << "PCP = " << 100*cloudpixels/(double)datapixels << "%" << endl;
+            cout << "Water (82.5%) = " << Twater << endl;
+            cout << "Land (17.5%) = " << Tlo << ", (82.5%) = " << Thi << endl;
         }
 
-        // 2nd pass cloud probabilities over land
+        // Calculate cloud probabilities for over water and land
         CImg<float> wprob, lprob;
         for (unsigned int iChunk=1; iChunk<=image[0].NumChunks(); iChunk++) {
-            // Cloud over Water prob
-            BT = imgin["LWIR"].Read(iChunk);
-            nodatamask = imgin.NoDataMask(iChunk);
+            mask = image.NoDataMask(iChunk)^=1;
+            BT = image["LWIR"].Read<double>(iChunk);
+            swir1 = image["SWIR1"].Read<double>(iChunk);
 
-            vprob = probout[0].Read(iChunk);
+            // Water Clouds = temp probability x brightness probability
+            wprob = ((Twater - BT)/=4.0).mul( swir1.min(0.11)/=0.11 ).mul(mask);
+            probout[0].Write(wprob, iChunk);
 
-            // temp probability x variability probability
-            lprob = ((Thi + 4-BT)/=(Thi+4-(Tlo-4))).mul( vprob );
-            //1 - imgin.NDVI(*iChunk).abs().max(imgin.NDSI(*iChunk).abs()).max(imgin.Whiteness(*iChunk).abs()) );
-
-            cimg_forXY(nodatamask,x,y) if (!nodatamask(x,y)) lprob(x,y) = nodata;
-
-            // Cloud probability over water
-            probout[0].Write( lprob, iChunk);
+            // Land Clouds = temp probability x variability probability
+            vprob = probout[0].Read<double>(iChunk);
+            lprob = ((Thi + 4-BT)/=(Thi+4-(Tlo-4))).mul( vprob ).mul(mask);
+            //1 - image.NDVI(*iChunk).abs().max(image.NDSI(*iChunk).abs()).max(image.Whiteness(*iChunk).abs()) );
+            probout[1].Write( lprob, iChunk);
         }
 
-        // Apply thresholds to get final max
-        float tol = (tolerance-3)*0.1;
+        // Thresholds
+        float tol((tolerance-3)*0.1);
         float wthresh = 0.5 + tol;
-        CImg<double> stats = probout[0].Stats();
-        float lthresh( zhi*stats(3) + stats(2) + 0.2 + tol );
-
-        if (Options::Verbose() > 1) {
-            cout << "Cloud probability thresholds:" << endl;
-            cout << "  Over Water = " << wthresh << endl;
-            cout << "  Over Land = " << lthresh << endl;
-        }
+        float lthresh(probout[1].AddMask(imgout[b_land]).Percentile(82.5)+0.2+tol);
+        probout[1].ClearMasks();
+        if (Options::Verbose() > 2)
+            cout << "Thresholds: water = " << wthresh << ", land = " << lthresh << endl;
 
         // 3x3 filter of 1's for majority filter
-        CImg<int> filter(3,3,1,1, 1);
-        int esize = 5;
-        CImg<int> erode_elem(esize,esize,1,1,1);
-        CImg<int> dilate_elem(esize+dilate,esize+dilate,1,1,1);
+        //CImg<int> filter(3,3,1,1, 1);
+        int erode = 5;
+        int padding(double(std::max(dilate,erode)+1)/2);
+        for (unsigned int b=0;b<image.NumBands();b++) image[b].Chunk(padding);
+        for (unsigned int b=0;b<imgout.NumBands();b++) imgout[b].Chunk(padding);
 
         for (unsigned int iChunk=1; iChunk<=image[0].NumChunks(); iChunk++) {
-            mask = imgout[0].Read(iChunk);
-            wmask = imgout[1].Read(iChunk);
+            mask = image.NoDataMask(iChunk)^=1;
+            pcp = imgout[b_pcp].Read<double>(iChunk);
+            wmask = imgout[b_water].Read<double>(iChunk);
+            BT = image["LWIR"].Read<double>(iChunk);
 
-            nodatamask = imgin.NoDataMask(iChunk);
-            BT = imgin["LWIR"].Read(iChunk);
-            swir1 = imgin["SWIR1"].Read(iChunk);
-
-            // temp probability x brightness probability
-            wprob = ((Twater - BT)/=4.0).mul( swir1.min(0.11)/=0.11 );
-            lprob = probout[0].Read(iChunk);
-
-            // Combine probabilities of land and water
-            mask &= ( (wmask & wprob.threshold(wthresh)) |= ((wmask != 1) & lprob.get_threshold(lthresh)));
-            // Add in obvious outliers
-            mask |=
-                (lprob.threshold(0.99) & (wmask != 1)) |=
-                (BT.threshold(Tlo-25,false,true)^=1);
+            lprob = probout[1].Read<double>(iChunk);
+            
+            clouds = 
+                (pcp & wmask & wprob.threshold(0.5))|=
+                (pcp & (wmask^1) & lprob.threshold(lthresh))|=
+                (lprob.get_threshold(0.99) & (wmask^1))|=
+                (BT.threshold(Tlo-35,false,true)^=1);
 
             // Majority filter
-            mask.convolve(filter).threshold(5);
+            //mask.convolve(filter).threshold(5);
+            if (erode > 0)
+                clouds.erode(erode, erode);
+            if (dilate > 0)
+                clouds.dilate(dilate, dilate);
 
-            // Erode, then dilate twice
-            mask.erode(erode_elem).dilate(dilate_elem);
-            mask.dilate(dilate_elem);
-
-            cimg_forXY(nodatamask,x,y) if (!nodatamask(x,y)) mask(x,y) = 0;
-            imgout[0].Write(mask, iChunk);
+            //cimg_forXY(nodatamask,x,y) if (!nodatamask(x,y)) mask(x,y) = 0;
+            clouds.mul(mask);
+            imgout[b_clouds].Write(clouds, iChunk);
+            imgout[b_final].Write((clouds^=1).mul(mask), iChunk);
         }
 
-        // Add shadow mask: bitmask
-
-        // NoData regions
         return imgout;
-    }*/
+    }
 
     //! Convert lo-high of index into probability
     /*GeoImage Index2Probability(const GeoImage& image, string filename, float min, float max) {

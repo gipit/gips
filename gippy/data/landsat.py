@@ -185,10 +185,12 @@ class LandsatData(Data):
         theta = numpy.pi * self.metadata['geometry']['solarzenith']/180.0
         sundist = (1.0 - 0.016728 * numpy.cos(numpy.pi * 0.9856 * (self.metadata['datetime']['JulianDay']-4.0)/180.0))
         Esuns = dict(zip(smeta['colors'], smeta['E']))
+        K1 = dict(zip(smeta['colors'], smeta['K1']))
+        K2 = dict(zip(smeta['colors'], smeta['K2']))
         for b in visbands:
             reflimg[b] = img[b] * (1.0/((Esuns[b] * numpy.cos(theta)) / (numpy.pi * sundist * sundist)))
         for b in lwbands:
-            reflimg[b] = (((img[b].pow(-1))*smeta['K1'][5]+1).log().pow(-1))*smeta['K2'][5] - 273.15
+            reflimg[b] = (((img[b].pow(-1))*K1[b]+1).log().pow(-1))*K2[b] - 273.15
 
         # Process standard products
         for key, val in groups['Standard'].items():
@@ -242,8 +244,7 @@ class LandsatData(Data):
                             band = img[b]
                         else:
                             band = (img[b] - (atmospheres[b][1] + (1-e) * atmospheres[b][2])) / (atmospheres[b][0] * e)
-                        band = (((band.pow(-1))*smeta['K1'][5]+1).log().pow(-1))*smeta['K2'][5] - 273.15
-                        #set_trace()
+                        band = (((band.pow(-1))*K1[b]+1).log().pow(-1))*K2[b] - 273.15
                         imgout[b].Process(band)
                 fname = imgout.Filename()
                 imgout = None

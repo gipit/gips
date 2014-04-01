@@ -510,7 +510,7 @@ namespace gip {
 
     //! Write raw CImg to file
     template<class T> GeoRaster& GeoRaster::WriteRaw(cimg_library::CImg<T> img, iRect chunk) {
-        if (Options::Verbose() > 3) {
+        if (Options::Verbose() > 4) {
             std::cout << Basename() << ": writing " << img.width() << " x " 
                 << img.height() << " image to rect " << chunk << std::endl;
         }
