@@ -132,7 +132,6 @@ class LandsatData(Data):
         'ref':  {'description': 'Surface reflectance', 'args': '?'},
         'temp': {'description': 'Apparent temperature', 'args': '?'},
         'acca': {'description': 'Automated Cloud Cover Assesment', 'args': '*', 'toa': True},
-        'fmask': {'description': 'Fmask cloud cover', 'args': '*', 'toa': True},
         #'Indices': {
         'bi':   {'description': 'Brightness Index'},
         'ndvi': {'description': 'Normalized Difference Vegetation Index'},
@@ -147,7 +146,7 @@ class LandsatData(Data):
         'isti': {'description': 'Inverse Standard Tillage Index'},
     }
     _groups = {
-        'Standard': ['rad', 'ref', 'temp', 'acca', 'fmask'],
+        'Standard': ['rad', 'ref', 'temp', 'acca'],
         'Index': ['bi', 'ndvi', 'evi', 'lswi', 'ndsi', 'satvi'],
         'Tillage': ['ndti', 'crc', 'sti', 'isti']
     }
@@ -186,10 +185,12 @@ class LandsatData(Data):
         theta = numpy.pi * self.metadata['geometry']['solarzenith']/180.0
         sundist = (1.0 - 0.016728 * numpy.cos(numpy.pi * 0.9856 * (self.metadata['datetime']['JulianDay']-4.0)/180.0))
         Esuns = dict(zip(smeta['colors'], smeta['E']))
+        K1 = dict(zip(smeta['colors'], smeta['K1']))
+        K2 = dict(zip(smeta['colors'], smeta['K2']))
         for b in visbands:
             reflimg[b] = img[b] * (1.0/((Esuns[b] * numpy.cos(theta)) / (numpy.pi * sundist * sundist)))
         for b in lwbands:
-            reflimg[b] = (((img[b].pow(-1))*smeta['K1'][5]+1).log().pow(-1))*smeta['K2'][5] - 273.15
+            reflimg[b] = (((img[b].pow(-1))*K1[b]+1).log().pow(-1))*K2[b] - 273.15
 
         # Process standard products
         for key, val in groups['Standard'].items():
@@ -206,8 +207,6 @@ class LandsatData(Data):
                     dilation = int(val[2]) if len(val) > 2 else 10
                     cloudheight = int(val[3]) if len(val) > 3 else 4000
                     imgout = gippy.ACCA(reflimg, fname, s_elev, s_azim, erosion, dilation, cloudheight)
-                elif val[0] == 'fmask':
-                    imgout = gippy.Fmask(reflimg, fname)
                 elif val[0] == 'rad':
                     imgout = gippy.GeoImage(fname, img, gippy.GDT_Int16, len(visbands))
                     for i in range(0, imgout.NumBands()):
@@ -235,6 +234,8 @@ class LandsatData(Data):
                 elif val[0] == 'temp':
                     lwbands = [b for b in smeta['colors'] if b[0:4] == "LWIR"]
                     imgout = gippy.GeoImage(fname, img, gippy.GDT_Int16, len(lwbands))
+                    for i in range(0, imgout.NumBands()):
+                        imgout.SetColor(lwbands[i], i+1)
                     imgout.SetNoData(-32768)
                     imgout.SetGain(0.1)
                     e = 0.95
@@ -243,7 +244,7 @@ class LandsatData(Data):
                             band = img[b]
                         else:
                             band = (img[b] - (atmospheres[b][1] + (1-e) * atmospheres[b][2])) / (atmospheres[b][0] * e)
-                        band = (((band.pow(-1))*smeta['K1'][5]+1).log().pow(-1))*smeta['K2'][5] - 273.15
+                        band = (((band.pow(-1))*K1[b]+1).log().pow(-1))*K2[b] - 273.15
                         imgout[b].Process(band)
                 fname = imgout.Filename()
                 imgout = None
