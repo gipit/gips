@@ -569,23 +569,28 @@ namespace gip {
     }
 
     //! Fmask cloud mask
-    GeoImage Fmask(const GeoImage& image, string filename, int dilate) {
+    GeoImage Fmask(const GeoImage& image, string filename, int tolerance, int dilate) {
         if (Options::Verbose() > 1)
             std::cout << image.Basename() << ": Fmask - dilate(" << dilate << ")" << std::endl;
 
-        GeoImage imgout(filename, image, GDT_Byte, 4);
-        int b_final(0);
-        int b_pcp(1);
-        int b_water(2);
-        int b_land(3);
+        GeoImage imgout(filename, image, GDT_Byte, 5);
+        int b_final(0); imgout[b_final].SetDescription("finalmask");
+        int b_clouds(1);  imgout[b_clouds].SetDescription("cloudmask");
+        int b_pcp(2);   imgout[b_pcp].SetDescription("PCP");
+        int b_water(3); imgout[b_water].SetDescription("clearskywater");
+        int b_land(4);  imgout[b_land].SetDescription("clearskyland");
         imgout.SetNoData(0);
+        float nodataval(-32768);
         // Output probabilties (for debugging/analysis)
         GeoImage probout(filename + "_prob", image, GDT_Float32, 2);
-        probout.SetNoData(-32768);
+        probout[0].SetDescription("wcloud");
+        probout[1].SetDescription("lcloud");
+        probout.SetNoData(nodataval);
 
         CImg<unsigned char> clouds, pcp, wmask, lmask, mask, redsatmask, greensatmask;
         CImg<float> red, nir, green, blue, swir1, swir2, BT, ndvi, ndsi, white, vprob;
         float _ndvi, _ndsi;
+        long datapixels(0);
         long cloudpixels(0);
         long landpixels(0);
         //CImg<double> wstats(image.Size()), lstats(image.Size());
@@ -628,15 +633,14 @@ namespace gip {
             }
             probout[1].Write(vprob, iChunk);
 
+            datapixels += mask.sum();
             cloudpixels += pcp.sum();
-            // Used in pass2
-            // Water and land masks
             wmask = ((ndvi.get_threshold(0.01,false,true)^=1) &= (nir.get_threshold(0.01,false,true)^=1))|=
                     ((ndvi.get_threshold(0.1,false,true)^=1) &= (nir.get_threshold(0.05,false,true)^=1));
 
             imgout[b_pcp].Write(pcp.mul(mask), iChunk);        // Potential cloud pixels
             imgout[b_water].Write(wmask.get_mul(mask), iChunk);   // Clear-sky water
-            CImg<unsigned char> landimg((wmask^1).mul(mask));
+            CImg<unsigned char> landimg((wmask^1).mul(pcp^1).mul(mask));
             landpixels += landimg.sum();
             imgout[b_land].Write(landimg, iChunk);    // Clear-sky land
         }
@@ -650,12 +654,15 @@ namespace gip {
         //if (landpixels < (0.001*imgout[0].Size())) msk = imgout[1];
 
         // Clear-sky water
-        double Twater(image["LWIR"].AddMask(image["SWIR2"] < 0.03).AddMask(imgout[b_water]).Percentile(82.5));
+        double Twater(image["LWIR"].AddMask(image["SWIR2"] < 0.03).AddMask(imgout[b_water]).AddMask(imgout[b_pcp]).Percentile(82.5));
+        image["LWIR"].ClearMasks();
         GeoRaster landBT(image["LWIR"].AddMask(imgout[b_land]));
+        image["LWIR"].ClearMasks();
         double Tlo(landBT.Percentile(17.5));
         double Thi(landBT.Percentile(82.5));
 
         if (Options::Verbose() > 2) {
+            cout << "PCP = " << 100*cloudpixels/(double)datapixels << "%" << endl;
             cout << "Water (82.5%) = " << Twater << endl;
             cout << "Land (17.5%) = " << Tlo << ", (82.5%) = " << Thi << endl;
         }
@@ -679,16 +686,17 @@ namespace gip {
         }
 
         // Thresholds
-        float tol(0.0); // = (tolerance-3)*0.1;
+        float tol((tolerance-3)*0.1);
         float wthresh = 0.5 + tol;
         float lthresh(probout[1].AddMask(imgout[b_land]).Percentile(82.5)+0.2+tol);
+        probout[1].ClearMasks();
         if (Options::Verbose() > 2)
             cout << "Thresholds: water = " << wthresh << ", land = " << lthresh << endl;
 
         // 3x3 filter of 1's for majority filter
         //CImg<int> filter(3,3,1,1, 1);
         int erode = 5;
-        int padding(double(std::max(dilate,erode)+0.5)/2);
+        int padding(double(std::max(dilate,erode)+1)/2);
         for (unsigned int b=0;b<image.NumBands();b++) image[b].Chunk(padding);
         for (unsigned int b=0;b<imgout.NumBands();b++) imgout[b].Chunk(padding);
 
@@ -699,7 +707,7 @@ namespace gip {
             BT = image["LWIR"].Read<double>(iChunk);
 
             lprob = probout[1].Read<double>(iChunk);
-
+            
             clouds = 
                 (pcp & wmask & wprob.threshold(0.5))|=
                 (pcp & (wmask^1) & lprob.threshold(lthresh))|=
@@ -715,7 +723,8 @@ namespace gip {
 
             //cimg_forXY(nodatamask,x,y) if (!nodatamask(x,y)) mask(x,y) = 0;
             clouds.mul(mask);
-            imgout[b_final].Write(clouds, iChunk);
+            imgout[b_clouds].Write(clouds, iChunk);
+            imgout[b_final].Write((clouds^=1).mul(mask), iChunk);
         }
 
         return imgout;
