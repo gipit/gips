@@ -132,6 +132,7 @@ class LandsatData(Data):
         'ref':  {'description': 'Surface reflectance', 'args': '?'},
         'temp': {'description': 'Apparent temperature', 'args': '?'},
         'acca': {'description': 'Automated Cloud Cover Assesment', 'args': '*', 'toa': True},
+        'fmask': {'description': 'Fmask cloud cover', 'args': '*', 'toa': True},
         #'Indices': {
         'bi':   {'description': 'Brightness Index'},
         'ndvi': {'description': 'Normalized Difference Vegetation Index'},
@@ -146,7 +147,7 @@ class LandsatData(Data):
         'isti': {'description': 'Inverse Standard Tillage Index'},
     }
     _groups = {
-        'Standard': ['rad', 'ref', 'temp', 'acca'],
+        'Standard': ['rad', 'ref', 'temp', 'acca', 'fmask'],
         'Index': ['bi', 'ndvi', 'evi', 'lswi', 'ndsi', 'satvi'],
         'Tillage': ['ndti', 'crc', 'sti', 'isti']
     }
@@ -207,6 +208,10 @@ class LandsatData(Data):
                     dilation = int(val[2]) if len(val) > 2 else 10
                     cloudheight = int(val[3]) if len(val) > 3 else 4000
                     imgout = gippy.ACCA(reflimg, fname, s_elev, s_azim, erosion, dilation, cloudheight)
+                elif val[0] == 'fmask':
+                    tolerance = int(val[1]) if len(val) > 1 else 3
+                    dilation = int(val[2]) if len(val) > 2 else 5
+                    imgout = gippy.Fmask(reflimg, fname, tolerance, dilation)
                 elif val[0] == 'rad':
                     imgout = gippy.GeoImage(fname, img, gippy.GDT_Int16, len(visbands))
                     for i in range(0, imgout.NumBands()):
