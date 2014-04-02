@@ -36,7 +36,7 @@ class Tiles(object):
     """ Collection of tiles for a single date """
 
     def __init__(self, dataclass, site=None, tiles=None, date=None, products=None,
-                 suffix='', sensors=None, fetch=False, **kwargs):
+                 sensors=None, fetch=False, **kwargs):
         """ Locate data matching vector location (or tiles) and date
         self.tile_coverage - dictionary of tile id and % coverage with site
         self.tiles - dictionary of tile id and a Tile instance
@@ -53,22 +53,13 @@ class Tiles(object):
         else:
             self.tile_coverage = dict((t, (1, 1)) for t in self.Repository.find_tiles())
         self.date = date
-
-        # Create product dictionary of requested products and filename
         self.products = {}
-        if isinstance(products, list):
-            self.requested_products = dict([p, []] for p in products)
-        else:
-            self.requested_products = products
-        if len(self.requested_products) == 0 and len(dataclass._products) == 1:
-            self.requested_products = {dataclass._products.keys()[0]: []}
+        self.requested_products = products
         #for p in products:
         #    key = p
         #    for arg in products[p]:
         #        key = key + '_' + arg
         #    self.products[key] = ''
-
-        self.suffix = '' if suffix == '' else '_' + suffix if suffix[0] != '_' else suffix
 
         # For each tile locate files/products
         if sensors is None:
@@ -98,21 +89,15 @@ class Tiles(object):
     def process(self, overwrite=False):
         """ Determines what products need to be processed for each tile and calls Data.process """
         for tileid, tile in self.tiles.items():
-            # Determine what needs to be processed
             toprocess = {}
-            for p, args in self.requested_products.items():
-                pname = p
-                for arg in args:
-                    pname = pname + '_' + arg
-                pname = pname + self.suffix
+            for pname, args in self.requested_products.items():
                 if pname not in tile.products or overwrite:
-                    toprocess[pname] = [p]
-                    toprocess[pname].extend(args)
+                    toprocess[pname] = args
             if len(toprocess) != 0:
                 VerboseOut(['Processing products for tile %s' % tileid, toprocess.keys()], 3)
                 self.tiles[tileid].process(toprocess)
 
-    def project(self, res=None, datadir=''):
+    def project(self, res=None, datadir='', mask=None):
         """ Create image of final product (reprojected/mosaiced) """
         if datadir == '':
             datadir = self.dataclass.name+'_data'
@@ -125,36 +110,42 @@ class Tiles(object):
         if not hasattr(res, "__len__"):
             res = [res, res]
         #elif len(res) == 1: res = [res[0],res[0]]
+        start = datetime.now()
         if self.site is None:
-            # Link files instead
-            products = []
-            for p, args in self.requested_products.items():
-                pname = p
-                for arg in args:
-                    pname = pname + '_' + arg
-                products.append(pname + self.suffix)
             for t in self.tiles:
-                self.tiles[t].link(products=products, path=datadir)
+                self.tiles[t].link(products=self.requested_products.keys(), path=datadir, copy=True if mask else False)
+                filenames = [self.tiles[t].products[p] for p in self.requested_products]
+                if mask is not None:
+                    self._applymask(filenames, self.tiles[t].products[mask])
         else:
-            # TODO - better file naming
+            bname = os.path.splitext(os.path.basename(self.site))[0] + '_' + self.date.strftime('%Y%j')
+            sensor = self.sensor if self.sensor != '' else ''
             for product in self.requested_products:
-                start = datetime.now()
-                sitebase = os.path.splitext(os.path.basename(self.site))[0] + '_'
-                sensor = '_' + self.sensor if self.sensor != '' else ''
-                bname = sitebase + self.date.strftime('%Y%j') + '_%s%s.tif' % (sensor, product)
-                filename = os.path.join(datadir, bname)
+                filename = os.path.join(datadir, bname + ('_%s_%s.tif' % (sensor, product)))
                 if not os.path.exists(filename):
                     filenames = [self.tiles[t].products[product] for t in self.tiles]
-                    # cookiecutter should validate pixels in image.  Throw exception if not
+                    # TODO - cookiecutter should validate pixels in image.  Throw exception if not
                     imgout = gippy.CookieCutter(filenames, filename, self.site, res[0], res[1])
-                    VerboseOut('Projected and cropped %s files -> %s in %s' % (len(filenames),
-                               imgout.Basename(), datetime.now() - start))
+                    imgout = None
                 self.products[product] = filename
+            if mask is not None:
+                self._applymask(self.products.values(), self.products[mask])
+        VerboseOut('Created project files in %s' % (datetime.now() - start))
+
+    def _applymask(self, filenames, mask):
+        mimg = gippy.GeoImage(mask)
+        for f in filenames:
+            if f != mask:
+                img = gippy.GeoImage(f)
+                img.AddMask(mimg[0]).Process()
+                img = None
+        mimg = None
 
     def open(self, product='', update=True):
         """ Open and return final product GeoImage """
         fname = self.products[product]
         if os.path.exists(fname):
+            print 'open', product, fname
             return gippy.GeoImage(fname, update)
         else:
             raise Exception('%s product does not exist' % product)
@@ -215,13 +206,24 @@ class DataInventory(object):
         self.temporal_extent(dates, days)
 
         self.data = {}
-        self.products = products
+
+        # Create product dictionary of requested products and filename
+        if isinstance(products, list):
+            self.requested_products = dict([p, [p]] for p in products)
+        else:
+            self.requested_products = products
+
+        # if no products specified and only 1 product available, use it
+        if len(self.requested_products) == 0 and len(dataclass._products) == 1:
+            p = dataclass._products.keys()[0]
+            self.requested_products = {p: [p]}
         #if self.products is None:
         #    self.products = dataclass.Tile._products.keys()
         #if len(self.products) == 0:
         #    self.products = dataclass.Tile._products.keys()
 
-        if fetch and products is not None:
+        if fetch:
+            products = [val[0] for val in self.requested_products.values()]
             dataclass.fetch(products, self.tiles, (self.start_date, self.end_date), (self.start_day, self.end_day))
             dataclass.Asset.archive(Repository.spath())
 
@@ -242,7 +244,7 @@ class DataInventory(object):
         for date in sorted(dates):
             try:
                 dat = Tiles(dataclass=dataclass, site=self.site, tiles=self.tiles.keys(),
-                            date=date, products=self.products, **kwargs)
+                            date=date, products=self.requested_products, **kwargs)
                 self.data[date] = dat
                 self.numfiles = self.numfiles + len(dat.tiles)
             except Exception, e:
@@ -262,10 +264,10 @@ class DataInventory(object):
 
     def process(self, *args, **kwargs):
         """ Process data in inventory """
-        if self.products is None:
+        if self.requested_products is None:
             raise Exception('No products specified for processing')
         start = datetime.now()
-        VerboseOut('Requested %s products for %s files' % (len(self.products), self.numfiles))
+        VerboseOut('Requested %s products for %s files' % (len(self.requested_products), self.numfiles))
         for date in self.dates:
             self.data[date].process(*args, **kwargs)
         VerboseOut('Completed processing in %s' % (datetime.now()-start))
@@ -279,8 +281,9 @@ class DataInventory(object):
         VerboseOut('Completed projecting in %s' % (datetime.now()-start))
 
     # TODO - check if this is needed
+    """
     def get_products(self, date):
-        """ Get list of products for given date """
+        # Get list of products for given date
         # this doesn't handle different tiles (if prod exists for one tile, it lists it)
         prods = []
         dat = self.data[date]
@@ -289,6 +292,7 @@ class DataInventory(object):
                 prods.append(p)
             #for prod in data.products.keys(): prods.append(prod)
         return sorted(set(prods))
+    """
 
     def printcalendar(self, md=False, products=False):
         """ print calendar for raw original datafiles """
@@ -399,6 +403,7 @@ class DataInventory(object):
         parser = subparser.add_parser('project', help='Create project', parents=parents, formatter_class=dhf)
         group = parser.add_argument_group('Project options')
         group.add_argument('--res', nargs=2, help='Resolution of output rasters', default=None, type=float)
+        group.add_argument('--mask', nargs='?', help='Apply this product to all products', const='acca')
         group.add_argument('--datadir', help='Directory to save project files', default=cls.name+'_data')
         group.add_argument('--format', help='Format for output file', default="GTiff")
 
@@ -417,6 +422,7 @@ class DataInventory(object):
             cls.Asset.archive(recursive=args.recursive, keep=args.keep)
             exit(1)
 
+        suffix = '_' + args.suffix if args.suffix != '' else ''
         #products = [p for p in cls.Tile._products if eval('args.%s' % p) not in [None, False]]
         products = {}
         for p in cls._products:
@@ -424,24 +430,33 @@ class DataInventory(object):
                 val = eval('args.%s' % p)
                 if val not in [None, False]:
                     if val is True:
-                        products[p] = []
+                        products[p] = [p]
                     elif isinstance(val, list):
-                        products[p] = val
+                        key = p
+                        for i in val:
+                            key = key + '_' + i
+                        products[key+suffix] = [p] + val
                     else:
-                        products[p] = [val]
+                        products[p+'_'+val+suffix] = [p, val]
+        if args.command == 'project':
+            if args.mask:
+                m = args.mask.split('_')
+                if len(m) == 1:
+                    products[args.mask] = m
+                else:
+                    products[args.mask] = m
+        #print 'Requested Products: ', products
 
         try:
             inv = cls.inventory(
                 site=args.site, dates=args.dates, days=args.days, tiles=args.tiles,
-                products=products, pcov=args.pcov, ptile=args.ptile, fetch=args.fetch, suffix=args.suffix)
+                products=products, pcov=args.pcov, ptile=args.ptile, fetch=args.fetch)
             if args.command == 'inventory':
                 inv.printcalendar(args.md, products=args.products)
-            elif args.command == 'link':
-                inv.links(args.hard)
             elif args.command == 'process':
                 inv.process(overwrite=args.overwrite)
             elif args.command == 'project':
-                inv.project(args.res, datadir=args.datadir)
+                inv.project(args.res, datadir=args.datadir, mask=args.mask)
             else:
                 VerboseOut('Command %s not recognized' % cmd)
         except Exception, e:
