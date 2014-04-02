@@ -60,6 +60,42 @@ def RemoveFiles(filenames, extensions=['']):
                 continue
 
 
+def atmospheric_model(doy, lat):
+    """ Determine atmospheric model
+    1 - Tropical
+    2 - Mid-Latitude Summer
+    3 - Mid-Latitude Winter
+    4 - Sub-Arctic Summer
+    5 - Sub-Arctic Winter
+    6 - US Standard Atmosphere
+    """
+    # Determine season
+    if doy < 121 or doy > 274:
+        if lat < 0:
+            summer = True
+        else:
+            summer = False
+    else:
+        if lat < 0:
+            summer = False
+        else:
+            summer = True
+    # Determine model
+    if abs(lat) <= 15:
+        model = 1
+    elif abs(lat) >= 60:
+        if summer:
+            model = 4
+        else:
+            model = 5
+    else:
+        if summer:
+            model = 2
+        else:
+            model = 3
+    return model
+
+
 def _parse_date(dstring, last=False):
     """ Parses string of YYYY or YYYY-MM or YYYY-MM-DD or YYYY-DOY and returns date object """
     d = dstring.split('-')
