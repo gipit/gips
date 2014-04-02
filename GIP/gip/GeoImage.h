@@ -159,6 +159,7 @@ namespace gip {
         void ClearNoData() { for (unsigned int i=0;i<_RasterBands.size();i++) _RasterBands[i].ClearNoData(); }
 
         //! \name Processing functions
+        template<class T> GeoImage& Process();
         //! Process band into new file (copy and apply processing functions)
         template<class T> GeoImage Process(std::string, GDALDataType = GDT_Unknown);
 
@@ -423,6 +424,15 @@ namespace gip {
         }
 
     }; // class GeoImage
+
+    template<class T> GeoImage& GeoImage::Process() {
+        for (unsigned int i=0; i<NumBands(); i++) {
+            for (unsigned int iChunk=1; iChunk <= (*this)[i].NumChunks(); iChunk++) {
+                (*this)[i].Write((*this)[i].Read<T>(iChunk),iChunk);
+            }
+        }
+        return *this;
+    }
 
     // Copy input file into new output file
     template<class T> GeoImage GeoImage::Process(std::string filename, GDALDataType datatype) {

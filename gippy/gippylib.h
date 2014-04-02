@@ -256,6 +256,9 @@ namespace gip {
         GeoImage Process(std::string filename, GDALDataType dtype=GDT_Unknown) {
             return self->Process<double>(filename, dtype);
         }
+        GeoImage& Process() {
+            return self->Process<double>();
+        }
         GeoImage __deepcopy__(GeoImage image) {
             return GeoImage(image);
         }
