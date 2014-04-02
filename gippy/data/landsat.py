@@ -276,19 +276,19 @@ class LandsatData(Data):
         # cleanup directory
         try:
             for bname in self.assets[''].datafiles():
-                files = glob.glob(os.path.join(self.path, bname)+'*')
-                RemoveFiles(files)
+                if bname[-7:] != 'MTL.txt':
+                    files = glob.glob(os.path.join(self.path, bname)+'*')
+                    RemoveFiles(files)
             shutil.rmtree(os.path.join(self.path, 'modtran'))
         except:
             #VerboseOut(traceback.format_exc(), 4)
             pass
 
-    def filter(self, maxclouds=100):
+    def filter(self, pclouds=100, **kwargs):
         """ Check if tile passes filter """
-        if maxclouds < 100:
-            # shouldnt have to read meta again
-            meta = cls.meta(tile)
-            if meta['clouds'] > maxclouds:
+        if pclouds < 100:
+            self.meta()
+            if self.metadata['clouds'] > pclouds:
                 return False
         return True
 
@@ -426,11 +426,13 @@ class LandsatData(Data):
 
     @classmethod
     def extra_arguments(cls):
-        return {}
-        return {'--noatmos': {
-                'help': 'No atmospheric correction for any products',
-                'default': False, 'action': 'store_true'
-                }}
+        return {
+            '--%clouds': {
+                'dest': 'pclouds',
+                'help': 'Threshold of max %% cloud cover',
+                'default': 100,
+                'type': int
+            }}
 
 
 def main():
