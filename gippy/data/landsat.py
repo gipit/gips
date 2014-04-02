@@ -19,6 +19,7 @@
 ################################################################################
 
 import os
+import sys
 import glob
 import re
 from datetime import datetime
@@ -153,6 +154,50 @@ class LandsatData(Data):
     }
     _defaultproduct = 'ref'
 
+    def SixS(self):
+        from gippy.utils import atmospheric_model
+        from Py6S import SixS, Geometry, AeroProfile, Altitudes, Wavelength, GroundReflectance, AtmosCorr, SixSHelpers
+        start = datetime.now()
+        VerboseOut('Running atmospheric model (6S)', 3)
+
+        dt = self.metadata['datetime']['datetime']
+        julianday = (dt - datetime(dt.year, 1, 1)).days + 1
+        geo = self.metadata['geometry']
+
+        s = SixS()
+        s.atmos_profile = atmospheric_model(julianday, geo['lat'])
+        s.geometry = Geometry.User()
+        s.geometry.from_time_and_location(geo['lat'], geo['lon'], str(dt), geo['zenith'], geo['azimuth'])
+        aero = AeroProfile.PredefinedType(AeroProfile.Continental)
+        s.aero_profile = aero
+        #s.aot550 = aod
+        s.altitudes = Altitudes()
+        s.altitudes.set_target_sea_level()
+        s.altitudes.set_sensor_satellite_level()
+        s.ground_reflectance = GroundReflectance.HomogeneousLambertian(GroundReflectance.GreenVegetation)
+        s.atmos_corr = AtmosCorr.AtmosCorrLambertianFromRadiance(1.0)
+        if self.sensor == 'LT5':
+            func = SixSHelpers.Wavelengths.run_landsat_tm
+        elif self.sensor == 'LE7':
+            func = SixSHelpers.Wavelengths.run_landsat_etm
+        elif self.sensor == 'LC8':
+            func = SixSHelpers.Wavelengths.run_landsat_oli
+        stdout = sys.stdout
+        sys.stdout = open(os.devnull, 'w')
+        wvlens, outputs = func(s)
+        sys.stdout = stdout
+        results = []
+        VerboseOut("{:>4}{:>8}{:>8}{:>8}".format('Band', 'T', 'Lu', 'Ld'), 3)
+        for b, out in enumerate(outputs):
+            t = out.trans['global_gas'].upward
+            Lu = out.atmospheric_intrinsic_radiance
+            Ld = (out.direct_solar_irradiance + out.diffuse_solar_irradiance + out.environmental_irradiance)/numpy.pi
+            results.append([t, Lu, Ld])
+            VerboseOut("{:>4}: {:>8.3f}{:>8.2f}{:>8.2f}".format(b+1, t, Lu, Ld), 3)
+        VerboseOut('Ran atmospheric model in %s' % str(datetime.now()-start), 3)
+        set_trace()
+        return results
+
     def process(self, products):
         """ Make sure all products have been processed """
         start = datetime.now()
@@ -170,9 +215,10 @@ class LandsatData(Data):
                 numbands = img.NumBands()-2
             else:
                 numbands = img.NumBands()
+            self.SixS()
             for i in range(0, numbands):
                 atmospheres[img[i].Description()] = atmosphere(i+1, self.metadata)
-            VerboseOut('Ran atmospheric model in %s' % str(datetime.now()-start), 3)
+            
 
         # Break down by group
         groups = self.products2groups(products)
