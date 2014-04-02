@@ -67,10 +67,9 @@ class Tiles(object):
         self.used_sensors = {s: dataclass.Asset._sensors.get(s, None) for s in sensors}
 
         # TODO - expand verbose text: tiles, date, etc.
-        #VerboseOut('Finding products for %s tiles ' % (len(self.tile_coverage)), 4)
+        VerboseOut('%s: searching %s tiles for products and assets' % (self.date, len(self.tile_coverage)), 4)
         self.tiles = {}
         for t in self.tile_coverage.keys():
-            #VerboseOut("Tile %s" % t, 4)
             try:
                 tile = dataclass(t, self.date)
                 # Custom filter based on dataclass
@@ -94,7 +93,7 @@ class Tiles(object):
                 if pname not in tile.products or overwrite:
                     toprocess[pname] = args
             if len(toprocess) != 0:
-                VerboseOut(['Processing products for tile %s' % tileid, toprocess.keys()], 3)
+                VerboseOut('Processing products for tile %s: %s' % (tileid, ' '.join(toprocess.keys())), 2)
                 self.tiles[tileid].process(toprocess)
 
     def project(self, res=None, datadir='', mask=None):
@@ -130,7 +129,7 @@ class Tiles(object):
                 self.products[product] = filename
             if mask is not None:
                 self._applymask(self.products.values(), self.products[mask])
-        VerboseOut('Created project files in %s' % (datetime.now() - start))
+        VerboseOut('%s: created project files for %s tiles in %s' % (self.date, len(self.tiles), datetime.now() - start), 3)
 
     def _applymask(self, filenames, mask):
         mimg = gippy.GeoImage(mask)
@@ -230,7 +229,6 @@ class DataInventory(object):
         # get all potential matching dates for tiles
         dates = []
         for t in self.tiles:
-            #VerboseOut('locating matching dates', 5)
             try:
                 for date in Repository.find_dates(t):
                     day = int(date.strftime('%j'))
@@ -248,8 +246,8 @@ class DataInventory(object):
                 self.data[date] = dat
                 self.numfiles = self.numfiles + len(dat.tiles)
             except Exception, e:
-                VerboseOut('Inventory error %s' % e, 3)
                 VerboseOut(traceback.format_exc(), 4)
+                VerboseOut('Inventory error %s' % e)
 
     def temporal_extent(self, dates, days):
         """ Temporal extent (define self.dates and self.days) """
@@ -267,21 +265,22 @@ class DataInventory(object):
         if self.requested_products is None:
             raise Exception('No products specified for processing')
         start = datetime.now()
-        VerboseOut('Requested %s products for %s files' % (len(self.requested_products), self.numfiles))
+        VerboseOut('Requested products (%s) for %s files' % (' '.join(self.requested_products), self.numfiles))
         for date in self.dates:
             self.data[date].process(*args, **kwargs)
         VerboseOut('Completed processing in %s' % (datetime.now()-start))
 
     def project(self, *args, **kwargs):
         start = datetime.now()
-        VerboseOut('Projecting data for %s dates (%s - %s)' % (len(self.dates), self.dates[0], self.dates[-1]))
+        pstr = ' '.join(self.requested_products)
+        dstr = '%s dates (%s - %s)' % (len(self.dates), self.dates[0], self.dates[-1])
+        VerboseOut('Creating project files (%s) for %s' % (pstr, dstr))
         # res should default to data?
         for date in self.dates:
             self.data[date].project(*args, **kwargs)
-        VerboseOut('Completed projecting in %s' % (datetime.now()-start))
+        VerboseOut('Completed creating project files in %s' % (datetime.now()-start))
 
     # TODO - check if this is needed
-    """
     def get_products(self, date):
         # Get list of products for given date
         # this doesn't handle different tiles (if prod exists for one tile, it lists it)
@@ -292,7 +291,6 @@ class DataInventory(object):
                 prods.append(p)
             #for prod in data.products.keys(): prods.append(prod)
         return sorted(set(prods))
-    """
 
     def printcalendar(self, md=False, products=False):
         """ print calendar for raw original datafiles """
