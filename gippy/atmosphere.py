@@ -23,6 +23,7 @@ import numpy as np
 import commands
 import datetime
 
+from gippy.utils import VerboseOut
 from pdb import set_trace
 
     #import Pysolar
@@ -195,7 +196,7 @@ def SixS(bandnum, meta):
     """ Run 6S atmospheric model for given spectral band """
     import agspy.data.aod.RetrieveOptDep as RetrieveOptDep
     from Py6S import SixS, Geometry, AeroProfile, Altitudes, Wavelength, GroundReflectance, AtmosCorr
-
+    
     geometa = meta['geometry']
     dtmeta = meta['datetime']
     dt = dtmeta['datetime']
@@ -242,6 +243,7 @@ def SixS(bandnum, meta):
     #Xb = s.outputs.coef_xb
     #Xc = s.outputs.coef_xc
     #return {'t':t,'Lu':Lu,'Ld':Ld, 'Xa':Xa, 'Xb':Xb, 'Xc':Xc}
+    VerboseOut("{:>4}: {:>8.3f}{:>8.2f}{:>8.2f}".format(bandnum, t, Lu, Ld), 3)
     return {'t':t,'Lu':Lu,'Ld':Ld}
 
 #class MODTRAN(Atmosphere):
