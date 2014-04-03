@@ -73,10 +73,9 @@ class Tiles(object):
             try:
                 tile = dataclass(t, self.date)
                 # Custom filter based on dataclass
-                #good = self.filter(t,filename, **kwargs)
-                #if good == False:
-                #    empty_tiles.append(t)
-                self.tiles[t] = tile
+                good = tile.filter(**kwargs)
+                if good:
+                    self.tiles[t] = tile
                 # check all tiles - should be same sensor - MODIS?
                 self.sensor = tile.sensor
             except:
@@ -382,7 +381,9 @@ class DataInventory(object):
         group.add_argument('--%cov', dest='pcov', help='Threshold of %% tile coverage over site', default=0, type=int)
         group.add_argument('--%tile', dest='ptile', help='Threshold of %% tile used', default=0, type=int)
         group.add_argument('--suffix', help='Suffix on end of filename (before extension)', default='')
+        extra = []
         for arg, kwargs in cls.extra_arguments().items():
+            extra.append(kwargs['dest'])
             group.add_argument(arg, **kwargs)
 
         parents = [invparser, cls.arg_parser()]
@@ -444,11 +445,12 @@ class DataInventory(object):
                 else:
                     products[args.mask] = m
         #print 'Requested Products: ', products
+        kwargs = dict(zip(extra, [eval('args.%s' % a) for a in extra]))
 
         try:
             inv = cls.inventory(
                 site=args.site, dates=args.dates, days=args.days, tiles=args.tiles,
-                products=products, pcov=args.pcov, ptile=args.ptile, fetch=args.fetch)
+                products=products, pcov=args.pcov, ptile=args.ptile, fetch=args.fetch, **kwargs)
             if args.command == 'inventory':
                 inv.printcalendar(args.md, products=args.products)
             elif args.command == 'process':
