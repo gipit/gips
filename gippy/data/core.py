@@ -384,9 +384,9 @@ class Data(object):
         """ Make sure all products exist and process if needed """
         pass
 
-    #def filter(self, **kwargs):
-    #    """ Check if tile passes filter """
-    #    return True
+    def filter(self, **kwargs):
+        """ Check if tile passes filter """
+        return True
 
     ##########################################################################
     # Override these functions if not using a tile/date directory structure
