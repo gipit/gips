@@ -230,6 +230,8 @@ class Asset(object):
             except:
                 pass
             extracted_files.append(fname)
+        VerboseOut("Extracted datafiles: ", 4)
+        VerboseOut(datafiles, 4)
         return extracted_files
 
     ##########################################################################

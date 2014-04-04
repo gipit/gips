@@ -517,8 +517,6 @@ class LandsatData(Data):
 
         # Extract all files
         datafiles = self.assets[''].extract(self.metadata['filenames'])
-        VerboseOut('Extracted Landsat files:', 3)
-        VerboseOut(datafiles, 3)
 
         image = gippy.GeoImage(datafiles)
         image.SetNoData(0)
