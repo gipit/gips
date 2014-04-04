@@ -102,8 +102,6 @@ class ModisAsset(Asset):
     def datafiles(self):
         indexfile = self.filename + '.index'
 
-        print indexfile
-
         if os.path.exists(indexfile):
             datafiles = File2List(indexfile)
         else:

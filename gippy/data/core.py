@@ -318,11 +318,11 @@ class Asset(object):
             asset = cls(filename)
         except Exception, e:
             # if problem with inspection, move to quarantine
+            VerboseOut(traceback.format_exc(), 4)
             qname = os.path.join(cls.Repository.qpath(), bname)
             if not os.path.exists(qname):
                 os.link(os.path.abspath(filename), qname)
             VerboseOut('%s -> quarantine (file error)' % filename, 2)
-            VerboseOut(traceback.format_exc(), 4)
             return 0
 
         if not hasattr(asset.date, '__len__'):
