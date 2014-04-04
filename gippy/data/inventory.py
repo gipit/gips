@@ -43,7 +43,6 @@ class Tiles(object):
         self.products - dictionary of product name and final product filename
         """
         self.dataclass = dataclass
-
         self.site = site
         # Calculate spatial extent
         if tiles is not None:
@@ -204,7 +203,6 @@ class DataInventory(object):
         self.temporal_extent(dates, days)
 
         self.data = {}
-
         # Create product dictionary of requested products and filename
         if isinstance(products, list):
             self.requested_products = dict([p, [p]] for p in products)
