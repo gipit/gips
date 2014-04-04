@@ -18,6 +18,16 @@
 #   along with this program. If not, see <http://www.gnu.org/licenses/>
 ################################################################################
 
+import os
+import datetime
+import commands
+from gippy.utils import List2File
+
+from pdb import set_trace
+
+
+
+
 def atmospheric_model(doy, lat):
     """ Determine atmospheric model
     1 - Tropical
@@ -57,27 +67,33 @@ def atmospheric_model(doy, lat):
 class MODTRAN():
     # hard-coded options
     filterfile = True
-    workdir = 'modtran'
+    _workdir = 'modtran'
+    _datadir = '/usr/local/modtran/DATA'
 
-    def __init__(self, meta, date, lat, lon, merraprofile=False):
-        #workdir = os.path.join(workdir,'modtran')
+    def __init__(self, meta, date_time, lat, lon, merraprofile=False):
         self.meta = meta
 
-        julianday = (date - datetime(date.year, 1, 1)).days + 1
+        self.lat = lat
+        self.lon = lon
+        self.datetime = date_time
+        seconds = (date_time.second + date_time.microsecond/1000000.)/3600.
+        self.dtime = self.datetime.hour + self.datetime.minute/60.0 + seconds
+        self.julianday = (date_time - datetime.datetime(date_time.year, 1, 1)).days + 1
 
-        self.model = atmospheric_model(julianday, lat)
+        self.model = atmospheric_model(self.julianday, lat)
 
         #fout = open('atm.txt','w')
         #fout.write('{:>5}{:>20}{:>20}\n'.format('Band','%T','Radiance'))
 
-        # Update to use tmp directory
-        if not os.path.exists(self.workdir):
-            os.makedirs(self.workdir)
+        # TODO - Update to use tmp directory
+        if not os.path.exists(self._workdir):
+            os.makedirs(self._workdir)
         pwd = os.getcwd()
-        os.chdir(self.workdir)
+        os.chdir(self._workdir)
 
         # Create link to MODTRAN data dir
-        if not os.path.lexists('DATA'): os.symlink(_moddatadir, 'DATA')
+        if not os.path.lexists('DATA'):
+            os.symlink(_datadir, 'DATA')
 
         if merraprofile:
             mprofile = atmprofile(lat, lon, date)
@@ -86,28 +102,28 @@ class MODTRAN():
             humidity = mprofile['humidity']
             ozone = mprofile['ozone']
             self.atmprofile = []
-            for i in reversed(range(0,len(height))):
-                self.atmprofile.append(self.card2c1(P=height[i],T=temp[i],H2O=humidity[i]*1000,O3=ozone[i]*1000)) 
+            for i in reversed(range(0, len(height))):
+                self.atmprofile.append(self.card2c1(P=height[i], T=temp[i], H2O=humidity[i]*1000, O3=ozone[i]*1000))
             #from pprint import pprint
             #pprint(self.atmprofile)
-        else: self.atmprofile = None
+        else:
+            self.atmprofile = None
 
         # Generate MODTRAN input files
 
         # Determine if radiance or transmittance mode
-        rootnames = self.addband(bandnum)
+        rootnames = self.addband()
+        List2File(rootnames, 'mod5root.in')
 
-        mod5root = open('mod5root.in','w')
-        for r in rootnames: mod5root.write(r+'\n')
-        mod5root.close()
+        # run output and get results
         modout = commands.getstatusoutput('modtran')
-
-        self.output = self.readoutput(bandnum)
+        self.output = self.readoutput()
 
         # Change back to original directory
         os.chdir(pwd)
 
-    def readoutput(self, bandnum):
+    def readoutput(self):
+        bandnum = self.meta['bandnum']
         try:
             f = open('band'+str(bandnum)+'.chn')
             lines = f.readlines()
@@ -115,7 +131,7 @@ class MODTRAN():
             data = lines[4+bandnum]
             # Get nominal band width in microns
             bandwidth = float(data[85:94]) / 1000
-            # Convert from W/sr-cm2 to W/sr-m2-um 
+            # Convert from W/sr-cm2 to W/sr-m2-um
             Lu = (float(data[59:72]) * 10000) / bandwidth
             trans = float(data[239:248])
             try:
@@ -128,16 +144,17 @@ class MODTRAN():
             except IOError as e:
                 #print 'No downwelled radiance run'
                 Ld = 0.0
-            return {'t':trans,'Lu':Lu,'Ld':Ld}
+            return [trans, Lu, Ld]
         except IOError as e:
             #print 'No MODTRAN data for band ',bandnum
             return
 
-    def addband(self, bandnum):
+    def addband(self):
+        bandnum = self.meta['bandnum']
         rootname1 = 'band' + str(bandnum)
-        wvlen1 = self.meta['bandlocs'][bandnum-1] - self.meta['bandwidths'][bandnum-1]/2.0
-        wvlen2 = self.meta['bandlocs'][bandnum-1] + self.meta['bandwidths'][bandnum-1]/2.0 
-        if self.meta['bandlocs'] < 3:
+        wvlen1 = self.meta['wvlen1']
+        wvlen2 = self.meta['wvlen2']
+        if self.meta['wvlen'] < 3:
             """ Run in transmittance mode for visible bands """
             mode = 4
             fwhm = 0.001
@@ -146,23 +163,25 @@ class MODTRAN():
             mode = 2
             fwhm = 0.1
         # Write tape5 file
-        self.tape5(rootname1,mode,wvlen1,wvlen2,fwhm)
+        self.tape5(rootname1, mode, wvlen1, wvlen2, fwhm)
         if mode == 2:
             rootname2 = rootname1 + 'Ld'
-            self.tape5(rootname2,mode,wvlen1,wvlen2,fwhm,surref=1,h1=0.001)
-            return (rootname1,rootname2)
+            self.tape5(rootname2, mode, wvlen1, wvlen2, fwhm, surref=1, h1=0.001)
+            return (rootname1, rootname2)
         else:
-            return (rootname1,)  
+            return (rootname1,)
 
-    def tape5(self,fname,mode,wvlen1,wvlen2,fwhm,surref=0,h1=100):
-        f = open(fname+'.tp5','w') 
-        f.write(self.card1(mode=mode,surref=surref)+'\n')
+    def tape5(self, fname, mode, wvlen1, wvlen2, fwhm, surref=0, h1=100):
+        f = open(fname+'.tp5', 'w')
+        f.write(self.card1(mode=mode, surref=surref)+'\n')
         f.write(self.card1a()+'\n')
-        if self.filterfile: f.write(self.card1a3()+'\n')
+        if self.filterfile:
+            f.write(self.card1a3()+'\n')
         f.write(self.card2()+'\n')
-        if self.atmprofile != None:
+        if self.atmprofile is not None:
             f.write(self.card2c(len(self.atmprofile))+'\n')
-            for i in self.atmprofile: f.write(i+'\n')
+            for i in self.atmprofile:
+                f.write(i+'\n')
         f.write(self.card3(h1=h1)+'\n')
         f.write(self.card3a1()+'\n')
         f.write(self.card3a2()+'\n')
@@ -170,12 +189,12 @@ class MODTRAN():
         f.write(self.card5()+'\n')
         f.close()
 
-    def card1(self,mode,surref):
-        MODTRN = 'M' #'C' for correlated k
+    def card1(self, mode, surref):
+        MODTRN = 'M'  # 'C' for correlated k
         card = ('{MODTRN:1}{SPEED:1}{BINARY:1}{LYMOLC:1}{MODEL:1d}{T_BEST:1}{ITYPE:4d}{IEMSCT:5d}{IMULT:5d}'
                 '{M1:5d}{M2:5d}{M3:5d}{M4:5d}{M5:5d}{M6:5d}{MDEF:5d}{I_RD2C:5d} {NOPRNT:4d}{TPTEMP:8.4f}{SURREF:>7}')
         sm = self.model
-        if self.atmprofile != None:
+        if self.atmprofile is not None:
             model = 8
             rd2c = 1
         else:
@@ -221,14 +240,11 @@ class MODTRAN():
 
     def card3a1(self):
         card = ('{IPARM:>5}{IPH:>5}{IDAY:>5}{ISOURC:>5}')
-        return card.format(IPARM=1,IPH=2,IDAY=self.meta['datetime']['JulianDay'],ISOURC=1)
+        return card.format(IPARM=1,IPH=2,IDAY=self.julianday,ISOURC=1)
 
     def card3a2(self):
         card = ('{PARM1:10.3f}{PARM2:10.3f}{PARM3:10.3f}{PARM4:10.3f}{TIME:10.3f}{PSIPO:10.3f}{ANGLEM:10.3f}{G:10.3f}')
-        lat = self.meta['geometry']['lat']
-        lon = self.meta['geometry']['lon']
-        dtime = self.meta['datetime']['DecimalTime']
-        return card.format(PARM1=lat,PARM2=lon,PARM3=0,PARM4=0,TIME=dtime,PSIPO=0,ANGLEM=0,G=0)
+        return card.format(PARM1=self.lat,PARM2=self.lon,PARM3=0,PARM4=0,TIME=self.dtime,PSIPO=0,ANGLEM=0,G=0)
 
     def card4(self,v1=0.4,v2=1.0,fwhm=0.002):
         """ Spectral parameters """

@@ -193,9 +193,6 @@ class Asset(object):
     ##########################################################################
     # Child classes should not generally have to override anything below here
     ##########################################################################
-    def sensor_meta(self):
-        return self._sensors[self.sensor]
-
     def datafiles(self):
         """ Get list of datafiles from asset (if archive file) """
         if tarfile.is_tarfile(self.filename):

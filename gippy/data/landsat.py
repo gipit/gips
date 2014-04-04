@@ -29,7 +29,7 @@ from collections import OrderedDict
 from copy import deepcopy
 
 import gippy
-from gippy.atmosphere import atmosphere
+from gippy.modtran import MODTRAN
 from gippy.data.core import Repository, Asset, Data
 from gippy.data.inventory import DataInventory
 from gippy.utils import VerboseOut, RemoveFiles
@@ -118,6 +118,22 @@ class LandsatAsset(Asset):
         year = fname[9:13]
         doy = fname[13:16]
         self.date = datetime.strptime(year+doy, "%Y%j")
+        # Landsat specific additions
+        smeta = self._sensors[self.sensor]
+        self.meta = {}
+        for i, band in enumerate(smeta['colors']):
+            wvlen = smeta['bandlocs'][i]
+            self.meta[band] = {
+                'bandnum': i+1,
+                'wvlen': wvlen,
+                'wvlen1': wvlen - smeta['bandwidths'][i]/2.0,
+                'wvlen2': wvlen + smeta['bandwidths'][i]/2.0,
+                'E': smeta['E'][i],
+                'K1': smeta['K1'][i],
+                'K2': smeta['K2'][i],
+            }
+        self.visbands = [col for col in smeta['colors'] if col[0:4] != "LWIR"]
+        self.lwbands = [col for col in smeta['colors'] if col[0:4] == "LWIR"]
 
 
 class LandsatData(Data):
@@ -154,48 +170,113 @@ class LandsatData(Data):
     }
     _defaultproduct = 'ref'
 
+    def getaod(self, date, lat, lon):
+        # TODO - clean this up.  This is non-portable
+        #look in MOD08 library for appropriate DOY and YEAR file
+        year = date.strftime('%Y')
+        doy = date.strftime('%j')
+        librarydir = '/titan/data/modis/mod08d3/'
+        prefix = 'MOD08_D3.A'
+        suffix = 'OpticalDepth.tif'
+        atmospherefile = prefix + year + doy + suffix
+        ltaatmospherefile = prefix + 'LTA' + doy + suffix
+        altaatmospherefile = prefix + 'LTA' + suffix
+        rmsefile = 'RMSE_GapFill_OpticalDepth_2000to2012.tif'
+
+        optdep = -9999
+        pixx = int(numpy.round(float(lon) + 179.5))
+        pixy = int(numpy.round(89.5 - float(lat)))
+        rmseval = None
+
+        #open appropriate file and find the appropriate pixel
+        if os.path.isfile(os.path.join(librarydir, atmospherefile)):
+            f = gippy.GeoImage(os.path.join(librarydir, atmospherefile))
+            optdep = f[0].Read()[pixy, pixx] * 0.001
+            source = 'Original'
+        if os.path.isfile(os.path.join(librarydir, 'gapfilled/', atmospherefile)) and optdep < 0:
+            f = gippy.GeoImage(os.path.join(librarydir, 'gapfilled/', atmospherefile))
+            optdep = f[0].Read()[pixy, pixx] * 0.001
+            source = 'Gap-filled'
+            f = gippy.GeoImage(os.path.join(librarydir, 'gapfilled/', rmsefile))
+            rmse = f[0].Read()
+            rmseval = float(rmse[pixy, pixx]) * 0.001
+            VerboseOut('Estimated root mean squared error for this gapfilling is:'+str(rmseval), 3)
+        if os.path.isfile(os.path.join(librarydir, 'LTA/', ltaatmospherefile)) and optdep < 0:
+            atmospherefile = prefix + 'LTA' + doy + suffix
+            f = gippy.GeoImage(os.path.join(librarydir, 'LTA/', ltaatmospherefile))
+            optdep = f[0].Read()[pixy, pixx] * 0.001
+            source = 'LTA'
+        if optdep < 0:
+            f = gippy.GeoImage(os.path.join(librarydir, 'LTA/', altaatmospherefile))
+            optdep = f[0].Read()[pixy, pixx] * 0.001
+            source = 'all LTA'
+        if optdep < 0:
+            source = 'default'
+            optdep = 0.17
+
+        VerboseOut('Optical Depth (from %s) = %s' % (source, optdep), 3)
+        return optdep
+
     def SixS(self):
         from gippy.utils import atmospheric_model
         from Py6S import SixS, Geometry, AeroProfile, Altitudes, Wavelength, GroundReflectance, AtmosCorr, SixSHelpers
         start = datetime.now()
         VerboseOut('Running atmospheric model (6S)', 3)
 
-        dt = self.metadata['datetime']['datetime']
-        julianday = (dt - datetime(dt.year, 1, 1)).days + 1
+        dt = self.metadata['datetime']
         geo = self.metadata['geometry']
 
         s = SixS()
-        s.atmos_profile = atmospheric_model(julianday, geo['lat'])
+        # Geometry
         s.geometry = Geometry.User()
         s.geometry.from_time_and_location(geo['lat'], geo['lon'], str(dt), geo['zenith'], geo['azimuth'])
-        aero = AeroProfile.PredefinedType(AeroProfile.Continental)
-        s.aero_profile = aero
-        #s.aot550 = aod
         s.altitudes = Altitudes()
         s.altitudes.set_target_sea_level()
         s.altitudes.set_sensor_satellite_level()
+
+        # Atmospheric profile
+        s.atmos_profile = atmospheric_model(self.metadata['JulianDay'], geo['lat'])
+
+        # Aerosols
+        s.aero_profile = AeroProfile.PredefinedType(AeroProfile.Continental)
+        s.aot550 = self.getaod(self.date, geo['lat'], geo['lon'])
+
+        # Other settings
         s.ground_reflectance = GroundReflectance.HomogeneousLambertian(GroundReflectance.GreenVegetation)
         s.atmos_corr = AtmosCorr.AtmosCorrLambertianFromRadiance(1.0)
-        if self.sensor == 'LT5':
-            func = SixSHelpers.Wavelengths.run_landsat_tm
-        elif self.sensor == 'LE7':
-            func = SixSHelpers.Wavelengths.run_landsat_etm
-        elif self.sensor == 'LC8':
-            func = SixSHelpers.Wavelengths.run_landsat_oli
-        stdout = sys.stdout
-        sys.stdout = open(os.devnull, 'w')
-        wvlens, outputs = func(s)
-        sys.stdout = stdout
-        results = []
-        VerboseOut("{:>4}{:>8}{:>8}{:>8}".format('Band', 'T', 'Lu', 'Ld'), 3)
+
+        # Used for testing
+        filter_function = True
+        if filter_function:
+            if self.sensor == 'LT5':
+                func = SixSHelpers.Wavelengths.run_landsat_tm
+            elif self.sensor == 'LE7':
+                func = SixSHelpers.Wavelengths.run_landsat_etm
+            elif self.sensor == 'LC8':
+                func = SixSHelpers.Wavelengths.run_landsat_oli
+            stdout = sys.stdout
+            sys.stdout = open(os.devnull, 'w')
+            wvlens, outputs = func(s)
+            sys.stdout = stdout
+        else: 
+            outputs = []
+            for b in self.assets[''].visbands:
+                wvlen1 = self.assets[''].meta[b]['wvlen1']
+                wvlen2 = self.assets[''].meta[b]['wvlen2']
+                s.wavelength = Wavelength(wvlen1, wvlen2)
+                s.run()
+                outputs.append(s.outputs)
+
+        results = {}
+        VerboseOut("{:>6} {:>8}{:>8}{:>8}".format('Band', 'T', 'Lu', 'Ld'), 3)
         for b, out in enumerate(outputs):
             t = out.trans['global_gas'].upward
             Lu = out.atmospheric_intrinsic_radiance
             Ld = (out.direct_solar_irradiance + out.diffuse_solar_irradiance + out.environmental_irradiance)/numpy.pi
-            results.append([t, Lu, Ld])
-            VerboseOut("{:>4}: {:>8.3f}{:>8.2f}{:>8.2f}".format(b+1, t, Lu, Ld), 3)
+            results[self.assets[''].visbands[b]] = [t, Lu, Ld]
+            VerboseOut("{:>6}: {:>8.3f}{:>8.2f}{:>8.2f}".format(self.assets[''].visbands[b], t, Lu, Ld), 3)
         VerboseOut('Ran atmospheric model in %s' % str(datetime.now()-start), 3)
-        set_trace()
+
         return results
 
     def process(self, products):
@@ -210,34 +291,27 @@ class LandsatData(Data):
             toa = toa and (self._products[val[0]].get('toa', False) or 'toa' in val)
         if not toa:
             start = datetime.now()
-            atmospheres = {}
             if self.sensor == 'LC8':
                 numbands = img.NumBands()-2
             else:
                 numbands = img.NumBands()
-            self.SixS()
-            for i in range(0, numbands):
-                atmospheres[img[i].Description()] = atmosphere(i+1, self.metadata)
-            
+            atmos = self.SixS()
 
         # Break down by group
         groups = self.products2groups(products)
-        smeta = self.assets[''].sensor_meta()
 
-        visbands = [b for b in smeta['colors'] if b[0:4] != "LWIR"]
-        lwbands = [b for b in smeta['colors'] if b[0:4] == "LWIR"]
+        meta = self.assets[''].meta
+        visbands = self.assets[''].visbands
+        lwbands = self.assets[''].lwbands
 
         # create non-atmospherically corrected apparent reflectance and temperature image
         reflimg = gippy.GeoImage(img)
         theta = numpy.pi * self.metadata['geometry']['solarzenith']/180.0
-        sundist = (1.0 - 0.016728 * numpy.cos(numpy.pi * 0.9856 * (self.metadata['datetime']['JulianDay']-4.0)/180.0))
-        Esuns = dict(zip(smeta['colors'], smeta['E']))
-        K1 = dict(zip(smeta['colors'], smeta['K1']))
-        K2 = dict(zip(smeta['colors'], smeta['K2']))
-        for b in visbands:
-            reflimg[b] = img[b] * (1.0/((Esuns[b] * numpy.cos(theta)) / (numpy.pi * sundist * sundist)))
-        for b in lwbands:
-            reflimg[b] = (((img[b].pow(-1))*K1[b]+1).log().pow(-1))*K2[b] - 273.15
+        sundist = (1.0 - 0.016728 * numpy.cos(numpy.pi * 0.9856 * (self.metadata['JulianDay']-4.0)/180.0))
+        for col in self.assets[''].visbands:
+            reflimg[col] = img[col] * (1.0/((meta[col]['E'] * numpy.cos(theta)) / (numpy.pi * sundist * sundist)))
+        for col in self.assets[''].lwbands:
+            reflimg[col] = (((img[col].pow(-1))*meta[col]['K1']+1).log().pow(-1))*meta[col]['K2'] - 273.15
 
         # Process standard products
         for key, val in groups['Standard'].items():
@@ -265,11 +339,11 @@ class LandsatData(Data):
                     imgout.SetNoData(-32768)
                     imgout.SetGain(0.1)
                     if toa:
-                        for b in visbands:
-                            imgout[b].Process(img[b])
+                        for col in visbands:
+                            imgout[col].Process(img[col])
                     else:
-                        for b in visbands:
-                            imgout[b].Process(((img[b]-atmospheres[b][1])/atmospheres[b][0]))
+                        for col in visbands:
+                            imgout[col].Process(((img[col]-atmos[col][1])/atmos[col][0]))
                 elif val[0] == 'ref':
                     imgout = gippy.GeoImage(fname, img, gippy.GDT_Int16, len(visbands))
                     for i in range(0, imgout.NumBands()):
@@ -277,26 +351,28 @@ class LandsatData(Data):
                     imgout.SetNoData(-32768)
                     imgout.SetGain(0.0001)
                     if toa:
-                        for b in visbands:
-                            imgout[b].Process(reflimg[b])
+                        for col in visbands:
+                            imgout[col].Process(reflimg[col])
                     else:
-                        for b in visbands:
-                            imgout[b].Process(((img[b]-atmospheres[b][1])/atmospheres[b][0]) * (1.0/atmospheres[b][2]))
+                        for col in visbands:
+                            imgout[col].Process(((img[col]-atmos[col][1])/atmos[col][0]) * (1.0/atmos[col][2]))
                 elif val[0] == 'temp':
-                    lwbands = [b for b in smeta['colors'] if b[0:4] == "LWIR"]
                     imgout = gippy.GeoImage(fname, img, gippy.GDT_Int16, len(lwbands))
                     for i in range(0, imgout.NumBands()):
                         imgout.SetColor(lwbands[i], i+1)
                     imgout.SetNoData(-32768)
                     imgout.SetGain(0.1)
                     e = 0.95
-                    for b in lwbands:
+                    for col in lwbands:
                         if toa:
-                            band = img[b]
+                            band = img[col]
                         else:
-                            band = (img[b] - (atmospheres[b][1] + (1-e) * atmospheres[b][2])) / (atmospheres[b][0] * e)
-                        band = (((band.pow(-1))*K1[b]+1).log().pow(-1))*K2[b] - 273.15
-                        imgout[b].Process(band)
+                            lat = self.metadata['geometry']['lat']
+                            lon = self.metadata['geometry']['lon']
+                            atmos = MODTRAN(meta[col], self.metadata['datetime'], lat, lon)
+                            band = (img[col] - (atmos.output[1] + (1-e) * atmos.output[2])) / (atmos.output[0] * e)
+                        band = (((band.pow(-1))*meta[col]['K1']+1).log().pow(-1))*meta[col]['K2'] - 273.15
+                        imgout[col].Process(band)
                 fname = imgout.Filename()
                 imgout = None
                 self.products[key] = fname
@@ -311,7 +387,7 @@ class LandsatData(Data):
             start = datetime.now()
             # TODO - this assumes atmospheric correct - what if mix of atmos and non-atmos?
             for b in visbands:
-                img[b] = ((img[b]-atmospheres[b][1])/atmospheres[b][0]) * (1.0/atmospheres[b][2])
+                img[b] = ((img[b]-atmos[col][1])/atmos[col][0]) * (1.0/atmos[col][2])
             fnames = [os.path.join(self.path, self.basename + '_' + key) for key in indices]
             prodarr = dict(zip([indices[p][0] for p in indices.keys()], fnames))
             prodout = gippy.Indices(img, prodarr)
@@ -354,13 +430,13 @@ class LandsatData(Data):
         except IOError as e:
             raise Exception('({})'.format(e))
 
-        sensor_meta = self.assets[''].sensor_meta()
+        smeta = self.assets['']._sensors[self.sensor]
 
         # Process MTL text - replace old metadata tags with new
         # NOTE This is not comprehensive, there may be others
         text = text.replace('ACQUISITION_DATE', 'DATE_ACQUIRED')
         text = text.replace('SCENE_CENTER_SCAN_TIME', 'SCENE_CENTER_TIME')
-        for (ob, nb) in zip(sensor_meta['oldbands'], sensor_meta['bands']):
+        for (ob, nb) in zip(smeta['oldbands'], smeta['bands']):
             text = re.sub(r'\WLMIN_BAND'+ob, 'RADIANCE_MINIMUM_BAND_'+nb, text)
             text = re.sub(r'\WLMAX_BAND'+ob, 'RADIANCE_MAXIMUM_BAND_'+nb, text)
             text = re.sub(r'\WQCALMIN_BAND'+ob, 'QUANTIZE_CAL_MIN_BAND_'+nb, text)
@@ -400,7 +476,7 @@ class LandsatData(Data):
         gain = []
         offset = []
         dynrange = []
-        for i, b in enumerate(sensor_meta['bands']):
+        for i, b in enumerate(smeta['bands']):
             minval = int(float(mtl['QUANTIZE_CAL_MIN_BAND_'+b]))
             maxval = int(float(mtl['QUANTIZE_CAL_MAX_BAND_'+b]))
             minrad = float(mtl['RADIANCE_MINIMUM_BAND_'+b])
@@ -419,12 +495,6 @@ class LandsatData(Data):
             'lon': lon,
         }
 
-        _datetime = {
-            'datetime': dt,
-            'JulianDay': (dt - datetime(dt.year, 1, 1)).days + 1,
-            'DecimalTime': dectime,
-        }
-
         # TODO - now that metadata part of LandsatData object some of these keys not needed
         self.metadata = {
             'filenames': filenames,
@@ -433,10 +503,11 @@ class LandsatData(Data):
             'offset': offset,
             'dynrange': dynrange,
             'geometry': _geometry,
-            'datetime': _datetime,
+            'datetime': dt,
+            'JulianDay': (dt - datetime(dt.year, 1, 1)).days + 1,
             'clouds': clouds
         }
-        self.metadata.update(sensor_meta)
+        #self.metadata.update(smeta)
 
     def _readraw(self):
         """ Read in Landsat bands using original tar.gz file """
@@ -457,8 +528,9 @@ class LandsatData(Data):
         #    image.SetMeta(key,str(val))
 
         # Geometry used for calculating incident irradiance
+        colors = self.assets['']._sensors[self.sensor]['colors']
         for bi in range(0, len(self.metadata['filenames'])):
-            image.SetColor(self.metadata['colors'][bi], bi+1)
+            image.SetColor(colors[bi], bi+1)
             # need to do this or can we index correctly?
             band = image[bi]
             band.SetGain(self.metadata['gain'][bi])
