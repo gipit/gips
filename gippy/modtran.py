@@ -26,8 +26,6 @@ from gippy.utils import List2File
 from pdb import set_trace
 
 
-
-
 def atmospheric_model(doy, lat):
     """ Determine atmospheric model
     1 - Tropical
@@ -205,8 +203,9 @@ class MODTRAN():
 
     def card1a(self):
         if self.filterfile:
-            LFLTNM='T'
-        else: LFLTNM='F'
+            LFLTNM = 'T'
+        else:
+            LFLTNM = 'F'
         card = ('{DIS:1}{DISAZM:1}{DISALB:1}{NSTR:>3}{SFWHM:4.1f}{CO2MX:10.3f}{H2OSTR:>10}{O3STR:>10}'
                 '{C_PROF:1}{LSUNFL:1} {LBMNAM:1} {LFLTNM:1} {H2OAER:1} {CDTDIR:1}{SOLCON:10.3f}')
                 #'{CDASTM:1}{ASTMC:9.2f}{ASTMX:10.3f}{ASTMO:10.3f}{AERRH:10.3f}{NSSALB:10d}')

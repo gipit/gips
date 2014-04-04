@@ -246,7 +246,7 @@ class LandsatData(Data):
         s.atmos_corr = AtmosCorr.AtmosCorrLambertianFromRadiance(1.0)
 
         # Used for testing
-        filter_function = True
+        filter_function = False
         if filter_function:
             if self.sensor == 'LT5':
                 func = SixSHelpers.Wavelengths.run_landsat_tm
@@ -258,7 +258,7 @@ class LandsatData(Data):
             sys.stdout = open(os.devnull, 'w')
             wvlens, outputs = func(s)
             sys.stdout = stdout
-        else: 
+        else:
             outputs = []
             for b in self.assets[''].visbands:
                 wvlen1 = self.assets[''].meta[b]['wvlen1']

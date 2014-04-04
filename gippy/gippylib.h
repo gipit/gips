@@ -18,6 +18,7 @@
 ##############################################################################*/
 %module gippylib
 %feature("autodoc", "1");
+%feature("kwargs") fn;
 %{
     #define SWIG_FILE_WITH_INIT
     //#include "gip/Colors.h"
