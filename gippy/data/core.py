@@ -222,6 +222,7 @@ class Asset(object):
         for f in filenames:
             fname = os.path.join(path, f)
             if not os.path.exists(fname):
+                VerboseOut("Extracting %s" % f, 4)
                 tfile.extract(f, path)
             try:
                 # this ensures we have permissions on extracted files
@@ -230,8 +231,6 @@ class Asset(object):
             except:
                 pass
             extracted_files.append(fname)
-        VerboseOut("Extracted datafiles: ", 4)
-        VerboseOut(datafiles, 4)
         return extracted_files
 
     ##########################################################################

@@ -423,7 +423,6 @@ class LandsatData(Data):
         mtlfilename = [f for f in datafiles if 'MTL.txt' in f][0]
         if not os.path.exists(mtlfilename):
             mtlfilename = self.assets[''].extract([mtlfilename])[0]
-        VerboseOut('reading %s' % mtlfilename, 3)
         # Read MTL file
         try:
             text = open(mtlfilename, 'r').read()

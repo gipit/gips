@@ -38,7 +38,6 @@ class ModisRepository(Repository):
     _rootpath = '/titan/data/modis'
     _stagedir = os.path.join(_rootpath, 'stage')
 
-
     _tiles_vector = 'modis_sinusoidal_grid_world.shp'
     #_tilesdir = 'tiles.dev'
 
@@ -99,7 +98,6 @@ class ModisAsset(Asset):
         # I don't understand what this is used for
         # because the asset could be many different things
         self.products = {'sds1': datafiles[0]}
-
 
     def datafiles(self):
         indexfile = self.filename + '.index'
