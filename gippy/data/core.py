@@ -439,10 +439,10 @@ class Data(object):
         if product == '':
             product = self.products.keys()[0]
         fname = self.products[product]
-        if os.path.exists(fname):
+        try:
             return gippy.GeoImage(fname)
-        else:
-            raise Exception('%s product does not exist' % product)
+        except:
+            raise Exception('%s problem reading' % product)
 
     def link(self, products, path='', copy=False):
         """ Create links in path to tile products """
