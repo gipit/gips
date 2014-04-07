@@ -74,7 +74,7 @@ setup(
     author_email='mhanson@appliedgeosolutions.com',
     ext_modules=[gippy_module],
     packages=['gippy', 'gippy.algorithms', 'gippy.data'],
-    py_modules=['gippy.gippylib', 'gippy.atmosphere', 'gippy.GeoVector', 'gippy.gipit'],
+    py_modules=['gippy.gippylib', 'gippy.GeoVector', 'gippy.gipit'],
     #dependency_links=['https://github.com/matthewhanson/Py6S.git'],
     dependency_links=['https://github.com/robintw/Py6S.git'],
     #install_requires = ['Py6S','shapely==1.2.18'],
