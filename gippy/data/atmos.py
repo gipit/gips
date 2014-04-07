@@ -32,8 +32,8 @@ import traceback
 from pdb import set_trace
 
 
-class ModisAtmosRepository(Repository):
-    _rootpath = '/titan/data/modisatmos'
+class AtmosRepository(Repository):
+    _rootpath = '/titan/data/atmos'
     _datedir = '%Y%j'
 
     @classmethod
@@ -60,9 +60,10 @@ class ModisAtmosRepository(Repository):
         return dates
 
 
-class ModisAtmosAsset(Asset):
+class AtmosAsset(Asset):
     Repository = ModisAtmosRepository
 
+    # ???? Not specific to MODIS
     _sensors = {
         'MOD': {'description': 'Terra'},
         'MYD': {'description': 'Aqua'},
@@ -131,7 +132,7 @@ class ModisAtmosAsset(Asset):
             raise Exception("Error downloading")
 
 
-class ModisAtmosData(Data):
+class AtmosData(Data):
     name = 'Globally Gridded Atmospheric Data'
     Asset = ModisAtmosAsset
 
@@ -145,4 +146,4 @@ class ModisAtmosData(Data):
 
 
 def main():
-    DataInventory.main(ModisAtmosData)
+    DataInventory.main(AtmosData)

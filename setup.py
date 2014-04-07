@@ -89,7 +89,7 @@ setup(
             'SAR = gippy.data.sar:main',
             'SARannual= gippy.data.sarannual:main',
             'modis = gippy.data.modis:main',
-            'modisatmos = gippy.data.modisatmos:main',
+            'atmos = gippy.data.atmos:main',
         ],
     },
     cmdclass={
