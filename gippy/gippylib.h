@@ -195,11 +195,11 @@ namespace gip {
         }
     }
 
-    %extend iRect {
+    /*%extend Rect {
         std::string __str__() {
             return self->operator<<();
         }
-    }
+    }*/
 
     %extend GeoRaster {
         // Processing functions
