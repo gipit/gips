@@ -36,14 +36,13 @@ class Tiles(object):
     """ Collection of tiles for a single date """
 
     def __init__(self, dataclass, site=None, tiles=None, date=None, products=None,
-                 sensors=None, fetch=False, **kwargs):
+                 sensors=None, **kwargs):
         """ Locate data matching vector location (or tiles) and date
         self.tile_coverage - dictionary of tile id and % coverage with site
         self.tiles - dictionary of tile id and a Tile instance
         self.products - dictionary of product name and final product filename
         """
         self.dataclass = dataclass
-
         self.site = site
         # Calculate spatial extent
         if tiles is not None:
@@ -204,7 +203,6 @@ class DataInventory(object):
         self.temporal_extent(dates, days)
 
         self.data = {}
-
         # Create product dictionary of requested products and filename
         if isinstance(products, list):
             self.requested_products = dict([p, [p]] for p in products)
@@ -351,7 +349,7 @@ class DataInventory(object):
     def get_timeseries(self, product=''):
         """ Read all files as time series """
         # assumes only one sensor row for each date
-        img = self.data[self.dates[0]][0].open(product=product)
+        img = self.data[self.dates[0]].open(product=product)
         for i in range(1, len(self.dates)):
             img.AddBand(self.data[self.dates[i]][0].open(product=product)[0])
         return img

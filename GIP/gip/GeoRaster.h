@@ -329,7 +329,7 @@ namespace gip {
             }
         }
 
-        //! NoData mask: 1's where it's good data
+        //! NoData mask: 1's where it's bad data
         cimg_library::CImg<unsigned char> NoDataMask(int chunk=0) const {
             // TODO - if NoData not set, return all 1s
             if (!NoData()) {

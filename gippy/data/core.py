@@ -348,7 +348,10 @@ class Asset(object):
                             pass
                         else:
                             raise Exception('Unable to make data directory %s' % tpath)
-                    os.link(os.path.abspath(filename), newfilename)
+                    try:
+                        os.link(os.path.abspath(filename), newfilename)
+                    except:
+                        VerboseOut(traceback.format_exc(), 4)
                     #shutil.move(os.path.abspath(f),newfilename)
                     VerboseOut(bname + ' -> ' + newfilename, 2)
                     numlinks = numlinks + 1
@@ -436,10 +439,10 @@ class Data(object):
         if product == '':
             product = self.products.keys()[0]
         fname = self.products[product]
-        if os.path.exists(fname):
+        try:
             return gippy.GeoImage(fname)
-        else:
-            raise Exception('%s product does not exist' % product)
+        except:
+            raise Exception('%s problem reading' % product)
 
     def link(self, products, path='', copy=False):
         """ Create links in path to tile products """
@@ -516,7 +519,7 @@ class Data(object):
                 for d in asset_dates:
                     if not cls.Asset.discover(t, d, a):
                         status = cls.Asset.fetch(a, t, d)
-                        VerboseOut("Fetch status: %s" % status, 2)
+                        #VerboseOut("Fetch status: %s" % status, 2)
 
     @classmethod
     def products2groups(cls, products):
