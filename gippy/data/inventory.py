@@ -36,7 +36,7 @@ class Tiles(object):
     """ Collection of tiles for a single date """
 
     def __init__(self, dataclass, site=None, tiles=None, date=None, products=None,
-                 sensors=None, fetch=False, **kwargs):
+                 sensors=None, **kwargs):
         """ Locate data matching vector location (or tiles) and date
         self.tile_coverage - dictionary of tile id and % coverage with site
         self.tiles - dictionary of tile id and a Tile instance
