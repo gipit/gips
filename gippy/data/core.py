@@ -193,9 +193,6 @@ class Asset(object):
     ##########################################################################
     # Child classes should not generally have to override anything below here
     ##########################################################################
-    def sensor_meta(self):
-        return self._sensors[self.sensor]
-
     def datafiles(self):
         """ Get list of datafiles from asset (if archive file) """
         if tarfile.is_tarfile(self.filename):
@@ -225,6 +222,7 @@ class Asset(object):
         for f in filenames:
             fname = os.path.join(path, f)
             if not os.path.exists(fname):
+                VerboseOut("Extracting %s" % f, 4)
                 tfile.extract(f, path)
             try:
                 # this ensures we have permissions on extracted files
@@ -320,11 +318,11 @@ class Asset(object):
             asset = cls(filename)
         except Exception, e:
             # if problem with inspection, move to quarantine
+            VerboseOut(traceback.format_exc(), 4)
             qname = os.path.join(cls.Repository.qpath(), bname)
             if not os.path.exists(qname):
                 os.link(os.path.abspath(filename), qname)
             VerboseOut('%s -> quarantine (file error)' % filename, 2)
-            VerboseOut(traceback.format_exc(), 4)
             return 0
 
         if not hasattr(asset.date, '__len__'):
@@ -386,9 +384,9 @@ class Data(object):
         """ Make sure all products exist and process if needed """
         pass
 
-    #def filter(self, **kwargs):
-    #    """ Check if tile passes filter """
-    #    return True
+    def filter(self, **kwargs):
+        """ Check if tile passes filter """
+        return True
 
     ##########################################################################
     # Override these functions if not using a tile/date directory structure
@@ -451,22 +449,27 @@ class Data(object):
             fullbname = os.path.join(path, bname)
             if copy:
                 try:
-                    # TODO - copying doesn't seem to work
-                    os.copy(fname, fullbname)
+                    if os.path.exists(fullbname):
+                        info = os.stat(fullbname)
+                        if info.st_nlink == 1:
+                            continue
+                        else:
+                            os.remove(fullbname)
                     VerboseOut('%s: copying' % bname, 2)
-                    return
+                    shutil.copy(fname, fullbname)
                 except:
-                    VerboseOut('%s: Problem copying file' % bname, 2)
-            # try hard link first, if it fails, soft link
-            try:
-                os.link(fname, fullbname)
-                VerboseOut('%s: hard linking' % bname, 2)
-            except:
+                    raise Exception('%s: Problem copying file' % bname)
+            else:
+                # try hard link first, if it fails, soft link
                 try:
-                    os.symlink(fname, fullbname)
-                    VerboseOut('%s: soft linking' % bname, 2)
+                    os.link(fname, fullbname)
+                    VerboseOut('%s: hard linking' % bname, 2)
                 except:
-                    VerboseOut('%s: Problem creating link' % bname, 2)
+                    try:
+                        os.symlink(fname, fullbname)
+                        VerboseOut('%s: soft linking' % bname, 2)
+                    except:
+                        VerboseOut('%s: Problem creating link' % bname, 2)
 
     ##########################################################################
     # Class methods

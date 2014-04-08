@@ -18,6 +18,7 @@
 ##############################################################################*/
 %module gippylib
 %feature("autodoc", "1");
+%feature("kwargs") fn;
 %{
     #define SWIG_FILE_WITH_INIT
     //#include "gip/Colors.h"
@@ -255,6 +256,9 @@ namespace gip {
         }
         GeoImage Process(std::string filename, GDALDataType dtype=GDT_Unknown) {
             return self->Process<double>(filename, dtype);
+        }
+        GeoImage& Process() {
+            return self->Process<double>();
         }
         GeoImage __deepcopy__(GeoImage image) {
             return GeoImage(image);

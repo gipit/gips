@@ -38,7 +38,6 @@ class ModisRepository(Repository):
     _rootpath = '/titan/data/modis'
     _stagedir = os.path.join(_rootpath, 'stage')
 
-
     _tiles_vector = 'modis_sinusoidal_grid_world.shp'
     #_tilesdir = 'tiles.dev'
 
@@ -100,12 +99,8 @@ class ModisAsset(Asset):
         # because the asset could be many different things
         self.products = {'sds1': datafiles[0]}
 
-
     def datafiles(self):
         indexfile = self.filename + '.index'
-
-        print "indexfile"
-        print indexfile
 
         if os.path.exists(indexfile):
             datafiles = File2List(indexfile)

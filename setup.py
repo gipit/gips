@@ -40,7 +40,6 @@ class GIPinstall(install):
 
 class GIPdevelop(develop):
     def initialize_options(self):
-        #self.runtime_library_dirs = [os.path.abspath('GIP/bin/Release')]
         gippy_module.runtime_library_dirs = [os.path.abspath('GIP/bin/Release')]
         develop.initialize_options(self)
 
@@ -66,8 +65,6 @@ gippy_module = Extension(
     extra_compile_args=['-fPIC'],  # , '-std=c++0x'],
     #extra_compile_args=['-fPIC -std=c++0x'],
 )
-#gippydev_module = deepcopy(gippy_module)
-#gippydev_module.runtime_library_dirs = [os.path.abspath('GIP/bin/Release')]
 
 setup(
     name='gippy',
@@ -78,7 +75,8 @@ setup(
     ext_modules=[gippy_module],
     packages=['gippy', 'gippy.algorithms', 'gippy.data'],
     py_modules=['gippy.gippylib', 'gippy.atmosphere', 'gippy.GeoVector', 'gippy.gipit'],
-    dependency_links=['https://github.com/matthewhanson/Py6S.git'],
+    #dependency_links=['https://github.com/matthewhanson/Py6S.git'],
+    dependency_links=['https://github.com/robintw/Py6S.git'],
     #install_requires = ['Py6S','shapely==1.2.18'],
     install_requires=['Py6S', 'shapely'],
     #data_files=[('/usr/lib', ['GIP/bin/Release/libgip.so'])],
@@ -91,6 +89,7 @@ setup(
             'SAR = gippy.data.sar:main',
             'SARannual= gippy.data.sarannual:main',
             'modis = gippy.data.modis:main',
+            'modisatmos = gippy.data.modisatmos:main',
         ],
     },
     cmdclass={
