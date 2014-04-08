@@ -104,6 +104,7 @@ class ModisAsset(Asset):
     def datafiles(self):
         indexfile = self.filename + '.index'
 
+        print "indexfile"
         print indexfile
 
         if os.path.exists(indexfile):
@@ -175,21 +176,59 @@ class ModisData(Data):
     name = 'Modis'
     Asset = ModisAsset
     _pattern = '*.tif'
-    _products = OrderedDict([
-        ('temp', {
-            'description': 'Surface temperature observations',
-            # the list of asset types associated with this product
-            'assets': ['MOD11A1', 'MYD11A1'],
-        }),
-        ('sds1', {
+ 
+    # _products = OrderedDict([
+    #     ('temp', {
+    #         'description': 'Surface temperature observations',
+    #         # the list of asset types associated with this product
+    #         'assets': ['MOD11A1', 'MYD11A1'],
+    #     }),
+    #     ('sds1', {
+    #         'description': 'First SDS in the file',
+    #         # the list of asset types associated with this product
+    #         'assets': ['MOD11A1'],
+    #     }),
+    # ])
+
+    _products = {
+        'sds1': {
             'description': 'First SDS in the file',
-            # the list of asset types associated with this product
-            'assets': ['MOD11A1'],
-        }),
-    ])
+            'assets': ['MOD11A1']
+        },
+        'temp': {
+            'description': 'Surface temperature observations',
+            'assets': ['MOD11A1', 'MYD11A1']
+        }
+    }
+    
 
     def process(self, products):
-        pass
+
+        print "self._products"
+        print self._products
+
+        print "products"
+        print products
+
+
+        for key, val in products.items():
+        
+            print "key, val"
+            print key, val
+
+            outfname = os.path.join(self.path, self.basename + '_' + key)        
+
+            print "outfname"
+            print outfname
+
+            if val[0] == 'temp':
+
+                assets = self._products['temp']['assets']
+
+                print "assets"
+                print assets
+
+
 
 
 def main():

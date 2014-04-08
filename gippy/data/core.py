@@ -377,7 +377,7 @@ class Data(object):
 
     def meta(self):
         """ Retrieve metadata for this tile """
-        print '%s metadata!' % self.__name__
+        print '%s metadata!' % self.__class__.__name__
         #meta = self.Asset(filename)
         # add metadata to dictionary
         return {}
