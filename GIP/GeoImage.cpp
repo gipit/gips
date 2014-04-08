@@ -127,6 +127,16 @@ namespace gip {
 		return *this;
 	}*/
 
+    GeoImage GeoImage::Mean(std::string filename, GDALDataType datatype) {
+        GeoImage imgout(filename, *this, datatype, 1);
+        CImg<double> cimg;
+        for (unsigned int iChunk=0; iChunk<NumChunks(); iChunk++) {
+        	cimg = Mean(iChunk);
+        	imgout.Write(cimg, iChunk);
+        }
+        return imgout;
+    }
+
 	//! Load bands from dataset
 	void GeoImage::LoadBands() {
 		vector<unsigned int> bandnums; // = _Options.Bands();

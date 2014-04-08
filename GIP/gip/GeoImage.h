@@ -163,6 +163,8 @@ namespace gip {
         //! Process band into new file (copy and apply processing functions)
         template<class T> GeoImage Process(std::string, GDALDataType = GDT_Unknown);
 
+        GeoImage Mean(std::string filename, GDALDataType datatype=GDT_Float32);
+
         //! Adds a mask band (1 for valid) to every band in image
         GeoImage& AddMask(const GeoRaster& band) {
             for (unsigned int i=0;i<_RasterBands.size();i++) _RasterBands[i].AddMask(band);
@@ -234,6 +236,29 @@ namespace gip {
                 images.insert( iBand->Read<T>(chunk) );
             }
             return images;
+        }
+
+        //! Mean (per pixel) of all bands
+        CImg<double> Mean(int chunk=0) const {
+            CImg<unsigned char> mask;
+            CImg<int> totalpixels;
+            CImg<double> band, total;
+            for (unsigned int iBand=0;iBand<NumBands();iBand++) {
+                mask = _RasterBands[iBand].NoDataMask()^=1;
+                band = _RasterBands[iBand].Read<double>(chunk).mul(mask);
+                if (iBand == 0) {
+                    totalpixels = mask;
+                    total = band;
+                } else {
+                    totalpixels += mask;
+                    total += band;
+                }
+            }
+            total = total.div(totalpixels);
+            cimg_for(total,ptr,double) {
+                if (*ptr != *ptr) *ptr = _RasterBands[0].NoData();
+            }
+            return total;
         }
 
         //! NoData mask (all bands).  1's where it is nodata
