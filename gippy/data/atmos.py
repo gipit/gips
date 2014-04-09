@@ -36,7 +36,6 @@ from pdb import set_trace
 
 class AtmosRepository(Repository):
     _rootpath = '/titan/data/atmos'
-    _cpath = 'composites'
     _datedir = '%Y%j'
 
     @classmethod
@@ -45,10 +44,6 @@ class AtmosRepository(Repository):
         if date != '':
             path = os.path.join(path, str(date.strftime('%Y')), str(date.strftime('%j')))
         return path
-
-    @classmethod
-    def cpath(cls):
-        return os.path.join(cls._rootpath, cls._cpath)
 
     @classmethod
     def find_tiles(cls):

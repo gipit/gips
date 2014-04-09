@@ -46,9 +46,10 @@ class Repository(object):
     _datedir = '%Y%j'
 
     _tilesdir = 'tiles'
+    _cpath = 'composites'
     _qdir = 'quarantine'
-    _vdir = 'vectors'
     _sdir = 'stage'
+    _vdir = 'vectors'
 
     _tiles_vector = 'tiles.shp'
     _tile_attribute = 'tile'
@@ -89,19 +90,31 @@ class Repository(object):
     # Child classes should not generally have to override anything below here
     ##########################################################################
     @classmethod
-    def qpath(cls):
-        """ quarantine path """
-        return os.path.join(cls._rootpath, cls._qdir)
+    def cpath(cls):
+        """ Composites path """
+        return cls._path(cls._cdir)
 
     @classmethod
-    def vpath(cls):
-        """ vectors path """
-        return os.path.join(cls._rootpath, cls._vdir)
+    def qpath(cls):
+        """ quarantine path """
+        return cls._path(cls._qdir)
 
     @classmethod
     def spath(cls):
         """ staging path """
-        return os.path.join(cls._rootpath, cls._sdir)
+        return cls._path(cls._sdir)
+
+    @classmethod
+    def vpath(cls):
+        """ vectors path """
+        return cls._path(cls._vdir)
+
+    @classmethod
+    def _path(cls, dirname):
+        path = os.path.join(cls._rootpath, dirname)
+        if not os.path.exists(path):
+            os.makedirs(path)
+        return path
 
     @classmethod
     def tiles_vector(cls):
@@ -279,11 +292,6 @@ class Asset(object):
     def archive(cls, path='.', recursive=False, keep=False):
         """ Move assets from directory to archive location """
         start = datetime.now()
-
-        try:
-            os.makedirs(cls._qpath)
-        except:
-            pass
 
         fnames = []
         if recursive:
