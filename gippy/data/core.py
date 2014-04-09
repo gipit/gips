@@ -252,7 +252,31 @@ class Asset(object):
     @classmethod
     def fetch(cls, asset, tile, date):
         """ Get this asset for this tile and date """
-        raise Exception("Fetch not implemented for %s" % cls.__name__)
+        url = cls._assets[asset].get('url', '')
+        if url == '':
+            raise Exception("%s: URL not defined for asset %s" % (cls.__name__, asset))
+        ftpurl = url.split('/')[0]
+        ftpdir = url[len(ftpurl):]
+
+        try:
+            ftp = ftplib.FTP(ftpurl)
+            ftp.login('anonymous', settings.EMAIL)
+            ftp.cwd(os.path.join(ftpdir, date.strftime('%Y'), date.strftime('%j')))
+            ftp.set_pasv(True)
+
+            filenames = []
+            ftp.retrlines('LIST', filenames.append)
+
+            for f in ftp.nlst('*'):
+                VerboseOut("Downloading %s" % f, 3)
+                ftp.retrbinary('RETR %s' % f, open(os.path.join(cls.Repository.spath(), f), "wb").write)
+
+            ftp.close()
+        except:
+            VerboseOut(traceback.format_exc(), 4)
+            raise Exception("Error downloading")
+
+        
 
     @classmethod
     def dates(cls, asset, tile, dates, days):

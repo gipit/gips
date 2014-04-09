@@ -108,30 +108,6 @@ class AtmosAsset(Asset):
             List2File(datafiles, indexfile)
         return datafiles
 
-    @classmethod
-    def fetch(cls, asset, tile, date):
-        url = cls._assets[asset]['url']
-        ftpurl = url.split('/')[0]
-        ftpdir = url[len(ftpurl):]
-
-        try:
-            ftp = ftplib.FTP(ftpurl)
-            ftp.login('anonymous', settings.EMAIL)
-            ftp.cwd(os.path.join(ftpdir, date.strftime('%Y'), date.strftime('%j')))
-            ftp.set_pasv(True)
-
-            filenames = []
-            ftp.retrlines('LIST', filenames.append)
-
-            for f in ftp.nlst('*.hdf'):
-                VerboseOut("Downloading %s" % f, 3)
-                ftp.retrbinary('RETR %s' % f, open(os.path.join(cls.Repository.spath(), f), "wb").write)
-
-            ftp.close()
-        except:
-            VerboseOut(traceback.format_exc(), 4)
-            raise Exception("Error downloading")
-
 
 class AtmosData(Data):
     name = 'Globally Gridded Atmospheric Data'
