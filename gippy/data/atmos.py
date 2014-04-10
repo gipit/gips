@@ -108,6 +108,13 @@ class AtmosAsset(Asset):
             List2File(datafiles, indexfile)
         return datafiles
 
+    @classmethod
+    def archive(cls, path='.', recursive=False, keep=False):
+        assets = super(AtmosAsset, cls).archive(path, recursive, keep)
+        dates = [a.date for a in assets]
+        for date in set(dates):
+            AtmosData.process_aerolta_daily(date.strftime('%j'))
+
 
 class AtmosData(Data):
     name = 'Globally Gridded Atmospheric Data'
@@ -126,36 +133,45 @@ class AtmosData(Data):
         },
     }
 
-    #@classmethod
-    def process_aerolta(cls):
-        """ Calculate long-term averages of aerosol optical thickness """
-        fouts = []
-        for day in range(1, 366):
-            start = datetime.datetime.now()
-            inv = cls.inventory(products=['aero'], days="%s,%s" % (day, day))
-            fnames = [inv[d].tiles[''].products['aero'] for d in inv.dates]
-            if len(fnames) > 0:
-                img = gippy.GeoImage(fnames)
-                fout = os.path.join(cls.Repository.cpath(), 'aerolta', 'aerolta_%s.tif' % day)
-                aerolta = img.Mean(fout)
-                fouts.append(fout)
-                t = datetime.datetime.now()-start
-                VerboseOut('Long-term average aerosol optical depth: processed day %s in %s' % (day, t))
-        start = datetime.datetime.now()
-        aero = gippy.GeoImage(fouts)
-        fout = os.path.join(cls.Repository.cpath(), 'aerolta', 'aerolta.tif')
-        aerolta.Mean(fout)
-        t = datetime.datetime.now()-t
-        VerboseOut('Long-term average aerosol optical depth: processed in %s' % (t))
-        # calculate long term average
-
     def process(self, products):
         start = datetime.datetime.now()
         #bname = os.path.basename(self.assets[''].filename)
         for product in products:
-            if product == 'aerolta':
-                self.process_aerolta()
+            print product
+            #if product == 'aerolta':
+            #    self.process_aerolta()
             VerboseOut(' -> %s: processed %s in %s' % (fout, product, datetime.datetime.now()-start))
+
+    @classmethod
+    def process_aerolta_daily(cls, day):
+        """ Calculate long-term averages (lta) for given day of aerosol optical thickness """
+        start = datetime.datetime.now()
+        inv = cls.inventory(products=['aero'], days="%s,%s" % (day, day))
+        fnames = [inv[d].tiles[''].products['aero'] for d in inv.dates]
+        if len(fnames) > 0:
+            img = gippy.GeoImage(fnames)
+            fout = os.path.join(cls.Asset.Repository.cpath('aerolta'), 'aerolta_%s.tif' % day)
+            aerolta = img.Mean(fout)
+            t = datetime.datetime.now()-start
+            VerboseOut('Long-term average aerosol optical depth: processed day %s in %s' % (day, t))
+
+    @classmethod
+    def process_aerolta(cls):
+        """ Processes daily lta files to generate long-term average file """
+        start = datetime.datetime.now()
+        aero = gippy.GeoImage(fouts)
+        fout = os.path.join(cls.Asset.Repository.cpath('aerolta'), 'aerolta.tif')
+        aerolta.Mean(fout)
+        t = datetime.datetime.now()-t
+        VerboseOut('Long-term average aerosol optical depth: processed in %s' % (t))
+
+    @classmethod
+    def process_aerolta_all(cls):
+        """ Process all daily long-term average and final lta average file """
+        fouts = []
+        for day in range(1, 366):
+            fout = cls.process_aerolta_daily(day)
+        cls.process_aerolta()
 
     def get_point(self, lat, lon, product=''):
         pixx = int(numpy.round(float(lon) + 179.5))
@@ -166,7 +182,7 @@ class AtmosData(Data):
         day = self.date.strftime('%j')
         print 'val', val
         if val == img[0].NoData():
-            fname = os.path.join(self.Repository.cpath(), 'aerolta', 'aerolta_%s' % day)
+            fname = os.path.join(self.Repository.cpath('aerolta'), 'aerolta_%s' % day)
             img = gippy.GeoImage(fname)
             val = img[0].Read(roi).squeeze()
             print 'val', val

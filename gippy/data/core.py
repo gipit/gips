@@ -30,6 +30,7 @@ from shapely.wkb import loads
 from shapely.geometry import shape
 import tarfile
 import traceback
+import ftplib
 from pdb import set_trace
 
 import gippy
@@ -46,7 +47,7 @@ class Repository(object):
     _datedir = '%Y%j'
 
     _tilesdir = 'tiles'
-    _cpath = 'composites'
+    _cdir = 'composites'
     _qdir = 'quarantine'
     _sdir = 'stage'
     _vdir = 'vectors'
@@ -90,9 +91,9 @@ class Repository(object):
     # Child classes should not generally have to override anything below here
     ##########################################################################
     @classmethod
-    def cpath(cls):
+    def cpath(cls, dirs=''):
         """ Composites path """
-        return cls._path(cls._cdir)
+        return cls._path(cls._cdir, dirs)
 
     @classmethod
     def qpath(cls):
@@ -110,8 +111,11 @@ class Repository(object):
         return cls._path(cls._vdir)
 
     @classmethod
-    def _path(cls, dirname):
-        path = os.path.join(cls._rootpath, dirname)
+    def _path(cls, dirname, dirs=''):
+        if dirs == '':
+            path = os.path.join(cls._rootpath, dirname)
+        else:
+            path = os.path.join(cls._rootpath, dirname, dirs)
         if not os.path.exists(path):
             os.makedirs(path)
         return path
@@ -276,8 +280,6 @@ class Asset(object):
             VerboseOut(traceback.format_exc(), 4)
             raise Exception("Error downloading")
 
-        
-
     @classmethod
     def dates(cls, asset, tile, dates, days):
         """ For a given asset get all dates possible (in repo or not) - used for fetch """
@@ -327,20 +329,23 @@ class Asset(object):
                 fnames.extend(glob.glob(os.path.join(path, a['pattern'])))
         numlinks = 0
         numfiles = 0
+        assets = []
         for f in fnames:
-            links = cls._archivefile(f)
-            if links >= 0:
+            archived = cls._archivefile(f)
+            if archived[1] >= 0:
                 if not keep:
                     RemoveFiles([f], ['.index', '.aux.xml'])
-            if links > 0:
+            if archived[1] > 0:
                 numfiles = numfiles + 1
-                numlinks = numlinks + links
+                numlinks = numlinks + archived[1]
+                assets.append(archived[0])
 
         # Summarize
         VerboseOut('%s files (%s links) from %s added to archive in %s' %
                   (numfiles, numlinks, os.path.abspath(path), datetime.now()-start))
         if numfiles != len(fnames):
             VerboseOut('%s files not added to archive' % (len(fnames)-numfiles))
+        return assets
 
     @classmethod
     def _archivefile(cls, filename):
@@ -357,11 +362,12 @@ class Asset(object):
             VerboseOut('%s -> quarantine (file error)' % filename, 2)
             return 0
 
-        if not hasattr(asset.date, '__len__'):
-            asset.date = [asset.date]
+        dates = asset.date
+        if not hasattr(dates, '__len__'):
+            dates = [dates]
         numlinks = 0
         otherversions = False
-        for d in asset.date:
+        for d in dates:
             tpath = cls.Repository.path(asset.tile, d)
             newfilename = os.path.join(tpath, bname)
             if not os.path.exists(newfilename):
@@ -390,9 +396,9 @@ class Asset(object):
             else:
                 VerboseOut('%s already in archive' % filename, 2)
         if otherversions and numlinks == 0:
-            return -1
+            return (asset, -1)
         else:
-            return numlinks
+            return (asset, numlinks)
         # should return asset instance
 
     #def __str__(self):
@@ -545,13 +551,15 @@ class Data(object):
     def fetch(cls, products, tiles, dates, days):
         """ Download data for tiles and add to archive """
         assets = cls.products2assets(products)
+        fetched = []
         for a in assets:
             for t in tiles:
                 asset_dates = cls.Asset.dates(a, t, dates, days)
                 for d in asset_dates:
                     if not cls.Asset.discover(t, d, a):
                         status = cls.Asset.fetch(a, t, d)
-                        #VerboseOut("Fetch status: %s" % status, 2)
+                        fetched.append((a, t, d))
+        return fetched
 
     @classmethod
     def products2groups(cls, products):
