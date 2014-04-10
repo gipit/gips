@@ -58,6 +58,7 @@ class GIPdevelop(develop):
 gippy_module = Extension(
     name='_gippylib',
     sources=['gippy/gippylib.i'],
+    #swig_opts=['-c++', '-w509', '-IGIP', '-keyword'],
     swig_opts=['-c++', '-w509', '-IGIP'],
     include_dirs=['GIP', numpy.get_include()],
     libraries=['gip', 'gdal', 'boost_system', 'boost_filesystem'],  # ,'X11'],
