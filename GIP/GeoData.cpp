@@ -165,7 +165,4 @@ namespace gip {
         }
     }
 
-    // Copy collection of meta data
-    //GeoData& CopyMeta(const GeoData&, std::vector<std::string>);
-
 } // namespace gip
