@@ -21,8 +21,8 @@ namespace gip {
         //! Default constructor
         explicit GeoImage() : GeoData() {}
         //! Open file constructor
-        explicit GeoImage(std::string filename, bool Update=true)
-            : GeoData(filename, Update) {
+        explicit GeoImage(std::string filename, bool update=true)
+            : GeoData(filename, update) {
             LoadBands();
         }
         //! Open file from vector of individual files
@@ -36,7 +36,7 @@ namespace gip {
         explicit GeoImage(std::string filename, const GeoImage& image, GDALDataType datatype, int bsz) :
             GeoData(image.XSize(), image.YSize(), bsz, datatype, filename) {
             //if (datatype == GDT_Unknown) datatype = image->GetDataType();
-            CopyMeta(image);
+            //CopyMeta(image);
             CopyCoordinateSystem(image);
             LoadBands();
             //_Colors = image.GetColors();
@@ -45,7 +45,7 @@ namespace gip {
         explicit GeoImage(std::string filename, const GeoImage& image, GDALDataType datatype) :
             GeoData(image.XSize(), image.YSize(), image.NumBands(), datatype, filename) {
             //if (datatype == GDT_Unknown) datatype = image->GetDataType();
-            CopyMeta(image);
+            //CopyMeta(image);
             CopyCoordinateSystem(image);
             LoadBands();
             _Colors = image.GetColors();
@@ -54,11 +54,18 @@ namespace gip {
         explicit GeoImage(std::string filename, const GeoImage& image) :
             GeoData(image.XSize(), image.YSize(), image.NumBands(), image.DataType(), filename) {
             //if (datatype == GDT_Unknown) datatype = image->GetDataType();
-            CopyMeta(image);
+            //CopyMeta(image);
             CopyCoordinateSystem(image);
             LoadBands();
             //_Colors = image.GetColors();
         }
+
+        // Factory functions to support keywords in python bindings
+        /*static GeoImage Open(std::string filename, bool update=true) {
+            return GeoImage(filename, update);
+        }*/
+
+        //static GeoImage New(std::string filename, const GeoImage& template=GeoImage(), int xsz=0, int ysz=0, int bands=1, GDALDataType dt=GDT_Byte)
         //! Constructor to create new file based on input vector extents
         /*explicit GeoImage(std::string filename, std::string vector, float xres, float yres, GDALDataType datatype=GDT_Byte, int bsz=1) {
             OGRDataSource *poDS = OGRSFDriverRegistrar::Open(vector.c_str());
