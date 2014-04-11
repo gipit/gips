@@ -150,7 +150,7 @@ class AtmosData(Data):
         fnames = [inv[d].tiles[''].products['aero'] for d in inv.dates]
         if len(fnames) > 0:
             img = gippy.GeoImage(fnames)
-            fout = os.path.join(cls.Asset.Repository.cpath('aerolta'), 'aerolta_%s.tif' % day)
+            fout = os.path.join(cls.Asset.Repository.cpath('aerolta'), 'aerolta_%s.tif' % str(day).zfill(3))
             aerolta = img.Mean(fout)
             t = datetime.datetime.now()-start
             VerboseOut('Long-term average aerosol optical depth: processed day %s in %s' % (day, t))
