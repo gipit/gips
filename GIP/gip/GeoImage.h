@@ -21,8 +21,8 @@ namespace gip {
         //! Default constructor
         explicit GeoImage() : GeoData() {}
         //! Open file constructor
-        explicit GeoImage(std::string filename, bool Update=true)
-            : GeoData(filename, Update) {
+        explicit GeoImage(std::string filename, bool update=true)
+            : GeoData(filename, update) {
             LoadBands();
         }
         //! Open file from vector of individual files
@@ -36,7 +36,7 @@ namespace gip {
         explicit GeoImage(std::string filename, const GeoImage& image, GDALDataType datatype, int bsz) :
             GeoData(image.XSize(), image.YSize(), bsz, datatype, filename) {
             //if (datatype == GDT_Unknown) datatype = image->GetDataType();
-            CopyMeta(image);
+            //CopyMeta(image);
             CopyCoordinateSystem(image);
             LoadBands();
             //_Colors = image.GetColors();
@@ -45,7 +45,7 @@ namespace gip {
         explicit GeoImage(std::string filename, const GeoImage& image, GDALDataType datatype) :
             GeoData(image.XSize(), image.YSize(), image.NumBands(), datatype, filename) {
             //if (datatype == GDT_Unknown) datatype = image->GetDataType();
-            CopyMeta(image);
+            //CopyMeta(image);
             CopyCoordinateSystem(image);
             LoadBands();
             _Colors = image.GetColors();
@@ -54,11 +54,18 @@ namespace gip {
         explicit GeoImage(std::string filename, const GeoImage& image) :
             GeoData(image.XSize(), image.YSize(), image.NumBands(), image.DataType(), filename) {
             //if (datatype == GDT_Unknown) datatype = image->GetDataType();
-            CopyMeta(image);
+            //CopyMeta(image);
             CopyCoordinateSystem(image);
             LoadBands();
             //_Colors = image.GetColors();
         }
+
+        // Factory functions to support keywords in python bindings
+        /*static GeoImage Open(std::string filename, bool update=true) {
+            return GeoImage(filename, update);
+        }*/
+
+        //static GeoImage New(std::string filename, const GeoImage& template=GeoImage(), int xsz=0, int ysz=0, int bands=1, GDALDataType dt=GDT_Byte)
         //! Constructor to create new file based on input vector extents
         /*explicit GeoImage(std::string filename, std::string vector, float xres, float yres, GDALDataType datatype=GDT_Byte, int bsz=1) {
             OGRDataSource *poDS = OGRSFDriverRegistrar::Open(vector.c_str());
@@ -163,6 +170,8 @@ namespace gip {
         //! Process band into new file (copy and apply processing functions)
         template<class T> GeoImage Process(std::string, GDALDataType = GDT_Unknown);
 
+        GeoImage Mean(std::string filename, GDALDataType datatype=GDT_Float32);
+
         //! Adds a mask band (1 for valid) to every band in image
         GeoImage& AddMask(const GeoRaster& band) {
             for (unsigned int i=0;i<_RasterBands.size();i++) _RasterBands[i].AddMask(band);
@@ -234,6 +243,29 @@ namespace gip {
                 images.insert( iBand->Read<T>(chunk) );
             }
             return images;
+        }
+
+        //! Mean (per pixel) of all bands
+        CImg<double> Mean(int chunk=0) const {
+            CImg<unsigned char> mask;
+            CImg<int> totalpixels;
+            CImg<double> band, total;
+            for (unsigned int iBand=0;iBand<NumBands();iBand++) {
+                mask = _RasterBands[iBand].NoDataMask()^=1;
+                band = _RasterBands[iBand].Read<double>(chunk).mul(mask);
+                if (iBand == 0) {
+                    totalpixels = mask;
+                    total = band;
+                } else {
+                    totalpixels += mask;
+                    total += band;
+                }
+            }
+            total = total.div(totalpixels);
+            cimg_for(total,ptr,double) {
+                if (*ptr != *ptr) *ptr = _RasterBands[0].NoData();
+            }
+            return total;
         }
 
         //! NoData mask (all bands).  1's where it is nodata

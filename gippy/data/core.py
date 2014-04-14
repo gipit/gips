@@ -30,6 +30,7 @@ from shapely.wkb import loads
 from shapely.geometry import shape
 import tarfile
 import traceback
+import ftplib
 from pdb import set_trace
 
 import gippy
@@ -46,9 +47,10 @@ class Repository(object):
     _datedir = '%Y%j'
 
     _tilesdir = 'tiles'
+    _cdir = 'composites'
     _qdir = 'quarantine'
-    _vdir = 'vectors'
     _sdir = 'stage'
+    _vdir = 'vectors'
 
     _tiles_vector = 'tiles.shp'
     _tile_attribute = 'tile'
@@ -89,19 +91,34 @@ class Repository(object):
     # Child classes should not generally have to override anything below here
     ##########################################################################
     @classmethod
-    def qpath(cls):
-        """ quarantine path """
-        return os.path.join(cls._rootpath, cls._qdir)
+    def cpath(cls, dirs=''):
+        """ Composites path """
+        return cls._path(cls._cdir, dirs)
 
     @classmethod
-    def vpath(cls):
-        """ vectors path """
-        return os.path.join(cls._rootpath, cls._vdir)
+    def qpath(cls):
+        """ quarantine path """
+        return cls._path(cls._qdir)
 
     @classmethod
     def spath(cls):
         """ staging path """
-        return os.path.join(cls._rootpath, cls._sdir)
+        return cls._path(cls._sdir)
+
+    @classmethod
+    def vpath(cls):
+        """ vectors path """
+        return cls._path(cls._vdir)
+
+    @classmethod
+    def _path(cls, dirname, dirs=''):
+        if dirs == '':
+            path = os.path.join(cls._rootpath, dirname)
+        else:
+            path = os.path.join(cls._rootpath, dirname, dirs)
+        if not os.path.exists(path):
+            os.makedirs(path)
+        return path
 
     @classmethod
     def tiles_vector(cls):
@@ -239,7 +256,29 @@ class Asset(object):
     @classmethod
     def fetch(cls, asset, tile, date):
         """ Get this asset for this tile and date """
-        raise Exception("Fetch not implemented for %s" % cls.__name__)
+        url = cls._assets[asset].get('url', '')
+        if url == '':
+            raise Exception("%s: URL not defined for asset %s" % (cls.__name__, asset))
+        ftpurl = url.split('/')[0]
+        ftpdir = url[len(ftpurl):]
+
+        try:
+            ftp = ftplib.FTP(ftpurl)
+            ftp.login('anonymous', settings.EMAIL)
+            ftp.cwd(os.path.join(ftpdir, date.strftime('%Y'), date.strftime('%j')))
+            ftp.set_pasv(True)
+
+            filenames = []
+            ftp.retrlines('LIST', filenames.append)
+
+            for f in ftp.nlst('*'):
+                VerboseOut("Downloading %s" % f, 3)
+                ftp.retrbinary('RETR %s' % f, open(os.path.join(cls.Repository.spath(), f), "wb").write)
+
+            ftp.close()
+        except:
+            VerboseOut(traceback.format_exc(), 4)
+            raise Exception("Error downloading")
 
     @classmethod
     def dates(cls, asset, tile, dates, days):
@@ -280,11 +319,6 @@ class Asset(object):
         """ Move assets from directory to archive location """
         start = datetime.now()
 
-        try:
-            os.makedirs(cls._qpath)
-        except:
-            pass
-
         fnames = []
         if recursive:
             for root, subdirs, files in os.walk(path):
@@ -295,20 +329,23 @@ class Asset(object):
                 fnames.extend(glob.glob(os.path.join(path, a['pattern'])))
         numlinks = 0
         numfiles = 0
+        assets = []
         for f in fnames:
-            links = cls._archivefile(f)
-            if links >= 0:
+            archived = cls._archivefile(f)
+            if archived[1] >= 0:
                 if not keep:
                     RemoveFiles([f], ['.index', '.aux.xml'])
-            if links > 0:
+            if archived[1] > 0:
                 numfiles = numfiles + 1
-                numlinks = numlinks + links
+                numlinks = numlinks + archived[1]
+                assets.append(archived[0])
 
         # Summarize
         VerboseOut('%s files (%s links) from %s added to archive in %s' %
                   (numfiles, numlinks, os.path.abspath(path), datetime.now()-start))
         if numfiles != len(fnames):
             VerboseOut('%s files not added to archive' % (len(fnames)-numfiles))
+        return assets
 
     @classmethod
     def _archivefile(cls, filename):
@@ -325,11 +362,12 @@ class Asset(object):
             VerboseOut('%s -> quarantine (file error)' % filename, 2)
             return 0
 
-        if not hasattr(asset.date, '__len__'):
-            asset.date = [asset.date]
+        dates = asset.date
+        if not hasattr(dates, '__len__'):
+            dates = [dates]
         numlinks = 0
         otherversions = False
-        for d in asset.date:
+        for d in dates:
             tpath = cls.Repository.path(asset.tile, d)
             newfilename = os.path.join(tpath, bname)
             if not os.path.exists(newfilename):
@@ -348,16 +386,19 @@ class Asset(object):
                             pass
                         else:
                             raise Exception('Unable to make data directory %s' % tpath)
-                    os.link(os.path.abspath(filename), newfilename)
+                    try:
+                        os.link(os.path.abspath(filename), newfilename)
+                    except:
+                        VerboseOut(traceback.format_exc(), 4)
                     #shutil.move(os.path.abspath(f),newfilename)
                     VerboseOut(bname + ' -> ' + newfilename, 2)
                     numlinks = numlinks + 1
             else:
                 VerboseOut('%s already in archive' % filename, 2)
         if otherversions and numlinks == 0:
-            return -1
+            return (asset, -1)
         else:
-            return numlinks
+            return (asset, numlinks)
         # should return asset instance
 
     #def __str__(self):
@@ -436,10 +477,10 @@ class Data(object):
         if product == '':
             product = self.products.keys()[0]
         fname = self.products[product]
-        if os.path.exists(fname):
+        try:
             return gippy.GeoImage(fname)
-        else:
-            raise Exception('%s product does not exist' % product)
+        except:
+            raise Exception('%s problem reading' % product)
 
     def link(self, products, path='', copy=False):
         """ Create links in path to tile products """
@@ -510,13 +551,15 @@ class Data(object):
     def fetch(cls, products, tiles, dates, days):
         """ Download data for tiles and add to archive """
         assets = cls.products2assets(products)
+        fetched = []
         for a in assets:
             for t in tiles:
                 asset_dates = cls.Asset.dates(a, t, dates, days)
                 for d in asset_dates:
                     if not cls.Asset.discover(t, d, a):
                         status = cls.Asset.fetch(a, t, d)
-                        VerboseOut("Fetch status: %s" % status, 2)
+                        fetched.append((a, t, d))
+        return fetched
 
     @classmethod
     def products2groups(cls, products):

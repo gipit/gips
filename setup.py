@@ -58,6 +58,7 @@ class GIPdevelop(develop):
 gippy_module = Extension(
     name='_gippylib',
     sources=['gippy/gippylib.i'],
+    #swig_opts=['-c++', '-w509', '-IGIP', '-keyword'],
     swig_opts=['-c++', '-w509', '-IGIP'],
     include_dirs=['GIP', numpy.get_include()],
     libraries=['gip', 'gdal', 'boost_system', 'boost_filesystem'],  # ,'X11'],
@@ -74,7 +75,7 @@ setup(
     author_email='mhanson@appliedgeosolutions.com',
     ext_modules=[gippy_module],
     packages=['gippy', 'gippy.algorithms', 'gippy.data'],
-    py_modules=['gippy.gippylib', 'gippy.atmosphere', 'gippy.GeoVector', 'gippy.gipit'],
+    py_modules=['gippy.gippylib', 'gippy.GeoVector', 'gippy.gipit'],
     #dependency_links=['https://github.com/matthewhanson/Py6S.git'],
     dependency_links=['https://github.com/robintw/Py6S.git'],
     #install_requires = ['Py6S','shapely==1.2.18'],
@@ -89,7 +90,7 @@ setup(
             'SAR = gippy.data.sar:main',
             'SARannual= gippy.data.sarannual:main',
             'modis = gippy.data.modis:main',
-            'modisatmos = gippy.data.modisatmos:main',
+            'atmos = gippy.data.atmos:main',
         ],
     },
     cmdclass={

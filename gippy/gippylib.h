@@ -18,7 +18,6 @@
 ##############################################################################*/
 %module gippylib
 %feature("autodoc", "1");
-%feature("kwargs") fn;
 %{
     #define SWIG_FILE_WITH_INIT
     //#include "gip/Colors.h"
@@ -154,6 +153,7 @@ namespace std {
 %include "gip/GeoRaster.h"
 %include "gip/GeoImage.h"
 %include "gip/GeoAlgorithms.h"
+%include "gip/geometry.h"
 // TODO - Not sure this really needs to be wrapped
 %include "gip/Colors.h"
 
@@ -167,6 +167,8 @@ namespace gip {
 
     // Register file formats with GDAL
     void reg();
+
+    %template(iRect) Rect<int>;
 
     // Just wrapping basic options.
     class Options {
@@ -192,6 +194,12 @@ namespace gip {
         }
     }
 
+    /*%extend Rect {
+        std::string __str__() {
+            return self->operator<<();
+        }
+    }*/
+
     %extend GeoRaster {
         // Processing functions
         //GeoRaster __eq__(double val) {
@@ -201,6 +209,21 @@ namespace gip {
 				 "PyObject returned is a numpy.array.\n"
 				 "Enjoy!\n ");
         PyObject* Read(int chunk=0) {
+            if (self->Gain() == 1.0 && self->Offset() == 0.0) {
+                switch(self->DataType()) {
+                    case 1: return CImgToArr(self->Read<unsigned char>(chunk));
+                    case 2: return CImgToArr(self->Read<unsigned short>(chunk));
+                    case 3: return CImgToArr(self->Read<short>(chunk));
+                    case 4: return CImgToArr(self->Read<unsigned int>(chunk));
+                    case 5: return CImgToArr(self->Read<int>(chunk));
+                    case 6: return CImgToArr(self->Read<float>(chunk));
+                    case 7: return CImgToArr(self->Read<double>(chunk));
+                    default: throw(std::exception());
+                }
+            }
+            return CImgToArr(self->Read<float>(chunk));
+        }
+        PyObject* Read(iRect chunk) {
             if (self->Gain() == 1.0 && self->Offset() == 0.0) {
                 switch(self->DataType()) {
                     case 1: return CImgToArr(self->Read<unsigned char>(chunk));

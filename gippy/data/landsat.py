@@ -31,6 +31,7 @@ from copy import deepcopy
 import gippy
 from gippy.modtran import MODTRAN
 from gippy.data.core import Repository, Asset, Data
+from gippy.data.atmos import AtmosData
 from gippy.data.inventory import DataInventory
 from gippy.utils import VerboseOut, RemoveFiles
 
@@ -239,7 +240,11 @@ class LandsatData(Data):
 
         # Aerosols
         s.aero_profile = AeroProfile.PredefinedType(AeroProfile.Continental)
-        s.aot550 = self.getaod(self.date, geo['lat'], geo['lon'])
+        atmos = AtmosData(tile='', date=self.date)
+        # TODO - finish AtmosData to get aerosols
+        #aod = atmos.get_point(geo['lat'], geo['lon'])
+        aod_old = self.getaod(self.date, geo['lat'], geo['lon'])
+        s.aot550 = aod_old
 
         # Other settings
         s.ground_reflectance = GroundReflectance.HomogeneousLambertian(GroundReflectance.GreenVegetation)
