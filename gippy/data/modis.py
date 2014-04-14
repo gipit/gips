@@ -229,6 +229,8 @@ class ModisData(Data):
 
             if val[0] == 'snow':
 
+                assets = self._products['snow']['assets']
+
                 # at some point can also include MYD10A1
                 allsds = []
                 missingassets = []
@@ -247,13 +249,60 @@ class ModisData(Data):
                 for i,sds in enumerate(allsds):
                     print i,sds
 
-                snowsds = [allsds[0], alldss[3]]
+                snowsds = [allsds[0], allsds[3]]
 
 
+                img = gippy.GeoImage(snowsds)
+
+                imgout = gippy.GeoImage(outfname, img, gippy.GDT_Byte, 1)
+                imgout.SetNoData(127)
+
+                cover = img[0].Read()
+
+                print cover.min(), cover.max()
+
+
+                frac = img[1].Read()
+
+                print frac.min(), frac.max()
+
+
+                result = np.zeros_like(cover, dtype=np.uint8)
+
+                w = np.where((frac>0)&(frac<=100))
+                result[w] = frac[w].astype(np.int8)
+
+                w = np.where((frac==200)|(frac==201)|(frac==211)|(frac==250)|(frac==254)|(frac==255))
+                result[w] = 127
+
+
+                assert not np.any((cover==100)&(result==127)), "ice cover, but missing frac"
+                assert not np.any((cover==100)&(result==0)), "ice cover, but zero frac"
+                assert not np.any((cover==200)&(result==127)), "snow cover, but missing frac"
+                assert not np.any((cover==200)&(result==0)), "snow cover, but zero frac"
+
+
+                assert not np.any((cover==0)&(result!=127)), "missing cover, but valid frac"
+                assert not np.any((cover==1)&(result!=127)), "no decision cover, but valid frac"
+                assert not np.any((cover==11)&(result!=127)), "night, but valid frac"
+                assert not np.any((cover==50)&(result!=127)), "cloud, but valid frac"
+                assert not np.any((cover==254)&(result!=127)), "saturated, but valid frac"
+                assert not np.any((cover==255)&(result!=127)), "fill, but valid frac"
+
+
+                
+
+                imgout[0].Write(result)
+                print imgout[0].Stats()
 
 
 
             if val[0] == 'temp':
+
+                assets = self._products['temp']['assets']
+
+                # print "assets"
+                # print assets
 
                 names = {
                     '0': 'LST_Day_1km',
@@ -269,11 +318,6 @@ class ModisData(Data):
                     '10': 'Clear_day_cov',
                     '11': 'Clear_night_cov',
                 }
-
-                assets = self._products['temp']['assets']
-
-                # print "assets"
-                # print assets
 
                 allsds = []
                 missingassets = []
