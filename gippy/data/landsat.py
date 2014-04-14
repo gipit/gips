@@ -391,8 +391,8 @@ class LandsatData(Data):
         if len(indices) > 0:
             start = datetime.now()
             # TODO - this assumes atmospheric correct - what if mix of atmos and non-atmos?
-            for b in visbands:
-                img[b] = ((img[b]-atmos[col][1])/atmos[col][0]) * (1.0/atmos[col][2])
+            for col in visbands:
+                img[col] = ((img[col]-atmos[col][1])/atmos[col][0]) * (1.0/atmos[col][2])
             fnames = [os.path.join(self.path, self.basename + '_' + key) for key in indices]
             prodarr = dict(zip([indices[p][0] for p in indices.keys()], fnames))
             prodout = gippy.Indices(img, prodarr)
