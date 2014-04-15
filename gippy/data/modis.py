@@ -245,55 +245,100 @@ class ModisData(Data):
                     print "Skipping missing data:", self.date, self.id, missingassets
                     continue
 
-
                 for i,sds in enumerate(allsds):
                     print i,sds
 
                 snowsds = [allsds[0], allsds[3]]
+                img = gippy.GeoImage(snowsds) # read only
 
 
-                img = gippy.GeoImage(snowsds)
-
-                imgout = gippy.GeoImage(outfname, img, gippy.GDT_Byte, 1)
-                imgout.SetNoData(127)
-
+                # get the data values for both bands
                 cover = img[0].Read()
-
-                print cover.min(), cover.max()
-
-
                 frac = img[1].Read()
 
-                print frac.min(), frac.max()
+
+                # check out frac
+                wbad1 = np.where((frac==200)|(frac==201)|(frac==211)|(frac==250)|(frac==254)|(frac==255))
+                wsurface1 = np.where((frac==225)|(frac==237)|(frac==239))
+                wvalid1 = np.where((frac>=0)&(frac<=100))
+                wmostly1 = np.where((frac>50)&(frac<=100))
+
+                nbad1 = len(wbad1[0])
+                nsurface1 = len(wsurface1[0])
+                nvalid1 = len(wvalid1[0])
+                assert nbad1 + nsurface1 + nvalid1 == frac.size, "frac contains invalid values"
 
 
-                result = np.zeros_like(cover, dtype=np.uint8)
+                # check out cover
+                wbad2 = np.where((cover==0)|(cover==1)|(cover==11)|(cover==50)|(cover==254)|(cover==255))
+                wsurface2 = np.where((cover==25)|(cover==37)|(cover==39))
+                wvalid2 = np.where((cover==100)|(cover==200))
 
-                w = np.where((frac>0)&(frac<=100))
-                result[w] = frac[w].astype(np.int8)
-
-                w = np.where((frac==200)|(frac==201)|(frac==211)|(frac==250)|(frac==254)|(frac==255))
-                result[w] = 127
-
-
-                assert not np.any((cover==100)&(result==127)), "ice cover, but missing frac"
-                assert not np.any((cover==100)&(result==0)), "ice cover, but zero frac"
-                assert not np.any((cover==200)&(result==127)), "snow cover, but missing frac"
-                assert not np.any((cover==200)&(result==0)), "snow cover, but zero frac"
+                nbad2 = len(wbad2[0])
+                nsurface2 = len(wsurface2[0])
+                nvalid2 = len(wvalid2[0])
+                assert nbad2 + nsurface2 + nvalid2 == cover.size, "cover contains invalid values"
 
 
-                assert not np.any((cover==0)&(result!=127)), "missing cover, but valid frac"
-                assert not np.any((cover==1)&(result!=127)), "no decision cover, but valid frac"
-                assert not np.any((cover==11)&(result!=127)), "night, but valid frac"
-                assert not np.any((cover==50)&(result!=127)), "cloud, but valid frac"
-                assert not np.any((cover==254)&(result!=127)), "saturated, but valid frac"
-                assert not np.any((cover==255)&(result!=127)), "fill, but valid frac"
+
+                # assign output data here because frac will get overwritten
+                coverout = np.zeros_like(cover, dtype=np.uint8)
+                fracout = np.zeros_like(frac, dtype=np.uint8)
+
+                fracout[wvalid1] = frac[wvalid1]
+                fracout[wsurface1] = 0
+                fracout[wbad1] = 127
+
+                coverout[wvalid2] = 100
+                coverout[wsurface2] = 0
+                coverout[wbad2] = 127
 
 
-                
 
-                imgout[0].Write(result)
+                # now complete the checks
+
+                frac[wbad1] = 0
+                frac[wsurface1] = 1
+                frac[wvalid1] = 2
+
+                cover[wbad2] = 0
+                cover[wsurface2] = 1
+                cover[wvalid2] = 2
+
+                meta = {}
+                meta['fracmissingcoverclear'] = np.sum((frac==0)&(cover==1))/float(cover.size)
+                meta['fracmissingcoversnow'] = np.sum((frac==0)&(cover==2))/float(cover.size)
+                meta['fracclearcovermissing'] = np.sum((frac==1)&(cover==0))/float(cover.size)
+                meta['fracclearcoversnow'] = np.sum((frac==1)&(cover==2))/float(cover.size)
+                meta['fracsnowcovermissing'] = np.sum((frac==2)&(cover==0))/float(cover.size)
+                meta['fracsnowcoverclear'] = np.sum((frac==2)&(cover==1))/float(cover.size)
+                meta['fracmostlybutclear'] = np.sum(cover[wmostly1]==1)/float(cover.size)
+                meta['totsnowfrac'] = np.sum(fracout[wvalid1])
+                meta['totsnowcover'] = np.sum(coverout[wvalid2])
+
+                # create output gippy image
+                imgout = gippy.GeoImage(outfname, img, gippy.GDT_Byte, 2)
+
+                imgout.SetNoData(127)
+                imgout.SetOffset(0.0)
+                imgout.SetGain(1.0)
+
+                imgout[0].Write(coverout)
+                imgout[1].Write(fracout)
+
                 print imgout[0].Stats()
+
+                print dir(imgout)
+
+                imgout.SetColor('Snow Cover', 1)
+                imgout.SetColor('Fractional Snow Cover', 2)
+
+                print imgout.BandNames()
+
+                for k, v in meta.items():
+                    imgout.SetMeta(k, str(v))
+
+                print imgout.GetMetaGroup('')
 
 
 
