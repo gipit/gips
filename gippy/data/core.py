@@ -36,7 +36,7 @@ from pdb import set_trace
 import gippy
 from gippy.utils import VerboseOut, RemoveFiles, File2List, List2File
 from gippy.data.inventory import DataInventory
-from gippy.settings import DATABASES
+import gippy.settings as settings
 
 
 class Repository(object):
@@ -130,7 +130,7 @@ class Repository(object):
         else:
             try:
                 VerboseOut('%s: tiles vector %s' % (cls.__name__, cls._tiles_vector), 4)
-                db = DATABASES['tiles']
+                db = settings.DATABASES['tiles']
                 dbstr = ("PG:dbname=%s host=%s port=%s user=%s password=%s" %
                         (db['NAME'], db['HOST'], db['PORT'], db['USER'], db['PASSWORD']))
                 tiles = gippy.GeoVector(dbstr, layer=cls._tiles_vector)
