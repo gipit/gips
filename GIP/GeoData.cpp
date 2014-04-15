@@ -153,7 +153,7 @@ namespace gip {
                 << Options::ChunkSize() << " MB max each)" << " with pad = " << pad << std::endl;
         }
         for (int i=0; i<numchunks; i++) {
-            chunk = iRect(0, rows*i, XSize(), std::min(rows*(i+1),YSize()));
+            chunk = iRect(0, rows*i, XSize(), std::min(rows*(i+1),YSize())-(rows*i) );
             _Chunks.push_back(chunk);
             if (Options::Verbose() > 4) std::cout << "  Chunk " << i << ": " << chunk << std::endl;
 
