@@ -153,12 +153,12 @@ namespace gip {
                 << Options::ChunkSize() << " MB max each)" << " with pad = " << pad << std::endl;
         }
         for (int i=0; i<numchunks; i++) {
-            chunk = iRect( iPoint(0,rows*i),iPoint(XSize()-1,std::min(rows*(i+1)-1,YSize()-1)) );
+            chunk = iRect(0, rows*i, XSize(), std::min(rows*(i+1),YSize())-(rows*i) );
             _Chunks.push_back(chunk);
             if (Options::Verbose() > 4) std::cout << "  Chunk " << i << ": " << chunk << std::endl;
 
             if (pad > 0) {
-                chunk.Pad(pad).Intersect(iRect(0,0,XSize()-1,YSize()-1));
+                chunk.Pad(pad).Intersect(iRect(0,0,XSize(),YSize()));
                 if (Options::Verbose() > 4) std::cout << "  PadChunk " << i << ": " << chunk << std::endl;
             }
             _PadChunks.push_back(chunk);

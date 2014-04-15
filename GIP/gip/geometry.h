@@ -48,7 +48,7 @@ namespace gip {
 		Rect() : _p0(0,0), _p1(0,0) {}
 		//! Constructor takes in top left coordinate and width/height
 		Rect(T x, T y, T width, T height) 
-			: _p0(x,y), _p1(x+width,y+height) {
+			: _p0(x,y), _p1(x+width-1,y+height-1) {
 			// Validate, x0 and y0 should always be the  min values
 			/*if (_width < 0) {
 				_width = abs(m_width);

@@ -229,6 +229,12 @@ namespace gip {
             return GeoRaster(*this, boost::bind(boost::mem_fn<CImg<double>&,CImg<double>,const double&>(&CImg<double>::operator^=), _1, 1) );
         }
 
+        //! \name Convolution functions
+        //GeoRaster convolve(const double& nodata) const {
+            //return GeoRaster(*this, boost::bind(boost::mem_fn<CImg<double>&,CImg<double>,const CImg<double>&,const double&>(&CImg<double>::convolve), _1, kernel, nodata);
+        //    return GeoRaster(*this, boost::bind((&CImg<double>::convolve_nodata), _1, nodata));
+        //}
+
         // Arithmetic
         GeoRaster operator+(const double &val) const {
             return GeoRaster(*this, boost::bind(boost::mem_fn<CImg<double>&,CImg<double>,const double&>(&CImg<double>::operator+=), _1, val));
@@ -356,6 +362,51 @@ namespace gip {
             }
         }
 
+        cimg_library::CImg<unsigned char> DataMask(int chunk=0) const {
+            return NoDataMask(chunk)^=1;
+        }
+
+        //! Smooth/convolution (3x3) taking into account NoDataValue
+        GeoRaster Smooth(GeoRaster raster) {
+            CImg<double> kernel(3,3,1,1,1);
+            int m0((kernel.width())/2);
+            int n0((kernel.height())/2);
+            int border(std::max(m0,n0));
+            double total, norm;
+            CImg<double> cimg0, cimg, subcimg;
+
+            Chunk(border);
+            raster.Chunk(border);
+            for (unsigned int iChunk=1; iChunk<=NumChunks(); iChunk++) {
+                cimg0 = Read<double>(iChunk);
+                cimg = cimg0;
+                cimg_for_insideXY(cimg,x,y,border) {
+                    subcimg = cimg0.get_crop(x-m0,y-n0,x+m0,y+m0);
+                    total = 0;
+                    norm = 0;
+                    cimg_forXY(kernel,m,n) {
+                        if (subcimg(m,n) != NoDataValue()) {
+                            total = total + (subcimg(m,n) * kernel(m,n));
+                            norm = norm + kernel(m,n);
+                        }
+                    }
+                    if (norm == 0)
+                        cimg(x,y) = raster.NoDataValue();
+                    else
+                        cimg(x,y) = total/norm;
+                    if (cimg(x,y) == NoDataValue()) cimg(x,y) = raster.NoDataValue();
+                }
+                // Update nodata values in border region
+                cimg_for_borderXY(cimg,x,y,border) {
+                    if (cimg(x,y) == NoDataValue()) cimg(x,y) = raster.NoDataValue();
+                }
+                raster.Write(cimg, iChunk);
+            }
+            Chunk();
+            raster.Chunk();
+            return raster;
+        }
+
     protected:
         // TODO - examine why not shared pointer? (I think because it's managed by GDALDataset class)
         //! GDALRasterBand
@@ -471,9 +522,15 @@ namespace gip {
         // Convert data to radiance (if not raw requested)
         if (Gain() != 1.0 || Offset() != 0.0) {
             img = Gain() * (img-_minDC) + Offset();
-            updatenodata = true;
+            // Update NoData now so applied functions have proper NoData value set (?)
+            if (NoData()) {
+                cimg_forXY(img,x,y) {
+                    if (imgorig(x,y) == NoDataValue()) img(x,y) = NoDataValue();
+                }
+            }
         }
 
+        // Apply Processing functions
         if (_Functions.size() > 0) {
             CImg<double> imgd;
             imgd.assign(img);
@@ -486,8 +543,6 @@ namespace gip {
             updatenodata = true;
             img.assign(imgd);
         }
-
-        // Apply Processing functions
 
         // If processing was applied update NoData values where needed
         if (NoData() && updatenodata) {
