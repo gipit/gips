@@ -239,11 +239,16 @@ class LandsatData(Data):
         s.atmos_profile = atmospheric_model(self.metadata['JulianDay'], geo['lat'])
 
         # Aerosols
+        # TODO - dynamically adjust AeroProfile?
         s.aero_profile = AeroProfile.PredefinedType(AeroProfile.Continental)
-        atmos = AtmosData(tile='', date=self.date)
-        # TODO - finish AtmosData to get aerosols
+
+        old_aod = self.getaod(self.date, geo['lat'], geo['lon'])
+        VerboseOut('Old AOD = %s' % old_aod, 4)
+
+        #atmos = AtmosData.inventory(tile='', dates=self.date.strftime('%Y-%j'), fetch=True, products=['aero'])
+        #atmos = atmos[atmos.dates[0]].tiles['']
         #aod = atmos.get_point(geo['lat'], geo['lon'])
-        aod_old = self.getaod(self.date, geo['lat'], geo['lon'])
+        #VerboseOut('New AOD = %s' % aod, 4)
         s.aot550 = aod_old
 
         # Other settings
