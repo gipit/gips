@@ -221,12 +221,9 @@ class ModisData(Data):
             # print key, val
 
             outfname = os.path.join(self.path, self.basename + '_' + key)        
+            VerboseOut("outfname: %s" % outfname, 4)
 
-            print
-            print
-            print "outfname"
-            print outfname
-
+            # SNOW/ICE COVER PRODUCT
             if val[0] == 'snow':
 
                 assets = self._products['snow']['assets']
@@ -245,17 +242,15 @@ class ModisData(Data):
                     print "Skipping missing data:", self.date, self.id, missingassets
                     continue
 
-                for i,sds in enumerate(allsds):
-                    print i,sds
+                # for i,sds in enumerate(allsds):
+                #     print i,sds
 
                 snowsds = [allsds[0], allsds[3]]
                 img = gippy.GeoImage(snowsds) # read only
 
-
                 # get the data values for both bands
                 cover = img[0].Read()
                 frac = img[1].Read()
-
 
                 # check out frac
                 wbad1 = np.where((frac==200)|(frac==201)|(frac==211)|(frac==250)|(frac==254)|(frac==255))
@@ -268,7 +263,6 @@ class ModisData(Data):
                 nvalid1 = len(wvalid1[0])
                 assert nbad1 + nsurface1 + nvalid1 == frac.size, "frac contains invalid values"
 
-
                 # check out cover
                 wbad2 = np.where((cover==0)|(cover==1)|(cover==11)|(cover==50)|(cover==254)|(cover==255))
                 wsurface2 = np.where((cover==25)|(cover==37)|(cover==39))
@@ -278,8 +272,6 @@ class ModisData(Data):
                 nsurface2 = len(wsurface2[0])
                 nvalid2 = len(wvalid2[0])
                 assert nbad2 + nsurface2 + nvalid2 == cover.size, "cover contains invalid values"
-
-
 
                 # assign output data here because frac will get overwritten
                 coverout = np.zeros_like(cover, dtype=np.uint8)
@@ -293,14 +285,10 @@ class ModisData(Data):
                 coverout[wsurface2] = 0
                 coverout[wbad2] = 127
 
-
-
-                # now complete the checks
-
+                # now complete the checks and create metadata
                 frac[wbad1] = 0
                 frac[wsurface1] = 1
                 frac[wvalid1] = 2
-
                 cover[wbad2] = 0
                 cover[wsurface2] = 1
                 cover[wvalid2] = 2
@@ -326,22 +314,17 @@ class ModisData(Data):
                 imgout[0].Write(coverout)
                 imgout[1].Write(fracout)
 
-                print imgout[0].Stats()
-
-                print dir(imgout)
-
                 imgout.SetColor('Snow Cover', 1)
                 imgout.SetColor('Fractional Snow Cover', 2)
 
-                print imgout.BandNames()
+                # print imgout.BandNames()
 
                 for k, v in meta.items():
                     imgout.SetMeta(k, str(v))
 
-                print imgout.GetMetaGroup('')
+                # print imgout.GetMetaGroup('')
 
-
-
+            # TEMPERATURE PRODUCT
             if val[0] == 'temp':
 
                 assets = self._products['temp']['assets']
@@ -349,20 +332,20 @@ class ModisData(Data):
                 # print "assets"
                 # print assets
 
-                names = {
-                    '0': 'LST_Day_1km',
-                    '1': 'QC_Day',
-                    '2': 'Day_view_time',
-                    '3': 'Day_view_angl',
-                    '4': 'LST_Night_1km',
-                    '5': 'QC_Night',
-                    '6': 'Night_view_time',
-                    '7': 'Night_view_angl',
-                    '8': 'Emis_31',
-                    '9': 'Emis_32',
-                    '10': 'Clear_day_cov',
-                    '11': 'Clear_night_cov',
-                }
+                # names = {
+                #     '0': 'LST_Day_1km',
+                #     '1': 'QC_Day',
+                #     '2': 'Day_view_time',
+                #     '3': 'Day_view_angl',
+                #     '4': 'LST_Night_1km',
+                #     '5': 'QC_Night',
+                #     '6': 'Night_view_time',
+                #     '7': 'Night_view_angl',
+                #     '8': 'Emis_31',
+                #     '9': 'Emis_32',
+                #     '10': 'Clear_day_cov',
+                #     '11': 'Clear_night_cov',
+                # }
 
                 allsds = []
                 missingassets = []
@@ -470,10 +453,6 @@ class ModisData(Data):
                     print
 
 
-                print
-                print dir(tempbands)
-                print
-
                 print "tempbands.GetMetaGroup('')"
                 print tempbands.GetMetaGroup('')
                 # print "tempbands.GetMeta()"
@@ -493,7 +472,6 @@ class ModisData(Data):
                 print tempbands.NoDataMask()
 
                 print
-                print dir(tempbands[0])
                 print "tempbands[0].Description()"
                 print tempbands[0].Description()
                 print "tempbands[0].Basename()"
