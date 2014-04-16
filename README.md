@@ -1,5 +1,5 @@
 
-    **GIPPY**: Geospatial Image Processing library for Python
+    **GIPIF**: Geospatial Image Processing and Inventory Framework
 
     Copyright (C) 2014 Matthew A Hanson
 
