@@ -32,7 +32,7 @@ from pdb import set_trace
 console_scripts = []
 for repo, cfg in settings.REPOS.items():
     if cfg['rootpath'] != '':
-        console_scripts.append('%s = gippy.data.%s:main' % (repo, repo.lower()))
+        console_scripts.append('%s = gipif.data.%s:main' % (repo, repo.lower()))
 
 setup(
     name='gipif',
