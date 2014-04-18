@@ -70,7 +70,7 @@ class Tiles(object):
                 tile = dataclass(t, self.date)
                 # Custom filter based on dataclass
                 good = tile.filter(**kwargs)
-                if good:
+                if good and tile.sensor in sensors:
                     self.tiles[t] = tile
                 # check all tiles - should be same sensor - MODIS?
                 self.sensor = tile.sensor
