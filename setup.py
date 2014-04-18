@@ -26,9 +26,11 @@ import os
 from setuptools import setup
 import gipif.settings as settings
 
+from pdb import set_trace
+
 # console scripts
-for repo, cfg in settings['REPO'].items():
-    console_scripts = []
+console_scripts = []
+for repo, cfg in settings.REPOS.items():
     if cfg['rootpath'] != '':
         console_scripts.append('%s = gippy.data.%s:main' % (repo, repo.lower()))
 
