@@ -23,13 +23,14 @@ setup for GIPIF
 """
 
 import os
-import shutil
-from setuptools import setup, Extension
-from setuptools.command.install import install
-from setuptools.command.develop import develop
-from copy import deepcopy
-import numpy
+from setuptools import setup
+import gipif.settings as settings
 
+# console scripts
+for repo, cfg in settings['REPO'].items():
+    console_scripts = []
+    if cfg['rootpath'] != '':
+        console_scripts.append('%s = gippy.data.%s:main' % (repo, repo.lower()))
 
 setup(
     name='gipif',
@@ -44,14 +45,5 @@ setup(
         'https://bitbucket.org/appliedgeosolutions/gippy.git'],
     #install_requires = ['Py6S','shapely==1.2.18'],
     install_requires=['Py6S', 'shapely', 'gippy'],
-    entry_points={
-        'console_scripts': [
-            'landsat = gipif.data.landsat:main',
-            'CDL = gipif.data.cdl:main',
-            'SAR = gip.data.sar:main',
-            'SARannual= gipif.data.sarannual:main',
-            'modis = gipif.data.modis:main',
-            'atmos = gipif.data.atmos:main',
-        ],
-    },
+    entry_points={'console_scripts': console_scripts},
 )

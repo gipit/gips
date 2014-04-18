@@ -2,7 +2,7 @@
 
 DATABASES = {
     'tiles': {
-        'NAME': 'geodata',
+        'NAME': '',
         'USER': '',
         'PASSWORD': '',
         'HOST': '',
