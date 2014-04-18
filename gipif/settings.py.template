@@ -17,25 +17,25 @@ REPOS = {
     # MODIS AOD product (MOD08)
     'atmos': {
         'rootpath': '',
-    }
+    },
     # Crop Data Layer (USDA NASS)
     'cdl': {
         'rootpath': '',
-    }
+    },
     # Landsat 5, 7, 8
     'landsat': {
         'rootpath': '',
-    }
+    },
     # MODIS
     'modis': {
         'rootpath': '',
-    }
+    },
     # PALSAR, JERS-1
     'sar': {
         'rootpath': '',
-    }
+    },
     # PALSAR WideBeam Mosaics
     'sarannual': {
         'rootpath': '',
-    }
+    },
 }

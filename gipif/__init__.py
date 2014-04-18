@@ -18,4 +18,5 @@
 #   along with this program. If not, see <http://www.gnu.org/licenses/>
 ################################################################################
 
-from gippy.GeoVector import GeoVector
+from gipif.GeoVector import GeoVector
+from gipif.core import *
