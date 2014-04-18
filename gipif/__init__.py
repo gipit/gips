@@ -18,5 +18,4 @@
 #   along with this program. If not, see <http://www.gnu.org/licenses/>
 ################################################################################
 
-from gippylib import *
 from gippy.GeoVector import GeoVector
