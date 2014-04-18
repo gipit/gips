@@ -22,14 +22,11 @@ import sys
 import os
 import glob
 import argparse
-import gippy
-from copy import deepcopy
-from gippy.utils import VerboseOut, parse_dates
-
 from datetime import datetime
 import traceback
 
-from pdb import set_trace
+import gippy
+from gipif.utils import VerboseOut, parse_dates
 
 
 class Tiles(object):

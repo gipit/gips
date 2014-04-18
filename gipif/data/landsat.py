@@ -217,7 +217,7 @@ class LandsatData(Data):
         return optdep
 
     def SixS(self):
-        from gippy.utils import atmospheric_model
+        from gipif.utils import atmospheric_model
         from Py6S import SixS, Geometry, AeroProfile, Altitudes, Wavelength, GroundReflectance, AtmosCorr, SixSHelpers
         start = datetime.now()
         VerboseOut('Running atmospheric model (6S)', 3)
