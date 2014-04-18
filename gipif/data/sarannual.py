@@ -28,9 +28,9 @@ from collections import OrderedDict
 from pdb import set_trace
 
 import gippy
-from gippy.data.core import Repository, Asset, Data
-from gippy.data.inventory import DataInventory
-from gippy.utils import VerboseOut, File2List, List2File, RemoveFiles
+from gipif.core import Repository, Asset, Data
+from gipif.inventory import DataInventory
+from gipif.utils import VerboseOut, File2List, List2File, RemoveFiles
 
 
 class SARAnnualRepository(Repository):

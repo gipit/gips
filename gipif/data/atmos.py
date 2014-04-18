@@ -25,13 +25,9 @@ import ftplib
 import numpy
 
 import gippy
-from gippy.data.inventory import DataInventory
-from gippy.data.core import Repository, Asset, Data
-from gippy.utils import File2List, List2File, VerboseOut
-import gippy.settings as settings
-
-import traceback
-from pdb import set_trace
+from gipif.core import Repository, Asset, Data
+from gipif.inventory import DataInventory
+from gipif.utils import File2List, List2File, VerboseOut
 
 
 class AtmosRepository(Repository):

@@ -31,12 +31,9 @@ import math
 import numpy as np
 
 import gippy
-from gippy import GeoImage
-from gippy.data.core import Repository, Asset, Data
-from gippy.data.inventory import DataInventory
-from gippy.utils import File2List, List2File, VerboseOut
-
-from pdb import set_trace
+from gipif.core import Repository, Asset, Data
+from gipif.inventory import DataInventory
+from gipif.utils import File2List, List2File, VerboseOut
 
 
 def binmask(arr, bit):

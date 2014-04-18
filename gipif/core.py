@@ -34,9 +34,9 @@ import ftplib
 from pdb import set_trace
 
 import gippy
-from gippy.utils import VerboseOut, RemoveFiles, File2List, List2File
-from gippy.data.inventory import DataInventory
-import gippy.settings as settings
+from gipif.utils import VerboseOut, RemoveFiles, File2List, List2File
+from gipif.inventory import DataInventory
+import gipif.settings as settings
 
 
 class Repository(object):

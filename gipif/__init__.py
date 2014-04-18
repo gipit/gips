@@ -19,4 +19,4 @@
 ################################################################################
 
 from gipif.GeoVector import GeoVector
-from gipif.core import *
+import gipif.utils as utils

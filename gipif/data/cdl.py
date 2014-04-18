@@ -22,11 +22,9 @@ import os
 import glob
 from datetime import datetime
 
-from gippy.data.core import Repository, Asset, Data
-from gippy.data.inventory import DataInventory
+from gipif.core import Repository, Asset, Data
+from gipif.inventory import DataInventory
 from agspy.utils.table import Table
-
-from pdb import set_trace
 
 
 class CDLRepository(Repository):

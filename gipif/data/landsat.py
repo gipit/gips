@@ -29,14 +29,12 @@ from collections import OrderedDict
 from copy import deepcopy
 
 import gippy
-from gippy.modtran import MODTRAN
-from gippy.data.core import Repository, Asset, Data
-from gippy.data.atmos import AtmosData
-from gippy.data.inventory import DataInventory
-from gippy.utils import VerboseOut, RemoveFiles
+from gipif.core import Repository, Asset, Data
+from gipif.inventory import DataInventory
+from gipif.utils import VerboseOut, RemoveFiles
 
-import traceback
-from pdb import set_trace
+from gipif.data.atmos import AtmosData
+from gipif.data.modtran import MODTRAN
 
 
 class LandsatRepository(Repository):

@@ -23,8 +23,6 @@ import datetime
 import commands
 from gippy.utils import List2File
 
-from pdb import set_trace
-
 
 def atmospheric_model(doy, lat):
     """ Determine atmospheric model
