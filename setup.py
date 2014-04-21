@@ -42,9 +42,9 @@ setup(
     author_email='mhanson@appliedgeosolutions.com',
     packages=['gipif'],
     #py_modules=['gippy.GeoVector', 'gippy.gipit'],
-    dependency_links=[
-        'https://github.com/robintw/Py6S.git'
-        'https://bitbucket.org/appliedgeosolutions/gippy.git'],
+    #dependency_links=[
+    #    'https://github.com/robintw/Py6S.git'
+    #    'https://bitbucket.org/appliedgeosolutions/gippy.git'],
     #install_requires = ['Py6S','shapely==1.2.18'],
     install_requires=['Py6S', 'shapely', 'gippy'],
     entry_points={'console_scripts': console_scripts},
