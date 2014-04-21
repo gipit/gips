@@ -251,8 +251,8 @@ class ModisData(Data):
 
             ########################
             # SNOW/ICE COVER PRODUCT
-            if val[0] == 'snow':
-
+            if val[0] == "snow":
+                VERSION = "1.0"
                 assets = self._products['snow']['assets']
 
                 allsds = []
@@ -404,7 +404,8 @@ class ModisData(Data):
 
             #####################
             # TEMPERATURE PRODUCT
-            if val[0] == 'temp':
+            if val[0] == "temp":
+                VERSION = "1.0"
                 assets = self._products['temp']['assets']
 
                 allsds = []
