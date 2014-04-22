@@ -27,6 +27,7 @@ import traceback
 
 import gippy
 from gipif.utils import VerboseOut, parse_dates
+import gipif.GeoVector
 
 
 class Tiles(object):
@@ -45,7 +46,7 @@ class Tiles(object):
         if tiles is not None:
             self.tile_coverage = dict((t, 1) for t in tiles)
         elif site is not None:
-            self.tile_coverage = self.Repository.vector2tiles(gippy.GeoVector(site), **kwargs)
+            self.tile_coverage = self.Repository.vector2tiles(gipif.GeoVector(site), **kwargs)
         else:
             self.tile_coverage = dict((t, (1, 1)) for t in self.Repository.find_tiles())
         self.date = date
@@ -91,7 +92,7 @@ class Tiles(object):
                 VerboseOut('Processing products for tile %s: %s' % (tileid, ' '.join(toprocess.keys())), 2)
                 self.tiles[tileid].process(toprocess)
 
-    def project(self, res=None, datadir='', mask=None):
+    def project(self, res=None, datadir='', mask=None, nowarp=False):
         """ Create image of final product (reprojected/mosaiced) """
         if datadir == '':
             datadir = self.dataclass.name+'_data'
@@ -119,12 +120,41 @@ class Tiles(object):
                 if not os.path.exists(filename):
                     filenames = [self.tiles[t].products[product] for t in self.tiles]
                     # TODO - cookiecutter should validate pixels in image.  Throw exception if not
-                    imgout = gippy.CookieCutter(filenames, filename, self.site, res[0], res[1])
+                    if nowarp:
+                        imgout = self._mosaic(filenames, filename, self.site)
+                    else:
+                        imgout = gippy.CookieCutter(filenames, filename, self.site, res[0], res[1])
                     imgout = None
                 self.products[product] = filename
             if mask is not None:
                 self._applymask(self.products.values(), self.products[mask])
-        VerboseOut('%s: created project files for %s tiles in %s' % (self.date, len(self.tiles), datetime.now() - start), 3)
+        t = datetime.now() - start
+        VerboseOut('%s: created project files for %s tiles in %s' % (self.date, len(self.tiles), t), 3)
+
+    def _mosaic(self, infiles, outfile, vectorfile):
+        """ Mosaic multple files together, but do not warp """
+        from osgeo import gdal, osr
+        COMMAND = 'gdal_merge.py -o %s -ul_lr %s %s'
+        fp = gdal.Open(infiles[0])
+        crs = osr.SpatialReference()
+        crs.ImportFromWkt(fp.GetProjection())
+        crs = crs.ExportToProj4()
+        with fiona.open(vectorfile, 'r') as source:
+            proj_in = Proj(to_string(source.crs))
+            proj_out = Proj(crs)
+            for row in source:
+                assert row['geometry']['type'] == "Polygon"
+                xs = []
+                ys = []
+                for ring in row['geometry']['coordinates']:
+                    x, y = transform(proj_in, proj_out, *zip(*ring))
+                    xs.extend(x)
+                    ys.extend(y)
+            ullr = "%f %f %f %f" % (min(xs), max(ys), max(xs), min(ys))
+            infiles = " ".join(infiles)
+            command = COMMAND % (outfile, ullr, infiles)
+            result = commands.getstatusoutput(command)
+        return gippy.GeoImage(outfile)
 
     def _applymask(self, filenames, mask):
         mimg = gippy.GeoImage(mask)
@@ -195,7 +225,7 @@ class DataInventory(object):
             for t in tiles:
                 self.tiles[t] = (1, 1)
         elif tiles is None and self.site is not None:
-            self.tiles = Repository.vector2tiles(gippy.GeoVector(self.site), **kwargs)
+            self.tiles = Repository.vector2tiles(gipif.GeoVector(self.site), **kwargs)
 
         self.temporal_extent(dates, days)
 
@@ -397,6 +427,7 @@ class DataInventory(object):
         parser = subparser.add_parser('project', help='Create project', parents=parents, formatter_class=dhf)
         group = parser.add_argument_group('Project options')
         group.add_argument('--res', nargs=2, help='Resolution of output rasters', default=None, type=float)
+        group.add_argument('--nowarp', help='Mosaic, but do not warp to site', default=False, action='store_true')
         group.add_argument('--mask', nargs='?', help='Apply this product to all products', const='acca')
         group.add_argument('--datadir', help='Directory to save project files', default=cls.name+'_data')
         group.add_argument('--format', help='Format for output file', default="GTiff")
@@ -451,7 +482,7 @@ class DataInventory(object):
             elif args.command == 'process':
                 inv.process(overwrite=args.overwrite)
             elif args.command == 'project':
-                inv.project(args.res, datadir=args.datadir, mask=args.mask)
+                inv.project(args.res, datadir=args.datadir, mask=args.mask, nowarp=args.nowarp)
             else:
                 VerboseOut('Command %s not recognized' % cmd)
         except Exception, e:

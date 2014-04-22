@@ -388,11 +388,12 @@ class Asset(object):
                             raise Exception('Unable to make data directory %s' % tpath)
                     try:
                         os.link(os.path.abspath(filename), newfilename)
+                        #shutil.move(os.path.abspath(f),newfilename)
+                        VerboseOut(bname + ' -> ' + newfilename, 2)
+                        numlinks = numlinks + 1
                     except:
                         VerboseOut(traceback.format_exc(), 4)
-                    #shutil.move(os.path.abspath(f),newfilename)
-                    VerboseOut(bname + ' -> ' + newfilename, 2)
-                    numlinks = numlinks + 1
+                        VerboseOut('%s: probem adding to archive' % filename)
             else:
                 VerboseOut('%s already in archive' % filename, 2)
         if otherversions and numlinks == 0:
