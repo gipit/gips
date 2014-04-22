@@ -37,6 +37,7 @@ import gippy
 from gipif.utils import VerboseOut, RemoveFiles, File2List, List2File
 from gipif.inventory import DataInventory
 import gipif.settings as settings
+from gipif.GeoVector import GeoVector
 
 
 class Repository(object):
@@ -126,14 +127,14 @@ class Repository(object):
         fname = os.path.join(cls.vpath(), cls._tiles_vector)
         if os.path.isfile(fname):
             VerboseOut('%s: tiles vector %s' % (cls.__name__, fname), 4)
-            tiles = gippy.GeoVector(fname)
+            tiles = GeoVector(fname)
         else:
             try:
                 VerboseOut('%s: tiles vector %s' % (cls.__name__, cls._tiles_vector), 4)
                 db = settings.DATABASES['tiles']
                 dbstr = ("PG:dbname=%s host=%s port=%s user=%s password=%s" %
                         (db['NAME'], db['HOST'], db['PORT'], db['USER'], db['PASSWORD']))
-                tiles = gippy.GeoVector(dbstr, layer=cls._tiles_vector)
+                tiles = GeoVector(dbstr, layer=cls._tiles_vector)
             except:
                 raise Exception('unable to access %s tiles (file or database)' % cls.__name__)
         return tiles

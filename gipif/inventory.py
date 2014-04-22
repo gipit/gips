@@ -27,7 +27,7 @@ import traceback
 
 import gippy
 from gipif.utils import VerboseOut, parse_dates
-import gipif.GeoVector
+from gipif.GeoVector import GeoVector
 
 
 class Tiles(object):
@@ -46,7 +46,7 @@ class Tiles(object):
         if tiles is not None:
             self.tile_coverage = dict((t, 1) for t in tiles)
         elif site is not None:
-            self.tile_coverage = self.Repository.vector2tiles(gipif.GeoVector(site), **kwargs)
+            self.tile_coverage = self.Repository.vector2tiles(GeoVector(site), **kwargs)
         else:
             self.tile_coverage = dict((t, (1, 1)) for t in self.Repository.find_tiles())
         self.date = date
@@ -225,7 +225,7 @@ class DataInventory(object):
             for t in tiles:
                 self.tiles[t] = (1, 1)
         elif tiles is None and self.site is not None:
-            self.tiles = Repository.vector2tiles(gipif.GeoVector(self.site), **kwargs)
+            self.tiles = Repository.vector2tiles(GeoVector(self.site), **kwargs)
 
         self.temporal_extent(dates, days)
 
