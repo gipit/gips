@@ -569,7 +569,7 @@ class ModisData(Data):
                 imgout.SetColor('Temperature Best Quality', 5)
 
                 for iband, band in enumerate(availbands):
-                    imgout[band].Process(tempbands[iband])
+                    tempbands[iband].Process(imgout[band])
                     # print "imgout[%d].Gain()" % band, imgout[band].Gain()
                     # print "imgout[%d].Offset()" % band, imgout[band].Offset()
                     # print imgout[band].Stats()

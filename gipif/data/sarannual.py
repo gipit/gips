@@ -143,7 +143,7 @@ class SARAnnualData(Data):
                     imgout.SetNoData(-32768)
                     for b in range(0, imgout.NumBands()):
                         imgout.SetColor(img[b].Description(), b+1)
-                        imgout[b].Process(img[b].pow(2).log10() * 10 - 83.0)
+                        (img[b].pow(2).log10() * 10 - 83.0).Process(imgout[b])
                     fname = imgout.Filename()
                     img = None
                     imgout = None

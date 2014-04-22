@@ -348,10 +348,10 @@ class LandsatData(Data):
                     imgout.SetGain(0.1)
                     if toa:
                         for col in visbands:
-                            imgout[col].Process(img[col])
+                            img[col].Process(imgout[col])
                     else:
                         for col in visbands:
-                            imgout[col].Process(((img[col]-atmos[col][1])/atmos[col][0]))
+                            ((img[col]-atmos[col][1])/atmos[col][0]).Process(imgout[col])
                 elif val[0] == 'ref':
                     imgout = gippy.GeoImage(fname, img, gippy.GDT_Int16, len(visbands))
                     for i in range(0, imgout.NumBands()):
@@ -360,10 +360,10 @@ class LandsatData(Data):
                     imgout.SetGain(0.0001)
                     if toa:
                         for col in visbands:
-                            imgout[col].Process(reflimg[col])
+                            reflimg[col].Process(imgout[col])
                     else:
                         for col in visbands:
-                            imgout[col].Process(((img[col]-atmos[col][1])/atmos[col][0]) * (1.0/atmos[col][2]))
+                            (((img[col]-atmos[col][1])/atmos[col][0]) * (1.0/atmos[col][2])).Process(imgout[col])
                 elif val[0] == 'temp':
                     imgout = gippy.GeoImage(fname, img, gippy.GDT_Int16, len(lwbands))
                     for i in range(0, imgout.NumBands()):
@@ -380,7 +380,7 @@ class LandsatData(Data):
                             atmos = MODTRAN(meta[col], self.metadata['datetime'], lat, lon)
                             band = (img[col] - (atmos.output[1] + (1-e) * atmos.output[2])) / (atmos.output[0] * e)
                         band = (((band.pow(-1))*meta[col]['K1']+1).log().pow(-1))*meta[col]['K2'] - 273.15
-                        imgout[col].Process(band)
+                        band.Process(imgout[col])
                 fname = imgout.Filename()
                 imgout = None
                 self.products[key] = fname
