@@ -30,7 +30,7 @@ from gipif.inventory import DataInventory
 from gipif.utils import File2List, List2File, VerboseOut
 
 
-class AtmosRepository(Repository):
+class AODRepository(Repository):
     _rootpath = '/titan/data/atmos'
     _datedir = '%Y%j'
 
@@ -58,8 +58,8 @@ class AtmosRepository(Repository):
         return dates
 
 
-class AtmosAsset(Asset):
-    Repository = AtmosRepository
+class AODAsset(Asset):
+    Repository = AODRepository
 
     # ???? Not specific to MODIS
     _sensors = {
@@ -79,7 +79,7 @@ class AtmosAsset(Asset):
 
     def __init__(self, filename):
         """ Inspect a single file and get some metadata """
-        super(AtmosAsset, self).__init__(filename)
+        super(AODAsset, self).__init__(filename)
 
         bname = os.path.basename(filename)
         self.asset = bname[0:5]
@@ -106,15 +106,15 @@ class AtmosAsset(Asset):
 
     @classmethod
     def archive(cls, path='.', recursive=False, keep=False):
-        assets = super(AtmosAsset, cls).archive(path, recursive, keep)
+        assets = super(AODAsset, cls).archive(path, recursive, keep)
         dates = [a.date for a in assets]
         for date in set(dates):
-            AtmosData.process_aerolta_daily(date.strftime('%j'))
+            AODData.process_aerolta_daily(date.strftime('%j'))
 
 
-class AtmosData(Data):
+class AODData(Data):
     name = 'Globally Gridded Atmospheric Data'
-    Asset = AtmosAsset
+    Asset = AODAsset
 
     _products = {
         'aero': {
@@ -249,4 +249,4 @@ class AtmosData(Data):
 
 
 def main():
-    DataInventory.main(AtmosData)
+    DataInventory.main(AODData)

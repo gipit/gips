@@ -15,7 +15,7 @@ EMAIL = ''
 
 REPOS = {
     # MODIS AOD product (MOD08)
-    'atmos': {
+    'AOD': {
         'rootpath': '',
     },
     # Crop Data Layer (USDA NASS)
