@@ -162,10 +162,19 @@ class ModisAsset(Asset):
         return datafiles
 
     @classmethod
-    def filepattern(cls, asset, tile, date):
+    def _filepattern(cls, asset, tile, date):
         year, month, day = date.timetuple()[:3]
         doy = date.timetuple()[7]
         pattern = ''.join(['(', asset, '.A', str(year), str(doy).zfill(3), '.', tile, '.005.\d{13}.hdf)'])
+        return pattern
+
+
+    @classmethod
+    def _remote_subdirs(cls, asset, tile, date):
+        year, month, day = date.timetuple()[:3]
+        httploc = cls._assets[asset]['url']
+        mainurl = ''.join([httploc, '/', str(year), '.', '%02d' % month, '.', '%02d' % day])
+        return mainurl
 
 
     @classmethod
@@ -180,14 +189,8 @@ class ModisAsset(Asset):
             print "date is too recent"
             return 3
 
-        httploc = cls._assets[asset]['url']
         pattern = cls._filepattern(asset, tile, date)
-
-
-        year, month, day = date.timetuple()[:3]
-        doy = date.timetuple()[7]
-
-        mainurl = ''.join([httploc, '/', str(year), '.', '%02d' % month, '.', '%02d' % day])
+        mainurl = cls._remote_subdirs(asset, tile, date)
 
         VerboseOut('%s: mainurl %s, pattern %s' % (asset, mainurl, pattern), 4)
 
