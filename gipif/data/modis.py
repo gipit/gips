@@ -62,7 +62,6 @@ class ModisRepository(Repository):
         return tile
 
 
-
 class ModisAsset(Asset):
     Repository = ModisRepository
 
@@ -143,9 +142,6 @@ class ModisAsset(Asset):
 
         datafiles = self.datafiles()
 
-        # I don't understand what this is used for
-        # because the asset could be many different things
-        # self.products = {'sds1': datafiles[0]}
 
     def datafiles(self):
 
@@ -166,6 +162,13 @@ class ModisAsset(Asset):
         return datafiles
 
     @classmethod
+    def filepattern(cls, asset, tile, date):
+        year, month, day = date.timetuple()[:3]
+        doy = date.timetuple()[7]
+        pattern = ''.join(['(', asset, '.A', str(year), str(doy).zfill(3), '.', tile, '.005.\d{13}.hdf)'])
+
+
+    @classmethod
     def fetch(cls, asset, tile, date):
         VerboseOut('%s: fetch tile %s for %s' % (asset, tile, date), 3)
 
@@ -178,11 +181,12 @@ class ModisAsset(Asset):
             return 3
 
         httploc = cls._assets[asset]['url']
+        pattern = cls._filepattern(asset, tile, date)
+
 
         year, month, day = date.timetuple()[:3]
         doy = date.timetuple()[7]
 
-        pattern = ''.join(['(', asset, '.A', str(year), str(doy).zfill(3), '.', tile, '.005.\d{13}.hdf)'])
         mainurl = ''.join([httploc, '/', str(year), '.', '%02d' % month, '.', '%02d' % day])
 
         VerboseOut('%s: mainurl %s, pattern %s' % (asset, mainurl, pattern), 4)
@@ -293,6 +297,7 @@ class ModisData(Data):
 
                 meta = {}
                 meta['AVAILABLE_ASSETS'] = str(availassets)
+                meta['VERSION'] = VERSION
 
                 # there are four temperature bands
                 for iband, band in enumerate(availbands):
@@ -454,6 +459,7 @@ class ModisData(Data):
 
                 metanames = {}
                 metanames['AVAILABLE_ASSETS'] = str(availassets)
+                metanames['VERSION'] = VERSION
 
                 # there are four temperature bands
                 for iband, band in enumerate(availbands):
@@ -492,17 +498,17 @@ class ModisData(Data):
 
                     metaname = "NUMBAD_%s_%s" % (dayornight, platform)
                     metaname = metaname.upper()
-                    print "metaname", metaname
+                    # print "metaname", metaname
                     metanames[metaname] = str(numbad)
 
                     metaname = "NUMGOOD_%s_%s" % (dayornight, platform)
                     metaname = metaname.upper()
-                    print "metaname", metaname
+                    # print "metaname", metaname
                     metanames[metaname] = str(numgood)
 
                     metaname = "NUMBEST_%s_%s" % (dayornight, platform)
                     metaname = metaname.upper()
-                    print "metaname", metaname
+                    # print "metaname", metaname
                     metanames[metaname] = str(numbest)
 
                     # overpass time
@@ -513,7 +519,7 @@ class ModisData(Data):
                         hourmin = hour.min()
                         hourmean = hour.mean()
                         hourmax = hour.max()
-                        print "hour.min(), hour.mean(), hour.max()", hour.min(), hour.mean(), hour.max()
+                        # print "hour.min(), hour.mean(), hour.max()", hour.min(), hour.mean(), hour.max()
                     except:
                         hourmean = 0
 
