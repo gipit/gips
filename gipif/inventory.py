@@ -134,6 +134,9 @@ class Tiles(object):
     def _mosaic(self, infiles, outfile, vectorfile):
         """ Mosaic multple files together, but do not warp """
         from osgeo import gdal, osr
+        import fiona
+        from fiona.crs import to_string
+        from pyproj import Proj, transform
         COMMAND = 'gdal_merge.py -o %s -ul_lr %s %s'
         fp = gdal.Open(infiles[0])
         crs = osr.SpatialReference()
