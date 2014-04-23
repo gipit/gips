@@ -20,17 +20,16 @@
 
 Several packages are required for GIPIF
 
-1) First install the UbuntuGIS Repository:
-$ sudo apt-get install python-software-properties
-$ sudo add-apt-repository ppa:ubuntugis/ubuntugis-unstable
-$ sudo apt-get update
+    1) First install the UbuntuGIS Repository:
+    $ sudo apt-get install python-software-properties
+    $ sudo add-apt-repository ppa:ubuntugis/ubuntugis-unstable
+    $ sudo apt-get update
 
-2) Then install the required dependencies
-$ sudo apt-get install python-setuptools python-numpy python-gdal g++ libgdal1-dev gdal-bin libboost-dev-all swig2.0 swig
+    2) Then install the required dependencies
+    $ sudo apt-get install python-setuptools python-numpy python-gdal g++ libgdal1-dev gdal-bin libboost-dev-all swig2.0 swig
 
-3) Then install GIPIF
-$ ./setup.py install
-
+    3) Then install GIPIF
+    $ ./setup.py install
 
 ## GIPIF Development Note
 
