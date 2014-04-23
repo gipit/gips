@@ -379,9 +379,8 @@ class DataInventory(object):
     def get_timeseries(self, product=''):
         """ Read all files as time series """
         # assumes only one sensor row for each date
-        img = self.data[self.dates[0]].open(product=product)
-        for i in range(1, len(self.dates)):
-            img.AddBand(self.data[self.dates[i]][0].open(product=product)[0])
+        filenames = [self.data[date].products[product] for date in self.dates]
+        img = gippy.GeoImage(filenames)
         return img
 
     @staticmethod
