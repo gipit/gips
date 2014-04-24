@@ -247,7 +247,7 @@ class LandsatData(Data):
         #atmos = atmos[atmos.dates[0]].tiles['']
         #aod = atmos.get_point(geo['lat'], geo['lon'])
         #VerboseOut('New AOD = %s' % aod, 4)
-        s.aot550 = aod_old
+        s.aot550 = old_aod
 
         # Other settings
         s.ground_reflectance = GroundReflectance.HomogeneousLambertian(GroundReflectance.GreenVegetation)
