@@ -274,7 +274,7 @@ class DataInventory(object):
                 self.numfiles = self.numfiles + len(dat.tiles)
             except Exception, e:
                 VerboseOut(traceback.format_exc(), 4)
-                VerboseOut('Inventory error %s' % e)
+                #VerboseOut('Inventory error %s' % e)
 
     def temporal_extent(self, dates, days):
         """ Temporal extent (define self.dates and self.days) """
@@ -424,6 +424,7 @@ class DataInventory(object):
         parserp = subparser.add_parser('process', help='Process scenes', parents=parents, formatter_class=dhf)
         group = parserp.add_argument_group('Processing Options')
         group.add_argument('--overwrite', help='Overwrite exiting output file(s)', default=False, action='store_true')
+        group.add_argument('--chunksize', help='Chunk size in MB', default=512.0)
 
         # Project
         parser = subparser.add_parser('project', help='Create project', parents=parents, formatter_class=dhf)
@@ -433,12 +434,11 @@ class DataInventory(object):
         group.add_argument('--mask', nargs='?', help='Apply this product to all products', const='acca')
         group.add_argument('--datadir', help='Directory to save project files', default=cls.name+'_data')
         group.add_argument('--format', help='Format for output file', default="GTiff")
+        group.add_argument('--chunksize', help='Chunk size in MB', default=512.0)
 
         args = parser0.parse_args()
 
         gippy.Options.SetVerbose(args.verbose)
-        # TODO - replace with option
-        gippy.Options.SetChunkSize(128.0)
         if 'format' in args:
             gippy.Options.SetDefaultFormat(args.format)
 
@@ -482,8 +482,10 @@ class DataInventory(object):
             if args.command == 'inventory':
                 inv.printcalendar(args.md, products=args.products)
             elif args.command == 'process':
+                gippy.Options.SetChunkSize(args.chunksize)
                 inv.process(overwrite=args.overwrite)
             elif args.command == 'project':
+                gippy.Options.SetChunkSize(args.chunksize)
                 inv.project(args.res, datadir=args.datadir, mask=args.mask, nowarp=args.nowarp)
             else:
                 VerboseOut('Command %s not recognized' % cmd)
