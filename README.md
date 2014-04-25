@@ -18,7 +18,8 @@
 
 # GIPIF Installation
 
-Several packages are required for GIPIF
+First step is to clone this repository to your local machine if you have not already done so.
+Several packages are required for GIPIF. These notes are for Ubuntu systems.
 
     1) First install the UbuntuGIS Repository:
     $ sudo apt-get install python-software-properties
@@ -30,6 +31,36 @@ Several packages are required for GIPIF
 
     3) Then install GIPIF
     $ ./setup.py install
+
+Some datasets may require 6S to perform atmospheric correction. Follow the instructions here to install 6S
+    1) Download latest version of 6S (6SV1.1) to a working directory from http://6s.ltdri.org
+
+    2) untar 6SV-1.1.tar
+    $ tar xvf 6SV-1.1.tar
+
+    3) Install fortran compiler
+    $ sudo apt-get install gfortran
+
+    3) Edit 6SV1.1/Makefile
+        Replace this line:
+            FC     = g77 $(FFLAGS)
+        with this line:
+            FC      = gfortran -std=legacy -ffixed-line-length-none $(FFLAGS)
+
+To update GIPIF at a later date (will require root privileges
+
+    1) Get latest changes from git
+    $ cd [gipif directory]
+    $ git pull
+
+    2) Run setup
+    $ ./setup.py install
+
+    If there is an error about a bad header, remove the previous GIPIF package
+    $ ls /usr/local/lib/python2.7/dist-packages
+        look for GIPIF package name
+    $ rm -rf /usr/local/lib/python2.7/dist-packages/[GIPIF-package-name]
+        Then go to step 2 again
 
 ## GIPIF Development Note
 
