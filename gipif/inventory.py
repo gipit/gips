@@ -29,6 +29,10 @@ import gippy
 from gipif.utils import VerboseOut, parse_dates
 from gipif.GeoVector import GeoVector
 
+import fiona
+from fiona.crs import to_string
+from pyproj import Proj, transform
+import commands
 
 class Tiles(object):
     """ Collection of tiles for a single date """
@@ -96,7 +100,12 @@ class Tiles(object):
         """ Create image of final product (reprojected/mosaiced) """
         if datadir == '':
             datadir = self.dataclass.name+'_data'
-        self.process()
+
+        try:
+            self.process()
+        except:
+            return None
+
         if not os.path.exists(datadir):
             os.makedirs(datadir)
         datadir = os.path.abspath(datadir)
