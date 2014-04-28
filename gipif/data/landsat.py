@@ -33,7 +33,7 @@ from gipif.core import Repository, Asset, Data
 from gipif.inventory import DataInventory
 from gipif.utils import VerboseOut, RemoveFiles
 
-from gipif.data.atmos import AtmosData
+from gipif.data.aod import AODData
 from gipif.data.modtran import MODTRAN
 
 
@@ -243,11 +243,11 @@ class LandsatData(Data):
         old_aod = self.getaod(self.date, geo['lat'], geo['lon'])
         VerboseOut('Old AOD = %s' % old_aod, 4)
 
-        #atmos = AtmosData.inventory(tile='', dates=self.date.strftime('%Y-%j'), fetch=True, products=['aero'])
+        #atmos = AODData.inventory(tile='', dates=self.date.strftime('%Y-%j'), fetch=True, products=['aero'])
         #atmos = atmos[atmos.dates[0]].tiles['']
         #aod = atmos.get_point(geo['lat'], geo['lon'])
         #VerboseOut('New AOD = %s' % aod, 4)
-        s.aot550 = aod_old
+        s.aot550 = old_aod
 
         # Other settings
         s.ground_reflectance = GroundReflectance.HomogeneousLambertian(GroundReflectance.GreenVegetation)

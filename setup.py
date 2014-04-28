@@ -42,7 +42,7 @@ setup(
     description='Geospatial Image Processing and Inventory Framework',
     author='Matthew Hanson',
     author_email='mhanson@appliedgeosolutions.com',
-    packages=['gipif'],
+    packages=['gipif', 'gipif.data'],
     install_requires=['Py6S', 'shapely', 'gippy'],
     entry_points={'console_scripts': console_scripts},
 )

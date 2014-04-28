@@ -16,46 +16,55 @@
    You should have received a copy of the GNU General Public License
    along with this program. If not, see <http://www.gnu.org/licenses/>
 
-# The GIP
+# GIPIF Installation
 
-**GIP** is a high-performance Geospatial Image Processing library written in
-C++.  It is the back-end for the **gippy** python interface.  In addition
-to interfacing with GIP, *gippy* provides a framework for maintaining spatial data assets.
+First step is to clone this repository to your local machine if you have not already done so.
+Several packages are required for GIPIF. These notes are for Ubuntu systems.
 
-## gippy Development Note
-gippy development utilizes the distutils *setup.py* file for development work
-and the generation of SWIG interfaces to the *GIP* library.
+    1) First install the UbuntuGIS Repository:
+    $ sudo apt-get install python-software-properties
+    $ sudo add-apt-repository ppa:ubuntugis/ubuntugis-unstable
+    $ sudo apt-get update
 
-## GIP Development Note
+    2) Then install the required dependencies
+    $ sudo apt-get install python-setuptools python-numpy python-gdal g++ libgdal1-dev gdal-bin libboost-dev-all swig2.0 swig
 
-For developing GIP, (until integrated into **setup.py**)it is recommended that
-you use a python virtual environment and the _develop_ target in the
-*Makefile*.  This allows multiple users on the same system to independently
-develop the GIP library without collisions.   To maintain consistency with how
-virtualenv works, consider adding the following chunks of code to your activate
-file.
+    3) Then install GIPIF
+    $ ./setup.py install
 
-1) In deactivate function definition:
+Some datasets may require 6S to perform atmospheric correction. Follow the instructions here to install 6S
+    1) Download latest version of 6S (6SV1.1) to a working directory from http://6s.ltdri.org
 
-    if [ -n "$_OLD_LD_LIBRARY_PATH" ] ; then
-        LD_LIBRARY_PATH="$_OLD_LD_LIBRARY_PATH"
-        export LD_LIBRARY_PATH
-        unset _OLD_LD_LIBRARY_PATH
-    fi
+    2) untar 6SV-1.1.tar
+    $ tar xvf 6SV-1.1.tar
 
-2) And anywhere in the activate script but not in the deactivate function
-definition:
+    3) Install fortran compiler
+    $ sudo apt-get install gfortran
 
-    if [ -n "${LD_LIBRARY_PATH}" ] ; then
-       _OLD_LD_LIBRARY_PATH="${LD_LIBRARY_PATH}"
-    fi
-    LD_LIBRARY_PATH=${VIRTUAL_ENV}/lib/:${LD_LIBRARY_PATH}
-    export LD_LIBRARY_PATH
+    3) Edit 6SV1.1/Makefile
+        Replace this line:
+            FC     = g77 $(FFLAGS)
+        with this line:
+            FC      = gfortran -std=legacy -ffixed-line-length-none $(FFLAGS)
 
-    # # for MACOSX
-    # if [ -n "${DYLD_LIBRARY_PATH}" ] ; then
-    #    _OLD_DYLD_FALLBACK_LIBRARY_PATH="${DYLD_FALLBACK_LIBRARY_PATH}"
-    # fi
-    # DYLD_LIBRARY_PATH=${VIRTUAL_ENV}/lib/:${DYLD_LIBRARY_PATH}
-    # export DYLD_LIBRARY_PATH
+To update GIPIF at a later date (will require root privileges
 
+    1) Get latest changes from git
+    $ cd [gipif directory]
+    $ git pull
+
+    2) Run setup
+    $ ./setup.py install
+
+    If there is an error about a bad header, remove the previous GIPIF package
+    $ ls /usr/local/lib/python2.7/dist-packages
+        look for GIPIF package name
+    $ rm -rf /usr/local/lib/python2.7/dist-packages/[GIPIF-package-name]
+        Then go to step 2 again
+
+## GIPIF Development Note
+
+For developing GIPIF, it is recommended that you use a python virtual environment 
+This allows multiple users on the same system to independently develop without 
+collisions. If you are in a virtual environment (ve), install or develop will install
+to the ve instead of the system
