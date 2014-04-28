@@ -434,7 +434,7 @@ class DataInventory(object):
         group.add_argument('--mask', nargs='?', help='Apply this product to all products', const='acca')
         group.add_argument('--datadir', help='Directory to save project files', default=cls.name+'_data')
         group.add_argument('--format', help='Format for output file', default="GTiff")
-        group.add_argument('--chunksize', help='Chunk size in MB', default=512.0)
+        group.add_argument('--chunksize', help='Chunk size in MB', type=float, default=512.0)
 
         args = parser0.parse_args()
 
