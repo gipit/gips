@@ -27,6 +27,7 @@ import shutil
 import numpy
 from collections import OrderedDict
 from copy import deepcopy
+import traceback
 
 import gippy
 from gipif.core import Repository, Asset, Data
