@@ -147,7 +147,7 @@ class LandsatData(Data):
         # 'rgb': 'RGB image for viewing (quick processing)',
         'rad':  {'description': 'Surface-leaving radiance',  'args': '?'},
         'ref':  {'description': 'Surface reflectance', 'args': '?'},
-        'temp': {'description': 'Apparent temperature', 'args': '?'},
+        'temp': {'description': 'Brightness (apparent) temperature', 'toa': True},
         'acca': {'description': 'Automated Cloud Cover Assesment', 'args': '*', 'toa': True},
         'fmask': {'description': 'Fmask cloud cover', 'args': '*', 'toa': True},
         #'Indices': {
@@ -371,15 +371,16 @@ class LandsatData(Data):
                         imgout.SetColor(lwbands[i], i+1)
                     imgout.SetNoData(-32768)
                     imgout.SetGain(0.1)
-                    e = 0.95
                     for col in lwbands:
-                        if toa:
-                            band = img[col]
-                        else:
-                            lat = self.metadata['geometry']['lat']
-                            lon = self.metadata['geometry']['lon']
-                            atmos = MODTRAN(meta[col], self.metadata['datetime'], lat, lon)
-                            band = (img[col] - (atmos.output[1] + (1-e) * atmos.output[2])) / (atmos.output[0] * e)
+                        band = img[col]
+                        #if toa:
+                        #    band = img[col]
+                        #else:
+                        #    lat = self.metadata['geometry']['lat']
+                        #    lon = self.metadata['geometry']['lon']
+                        #    atmos = MODTRAN(meta[col], self.metadata['datetime'], lat, lon)
+                        #    e = 0.95
+                        #    band = (img[col] - (atmos.output[1] + (1-e) * atmos.output[2])) / (atmos.output[0] * e)
                         band = (((band.pow(-1))*meta[col]['K1']+1).log().pow(-1))*meta[col]['K2'] - 273.15
                         band.Process(imgout[col])
                 fname = imgout.Filename()
