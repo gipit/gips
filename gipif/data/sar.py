@@ -239,6 +239,9 @@ class SARData(Data):
         ('linci', {
             'description': 'Incident angles',
         }),
+        ('date', {
+            'description': 'Day of year array',
+        }),
     ])
     _groups = {
         'Standard': _products.keys(),
@@ -286,6 +289,11 @@ class SARData(Data):
                 os.rename(datafiles['linci'], fname)
                 os.rename(datafiles['linci']+'.hdr', fname+'.hdr')
                 self.products['linci'] = fname
+            if val[0] == 'date':
+                # Note the date product DOES NOT mask by date
+                os.rename(datafiles['date'], fname)
+                os.rename(datafiles['date']+'.hdr', fname+'.hdr')
+                self.products['date'] = fname
 
         # Remove unused files
         # TODO - checking key rather than val[0] (the full product suffix)
