@@ -31,7 +31,6 @@ from shapely.geometry import shape
 import tarfile
 import traceback
 import ftplib
-from pdb import set_trace
 
 import gippy
 from gipif.utils import VerboseOut, RemoveFiles, File2List, List2File
