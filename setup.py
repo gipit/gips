@@ -38,7 +38,7 @@ for repo, cfg in settings.REPOS.items():
 
 setup(
     name='gipif',
-    version='1.0',
+    version='0.6.0',
     description='Geospatial Image Processing and Inventory Framework',
     author='Matthew Hanson',
     author_email='mhanson@appliedgeosolutions.com',
