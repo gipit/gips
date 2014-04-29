@@ -441,9 +441,9 @@ class DataInventory(object):
         # Project
         parser = subparser.add_parser('project', help='Create project', parents=parents, formatter_class=dhf)
         group = parser.add_argument_group('Project options')
-        group.add_argument('--res', nargs=2, help='Resolution of output rasters', default=None, type=float)
-        group.add_argument('--nowarp', help='Mosaic, but do not warp to site', default=False, action='store_true')
-        group.add_argument('--mask', nargs='?', help='Apply this product to all products', const='acca')
+        group.add_argument('--nowarp', help='Mosaic, but do not warp', default=False, action='store_true')
+        group.add_argument('--res', nargs=2, help='Resolution of (warped) output rasters', default=None, type=float)
+        group.add_argument('--mask', nargs='?', help='Apply this product to all (warped) products', const='acca')
         group.add_argument('--datadir', help='Directory to save project files', default=cls.name+'_data')
         group.add_argument('--format', help='Format for output file', default="GTiff")
         group.add_argument('--chunksize', help='Chunk size in MB', type=float, default=512.0)
