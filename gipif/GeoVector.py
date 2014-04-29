@@ -18,40 +18,20 @@
 #   along with this program. If not, see <http://www.gnu.org/licenses/>
 ################################################################################
 
+import os
 import sys
 import ogr
 import osr
 from shapely.wkb import loads
 from shapely.geometry import Point
-from datetime import datetime, date, time
+import datetime
 import tempfile
-
-ogr.UseExceptions()
-
-
-def intersection(GeoVector1, GeoVector2):
-    geom1 = GeoVector1.union()
-    ogrgeom = ogr.CreateGeometryFromWkb(geom1.wkb)
-    print "Site Area = ", geom1.area
-    GeoVector2.layer.SetSpatialFilter(ogrgeom)
-    GeoVector2.layer.ResetReading()
-    feat = GeoVector2.layer.GetNextFeature()
-    fldindex = feat.GetFieldIndex('pr')
-    dict = {}  # 'total':geom1.area}
-    while feat is not None:
-        geom2 = loads(feat.GetGeometryRef().ExportToWkb())
-        area = geom1.intersection(geom2).area
-        if area != 0:
-            dict[feat.GetField(fldindex)] = area/geom1.area
-        feat = GeoVector2.layer.GetNextFeature()
-    return dict
-    #tmpdir = tempfile.mkdtemp()
-    #vout = NewShapefile("%s/intersection.shp" % tmpdir, srs=GeoVector1.get_proj())
-    #GeoVector1.layer.Intersection(GeoVector2.layer, vout.layer)
-    #return vout
+import commands
+#ogr.UseExceptions()
 
 
-def transform_point(point, source="WGS84", target="WGS84"):
+# TODO - are both transform_point and transform_shape needed?
+def transform_point(point, source, target):
     """ convert a single point (x, y) from one coordinate system to another """
     s_srs = osr.SpatialReference()
     s_srs.SetFromUserInput(source)
@@ -63,175 +43,110 @@ def transform_point(point, source="WGS84", target="WGS84"):
     return newx, newy
 
 
-def get_ogr_type(value):
-    """ map OGR types to python types """
-    lookup = {str: ogr.OFTString, float: ogr.OFTReal, int: ogr.OFTInteger,
-              datetime: ogr.OFTDateTime, date: ogr.OFTDate, time: ogr.OFTTime}
-    # 4, 2, 0, 11, 9, 10
-    if type(value) is type:
-        return lookup[value]
-    else:
-        return lookup[type(value)]
-
-
-def get_column_type(col):
-    """ detect best python type to use for column """
-    for i, item in enumerate(col):
-        item = retype(item)
-        if i == 0:
-            coltype = type(item)
-        newtype = type(item)
-        if coltype is not newtype:
-            coltype = getrighttype(newtype, coltype)
-    return coltype
-
-
-def getrighttype(newtype, oldtype):
-    """ define compatible types """
-    if newtype is str or oldtype is str:
-        return str
-    if newtype is int and oldtype is float:
-        return float
-    if newtype is float and oldtype is int:
-        return float
-    if newtype is datetime and oldtype is not datetime:
-        return str
-    if newtype is not datetime and oldtype is datetime:
-        return str
-    if newtype is date and oldtype is not date:
-        return str
-    if newtype is not date and oldtype is date:
-        return str
-    if newtype is time and oldtype is not time:
-        return str
-    if newtype is not time and oldtype is time:
-        return str
-
-
-def retype(arg, datestr='%Y-%m-%d'):
-    """ attempt to recast a string as int, float, or datetime """
-    charstr = str(arg).strip()
-    try:
-        value = int(arg)
-    except:
-        try:
-            value = float(arg)
-        except:
-            try:
-                value = datetime.strptime(arg, datestr)
-            except:
-                value = arg
-    return value
-
-
-def polycontainspoints(shapefile, pointfile):
-    """
-    Take comma-delimited lon,lat points from a pointfile and test each one for membership
-    within the polygon specified by the shapefile.
-    """
-    from shapely.wkb import loads
-    from shapely.geometry import Point
-    # Open the shapefile
-    source = ogr.Open(shapefile)
-    # Extract the first layer, assume it is the only one
-    layer = source.GetLayer(0)
-    # Get the first feature, assume it is the only one
-    feature = layer.GetNextFeature()
-    # Convert the OGR polygon into a Shapely polygon using WKB (Well-Known Binary) format
-    polygon = loads(feature.GetGeometryRef().ExportToWkb())
-    # Read the lon,lat points from the file
-    lonlats = open(pointfile, "r").readlines()
-    # Initialize the result array
-    result = []
-    # Loop over the points, there's a faster way to do this, see Shapely manual section 5.1.1
-    for lonlat in lonlats:
-        lonlat = lonlat.split(",")
-        lon, lat = [float(ll) for ll in lonlat]
-        point = Point(lon, lat)
-        within = polygon.contains(point)
-        result.append((lon, lat, within))
-    # Give back the result
-    return result
+def transform_shape(shape, source, target):
+    """ Convert a shapely shape to another SRS """
+    srs_in = osr.SpatialReference()
+    srs_out = osr.SpatialReference()
+    srs_in.ImportFromWkt(source)
+    srs_out.ImportFromWkt(target)
+    trans = osr.CoordinateTransformation(srs_in, srs_out)
+    ogrgeom = ogr.CreateGeometryFromWkb(shape.wkb)
+    ogrgeom.Transform(trans)
+    return loads(ogrgeom.ExportToWkb())
 
 
 class GeoVector(object):
+    """ A GeoVector object representing shapefile or PostGIS data layer """
+
+    @property
+    def name(self):
+        return self.vector.GetName()
+
+    @property
+    def layer_name(self):
+        return self.layer.GetName()
+
+    @property
+    def num_features(self):
+        return self.layer.GetFeatureCount()
+
+    @property
+    def extent(self):
+        ext = self.layer.GetExtent()
+        return [ext[0], ext[2], ext[1], ext[3]]
+
+    def proj(self):  # , format='Wkt'):
+        format = 'Wkt'
+        spatial_reference = self.layer.GetSpatialRef()
+        return eval('spatial_reference.ExportTo%s()' % format)
+
+    def identify(self, lon, lat):
+        """ get information about a point """
+        point = Point(lon, lat)
+        for fid in self.get_fids():
+            feature = self.get_geom(fid)
+            if feature.contains(point):
+                return self.get_feature(fid)
+        return None
+
     def __init__(self, filename, layer=''):
-        self.shape = ogr.Open(filename)
-        if not self.shape:
+        """ Open an existing vector file """
+        self.filename = filename
+        self.vector = ogr.Open(filename)
+        if not self.vector:
             raise Exception("OGR can't open %s" % filename)
-        self.nlayers = self.shape.GetLayerCount()
-        self.name = self.shape.GetName()
+
         # typical case is that shapefiles have one layer
         if layer == '':
-            self.layer = self.shape.GetLayer(0)
+            self.layer = self.vector.GetLayer(0)
         else:
-            self.layer = self.shape.GetLayerByName(layer)
-        self.layername = self.layer.GetName()
-        self.nfeatures = self.layer.GetFeatureCount()
-        self.proj_wkt = self.get_proj('Wkt')
+            self.layer = self.vector.GetLayerByName(layer)
+
+        # get list of attributes
         layer_defn = self.layer.GetLayerDefn()
         self.field_names = []
         for i in range(layer_defn.GetFieldCount()):
             self.field_names.append(layer_defn.GetFieldDefn(i).GetName())
-        self.extent = self.layer.GetExtent()
-
-    def get_proj(self, format='Wkt'):
-        spatial_reference = self.layer.GetSpatialRef()
-        export_function = eval('spatial_reference.ExportTo'+format)
-        return export_function()
-
-    def copy(self, new_name='new_name'):
-        """ make a copy of the shapefile """
-        return NewShapefile(new_name, layer=self.layer)
-
-    def add_column(self, val_column, col_name, datatype=str):
-        """ append data to attribute table """
-        # TODO: FIX
-        dtype = get_column_type(val_column[col_name])
-        ogr_dtype = get_ogr_type(dtype)
-        self.layer.CreateField(ogr.FieldDefn(col_name, ogr_dtype))
-        for ifeature in range(self.nfeatures):
-            feature = self.layer.GetFeature(ifeature)
-            self.layer.DeleteFeature(ifeature)
-            feature.SetField(col_name, val_column[ifeature])
-            self.layer.CreateFeature(feature)
-        return None
 
     def union(self):
-        """ Compute the union of all geometries in layer """
+        """ Compute the union of all geometries in layer and return Shapely object """
         from shapely.ops import unary_union
         shapes = []
-        for i in range(self.nfeatures):
+        for i in range(self.num_features):
             feat = self.layer.GetFeature(i)
             shapes.append(loads(feat.GetGeometryRef().ExportToWkb()))
         return unary_union(shapes)
 
-    def join(self, val_columns, joinkey, outpath):
-        """ create additional attributes based on external data """
-        joincol = val_columns.pop(joinkey)
-        colnames = val_columns.keys()
-        newshp = NewShapefile(outpath, layer=self.layer)
-        for colname in colnames:
-            dtype = get_column_type(val_columns[colname])
-            ogr_dtype = get_ogr_type(dtype)
-            newshp.layer.CreateField(ogr.FieldDefn(colname, ogr_dtype))
-        nfeatures = newshp.layer.GetFeatureCount()
-        for ifeature in range(nfeatures):
-            feature = newshp.layer.GetFeature(ifeature)
-            joinloc = feature.GetFieldIndex(joinkey)
-            joinval = feature.GetField(joinloc)
-            if joinval is None:
-                continue
-            joinidx = joincol.index(joinval)
-            # note val_columns is a dictionary
-            for colname, val_column in val_columns.items():
-                feature.SetField(colname, val_column[joinidx])
-            newshp.layer.DeleteFeature(ifeature)
-            newshp.layer.CreateFeature(feature)
-            feature = None
-        return None
+    def transform(self, srs, filename=''):
+        """ Transform to another SRS and return """
+        bname = os.path.splitext(os.path.basename(self.filename))[0]
+        td = tempfile.mkdtemp()
+        if filename == '':
+            filename = os.path.join(td, bname+'_warped.shp')
+        prjfile = os.path.join(td, bname+'.prj')
+        f = open(prjfile, 'w')
+        f.write(srs)
+        f.close()
+        cmd = 'ogr2ogr %s %s -t_srs %s' % (filename, self.filename, prjfile)
+        result = commands.getstatusoutput(cmd)
+        return GeoVector(filename)
 
-    def feature_attributes(self, fid):
+    def get_fids(self):
+        """ Return list of feature IDs """
+        feature_list = []
+        for ifeature in range(self.num_features):
+            feature = self.layer.GetFeature(ifeature)
+            fid = feature.GetFID()
+            assert fid == ifeature
+            feature_list.append(fid)
+        return feature_list
+
+    def get_geom(self, fid):
+        """ Get shapely geometry for specified fid """
+        feature = self.layer.GetFeature(fid)
+        return loads(feature.GetGeometryRef().ExportToWkb())
+
+    def get_feature(self, fid):
         """ get all the attributes for a specified feature (get a row) """
         feature = self.layer.GetFeature(fid)
         result = {}
@@ -240,10 +155,16 @@ class GeoVector(object):
             result[fieldname] = feature.GetField(field_index)
         return result
 
-    def get_geom(self, fid):
-        """ Get shapely geometry for specified fid """
-        feature = self.layer.GetFeature(fid)
-        return loads(feature.GetGeometryRef().ExportToWkb())
+    def get_attributes(self, fieldname):
+        """ get an attribute for all features (get a column) """
+        column = []
+        for ifeature in range(self.num_features):
+            feature = self.layer.GetFeature(ifeature)
+            fid = feature.GetFID()
+            assert fid == ifeature
+            field_index = feature.GetFieldIndex(fieldname)
+            column.append(feature.GetField(field_index))
+        return column
 
     def get_attribute(self, fid, fieldname):
         """ get an attribute for a specified feature and column """
@@ -252,25 +173,14 @@ class GeoVector(object):
         result = feature.GetField(field_index)
         return result
 
-    def attribute_column(self, field_name):
-        """ get an attribute for all features (get a column) """
-        column = []
-        for ifeature in range(self.nfeatures):
-            feature = self.layer.GetFeature(ifeature)
-            fid = feature.GetFID()
-            assert fid == ifeature
-            field_index = feature.GetFieldIndex(field_name)
-            column.append(feature.GetField(field_index))
-        return column
-
-    def extract_data(self, as_numpy=False):
+    def get_data(self, as_numpy=False):
         """ get all data as a table """
         assert '_x' not in self.field_names
         assert '_y' not in self.field_names
         result = {'_x': [], '_y': []}
         for field_name in self.field_names:
             result[field_name] = []
-        for ifeature in range(self.nfeatures):
+        for ifeature in range(self.num_features):
             feature = self.layer.GetFeature(ifeature)
             fid = feature.GetFID()
             assert fid == ifeature
@@ -298,9 +208,9 @@ class GeoVector(object):
                 result[k] = np.array(v)
         return result
 
-    def feature_extent(self, fid, t_srs=None, pad=0, order='xyxy'):
+    # TODO - validate these next two functions
+    def feature_extent(self, fid, srs=None, pad=0):
         """ calculate geographic extent of a feature """
-        assert order in ('xxyy', 'xyxy')
         feature = self.layer.GetFeature(fid)
         geom = feature.GetGeometryRef()
         ring = geom.GetGeometryRef(0)
@@ -308,8 +218,8 @@ class GeoVector(object):
         xmin, xmax, ymin, ymax = [9.e99, -9.e99, 9.e99, -9.e99]
         for ipoint in xrange(npoints):
             xpt, ypt, zpt = ring.GetPoint(ipoint)
-            if t_srs:
-                xpt, ypt = transform_point((xpt, ypt), self.proj_wkt, t_srs)
+            if srs:
+                xpt, ypt = transform_point((xpt, ypt), self.proj_wkt, srs)
             if xpt < xmin:
                 xmin = xpt
             if ypt < ymin:
@@ -318,17 +228,9 @@ class GeoVector(object):
                 xmax = xpt
             if ypt > ymax:
                 ymax = ypt
-        if pad:
-            xmin -= pad*(xmax - xmin)
-            xmax += pad*(xmax - xmin)
-            ymin -= pad*(ymax - ymin)
-            ymax += pad*(ymax - ymin)
-        if order == 'xyxy':
-            return xmin, ymin, xmax, ymax
-        else:
-            return xmin, xmax, ymin, ymax
+        return xmin, ymin, xmax, ymax
 
-    def feature_centroid(self, fid, t_srs=None):
+    def feature_centroid(self, fid, srs=None):
         """ calculate centroid of a feature """
         feature = self.layer.GetFeature(fid)
         geom = feature.GetGeometryRef()
@@ -347,126 +249,214 @@ class GeoVector(object):
                 ymax = ypt
         xpt = (xmax + xmin)/2.
         ypt = (ymax + ymin)/2.
-        if t_srs:
-            xpt, ypt = transform_point((xpt, ypt), self.proj_wkt, t_srs)
+        if srs:
+            xpt, ypt = transform_point((xpt, ypt), self.proj_wkt, srs)
         return xpt, ypt
 
-    def feature_vertices(self, fid, t_srs=None):
-        feature = self.layer.GetFeature(fid)
-
-        geom = feature.GetGeometryRef()
-        npoints = geom.GetGeometryCount()
-
-        for ipoint in xrange(npoints):
-            ring = geom.GetGeometryRef(ipoint)
-            #print ring.ExportToJson()
-            coords = eval(ring.ExportToJson())['coordinates'][0]
-            print len(coords)
-
-        sys.exit()
-
+    def polycontainspoints(self, shapefile, pointfile):
         """
-        pts = []
-        for ipoint in xrange(npoints):
-            xpt, ypt, zpt = ring.GetPoint(ipoint)
-            if t_srs:
-                xpt, ypt = transform_point((xpt, ypt), self.proj_wkt, t_srs)
-            pts.append((xpt, ypt))
-        return pts
+        Take comma-delimited lon,lat points from a pointfile and test each one for membership
+        within the polygon specified by the shapefile.
         """
+        from shapely.wkb import loads
+        from shapely.geometry import Point
+        # Open the shapefile
+        source = ogr.Open(shapefile)
+        # Extract the first layer, assume it is the only one
+        layer = source.GetLayer(0)
+        # Get the first feature, assume it is the only one
+        feature = layer.GetNextFeature()
+        # Convert the OGR polygon into a Shapely polygon using WKB (Well-Known Binary) format
+        polygon = loads(feature.GetGeometryRef().ExportToWkb())
+        # Read the lon,lat points from the file
+        lonlats = open(pointfile, "r").readlines()
+        # Initialize the result array
+        result = []
+        # Loop over the points, there's a faster way to do this, see Shapely manual section 5.1.1
+        for lonlat in lonlats:
+            lonlat = lonlat.split(",")
+            lon, lat = [float(ll) for ll in lonlat]
+            point = Point(lon, lat)
+            within = polygon.contains(point)
+            result.append((lon, lat, within))
+        # Give back the result
+        return result
 
-    def identify(self, lon, lat):
-        """ get information about a point """
-        point = Point(lon, lat)
-        feat_info = None
-        for ifeature in range(self.nfeatures):
+    # TODO - refactor below methods. clean up data type functions
+    def add_attribute(self, val_column, col_name, datatype=str):
+        """ Add colum data to attribute table """
+        # TODO: FIX
+        dtype = get_column_type(val_column[col_name])
+        ogr_dtype = get_ogr_type(dtype)
+        self.layer.CreateField(ogr.FieldDefn(col_name, ogr_dtype))
+        for ifeature in range(self.num_features):
             feature = self.layer.GetFeature(ifeature)
-            fid = feature.GetFID()
-            assert fid == ifeature
-            # convert the OGR polygon into a Shapely polygon using WKB
-            polygon = loads(feature.GetGeometryRef().ExportToWkb())
-            if polygon.contains(point):
-                feat_info = self.feature_attributes(fid)
-                break
-        return feat_info
+            self.layer.DeleteFeature(ifeature)
+            feature.SetField(col_name, val_column[ifeature])
+            self.layer.CreateFeature(feature)
+        return None
 
-    def get_fids(self):
-        """ extract IDs from shape file """
-        feature_list = []
-        for ifeature in range(self.nfeatures):
-            feature = self.layer.GetFeature(ifeature)
-            fid = feature.GetFID()
-            assert fid == ifeature
-            feature_list.append(fid)
-        self.layer = self.shape.GetLayer(0)
-        return feature_list
+    def join(self, val_columns, joinkey, outpath):
+        """ create additional attributes based on external data """
+        joincol = val_columns.pop(joinkey)
+        colnames = val_columns.keys()
+        newshp = NewShapefile(outpath, layer=self.layer)
+        for colname in colnames:
+            dtype = get_column_type(val_columns[colname])
+            ogr_dtype = get_ogr_type(dtype)
+            newshp.layer.CreateField(ogr.FieldDefn(colname, ogr_dtype))
+        nfeatures = newshp.layer.GetFeatureCount()
+        for ifeature in range(nfeatures):
+            feature = newshp.layer.GetFeature(ifeature)
+            joinloc = feature.GetFieldIndex(joinkey)
+            joinval = feature.GetField(joinloc)
+            if joinval is None:
+                continue
+            joinidx = joincol.index(joinval)
+            # note val_columns is a dictionary
+            for colname, val_column in val_columns.items():
+                feature.SetField(colname, val_column[joinidx])
+            newshp.layer.DeleteFeature(ifeature)
+            newshp.layer.CreateFeature(feature)
+            feature = None
+        return None
 
-    def features(self):
-        for ifeature in range(self.nfeatures):
-            feature = self.layer.GetFeature(ifeature)
-            fid = feature.GetFID()
-            assert fid == ifeature
-            yield fid, feature
-
-
-class NewShapefile(object):
-    def __init__(self, outpath, srs=None, layer=None, data=None):
-        import os
-        # only specify one of layer or srs
-        assert bool(layer) ^ bool(srs)
+    # TODO - refactor below classmethods, provide factory functions for points, lines, polys
+    @classmethod
+    def NewShapeFile(cls, filename, srs=None):
+        """ Create new polygon shapefile """
         drv = ogr.GetDriverByName('ESRI Shapefile')
+        if os.path.exists(filename):
+            os.remove(filename)
+        vector = drv.CreateDataSource(filename)
+        proj = osr.SpatialReference()
+        proj.SetFromUserInput(srs)
+        layer = vector.CreateLayer(vector.GetName(), geom_type=ogr.wkbPolygon, srs=self.proj)
+        vector = None
+        return GeoVector(filename)
+
+    @classmethod
+    def NewShapeFile_point(cls, outpath, data, proj='EPSG:4326', lonkey='x', latkey='y', maxchar=80):
+        """ Create new point shapefile """
         if os.path.exists(outpath):
             os.remove(outpath)
-        self.shape = drv.CreateDataSource(outpath)
-        self.name = self.shape.GetName()
-        if not layer:
-            self.proj = osr.SpatialReference()
-            self.proj.SetFromUserInput(srs)
-            self.layer = self.shape.CreateLayer(self.name, geom_type=ogr.wkbPolygon, srs=self.proj)
-        else:
-            self.shape.CopyLayer(layer, self.name)
-            self.layer = self.shape.GetLayer(0)
-
-
-def write_pt_shpfile(outpath, data, proj='EPSG:4326', lonkey='x', latkey='y', maxchar=80):
-    """ create and output a new point shapefile """
-    import os
-    if os.path.exists(outpath):
-        os.remove(outpath)
-    drv = ogr.GetDriverByName('ESRI Shapefile')
-    shape = drv.CreateDataSource(outpath)
-    srs = osr.SpatialReference()
-    srs.SetFromUserInput(proj)
-    name = os.path.splitext(os.path.split(outpath)[1])[0]
-    layer = shape.CreateLayer(name, geom_type=ogr.wkbPoint, srs=srs)
-    colnames = data.keys()
-    keys = data.keys()
-    for i, colname in enumerate(colnames):
-        colnames[i] = colname[:10]
-    nfeatures = len(data[keys[0]])
-    for i, key in enumerate(keys):
-        if key in (lonkey, latkey):
-            continue
-        dtype = get_column_type(data[key])
-        ogr_dtype = get_ogr_type(dtype)
-        field_def = ogr.FieldDefn(colnames[i], ogr_dtype)
-        if ogr_dtype == ogr.OFTString:
-            field_def.SetWidth(maxchar)
-        layer.CreateField(field_def)
-    feature = ogr.Feature(feature_def=layer.GetLayerDefn())
-    geom = ogr.Geometry(type=ogr.wkbPoint)
-    for ifeature in range(nfeatures):
-        try:
-            x = data[lonkey][ifeature]
-            y = data[latkey][ifeature]
-            geom.SetPoint(0, float(x), float(y))
-        except:
-            print "skipping feature", ifeature, x, y
-            continue
-        feature.SetGeometry(geom)
-        feature.SetFID(ifeature)
+        drv = ogr.GetDriverByName('ESRI Shapefile')
+        shape = drv.CreateDataSource(outpath)
+        srs = osr.SpatialReference()
+        srs.SetFromUserInput(proj)
+        name = os.path.splitext(os.path.split(outpath)[1])[0]
+        layer = shape.CreateLayer(name, geom_type=ogr.wkbPoint, srs=srs)
+        colnames = data.keys()
+        keys = data.keys()
+        for i, colname in enumerate(colnames):
+            colnames[i] = colname[:10]
+        nfeatures = len(data[keys[0]])
         for i, key in enumerate(keys):
             if key in (lonkey, latkey):
                 continue
-            feature.SetField(colnames[i], data[key][ifeature])
-        layer.CreateFeature(feature)
+            dtype = get_column_type(data[key])
+            ogr_dtype = get_ogr_type(dtype)
+            field_def = ogr.FieldDefn(colnames[i], ogr_dtype)
+            if ogr_dtype == ogr.OFTString:
+                field_def.SetWidth(maxchar)
+            layer.CreateField(field_def)
+        feature = ogr.Feature(feature_def=layer.GetLayerDefn())
+        geom = ogr.Geometry(type=ogr.wkbPoint)
+        for ifeature in range(nfeatures):
+            try:
+                x = data[lonkey][ifeature]
+                y = data[latkey][ifeature]
+                geom.SetPoint(0, float(x), float(y))
+            except:
+                print "skipping feature", ifeature, x, y
+                continue
+            feature.SetGeometry(geom)
+            feature.SetFID(ifeature)
+            for i, key in enumerate(keys):
+                if key in (lonkey, latkey):
+                    continue
+                feature.SetField(colnames[i], data[key][ifeature])
+            layer.CreateFeature(feature)
+
+
+def get_column_type(col):
+    """ detect best python type to use for column """
+    for i, item in enumerate(col):
+        item = retype(item)
+        if i == 0:
+            coltype = type(item)
+        newtype = type(item)
+        if coltype is not newtype:
+            coltype = getrighttype(newtype, coltype)
+    return coltype
+
+
+def get_ogr_type(value):
+    """ map OGR types to python types """
+    lookup = {str: ogr.OFTString, float: ogr.OFTReal, int: ogr.OFTInteger,
+              datetime: ogr.OFTDateTime, date: ogr.OFTDate, time: ogr.OFTTime}
+    # 4, 2, 0, 11, 9, 10
+    if type(value) is type:
+        return lookup[value]
+    else:
+        return lookup[type(value)]
+
+
+def getrighttype(newtype, oldtype):
+    """ define compatible types """
+    if newtype is str or oldtype is str:
+        return str
+    if newtype is int and oldtype is float:
+        return float
+    if newtype is float and oldtype is int:
+        return float
+    if newtype is datetime.datetime and oldtype is not datetime.datetime:
+        return str
+    if newtype is not datetime.datetime and oldtype is datetime.datetime:
+        return str
+    if newtype is datetime.date and oldtype is not datetime.date:
+        return str
+    if newtype is not datetime.date and oldtype is datetime.date:
+        return str
+    if newtype is datetime.time and oldtype is not datetime.time:
+        return str
+    if newtype is not datetime.time and oldtype is datetime.time:
+        return str
+
+
+def retype(arg, datestr='%Y-%m-%d'):
+    """ attempt to recast a string as int, float, or datetime """
+    charstr = str(arg).strip()
+    try:
+        value = int(arg)
+    except:
+        try:
+            value = float(arg)
+        except:
+            try:
+                value = datetime.datetime.strptime(arg, datestr)
+            except:
+                value = arg
+    return value
+
+"""
+def intersection(GeoVector1, GeoVector2):
+    geom1 = GeoVector1.union()
+    ogrgeom = ogr.CreateGeometryFromWkb(geom1.wkb)
+    GeoVector2.layer.SetSpatialFilter(ogrgeom)
+    GeoVector2.layer.ResetReading()
+    feat = GeoVector2.layer.GetNextFeature()
+    fldindex = feat.GetFieldIndex('pr')
+    dict = {}  # 'total':geom1.area}
+    while feat is not None:
+        geom2 = loads(feat.GetGeometryRef().ExportToWkb())
+        area = geom1.intersection(geom2).area
+        if area != 0:
+            dict[feat.GetField(fldindex)] = area/geom1.area
+        feat = GeoVector2.layer.GetNextFeature()
+    return dict
+    #tmpdir = tempfile.mkdtemp()
+    #vout = NewShapefile("%s/intersection.shp" % tmpdir, srs=GeoVector1.get_proj())
+    #GeoVector1.layer.Intersection(GeoVector2.layer, vout.layer)
+    #return vout
+"""
