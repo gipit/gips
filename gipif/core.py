@@ -27,7 +27,6 @@ import ogr
 from datetime import datetime
 import glob
 from shapely.wkb import loads
-from shapely.geometry import shape
 import tarfile
 import traceback
 import ftplib
@@ -154,7 +153,6 @@ class Repository(object):
         tiles = {}
         tlayer.ResetReading()
         feat = tlayer.GetNextFeature()
-        #fldindex = feat.GetFieldIndex(cls._tiles_attribute)
         while feat is not None:
             tgeom = loads(feat.GetGeometryRef().ExportToWkb())
             area = geom.intersection(tgeom).area
