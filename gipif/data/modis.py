@@ -46,10 +46,7 @@ def binmask(arr, bit):
 class ModisRepository(Repository):
 
     _rootpath = '/titan/data/modis'
-    _stagedir = os.path.join(_rootpath, 'stage')
-
     _tiles_vector = 'modis_sinusoidal_grid_world.shp'
-    #_tilesdir = 'tiles.dev'
 
     @classmethod
     def feature2tile(cls, feature):
@@ -60,7 +57,6 @@ class ModisRepository(Repository):
         v = str(int(feature.GetField(fldindex_v))).zfill(2)
         tile = "h%sv%s" % (h, v)
         return tile
-
 
 
 class ModisAsset(Asset):
@@ -90,6 +86,18 @@ class ModisAsset(Asset):
     }
 
     _assets = {
+        'MCD43A4': {
+            'pattern': 'MCD43A4*hdf',
+            'url': 'http://e4ftl01.cr.usgs.gov/MOTA/MCD43A4.005',
+            'startdate': datetime.date(2000, 2, 18),
+            'latency': -15
+        },
+        'MCD43A2': {
+            'pattern': 'MCD43A2*hdf',
+            'url': 'http://e4ftl01.cr.usgs.gov/MOTA/MCD43A2.005',
+            'startdate': datetime.date(2000, 2, 18),
+            'latency': -15
+        },
         'MOD10A1': {
             'pattern': 'MOD10A1*hdf',
             'url': 'ftp://n5eil01u.ecs.nsidc.org/SAN/MOST/MOD10A1.005',
@@ -143,9 +151,6 @@ class ModisAsset(Asset):
 
         datafiles = self.datafiles()
 
-        # I don't understand what this is used for
-        # because the asset could be many different things
-        # self.products = {'sds1': datafiles[0]}
 
     def datafiles(self):
 
@@ -166,6 +171,22 @@ class ModisAsset(Asset):
         return datafiles
 
     @classmethod
+    def _filepattern(cls, asset, tile, date):
+        year, month, day = date.timetuple()[:3]
+        doy = date.timetuple()[7]
+        pattern = ''.join(['(', asset, '.A', str(year), str(doy).zfill(3), '.', tile, '.005.\d{13}.hdf)'])
+        return pattern
+
+
+    @classmethod
+    def _remote_subdirs(cls, asset, tile, date):
+        year, month, day = date.timetuple()[:3]
+        httploc = cls._assets[asset]['url']
+        mainurl = ''.join([httploc, '/', str(year), '.', '%02d' % month, '.', '%02d' % day])
+        return mainurl
+
+
+    @classmethod
     def fetch(cls, asset, tile, date):
         VerboseOut('%s: fetch tile %s for %s' % (asset, tile, date), 3)
 
@@ -173,17 +194,12 @@ class ModisAsset(Asset):
             print "date is too early"
             return 3
 
-        if date.date() > datetime.now() - datetime.timedelta(cls._assets[asset]['latency']):
+        if date > datetime.datetime.now() - datetime.timedelta(cls._assets[asset]['latency']):
             print "date is too recent"
             return 3
 
-        httploc = cls._assets[asset]['url']
-
-        year, month, day = date.timetuple()[:3]
-        doy = date.timetuple()[7]
-
-        pattern = ''.join(['(', asset, '.A', str(year), str(doy).zfill(3), '.', tile, '.005.\d{13}.hdf)'])
-        mainurl = ''.join([httploc, '/', str(year), '.', '%02d' % month, '.', '%02d' % day])
+        pattern = cls._filepattern(asset, tile, date)
+        mainurl = cls._remote_subdirs(asset, tile, date)
 
         VerboseOut('%s: mainurl %s, pattern %s' % (asset, mainurl, pattern), 4)
 
@@ -193,11 +209,17 @@ class ModisAsset(Asset):
         except Exception, e:
             listing = None
             VerboseOut('unable to access %s' % mainurl, 1)
+            # sys.exit()
             return 2
 
         cpattern = re.compile(pattern)
         name = None
         success = False
+
+        outdir = cls.Repository.spath()
+        # outdir = os.path.join(cls.Repository.spath(), asset)
+        # if not os.path.exists(outdir):
+        #     os.mkdir(outdir)
 
         for item in listing:
             if cpattern.search(item):
@@ -207,12 +229,14 @@ class ModisAsset(Asset):
                 VerboseOut('found %s in %s' % (name, item.strip()), 4)
                 url = ''.join([mainurl, '/', name])
                 VerboseOut('the url is %s' % url, 4)
-                try:
-                    urllib.urlretrieve(url, os.path.join(cls.Repository.spath(), name))
-                    VerboseOut('retrieved %s' % name, 4)
-                    success = True
+                outpath = os.path.join(outdir, name)
+                try:                        
+                    urllib.urlretrieve(url, outpath)
                 except Exception, e:
                     VerboseOut('unable to retrieve %s from %s' % (name, url), 4)
+                else:
+                    VerboseOut('retrieved %s' % name, 4)
+                    success = True
 
         if not success:
             VerboseOut('did not find a match for %s in listing of %s' % (pattern, mainurl), 4)
@@ -234,6 +258,10 @@ class ModisData(Data):
         'snow': {
             'description': 'Snow and ice cover data',
             'assets': ['MOD10A1', 'MYD10A1']
+        },
+        'indices': {
+            'description': 'Land indices',
+            'assets': ['MCD43A4', 'MCD43A2']
         }
     }
     
@@ -245,6 +273,92 @@ class ModisData(Data):
         
             outfname = os.path.join(self.path, self.basename + '_' + key)        
             VerboseOut("outfname: %s" % outfname, 4)
+
+
+            ########################
+            # LAND VEGETATION INDICES PRODUCT
+            if val[0] == "indices":
+                VERSION = "0.0"
+                assets = self._products['indices']['assets']
+
+                allsds = []
+                missingassets = []
+                availassets = []
+                assetids = []
+
+                for asset in assets:
+                    try:
+                        sds = self.assets[asset].datafiles()
+                    except Exception,e:
+                        missingassets.append(asset)
+                    else:
+                        assetids.append(assets.index(asset))
+                        availassets.append(asset)
+                        allsds.extend(sds)
+
+                if missingassets:
+                    raise Exception, "There are missing assets"
+
+                print "assetids", assetids
+                print "availassets", availassets
+                print "missingassets", missingassets
+                for i,sds in enumerate(allsds):
+                    print "i, sds", i,sds
+
+                # there should be 11 SDSs, 7 bands and 4 QC layers
+
+                reflsds = [allsds[i] for i in range(7)]
+                qcsds = [allsds[i] for i in range(7,11)]
+
+                refl = gippy.GeoImage(reflsds) 
+                qc = gippy.GeoImage(qcsds) 
+
+                redimg = refl[0].Read()
+                nirimg = refl[1].Read()
+                bluimg = refl[2].Read()
+                grnimg = refl[3].Read()
+                mirimg = refl[5].Read()
+
+                wmissingred = np.where(redimg == -32768)
+                wmissingnir = np.where(redimg == -32768)
+                wmissingblu = np.where(redimg == -32768)
+                wmissinggrn = np.where(redimg == -32768)
+                wmissingmir = np.where(redimg == -32768)
+
+                print len(wmissingred[0])
+                print len(wmissingnir[0])
+                print len(wmissingblu[0])
+                print len(wmissinggrn[0])
+                print len(wmissingmir[0])
+
+
+                meta = {}
+                meta['AVAILABLE_ASSETS'] = "['MCD43A4', 'MCD43A2']"
+                meta['VERSION'] = VERSION
+
+                sys.exit()
+
+
+                ndvi = np.zeros_like(redimg)
+
+                # create output gippy image
+                imgout = gippy.GeoImage(outfname, img, gippy.GDT_Byte, 2)
+
+                imgout.SetNoData(127)
+                imgout.SetOffset(0.0)
+                imgout.SetGain(1.0)
+
+                imgout[0].Write(coverout)
+                imgout[1].Write(fracout)
+
+                imgout.SetColor('Snow Cover', 1)
+                imgout.SetColor('Fractional Snow Cover', 2)
+
+                for k, v in meta.items():
+                    imgout.SetMeta(k, str(v))
+
+
+
 
             ########################
             # SNOW/ICE COVER PRODUCT
@@ -275,7 +389,8 @@ class ModisData(Data):
 
                 if not availassets:
                     VerboseOut('Both assets are missing: %s,%s,%s' % (str(self.date), str(self.id), str(missingassets)), 4)
-                    continue
+                    # continue
+                    raise Exception, "Both assets are missing"
 
                 if not missingassets:
                     availbands = [0,1]
@@ -293,6 +408,7 @@ class ModisData(Data):
 
                 meta = {}
                 meta['AVAILABLE_ASSETS'] = str(availassets)
+                meta['VERSION'] = VERSION
 
                 # there are four temperature bands
                 for iband, band in enumerate(availbands):
@@ -369,6 +485,10 @@ class ModisData(Data):
                 totsnowcover = int(0.01*np.sum(coverout[coverout<=100]))
                 numvalidfrac = np.sum(fracout!=127)
                 numvalidcover = np.sum(coverout!=127)
+
+                if totsnowcover == 0 or totsnowfrac == 0:
+                    print "no snow or ice: skipping", str(self.date), str(self.id), str(missingassets)
+
 
                 meta['FRACMISSINGCOVERCLEAR'] = fracmissingcoverclear
                 meta['FRACMISSINGCOVERSNOW'] = fracmissingcoversnow
@@ -448,12 +568,13 @@ class ModisData(Data):
                 else:
                     raise
 
-                tempbands = GeoImage(tempsds) # read only
-                qcbands = GeoImage(qcsds) # read only
-                hourbands = GeoImage(hoursds) # read only
+                tempbands = gippy.GeoImage(tempsds) # read only
+                qcbands = gippy.GeoImage(qcsds) # read only
+                hourbands = gippy.GeoImage(hoursds) # read only
 
                 metanames = {}
                 metanames['AVAILABLE_ASSETS'] = str(availassets)
+                metanames['VERSION'] = VERSION
 
                 # there are four temperature bands
                 for iband, band in enumerate(availbands):
@@ -492,17 +613,17 @@ class ModisData(Data):
 
                     metaname = "NUMBAD_%s_%s" % (dayornight, platform)
                     metaname = metaname.upper()
-                    print "metaname", metaname
+                    # print "metaname", metaname
                     metanames[metaname] = str(numbad)
 
                     metaname = "NUMGOOD_%s_%s" % (dayornight, platform)
                     metaname = metaname.upper()
-                    print "metaname", metaname
+                    # print "metaname", metaname
                     metanames[metaname] = str(numgood)
 
                     metaname = "NUMBEST_%s_%s" % (dayornight, platform)
                     metaname = metaname.upper()
-                    print "metaname", metaname
+                    # print "metaname", metaname
                     metanames[metaname] = str(numbest)
 
                     # overpass time
@@ -513,7 +634,7 @@ class ModisData(Data):
                         hourmin = hour.min()
                         hourmean = hour.mean()
                         hourmax = hour.max()
-                        print "hour.min(), hour.mean(), hour.max()", hour.min(), hour.mean(), hour.max()
+                        # print "hour.min(), hour.mean(), hour.max()", hour.min(), hour.mean(), hour.max()
                     except:
                         hourmean = 0
 
