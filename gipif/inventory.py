@@ -28,11 +28,8 @@ import traceback
 import gippy
 from gipif.utils import VerboseOut, parse_dates
 from gipif.GeoVector import GeoVector
-
-import fiona
-from fiona.crs import to_string
-from pyproj import Proj, transform
 import commands
+import tempfile
 
 
 class Tiles(object):
@@ -142,32 +139,37 @@ class Tiles(object):
         VerboseOut('%s: created project files for %s tiles in %s' % (self.date, len(self.tiles), t), 3)
 
     def _mosaic(self, infiles, outfile, vectorfile):
-        """ Mosaic multple files together, but do not warp """
-        from osgeo import gdal, osr
-        import fiona
-        from fiona.crs import to_string
-        from pyproj import Proj, transform
-        COMMAND = 'gdal_merge.py -o %s -ul_lr %s %s'
-        fp = gdal.Open(infiles[0])
-        crs = osr.SpatialReference()
-        crs.ImportFromWkt(fp.GetProjection())
-        crs = crs.ExportToProj4()
-        with fiona.open(vectorfile, 'r') as source:
-            proj_in = Proj(to_string(source.crs))
-            proj_out = Proj(crs)
-            for row in source:
-                assert row['geometry']['type'] == "Polygon"
-                xs = []
-                ys = []
-                for ring in row['geometry']['coordinates']:
-                    x, y = transform(proj_in, proj_out, *zip(*ring))
-                    xs.extend(x)
-                    ys.extend(y)
-            ullr = "%f %f %f %f" % (min(xs), max(ys), max(xs), min(ys))
-            infiles = " ".join(infiles)
-            command = COMMAND % (outfile, ullr, infiles)
-            result = commands.getstatusoutput(command)
-        return gippy.GeoImage(outfile)
+        """ Mosaic multiple files together, but do not warp """
+        img = gippy.GeoImage(infiles[0])
+        nd = img[0].NoDataValue()
+        srs = img.Projection()
+        img = None
+        for f in range(1, len(infiles)):
+            img = gippy.GeoImage(infiles[f])
+            if img.Projection() != srs:
+                raise Exception("Input files have non-matching projections and must be warped")
+        # transform vector to image projection
+        vector = GeoVector(vectorfile)
+        vsrs = vector.proj()
+        from gipif.GeoVector import transform_shape
+        geom = transform_shape(vector.union(), vsrs, srs)
+        extent = geom.bounds
+        ullr = "%f %f %f %f" % (extent[0], extent[3], extent[2], extent[1])
+        # run command
+        nodatastr = '-n %s -a_nodata %s -init %s' % (nd, nd, nd)
+        cmd = 'gdal_merge.py -o %s -ul_lr %s %s %s' % (outfile, ullr, nodatastr, " ".join(infiles))
+        result = commands.getstatusoutput(cmd)
+        imgout = gippy.GeoImage(outfile)
+        # warp and rasterize vector
+        vec1 = vector.transform(srs)
+        td = tempfile.mkdtemp()
+        mask = gippy.GeoImage(os.path.join(td, vector.layer.GetName()), imgout, gippy.GDT_Byte, 1)
+        maskname = mask.Filename()
+        mask = None
+        cmd = 'gdal_rasterize -at -burn 1 -l %s %s %s' % (vec1.layer.GetName(), vec1.filename, maskname)
+        result = commands.getstatusoutput(cmd)
+        mask = gippy.GeoImage(maskname)
+        return imgout.AddMask(mask[0]).Process()
 
     def _applymask(self, filenames, mask):
         mimg = gippy.GeoImage(mask)
