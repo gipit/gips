@@ -30,10 +30,14 @@ import gippy
 from gipif.core import Repository, Asset, Data
 from gipif.inventory import DataInventory
 from gipif.utils import VerboseOut, File2List, List2File, RemoveFiles
+import gipif.settings as settings
 
 
 class SARAnnualRepository(Repository):
-    Repository.init_settings('SARannual')
+    repo = settings.REPOS['SARannual']
+    _rootpath = repo.get('rootpath', Repository._rootpath)
+    _tiles_vector = repo.get('tiles_vector', Repository._tiles_vector)
+    _tile_attribute = repo.get('tile_attribute', Repository._tile_attribute)
     _datedir = '%Y'
 
     @classmethod

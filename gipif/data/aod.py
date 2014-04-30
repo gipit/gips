@@ -28,10 +28,15 @@ import gippy
 from gipif.core import Repository, Asset, Data
 from gipif.inventory import DataInventory
 from gipif.utils import File2List, List2File, VerboseOut
+import gipif.settings as settings
 
 
 class AODRepository(Repository):
-    Repository.init_settings('AOD')
+    repo = settings.REPOS['AOD']
+    _rootpath = repo.get('rootpath', Repository._rootpath)
+    _tiles_vector = repo.get('tiles_vector', Repository._tiles_vector)
+    _tile_attribute = repo.get('tile_attribute', Repository._tile_attribute)
+
     _datedir = '%Y%j'
 
     @classmethod
@@ -133,7 +138,6 @@ class AODData(Data):
         start = datetime.datetime.now()
         #bname = os.path.basename(self.assets[''].filename)
         for product in products:
-            print product
             #if product == 'aerolta':
             #    self.process_aerolta()
             VerboseOut(' -> %s: processed %s in %s' % (fout, product, datetime.datetime.now()-start))
@@ -225,7 +229,8 @@ class AODData(Data):
             else:
                 val = vals[1, 1]
 
-        set_trace()
+        import pdb
+        pdb.set_trace()
 
         #total = 0
         #count = 0

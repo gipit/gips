@@ -41,6 +41,9 @@ from gipif.GeoVector import GeoVector
 
 class Repository(object):
     """ Singleton (all classmethods) of file locations and sensor tiling system  """
+    _rootpath = ''
+    _tiles_vector = 'tiles.shp'
+    _tile_attribute = 'tile'
     # Format code of date directories in repository
     _datedir = '%Y%j'
 
@@ -49,13 +52,6 @@ class Repository(object):
     _qdir = 'quarantine'
     _sdir = 'stage'
     _vdir = 'vectors'
-
-    @classmethod
-    def init_settings(cls, dataname):
-        repo = settings.REPOS[dataname]
-        cls._rootpath = repo.get('rootpath', '')
-        cls._tiles_vector = repo.get('tiles_vector', 'tiles.shp')
-        cls._tile_attribute = repo.get('tile_attribute', 'tile')
 
     @classmethod
     def feature2tile(cls, feature):

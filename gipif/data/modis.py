@@ -34,6 +34,7 @@ import gippy
 from gipif.core import Repository, Asset, Data
 from gipif.inventory import DataInventory
 from gipif.utils import File2List, List2File, VerboseOut
+import gipif.settings as settings
 
 
 def binmask(arr, bit):
@@ -44,7 +45,10 @@ def binmask(arr, bit):
 
 
 class ModisRepository(Repository):
-    Repository.init_settings('modis')
+    repo = settings.REPOS['modis']
+    _rootpath = repo.get('rootpath', Repository._rootpath)
+    _tiles_vector = repo.get('tiles_vector', Repository._tiles_vector)
+    _tile_attribute = repo.get('tile_attribute', Repository._tile_attribute)
 
     @classmethod
     def feature2tile(cls, feature):

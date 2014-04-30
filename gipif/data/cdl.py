@@ -25,10 +25,14 @@ from datetime import datetime
 from gipif.core import Repository, Asset, Data
 from gipif.inventory import DataInventory
 from agspy.utils.table import Table
+import gipif.settings as settings
 
 
 class CDLRepository(Repository):
-    Repository.init_settings('CDL')
+    repo = settings.REPOS['CDL']
+    _rootpath = repo.get('rootpath', Repository._rootpath)
+    _tiles_vector = repo.get('tiles_vector', Repository._tiles_vector)
+    _tile_attribute = repo.get('tile_attribute', Repository._tile_attribute)
     _datedir = '%Y'
 
     _defaultresolution = [30.0, 30.0]

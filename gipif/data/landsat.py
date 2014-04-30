@@ -34,6 +34,7 @@ import gippy
 from gipif.core import Repository, Asset, Data
 from gipif.inventory import DataInventory
 from gipif.utils import VerboseOut, RemoveFiles
+import gipif.settings as settings
 
 from gipif.data.aod import AODData
 from gipif.data.modtran import MODTRAN
@@ -41,7 +42,10 @@ from gipif.data.modtran import MODTRAN
 
 class LandsatRepository(Repository):
     """ Singleton (all class methods) to be overridden by child data classes """
-    Repository.init_settings('landsat')
+    repo = settings.REPOS['landsat']
+    _rootpath = repo.get('rootpath', Repository._rootpath)
+    _tiles_vector = repo.get('tiles_vector', Repository._tiles_vector)
+    _tile_attribute = repo.get('tile_attribute', Repository._tile_attribute)
 
     @classmethod
     def feature2tile(cls, feature):
