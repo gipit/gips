@@ -94,6 +94,11 @@ class Tiles(object):
                 VerboseOut('Processing products for tile %s: %s' % (tileid, ' '.join(toprocess.keys())), 2)
                 self.tiles[tileid].process(toprocess)
 
+    def process_composites(self, overwrite=False):
+        """ Determines what products need to be processed for each tile and calls Data.process """
+        for tileid, tile in self.tiles.items():
+            self.tiles[tileid].process_composites(self.requested_products)
+
     def project(self, res=None, datadir='', mask=None, nowarp=False):
         """ Create image of final product (reprojected/mosaiced) """
         if datadir == '':
@@ -307,6 +312,7 @@ class DataInventory(object):
         VerboseOut('Requested products (%s) for %s files' % (' '.join(self.requested_products), self.numfiles))
         for date in self.dates:
             self.data[date].process(*args, **kwargs)
+        self.data[date].process_composites(*args, **kwargs)
         VerboseOut('Completed processing in %s' % (datetime.now()-start))
 
     def project(self, *args, **kwargs):

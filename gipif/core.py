@@ -423,6 +423,10 @@ class Data(object):
         """ Make sure all products exist and process if needed """
         pass
 
+    @classmethod
+    def process_composites(cls, products):
+        pass
+
     def filter(self, **kwargs):
         """ Check if tile passes filter """
         return True

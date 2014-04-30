@@ -136,13 +136,20 @@ class AODData(Data):
         },
     }
 
-    def process(self, products):
-        start = datetime.datetime.now()
+    #def process(self, products):
+    #    start = datetime.datetime.now()
         #bname = os.path.basename(self.assets[''].filename)
-        for product in products:
+    #    for product in products:
             #if product == 'aerolta':
             #    self.process_aerolta()
-            VerboseOut(' -> %s: processed %s in %s' % (fout, product, datetime.datetime.now()-start))
+    #        VerboseOut(' -> %s: processed %s in %s' % (fout, product, datetime.datetime.now()-start))
+
+    @classmethod
+    def process_composites(cls, products):
+        start = datetime.datetime.now()
+        for product in products:
+            if product == 'aerolta':
+                cls.process_aerolta_all()
 
     @classmethod
     def process_mean(cls, filenames, fout):
@@ -170,7 +177,7 @@ class AODData(Data):
             totalvar[inds] = numpy.divide(totalvar[inds], counts[inds])
             imgout[1].Write(totalvar)
             t = datetime.datetime.now()-start
-            VerboseOut('%s: mean/variances for %s files processed in %s' % (os.path.basename(fout), len(filenames), t))
+            VerboseOut('%s: mean + variance for %s files processed in %s' % (os.path.basename(fout), len(filenames), t))
         return imgout
 
     @classmethod
@@ -180,6 +187,7 @@ class AODData(Data):
         fnames = [inv[d].tiles[''].products['aero'] for d in inv.dates]
         fout = os.path.join(cls.Asset.Repository.cpath('aerolta'), 'aerolta_%s.tif' % str(day).zfill(3))
         imgout = cls.process_mean(fnames, fout)
+        VerboseOut('%s: processed' % os.path.basename(fout), 3)
         return imgout.Filename()
 
     @classmethod
@@ -194,6 +202,7 @@ class AODData(Data):
         filenames = []
         for day in range(1, 366):
             filenames.append(cls.process_aerolta_daily(day))
+        cls.process_aerolta()
         # spatial average
         #img[band].Smooth(imgout[1])
         #mean = numpy.multiply(imgout[1].Read(), mask)
