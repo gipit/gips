@@ -30,18 +30,18 @@ from shapely.wkb import loads
 import tarfile
 import traceback
 import ftplib
+import inspect
 
 import gippy
 from gipif.utils import VerboseOut, RemoveFiles, File2List, List2File
 from gipif.inventory import DataInventory
 import gipif.settings as settings
 from gipif.GeoVector import GeoVector
+from pdb import set_trace
 
 
 class Repository(object):
     """ Singleton (all classmethods) of file locations and sensor tiling system  """
-    # root directory to data
-    _rootpath = ''
     # Format code of date directories in repository
     _datedir = '%Y%j'
 
@@ -51,8 +51,12 @@ class Repository(object):
     _sdir = 'stage'
     _vdir = 'vectors'
 
-    _tiles_vector = 'tiles.shp'
-    _tile_attribute = 'tile'
+    @classmethod
+    def init_settings(cls, dataname):
+        repo = settings.REPOS[dataname]
+        cls._rootpath = repo.get('rootpath', '')
+        cls._tiles_vector = repo.get('tiles_vector', 'tiles.shp')
+        cls._tile_attribute = repo.get('tile_attribute', 'tile')
 
     @classmethod
     def feature2tile(cls, feature):

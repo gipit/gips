@@ -28,11 +28,8 @@ from agspy.utils.table import Table
 
 
 class CDLRepository(Repository):
-    _rootpath = '/titan/data/CDL'
+    Repository.init_settings('CDL')
     _datedir = '%Y'
-
-    _tiles_vector = 'usa_states'
-    _tile_attribute = 'state_name'
 
     _defaultresolution = [30.0, 30.0]
 

@@ -33,8 +33,7 @@ from gipif.utils import VerboseOut, File2List, List2File, RemoveFiles
 
 
 class SARRepository(Repository):
-    _rootpath = '/titan/data/SAR'
-    #_tilesdir = 'tiles.dev'
+    Repository.init_settings('SAR')
 
     @classmethod
     def feature2tile(cls, feature):

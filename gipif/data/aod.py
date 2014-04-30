@@ -31,7 +31,7 @@ from gipif.utils import File2List, List2File, VerboseOut
 
 
 class AODRepository(Repository):
-    _rootpath = '/titan/data/atmos'
+    Repository.init_settings('AOD')
     _datedir = '%Y%j'
 
     @classmethod

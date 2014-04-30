@@ -454,7 +454,7 @@ class DataInventory(object):
         if 'format' in args:
             gippy.Options.SetDefaultFormat(args.format)
 
-        VerboseOut('GIPPY %s command line utility' % cls.name)
+        VerboseOut('GIPIF %s command line utility' % cls.name)
 
         if args.command == 'archive':
             # TODO - take in path argument

@@ -40,12 +40,7 @@ from gipif.data.modtran import MODTRAN
 
 class LandsatRepository(Repository):
     """ Singleton (all class methods) to be overridden by child data classes """
-    _rootpath = '/titan/data/landsat'
-    _tiles_vector = 'landsat_wrs'
-    #_tilesdir = 'tiles.dev'
-
-    # attribute (column) in tiles vector giving tile id
-    _tile_attribute = 'pr'
+    Repository.init_settings('landsat')
 
     @classmethod
     def feature2tile(cls, feature):

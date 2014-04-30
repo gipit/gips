@@ -40,13 +40,11 @@ def binmask(arr, bit):
     """ Return boolean array indicating which elements as binary have a 1 in
         a specified bit position. Input is Numpy array.
     """
-    return arr & (1<<(bit-1)) == (1<<(bit-1))
+    return arr & (1 << (bit-1)) == (1 << (bit-1))
 
 
 class ModisRepository(Repository):
-
-    _rootpath = '/titan/data/modis'
-    _tiles_vector = 'modis_sinusoidal_grid_world.shp'
+    Repository.init_settings('modis')
 
     @classmethod
     def feature2tile(cls, feature):
