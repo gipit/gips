@@ -44,6 +44,6 @@ setup(
     author='Matthew Hanson',
     author_email='mhanson@appliedgeosolutions.com',
     packages=['gipif', 'gipif.data'],
-    install_requires=['Py6S', 'shapely', 'gippy'],
+    install_requires=['Py6S', 'shapely', 'gippy>=0.9.4'],
     entry_points={'console_scripts': console_scripts},
 )

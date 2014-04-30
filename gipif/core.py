@@ -37,7 +37,6 @@ from gipif.utils import VerboseOut, RemoveFiles, File2List, List2File
 from gipif.inventory import DataInventory
 import gipif.settings as settings
 from gipif.GeoVector import GeoVector
-from pdb import set_trace
 
 
 class Repository(object):
@@ -362,7 +361,7 @@ class Asset(object):
             if not os.path.exists(qname):
                 os.link(os.path.abspath(filename), qname)
             VerboseOut('%s -> quarantine (file error)' % filename, 2)
-            return 0
+            return (None, 0)
 
         dates = asset.date
         if not hasattr(dates, '__len__'):

@@ -28,6 +28,7 @@ import numpy
 from collections import OrderedDict
 from copy import deepcopy
 import traceback
+from pdb import set_trace
 
 import gippy
 from gipif.core import Repository, Asset, Data
@@ -54,9 +55,9 @@ class LandsatAsset(Asset):
 
     # combine sensormeta with sensor
     _sensors = {
-        'LT4': {
-            'description': 'Landsat 4',
-        },
+        #'LT4': {
+        #    'description': 'Landsat 4',
+        #},
         'LT5': {
             'description': 'Landsat 5',
             'bands': ['1', '2', '3', '4', '5', '6', '7'],
@@ -113,6 +114,8 @@ class LandsatAsset(Asset):
         year = fname[9:13]
         doy = fname[13:16]
         self.date = datetime.strptime(year+doy, "%Y%j")
+        if self.sensor not in self._sensors.keys():
+            raise Exception("Sensor %s not supported" % self.sensor)
         # Landsat specific additions
         smeta = self._sensors[self.sensor]
         self.meta = {}
@@ -189,10 +192,10 @@ class LandsatData(Data):
             optdep = f[0].Read()[pixy, pixx] * 0.001
             source = 'Original'
         if os.path.isfile(os.path.join(librarydir, 'gapfilled/', atmospherefile)) and optdep < 0:
-            f = gippy.GeoImage(os.path.join(librarydir, 'gapfilled/', atmospherefile))
+            f = gippy.GeoImage(os.path.join(librarydir, 'gapfilled/', atmospherefile), False)
             optdep = f[0].Read()[pixy, pixx] * 0.001
             source = 'Gap-filled'
-            f = gippy.GeoImage(os.path.join(librarydir, 'gapfilled/', rmsefile))
+            f = gippy.GeoImage(os.path.join(librarydir, 'gapfilled/', rmsefile), False)
             rmse = f[0].Read()
             rmseval = float(rmse[pixy, pixx]) * 0.001
             VerboseOut('Estimated root mean squared error for this gapfilling is:'+str(rmseval), 3)
@@ -208,6 +211,7 @@ class LandsatData(Data):
         if optdep < 0:
             source = 'default'
             optdep = 0.17
+        f = None
 
         VerboseOut('Optical Depth (from %s) = %s' % (source, optdep), 3)
         return optdep
@@ -237,13 +241,13 @@ class LandsatData(Data):
         s.aero_profile = AeroProfile.PredefinedType(AeroProfile.Continental)
 
         old_aod = self.getaod(self.date, geo['lat'], geo['lon'])
-        VerboseOut('Old AOD = %s' % old_aod, 4)
+        VerboseOut('Old AOD = %s' % old_aod, 3)
 
-        #atmos = AODData.inventory(tile='', dates=self.date.strftime('%Y-%j'), fetch=True, products=['aero'])
-        #atmos = atmos[atmos.dates[0]].tiles['']
-        #aod = atmos.get_point(geo['lat'], geo['lon'])
-        #VerboseOut('New AOD = %s' % aod, 4)
-        s.aot550 = old_aod
+        atmos = AODData.inventory(tile='', dates=self.date.strftime('%Y-%j'), fetch=True, products=['aero'])
+        atmos = atmos[atmos.dates[0]].tiles['']
+        aod = atmos.get_point(geo['lat'], geo['lon'])
+        VerboseOut('New AOD = %s' % aod, 3)
+        s.aot550 = aod
 
         # Other settings
         s.ground_reflectance = GroundReflectance.HomogeneousLambertian(GroundReflectance.GreenVegetation)
