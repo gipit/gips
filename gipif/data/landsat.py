@@ -244,13 +244,13 @@ class LandsatData(Data):
         # TODO - dynamically adjust AeroProfile?
         s.aero_profile = AeroProfile.PredefinedType(AeroProfile.Continental)
 
-        old_aod = self.getaod(self.date, geo['lat'], geo['lon'])
-        VerboseOut('Old AOD = %s' % old_aod, 3)
+        #if gippy.Options.Verbose() >= 3:
+        #    old_aod = self.getaod(self.date, geo['lat'], geo['lon'])
+        #    print 'AOD (old) = %s' % old_aod
 
         atmos = AODData.inventory(tile='', dates=self.date.strftime('%Y-%j'), fetch=True, products=['aero'])
         atmos = atmos[atmos.dates[0]].tiles['']
         aod = atmos.get_point(geo['lat'], geo['lon'])
-        VerboseOut('New AOD = %s' % aod, 3)
         s.aot550 = aod
 
         # Other settings

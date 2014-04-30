@@ -29,6 +29,7 @@ from gipif.core import Repository, Asset, Data
 from gipif.inventory import DataInventory
 from gipif.utils import File2List, List2File, VerboseOut
 import gipif.settings as settings
+from pdb import set_trace
 
 
 class AODRepository(Repository):
@@ -112,9 +113,10 @@ class AODAsset(Asset):
     @classmethod
     def archive(cls, path='.', recursive=False, keep=False):
         assets = super(AODAsset, cls).archive(path, recursive, keep)
-        dates = [a.date for a in assets]
-        for date in set(dates):
-            AODData.process_aerolta_daily(date.strftime('%j'))
+        # this creates new LTA files every archiving
+        #dates = [a.date for a in assets]
+        #for date in set(dates):
+        #    AODData.process_aerolta_daily(date.strftime('%j'))
 
 
 class AODData(Data):
@@ -196,60 +198,59 @@ class AODData(Data):
         #img[band].Smooth(imgout[1])
         #mean = numpy.multiply(imgout[1].Read(), mask)
 
-    def get_point(self, lat, lon, product=''):
+    def get_point(self, lat, lon, product='aero'):
         pixx = int(numpy.round(float(lon) + 179.5))
         pixy = int(numpy.round(89.5 - float(lat)))
         roi = gippy.iRect(pixx-1, pixy-1, 3, 3)
-        img = self.open(product=product)
+        #img = self.open(product=product)
+        img = gippy.GeoImage(self.products[product], False)
         nodata = img[0].NoDataValue()
         vals = img[0].Read(roi).squeeze()
         # TODO - do this automagically in swig wrapper
         vals[numpy.where(vals == nodata)] = numpy.nan
 
         val = vals[1, 1]
-        if val is numpy.nan:
+        source = 'original'
+        if numpy.isnan(val):
             val = numpy.nanmean(vals)
+            source = 'original spatial average'
 
         cpath = self.Repository.cpath('aerolta')
         day = self.date.strftime('%j')
 
-        if val is numpy.nan:
-            img = gippy.GeoImage(os.path.join(cpath, 'aerolta_%s.tif' % str(day).zfill(3)))
-            vals = img[0].Read(roi).squeeze()
-            if vals == numpy.nan:
-                val = numpy.nanmean(vals)
-            else:
-                val = vals[1, 1]
+        # Long-term average for day
+        if numpy.isnan(val):
+            try:
+                img = gippy.GeoImage(os.path.join(cpath, 'aerolta_%s.tif' % str(day).zfill(3)))
+                vals = img[0].Read(roi).squeeze()
+                if numpy.isnan(vals):
+                    val = numpy.nanmean(vals)
+                    source = 'daily and spatial average'
+                else:
+                    val = vals[1, 1]
+                    source = 'daily average'
+            except:
+                pass
 
-        if val is numpy.nan:
-            img = gippy.GeoImage(os.path.join(cpath, 'aerolta.tif'))
-            vals = img[0].Read(roi).squeeze()
-            if vals == numpy.nan:
-                val = numpy.nanmean(vals)
-            else:
-                val = vals[1, 1]
+        # Long-term average for all days and years
+        if numpy.isnan(val):
+            try:
+                img = gippy.GeoImage(os.path.join(cpath, 'aerolta.tif'))
+                vals = img[0].Read(roi).squeeze()
+                if numpy.isnan(vals):
+                    val = numpy.nanmean(vals)
+                    source = 'all days and spatial average'
+                else:
+                    val = vals[1, 1]
+                    source = 'all days average'
+            except:
+                pass
 
-        import pdb
-        pdb.set_trace()
-
-        #total = 0
-        #count = 0
-        #for x, y in numpy.ndindex(vals.shape):
-        #    if vals[x,y] != nodata:
-        #        total = total + vals[x,y]
-        #        count = count+1
-        #set_trace()
-
-        day = self.date.strftime('%j')
-        print 'val', val
-        if val == img[0].NoData():
-            fname = os.path.join(self.Repository.cpath('aerolta'), 'aerolta_%s' % day)
-            img = gippy.GeoImage(fname)
-            val = img[0].Read(roi).squeeze()
-            print 'val', val
-        if val == img[0].NoData():
-            print 'still nodata aerosols'
+        if numpy.isnan(val):
             val = 0.17
+            source = 'default'
+
+        VerboseOut('%s (from %s) = %s' % (product, source, val), 3)
         return val
 
 
