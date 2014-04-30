@@ -27,6 +27,7 @@ from setuptools import setup
 import gipif.settings as settings
 
 from pdb import set_trace
+from gipif.version import __version__
 
 print 'GIPIF setup'
 
@@ -38,7 +39,7 @@ for repo, cfg in settings.REPOS.items():
 
 setup(
     name='gipif',
-    version='0.6.0',
+    version=__version__,
     description='Geospatial Image Processing and Inventory Framework',
     author='Matthew Hanson',
     author_email='mhanson@appliedgeosolutions.com',
