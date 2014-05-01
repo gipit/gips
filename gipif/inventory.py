@@ -315,7 +315,7 @@ class DataInventory(object):
         VerboseOut('Requested products (%s) for %s files' % (' '.join(self.requested_products), self.numfiles))
         for date in self.dates:
             self.data[date].process(*args, **kwargs)
-        self.data[date].process_composites(*args, **kwargs)
+        #self.data[date].process_composites(*args, **kwargs)
         VerboseOut('Completed processing in %s' % (datetime.now()-start))
 
     def project(self, *args, **kwargs):
