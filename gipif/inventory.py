@@ -31,6 +31,8 @@ from gipif.GeoVector import GeoVector
 import commands
 import tempfile
 
+from pdb import set_trace
+
 
 class Tiles(object):
     """ Collection of tiles for a single date """
@@ -337,6 +339,14 @@ class DataInventory(object):
             #for prod in data.products.keys(): prods.append(prod)
         return sorted(set(prods))
 
+    def assets(self):
+        """ Print caledndar of assets """
+        print '\nAsset Inventory'
+        #cov = 0.0
+        #cov = [cov + self.tiles[t][0] for t in dat.tiles.keys()]
+        for asset in self.dataclass.Asset._assets:
+            print asset
+
     def printcalendar(self, md=False, products=False):
         """ print calendar for raw original datafiles """
         #import calendar
@@ -356,11 +366,7 @@ class DataInventory(object):
             if md:
                 daystr = str(date.month) + '-' + str(date.day)
             else:
-                daystr = str(date.timetuple().tm_yday)
-                if len(daystr) == 1:
-                    daystr = '00' + daystr
-                elif len(daystr) == 2:
-                    daystr = '0' + daystr
+                daystr = str(date.timetuple().tm_yday).zfill(3)
             if date.year != oldyear:
                 sys.stdout.write('\n{:>5}: '.format(date.year))
                 if products:
