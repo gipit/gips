@@ -140,7 +140,7 @@ class SARAsset(Asset):
 
         # Check if inspecting a file in the repository
         path = os.path.dirname(filename)
-        if self.Repository._rootpath in path:
+        if self.Repository.path() in path:
             date = datetime.datetime.strptime(os.path.basename(path), self.Repository._datedir).date()
             dates = date
             #VerboseOut('Date from repository = '+str(dates),4)
@@ -178,6 +178,7 @@ class SARAsset(Asset):
                 if not (cdate <= date <= (cdate + datetime.timedelta(days=45))):
                     raise Exception('%s: Date %s outside of cycle range (%s)' % (bname, str(date), str(cdate)))
             #VerboseOut('%s: inspect %s' % (fname,datetime.datetime.now()-start), 4)
+        self.date = dates
         self.rootname = rootname
 
     @classmethod
