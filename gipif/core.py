@@ -262,8 +262,9 @@ class Asset(object):
         try:
             ftp = ftplib.FTP(ftpurl)
             ftp.login('anonymous', settings.EMAIL)
-            ftp.cwd(os.path.join(ftpdir, date.strftime('%Y'), date.strftime('%j')))
+            pth = os.path.join(ftpdir, date.strftime('%Y'), date.strftime('%j'))
             ftp.set_pasv(True)
+            ftp.cwd(pth)
 
             filenames = []
             ftp.retrlines('LIST', filenames.append)
@@ -559,8 +560,11 @@ class Data(object):
                 asset_dates = cls.Asset.dates(a, t, dates, days)
                 for d in asset_dates:
                     if not cls.Asset.discover(t, d, a):
-                        status = cls.Asset.fetch(a, t, d)
-                        fetched.append((a, t, d))
+                        try:
+                            status = cls.Asset.fetch(a, t, d)
+                            fetched.append((a, t, d))
+                        except:
+                            pass
         return fetched
 
     @classmethod
