@@ -42,7 +42,8 @@ Several packages are required for GIPIF. These notes are for Ubuntu systems.
     5) Then install GIPIF
     $ ./setup.py install
 
-Some datasets may require 6S to perform atmospheric correction. Follow the instructions here to install 6S
+Some datasets may require 6S to perform atmospheric correction. Follow the instructions here to install 6S:
+
     1) Download latest version of 6S (6SV1.1) to a working directory from http://6s.ltdri.org
 
     2) untar 6SV-1.1.tar
@@ -57,7 +58,7 @@ Some datasets may require 6S to perform atmospheric correction. Follow the instr
         with this line:
             FC      = gfortran -std=legacy -ffixed-line-length-none $(FFLAGS)
 
-To update GIPIF at a later date (will require root privileges
+To update GIPIF at a later date (will require root privileges)
 
     1) Get latest changes from git
     $ cd [gipif directory]
