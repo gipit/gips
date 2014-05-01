@@ -30,6 +30,7 @@ from gipif.utils import VerboseOut, parse_dates
 from gipif.GeoVector import GeoVector
 import commands
 import tempfile
+from gipif.version import __version__
 
 from pdb import set_trace
 
@@ -410,7 +411,7 @@ class DataInventory(object):
     @staticmethod
     def main(cls):
         dhf = argparse.ArgumentDefaultsHelpFormatter
-        parser0 = argparse.ArgumentParser(description='%s Data Utility' % cls.name,
+        parser0 = argparse.ArgumentParser(description='GIPIF %s Data Utility v%s' % (cls.name, __version__),
                                           formatter_class=argparse.RawTextHelpFormatter)
         subparser = parser0.add_subparsers(dest='command')
 
@@ -466,7 +467,7 @@ class DataInventory(object):
         if 'format' in args:
             gippy.Options.SetDefaultFormat(args.format)
 
-        VerboseOut('GIPIF %s command line utility' % cls.name)
+        VerboseOut('GIPIF %s command line utility v%s' % (cls.name, __version__))
 
         if args.command == 'archive':
             # TODO - take in path argument
