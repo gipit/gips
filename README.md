@@ -27,7 +27,7 @@ Several packages are required for GIPIF. These notes are for Ubuntu systems.
     $ sudo apt-get update
 
     2) Then install the required dependencies
-    $ sudo apt-get install python-setuptools python-numpy python-gdal g++ libgdal1-dev gdal-bin libboost-dev-all swig2.0 swig
+    $ sudo apt-get install python-setuptools python-numpy python-gdal g++ libgdal1-dev gdal-bin libboost-dev-all swig2.0 swig python-scipy
 
     3) Edit gipif/settings.py to update with your environment
         - DATABASES: set connection settings and database if data tile vectors are stored in PostGIS
