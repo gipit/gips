@@ -24,6 +24,7 @@ import glob
 import argparse
 from datetime import datetime
 import traceback
+import shutil
 
 import gippy
 from gipif.utils import VerboseOut, parse_dates
@@ -170,6 +171,7 @@ class Tiles(object):
         imgout = gippy.GeoImage(outfile)
         # warp and rasterize vector
         vec1 = vector.transform(srs)
+        vec1name = vec1.filename
         td = tempfile.mkdtemp()
         mask = gippy.GeoImage(os.path.join(td, vector.layer.GetName()), imgout, gippy.GDT_Byte, 1)
         maskname = mask.Filename()
@@ -177,7 +179,12 @@ class Tiles(object):
         cmd = 'gdal_rasterize -at -burn 1 -l %s %s %s' % (vec1.layer.GetName(), vec1.filename, maskname)
         result = commands.getstatusoutput(cmd)
         mask = gippy.GeoImage(maskname)
-        return imgout.AddMask(mask[0]).Process()
+        imgout.AddMask(mask[0]).Process().ClearMasks()
+        vec1 = None
+        mask = None
+        shutil.rmtree(os.path.dirname(maskname))
+        shutil.rmtree(os.path.dirname(vec1name))
+        return imgout
 
     def _applymask(self, filenames, mask):
         mimg = gippy.GeoImage(mask)
