@@ -52,8 +52,6 @@ class Colors():
     _WHITE  = _c + '47m'
 
 
-
-
 def VerboseOut(obj, level=1):
     if gippy.Options.Verbose() >= level:
         #pprint.PrettyPrinter().pprint(obj)
