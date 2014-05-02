@@ -44,7 +44,6 @@ setup(
     author='Matthew Hanson',
     author_email='mhanson@appliedgeosolutions.com',
     packages=['gipif', 'gipif.data'],
-    # matplotlib actually required by Py6S
-    install_requires=['Py6S', 'shapely', 'gippy>=0.9.4', 'python-dateutil', 'matplotlib'],
+    install_requires=['Py6S', 'shapely', 'gippy>=0.9.4', 'python-dateutil'],
     entry_points={'console_scripts': console_scripts},
 )
