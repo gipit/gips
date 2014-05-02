@@ -25,6 +25,35 @@ import datetime
 import calendar
 
 
+class Colors():
+    _c = '\033['
+    OFF     = _c + '0m'
+    # Font styles
+    BOLD    = _c + '1m'
+    UNDER   = _c + '4m'
+    REV     = _c + '7m'
+    # Text colors
+    BLACK   = _c + '30m'
+    RED     = _c + '31m'
+    GREEN   = _c + '32m'
+    YELLOW  = _c + '33m'
+    BLUE    = _c + '34m'
+    PURPLE  = _c + '35m'
+    CYAN    = _c + '36m'
+    WHITE   = _c + '37m'
+    # Background colors
+    _BLACK  = _c + '40m'
+    _RED    = _c + '41m'
+    _GREEN  = _c + '42m'
+    _YELLOW = _c + '43m'
+    _BLUE   = _c + '44m'
+    _PURPLE = _c + '45m'
+    _CYAN   = _c + '46m'
+    _WHITE  = _c + '47m'
+
+
+
+
 def VerboseOut(obj, level=1):
     if gippy.Options.Verbose() >= level:
         #pprint.PrettyPrinter().pprint(obj)
