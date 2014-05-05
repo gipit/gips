@@ -264,7 +264,10 @@ class Asset(object):
             ftp.login('anonymous', settings.EMAIL)
             pth = os.path.join(ftpdir, date.strftime('%Y'), date.strftime('%j'))
             ftp.set_pasv(True)
-            ftp.cwd(pth)
+            try:
+                ftp.cwd(pth)
+            except Exception, e:
+                raise Exception("Error downloading")
 
             filenames = []
             ftp.retrlines('LIST', filenames.append)
@@ -274,7 +277,7 @@ class Asset(object):
                 ftp.retrbinary('RETR %s' % f, open(os.path.join(cls.Repository.spath(), f), "wb").write)
 
             ftp.close()
-        except:
+        except Exception, e:
             VerboseOut(traceback.format_exc(), 4)
             raise Exception("Error downloading")
 
@@ -339,8 +342,9 @@ class Asset(object):
                 assets.append(archived[0])
 
         # Summarize
-        VerboseOut('%s files (%s links) from %s added to archive in %s' %
-                  (numfiles, numlinks, os.path.abspath(path), datetime.now()-start))
+        if len(numfiles) > 0:
+            VerboseOut('%s files (%s links) from %s added to archive in %s' %
+                      (numfiles, numlinks, os.path.abspath(path), datetime.now()-start))
         if numfiles != len(fnames):
             VerboseOut('%s files not added to archive' % (len(fnames)-numfiles))
         return assets

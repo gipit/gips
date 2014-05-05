@@ -148,10 +148,7 @@ class Tiles(object):
         if datadir == '':
             datadir = self.dataclass.name+'_data'
 
-        try:
-            self.process()
-        except:
-            return None
+        self.process()
 
         if not os.path.exists(datadir):
             os.makedirs(datadir)
@@ -316,7 +313,10 @@ class DataInventory(object):
 
         if fetch:
             products = [val[0] for val in self.requested_products.values()]
-            dataclass.fetch(products, self.tiles, (self.start_date, self.end_date), (self.start_day, self.end_day))
+            try:
+                dataclass.fetch(products, self.tiles, (self.start_date, self.end_date), (self.start_day, self.end_day))
+            except:
+                VerboseOut(traceback.format_exc(), 5)
             dataclass.Asset.archive(Repository.spath())
 
         # get all potential matching dates for tiles
