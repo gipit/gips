@@ -422,7 +422,7 @@ class DataInventory(object):
                 self.data[date].print_assets(dformat, products)
             oldyear = date.year
         if self.numfiles != 0:
-            VerboseOut("\n%s files on %s dates" % (self.numfiles, len(self.dates)))
+            VerboseOut("\n\n%s files on %s dates" % (self.numfiles, len(self.dates)))
             self.print_legend()
 
     def print_tile_coverage(self):
