@@ -107,26 +107,6 @@ class Tiles(object):
             asset_coverage[a] = cov*100
         return asset_coverage
 
-    def print_assets(self, dformat='%j', products=False):
-        """ Print coverage for each and every asset """
-        #assets = [a for a in self.dataclass.Asset._assets]
-        sys.stdout.write('{:^12}'.format(self.date.strftime(dformat)))
-        asset_coverage = self.coverage()
-        for a in sorted(asset_coverage):
-            sys.stdout.write(self.sensor_color + '  {:>4.1f}%   '.format(asset_coverage[a]) + Colors.OFF)
-        if products:
-            prods = []
-            for t in self.tiles:
-                for p in self.tiles[t].products:
-                    prods.append(p)
-            for p in sorted(set(prods)):
-                sys.stdout.write('  '+p)
-        sys.stdout.write('\n')
-
-    #def print_products(self, dformat='%j'):
-    #    """ Print products that have been processed """
-    #    sys.stdout.write('{:^12}'.format(self.date.strftime(dformat)))
-
     def process(self, overwrite=False):
         """ Determines what products need to be processed for each tile and calls Data.process """
         for tileid, tile in self.tiles.items():
@@ -241,40 +221,29 @@ class Tiles(object):
         else:
             raise Exception('%s product does not exist' % product)
 
+    def print_assets(self, dformat='%j', products=False):
+        """ Print coverage for each and every asset """
+        #assets = [a for a in self.dataclass.Asset._assets]
+        sys.stdout.write('{:^12}'.format(self.date.strftime(dformat)))
+        asset_coverage = self.coverage()
+        for a in sorted(asset_coverage):
+            sys.stdout.write(self.sensor_color + '  {:>4.1f}%   '.format(asset_coverage[a]) + Colors.OFF)
+        if products:
+            prods = []
+            for t in self.tiles:
+                for p in self.tiles[t].products:
+                    prods.append(p)
+            for p in sorted(set(prods)):
+                sys.stdout.write('  '+p)
+        sys.stdout.write('\n')
+
+    #def print_products(self, dformat='%j'):
+    #    """ Print products that have been processed """
+    #    sys.stdout.write('{:^12}'.format(self.date.strftime(dformat)))
+
 
 class DataInventory(object):
     """ Manager class for data inventories """
-    # redo color, combine into ordered dictionary
-    _colororder = ['purple', 'bright red', 'bright green', 'bright blue', 'bright purple']
-    _colorcodes = {
-        'bright yellow':   '1;33',
-        'bright red':      '1;31',
-        'bright green':    '1;32',
-        'bright blue':     '1;34',
-        'bright purple':   '1;35',
-        'bright cyan':     '1;36',
-        'red':             '0;31',
-        'green':           '0;32',
-        'blue':            '0;34',
-        'cyan':            '0;36',
-        'yellow':          '0;33',
-        'purple':          '0;35',
-    }
-
-    def _colorize(self, txt, color):
-        return "\033["+self._colorcodes[color]+'m' + txt + "\033[0m"
-
-    @property
-    def dates(self):
-        """ Get sorted list of dates """
-        return [k for k in sorted(self.data)]
-
-    @property
-    def site_name(self):
-        return os.path.splitext(os.path.basename(self.site))[0]
-
-    def __getitem__(self, date):
-        return self.data[date]
 
     def __init__(self, dataclass, site=None, tiles=None, dates=None, days=None, products=[], fetch=False, **kwargs):
         self.dataclass = dataclass
@@ -293,7 +262,7 @@ class DataInventory(object):
         elif tiles is None and self.site is not None:
             self.tiles = Repository.vector2tiles(GeoVector(self.site), **kwargs)
 
-        self.temporal_extent(dates, days)
+        self._temporal_extent(dates, days)
 
         self.data = {}
         # Create product dictionary of requested products and filename
@@ -343,7 +312,7 @@ class DataInventory(object):
                 #VerboseOut(traceback.format_exc(), 4)
                 #VerboseOut('Inventory error %s' % e)
 
-    def temporal_extent(self, dates, days):
+    def _temporal_extent(self, dates, days):
         """ Temporal extent (define self.dates and self.days) """
         if dates is None:
             dates = '1984,2050'
@@ -353,6 +322,20 @@ class DataInventory(object):
         else:
             days = (1, 366)
         self.start_day, self.end_day = (int(days[0]), int(days[1]))
+
+    @property
+    def dates(self):
+        """ Get sorted list of dates """
+        return [k for k in sorted(self.data)]
+
+    def __getitem__(self, date):
+        return self.data[date]
+
+    def get_timeseries(self, product=''):
+        """ Read all files as time series """
+        filenames = [self.data[date].products[product] for date in self.dates]
+        img = gippy.GeoImage(filenames)
+        return img
 
     def process(self, *args, **kwargs):
         """ Process data in inventory """
@@ -375,18 +358,6 @@ class DataInventory(object):
             self.data[date].project(*args, **kwargs)
         VerboseOut('Completed creating project files in %s' % (datetime.now()-start))
 
-    # TODO - check if this is needed
-    def get_products(self, date):
-        # Get list of products for given date
-        # this doesn't handle different tiles (if prod exists for one tile, it lists it)
-        prods = []
-        dat = self.data[date]
-        for t in dat.tiles:
-            for p in dat.tiles[t].products:
-                prods.append(p)
-            #for prod in data.products.keys(): prods.append(prod)
-        return sorted(set(prods))
-
     def print_inv(self, md=False, compact=False, products=False):
         """ Print inventory """
         self.print_tile_coverage()
@@ -394,8 +365,9 @@ class DataInventory(object):
         if len(self.dates) == 0:
             VerboseOut('No matching files')
             return
+        site_name = os.path.splitext(os.path.basename(self.site))[0]
         if self.site is not None:
-            print Colors.BOLD + 'Asset Coverage for site %s' % self.site_name + Colors.OFF
+            print Colors.BOLD + 'Asset Coverage for site %s' % site_name + Colors.OFF
         else:
             print Colors.BOLD + 'Asset Holdings' + Colors.OFF
         # Header
@@ -440,13 +412,6 @@ class DataInventory(object):
         for k in sorted(sensors.keys()):
             print sensors[k] + k + Colors.OFF
 
-    def get_timeseries(self, product=''):
-        """ Read all files as time series """
-        # assumes only one sensor row for each date
-        filenames = [self.data[date].products[product] for date in self.dates]
-        img = gippy.GeoImage(filenames)
-        return img
-
     @staticmethod
     def main(cls):
         dhf = argparse.ArgumentDefaultsHelpFormatter
@@ -483,7 +448,7 @@ class DataInventory(object):
         parser = subparser.add_parser('inventory', help='Get Inventory', parents=parents, formatter_class=dhf)
         parser.add_argument('--md', help='Show dates using MM-DD', action='store_true', default=False)
         parser.add_argument('-p', '--products', help='Show products', default=False, action='store_true')
-        parser.add_argument('--compact', help='Print only inventory dates (no coverage%)', default=False, action='store_true')
+        parser.add_argument('--compact', help='Print only inventory dates (no coverage)', default=False, action='store_true')
 
         # Processing
         parserp = subparser.add_parser('process', help='Process scenes', parents=parents, formatter_class=dhf)
