@@ -24,6 +24,7 @@ from datetime import datetime
 
 from gipif.core import Repository, Asset, Data
 from gipif.inventory import DataInventory
+from gipif.utils import Colors
 from agspy.utils.table import Table
 import gipif.settings as settings
 

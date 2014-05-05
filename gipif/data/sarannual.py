@@ -29,7 +29,7 @@ from collections import OrderedDict
 import gippy
 from gipif.core import Repository, Asset, Data
 from gipif.inventory import DataInventory
-from gipif.utils import VerboseOut, File2List, List2File, RemoveFiles
+from gipif.utils import VerboseOut, File2List, List2File, RemoveFiles, Colors
 import gipif.settings as settings
 
 
