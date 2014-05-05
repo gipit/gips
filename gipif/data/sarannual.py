@@ -63,7 +63,7 @@ class SARAnnualAsset(Asset):
     Repository = SARAnnualRepository
     _sensors = {
         #'AFBS': 'PALSAR FineBeam Single Polarization',
-        'PALSAR': {'description': 'PALSAR Mosaic (FineBeam Dual Polarization)'},
+        'PALSAR': {'description': 'PALSAR Mosaic (FineBeam Dual Polarization)', 'colors': Colors.BOLD + Colors.RED},
         #'AWB1': 'PALSAR WideBeam (ScanSAR Short Mode)',
         #'JFBS': 'JERS-1 FineBeam Single Polarization'
     }

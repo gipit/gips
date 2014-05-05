@@ -25,9 +25,10 @@ import argparse
 from datetime import datetime
 import traceback
 import shutil
+import textwrap
 
 import gippy
-from gipif.utils import VerboseOut, parse_dates
+from gipif.utils import VerboseOut, parse_dates, Colors
 from gipif.GeoVector import GeoVector
 import commands
 import tempfile
@@ -35,12 +36,15 @@ from gipif.version import __version__
 
 from pdb import set_trace
 
+_colors = [Colors.PURPLE, Colors.BOLD + Colors.RED, Colors.BOLD + Colors.GREEN,
+           Colors.BOLD + Colors.BLUE, Colors.BOLD + Colors.PURPLE]
+
 
 class Tiles(object):
     """ Collection of tiles for a single date """
 
-    def __init__(self, dataclass, site=None, tiles=None, date=None, products=None,
-                 sensors=None, **kwargs):
+    def __init__(self, dataclass, site=None, tiles=None, date=None,
+                 products=None, sensors=None, **kwargs):
         """ Locate data matching vector location (or tiles) and date
         self.tile_coverage - dictionary of tile id and % coverage with site
         self.tiles - dictionary of tile id and a Tile instance
@@ -49,28 +53,28 @@ class Tiles(object):
         self.dataclass = dataclass
         self.site = site
         # Calculate spatial extent
-        if tiles is not None:
-            self.tile_coverage = dict((t, 1) for t in tiles)
-        elif site is not None:
-            self.tile_coverage = self.Repository.vector2tiles(GeoVector(site), **kwargs)
-        else:
-            self.tile_coverage = dict((t, (1, 1)) for t in self.Repository.find_tiles())
+        if isinstance(tiles, list):
+            tiles = dict((t, 1) for t in tiles)
+        self.tile_coverage = tiles
+        #if tiles is not None:
+        #    self.tile_coverage = dict((t, 1) for t in tiles)
+        #elif site is not None:
+        #    self.tile_coverage = self.Repository.vector2tiles(GeoVector(site), **kwargs)
+        #else:
+        #    self.tile_coverage = dict((t, (1, 1)) for t in self.Repository.find_tiles())
         self.date = date
         self.products = {}
         self.requested_products = products
-        #for p in products:
-        #    key = p
-        #    for arg in products[p]:
-        #        key = key + '_' + arg
-        #    self.products[key] = ''
 
         # For each tile locate files/products
         if sensors is None:
             sensors = dataclass.Asset._sensors.keys()
-        self.used_sensors = {s: dataclass.Asset._sensors.get(s, None) for s in sensors}
+        #self.used_sensors = {s: dataclass.Asset._sensors.get(s, None) for s in sensors}
+        #for i, key in enumerate(self.used_sensors):
+        #    self.used_sensors[key]['color'] = _colors[i]
 
         # TODO - expand verbose text: tiles, date, etc.
-        VerboseOut('%s: searching %s tiles for products and assets' % (self.date, len(self.tile_coverage)), 4)
+        VerboseOut('%s: searching %s tiles for products and assets' % (self.date, len(self.tile_coverage)), 5)
         self.tiles = {}
         for t in self.tile_coverage.keys():
             try:
@@ -86,6 +90,42 @@ class Tiles(object):
                 continue
         if len(self.tiles) == 0:
             raise Exception('No valid data found')
+
+    @property
+    def sensor_color(self):
+        return self.dataclass.Asset._sensors[self.sensor]['color']
+
+    def coverage(self):
+        """ Calculates % coverage of site for each asset """
+        asset_coverage = {}
+        for a in self.dataclass.Asset._assets:
+            cov = 0.0
+            norm = float(len(self.tile_coverage)) if self.site is None else 1.0
+            for t in self.tiles:
+                if a in self.tiles[t].assets:
+                    cov = cov + (self.tile_coverage[t][0]/norm)
+            asset_coverage[a] = cov*100
+        return asset_coverage
+
+    def print_assets(self, dformat='%j', products=False):
+        """ Print coverage for each and every asset """
+        #assets = [a for a in self.dataclass.Asset._assets]
+        sys.stdout.write('{:^12}'.format(self.date.strftime(dformat)))
+        asset_coverage = self.coverage()
+        for a in sorted(asset_coverage):
+            sys.stdout.write(self.sensor_color + '  {:>4.1f}%   '.format(asset_coverage[a]) + Colors.OFF)
+        if products:
+            prods = []
+            for t in self.tiles:
+                for p in self.tiles[t].products:
+                    prods.append(p)
+            for p in sorted(set(prods)):
+                sys.stdout.write('  '+p)
+        sys.stdout.write('\n')
+
+    #def print_products(self, dformat='%j'):
+    #    """ Print products that have been processed """
+    #    sys.stdout.write('{:^12}'.format(self.date.strftime(dformat)))
 
     def process(self, overwrite=False):
         """ Determines what products need to be processed for each tile and calls Data.process """
@@ -233,9 +273,8 @@ class DataInventory(object):
         return [k for k in sorted(self.data)]
 
     @property
-    def numdates(self):
-        """ Get number of dates """
-        return len(self.data)
+    def site_name(self):
+        return os.path.splitext(os.path.basename(self.site))[0]
 
     def __getitem__(self, date):
         return self.data[date]
@@ -295,12 +334,13 @@ class DataInventory(object):
         self.numfiles = 0
         for date in sorted(dates):
             try:
-                dat = Tiles(dataclass=dataclass, site=self.site, tiles=self.tiles.keys(),
+                dat = Tiles(dataclass=dataclass, site=self.site, tiles=self.tiles,
                             date=date, products=self.requested_products, **kwargs)
                 self.data[date] = dat
                 self.numfiles = self.numfiles + len(dat.tiles)
             except Exception, e:
-                VerboseOut(traceback.format_exc(), 4)
+                pass
+                #VerboseOut(traceback.format_exc(), 4)
                 #VerboseOut('Inventory error %s' % e)
 
     def temporal_extent(self, dates, days):
@@ -347,66 +387,58 @@ class DataInventory(object):
             #for prod in data.products.keys(): prods.append(prod)
         return sorted(set(prods))
 
-    def assets(self):
-        """ Print caledndar of assets """
-        print '\nAsset Inventory'
-        #cov = 0.0
-        #cov = [cov + self.tiles[t][0] for t in dat.tiles.keys()]
-        for asset in self.dataclass.Asset._assets:
-            print asset
-
-    def printcalendar(self, md=False, products=False):
-        """ print calendar for raw original datafiles """
-        #import calendar
-        #cal = calendar.TextCalendar()
-        oldyear = ''
-
-        # print tile coverage
+    def print_inv(self, md=False, compact=False, products=False):
+        """ Print inventory """
+        self.print_tile_coverage()
+        print
+        if len(self.dates) == 0:
+            VerboseOut('No matching files')
+            return
         if self.site is not None:
-            print '\nTILE COVERAGE'
-            print '{:^8}{:>14}{:>14}'.format('Tile', '% Coverage', '% Tile Used')
+            print Colors.BOLD + 'Asset Coverage for site %s' % self.site_name + Colors.OFF
+        else:
+            print Colors.BOLD + 'Asset Holdings' + Colors.OFF
+        # Header
+        #datestr = ' Month/Day' if md else ' Day of Year'
+        header = Colors.BOLD + Colors.UNDER + '{:^12}'.format('DATE')
+        for a in sorted(self.dataclass.Asset._assets.keys()):
+            header = header + ('{:^10}'.format(a if a != '' else 'Coverage'))
+        if products:
+            header = header + '{:^10}'.format('Products')
+        header = header + Colors.OFF
+        print header
+        dformat = '%m-%d' if md else '%j'
+        # Asset inventory
+        oldyear = 0
+        formatstr = '\n{:<12}' if compact else '{:<12}\n'
+        for date in self.dates:
+            sensor_color = self.dataclass.Asset._sensors[self.data[date].sensor]['color']
+            if date.year != oldyear:
+                sys.stdout.write(Colors.BOLD + formatstr.format(date.year) + Colors.OFF)
+            if compact:
+                dstr = ('{:^%s}' % (7 if md else 4)).format(date.strftime(dformat))
+                sys.stdout.write(sensor_color + dstr + Colors.OFF)
+            else:
+                self.data[date].print_assets(dformat, products)
+            oldyear = date.year
+        if self.numfiles != 0:
+            VerboseOut("\n%s files on %s dates" % (self.numfiles, len(self.dates)))
+            self.print_legend()
+
+    def print_tile_coverage(self):
+        if self.site is not None:
+            print Colors.BOLD + '\nTile Coverage'
+            print Colors.UNDER + '{:^8}{:>14}{:>14}'.format('Tile', '% Coverage', '% Tile Used') + Colors.OFF
             for t in sorted(self.tiles):
                 print "{:>8}{:>11.1f}%{:>11.1f}%".format(t, self.tiles[t][0]*100, self.tiles[t][1]*100)
-        # print inventory
-        print '\nINVENTORY'
-        for date in self.dates:
-            dat = self.data[date]
-            if md:
-                daystr = str(date.month) + '-' + str(date.day)
-            else:
-                daystr = str(date.timetuple().tm_yday).zfill(3)
-            if date.year != oldyear:
-                sys.stdout.write('\n{:>5}: '.format(date.year))
-                if products:
-                    sys.stdout.write('\n ')
-            colors = {}
-            for i, s in enumerate(self.dataclass.Asset.sensor_names()):
-                colors[s] = self._colororder[i]
-            #for dat in self.data[date]:
-            col = colors[self.dataclass.Asset._sensors[dat.sensor]['description']]
 
-            sys.stdout.write(self._colorize('{:<6}'.format(daystr), col))
-            if products:
-                sys.stdout.write('        ')
-                #prods = [p for p in self.get_products(date) if p.split('_')[0] in self.products]
-                #for p in prods:
-                for p in self.get_products(date):
-                    sys.stdout.write(self._colorize('{:<12}'.format(p), col))
-                sys.stdout.write('\n ')
-            oldyear = date.year
-        sys.stdout.write('\n')
-        if self.numfiles != 0:
-            VerboseOut("\n%s files on %s dates" % (self.numfiles, self.numdates))
-            self.legend()
-        else:
-            VerboseOut('No matching files')
-
-    def legend(self):
-        print '\nSENSORS'
-        #sensors = sorted(self.dataclass.Tile.Asset._sensors.values())
-        for i, s in enumerate(self.dataclass.Asset.sensor_names()):
-            print self._colorize(s, self._colororder[i])
-            #print self._colorize(self.dataclass.sensors[s], self._colororder[s])
+    def print_legend(self):
+        print Colors.BOLD + '\nSENSORS' + Colors.OFF
+        sensors = {}
+        for key, val in self.dataclass.Asset._sensors.items():
+            sensors[val['description']] = val['color']
+        for k in sorted(sensors.keys()):
+            print sensors[k] + k + Colors.OFF
 
     def get_timeseries(self, product=''):
         """ Read all files as time series """
@@ -451,6 +483,7 @@ class DataInventory(object):
         parser = subparser.add_parser('inventory', help='Get Inventory', parents=parents, formatter_class=dhf)
         parser.add_argument('--md', help='Show dates using MM-DD', action='store_true', default=False)
         parser.add_argument('-p', '--products', help='Show products', default=False, action='store_true')
+        parser.add_argument('--compact', help='Print only inventory dates (no coverage%)', default=False, action='store_true')
 
         # Processing
         parserp = subparser.add_parser('process', help='Process scenes', parents=parents, formatter_class=dhf)
@@ -512,7 +545,7 @@ class DataInventory(object):
                 site=args.site, dates=args.dates, days=args.days, tiles=args.tiles,
                 products=products, pcov=args.pcov, ptile=args.ptile, fetch=args.fetch, **kwargs)
             if args.command == 'inventory':
-                inv.printcalendar(args.md, products=args.products)
+                inv.print_inv(args.md, compact=args.compact, products=args.products)
             elif args.command == 'process':
                 gippy.Options.SetChunkSize(args.chunksize)
                 inv.process(overwrite=args.overwrite)

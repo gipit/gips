@@ -33,7 +33,7 @@ import numpy as np
 import gippy
 from gipif.core import Repository, Asset, Data
 from gipif.inventory import DataInventory
-from gipif.utils import File2List, List2File, VerboseOut
+from gipif.utils import File2List, List2File, VerboseOut, Colors
 import gipif.settings as settings
 
 
@@ -65,9 +65,9 @@ class ModisAsset(Asset):
     Repository = ModisRepository
 
     _sensors = {
-        'MOD': {'description': 'Terra'},
-        'MYD': {'description': 'Aqua'},
-        'MCD': {'description': 'Combined'}
+        'MOD': {'description': 'Terra', 'color': Colors.PURPLE},
+        'MYD': {'description': 'Aqua', 'color': Colors.BOLD + Colors.RED},
+        'MCD': {'description': 'Combined', 'color': Colors.BOLD + Colors.GREEN}
     }
 
     _asset_layers = {

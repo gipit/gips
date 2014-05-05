@@ -51,7 +51,7 @@ class CDLRepository(Repository):
 class CDLAsset(Asset):
     Repository = CDLRepository
     _sensors = {
-        '': {'description': 'Crop Data Layer'}
+        '': {'description': 'Crop Data Layer', 'colors': Colors.BOLD + Colors.RED}
     }
     _assets = {
         '': {

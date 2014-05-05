@@ -63,10 +63,10 @@ class SARAsset(Asset):
     Repository = SARRepository
 
     _sensors = {
-        'AFBS': {'description': 'PALSAR FineBeam Single Polarization'},
-        'AFBD': {'description': 'PALSAR FineBeam Dual Polarization'},
-        'AWB1': {'description': 'PALSAR WideBeam (ScanSAR Short Mode)'},
-        'JFBS': {'description': 'JERS-1 FineBeam Single Polarization'}
+        'AFBS': {'description': 'PALSAR FineBeam Single Polarization', 'color': Colors.PURPLE},
+        'AFBD': {'description': 'PALSAR FineBeam Dual Polarization', 'color': Colors.BOLD + Colors.RED},
+        'AWB1': {'description': 'PALSAR WideBeam (ScanSAR Short Mode)', 'color': Colors.BOLD + Colors.GREEN},
+        'JFBS': {'description': 'JERS-1 FineBeam Single Polarization', 'color': Colors.BOLD + Colros.YELLOW}
     }
     _assets = {
         '': {
