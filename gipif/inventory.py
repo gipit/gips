@@ -407,7 +407,8 @@ class DataInventory(object):
         print Colors.BOLD + '\nSENSORS' + Colors.OFF
         sensors = {}
         for key in sorted(self.sensors):
-            print self.sensors[key]['color'] + '%s: %s' % (key, self.sensors[key]['description']) + Colors.OFF
+            scode = key+': ' if key !='' else ''
+            print self.sensors[key]['color'] + '%s%s' % (scode, self.sensors[key]['description']) + Colors.OFF
 
     @staticmethod
     def main(cls):
