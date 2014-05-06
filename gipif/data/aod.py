@@ -63,6 +63,11 @@ class AODRepository(Repository):
                 dates.append(datetime.datetime.strptime(year+day, '%Y%j').date())
         return dates
 
+    @classmethod
+    def vector2tiles(cls, *args, **kwargs):
+        """ There are no tiles """
+        return {'': (1, 1)}
+
 
 class AODAsset(Asset):
     Repository = AODRepository
