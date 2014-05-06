@@ -66,7 +66,7 @@ class SARAsset(Asset):
         'AFBS': {'description': 'PALSAR FineBeam Single Polarization', 'color': Colors.PURPLE},
         'AFBD': {'description': 'PALSAR FineBeam Dual Polarization', 'color': Colors.BOLD + Colors.RED},
         'AWB1': {'description': 'PALSAR WideBeam (ScanSAR Short Mode)', 'color': Colors.BOLD + Colors.GREEN},
-        'JFBS': {'description': 'JERS-1 FineBeam Single Polarization', 'color': Colors.BOLD + Colros.YELLOW}
+        'JFBS': {'description': 'JERS-1 FineBeam Single Polarization', 'color': Colors.BOLD + Colors.YELLOW}
     }
     _assets = {
         '': {

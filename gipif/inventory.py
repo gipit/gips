@@ -365,8 +365,8 @@ class DataInventory(object):
         if len(self.dates) == 0:
             VerboseOut('No matching files')
             return
-        site_name = os.path.splitext(os.path.basename(self.site))[0]
         if self.site is not None:
+            site_name = os.path.splitext(os.path.basename(self.site))[0]
             print Colors.BOLD + 'Asset Coverage for site %s' % site_name + Colors.OFF
         else:
             print Colors.BOLD + 'Asset Holdings' + Colors.OFF
