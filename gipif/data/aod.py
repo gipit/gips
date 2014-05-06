@@ -75,17 +75,17 @@ class AODAsset(Asset):
     # ???? Not specific to MODIS
     _sensors = {
         'MOD': {'description': 'MODIS Terra'},
-        'MYD': {'description': 'MODIS Aqua'},
+        #'MYD': {'description': 'MODIS Aqua'},
     }
     _assets = {
         'MOD08': {
             'pattern': 'MOD08_D3*hdf',
             'url': 'ladsweb.nascom.nasa.gov/allData/51/MOD08_D3'
         },
-        'MYD08': {
-            'pattern': 'MYD08_D3*hdf',
-            'url': 'ladsweb.nascom.nasa.gov/allData/51/MYD08_D3'
-        }
+        #'MYD08': {
+        #    'pattern': 'MYD08_D3*hdf',
+        #    'url': 'ladsweb.nascom.nasa.gov/allData/51/MYD08_D3'
+        #}
     }
 
     def __init__(self, filename):
