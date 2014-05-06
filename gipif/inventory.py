@@ -260,22 +260,32 @@ class DataInventory(object):
 
         self.data = {}
         # Create product dictionary of requested products and filename
+        prod_dict = {}
         if isinstance(products, list):
-            self.requested_products = dict([p, [p]] for p in products)
+            prod_dict = dict([p, [p]] for p in products)
         else:
-            self.requested_products = products
+            prod_dict = products
 
         # if no products specified and only 1 product available, use it
-        if len(self.requested_products) == 0 and len(dataclass._products) == 1:
+        if len(prod_dict) == 0 and len(dataclass._products) == 1:
             p = dataclass._products.keys()[0]
-            self.requested_products = {p: [p]}
+            prod_dict = {p: [p]}
+        # seperate out any composite products from normal products
+        self.requested_products = {}
+        self.composites = {}
+        for p in prod_dict:
+            if self.dataclass._products[p].get('composite', False):
+                self.composites[p] = prod_dict[p]
+            else:
+                self.requested_products[p] = prod_dict[p]
         #if self.products is None:
         #    self.products = dataclass.Tile._products.keys()
         #if len(self.products) == 0:
         #    self.products = dataclass.Tile._products.keys()
-
+        print self.requested_products
+        print self.composites
         if fetch:
-            products = [val[0] for val in self.requested_products.values()]
+            products = [val[0] for val in prod_dict.values()]
             try:
                 dataclass.fetch(products, self.tiles, (self.start_date, self.end_date), (self.start_day, self.end_day))
             except:
@@ -348,6 +358,7 @@ class DataInventory(object):
         VerboseOut('Completed processing in %s' % (datetime.now()-start))
 
     def project(self, *args, **kwargs):
+        """ Create project files for data in inventory """
         start = datetime.now()
         pstr = ' '.join(self.requested_products)
         dstr = '%s dates (%s - %s)' % (len(self.dates), self.dates[0], self.dates[-1])
