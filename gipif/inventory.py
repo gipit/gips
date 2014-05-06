@@ -278,12 +278,6 @@ class DataInventory(object):
                 self.composites[p] = prod_dict[p]
             else:
                 self.requested_products[p] = prod_dict[p]
-        #if self.products is None:
-        #    self.products = dataclass.Tile._products.keys()
-        #if len(self.products) == 0:
-        #    self.products = dataclass.Tile._products.keys()
-        print self.requested_products
-        print self.composites
         if fetch:
             products = [val[0] for val in prod_dict.values()]
             try:
