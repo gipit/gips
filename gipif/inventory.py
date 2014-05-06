@@ -36,9 +36,6 @@ from gipif.version import __version__
 
 from pdb import set_trace
 
-_colors = [Colors.PURPLE, Colors.BOLD + Colors.RED, Colors.BOLD + Colors.GREEN,
-           Colors.BOLD + Colors.BLUE, Colors.BOLD + Colors.PURPLE]
-
 
 class Tiles(object):
     """ Collection of tiles for a single date """
@@ -90,10 +87,6 @@ class Tiles(object):
                 continue
         if len(self.tiles) == 0:
             raise Exception('No valid data found')
-
-    @property
-    def sensor_color(self):
-        return self.dataclass.Asset._sensors[self.sensor]['color']
 
     def coverage(self):
         """ Calculates % coverage of site for each asset """
@@ -221,13 +214,13 @@ class Tiles(object):
         else:
             raise Exception('%s product does not exist' % product)
 
-    def print_assets(self, dformat='%j', products=False):
+    def print_assets(self, dformat='%j', products=False, color=''):
         """ Print coverage for each and every asset """
         #assets = [a for a in self.dataclass.Asset._assets]
         sys.stdout.write('{:^12}'.format(self.date.strftime(dformat)))
         asset_coverage = self.coverage()
         for a in sorted(asset_coverage):
-            sys.stdout.write(self.sensor_color + '  {:>4.1f}%   '.format(asset_coverage[a]) + Colors.OFF)
+            sys.stdout.write(color + '  {:>4.1f}%   '.format(asset_coverage[a]) + Colors.OFF)
         if products:
             prods = []
             for t in self.tiles:
@@ -244,6 +237,7 @@ class Tiles(object):
 
 class DataInventory(object):
     """ Manager class for data inventories """
+    _colors = [Colors.PURPLE, Colors.RED, Colors.GREEN, Colors.BLUE]
 
     def __init__(self, dataclass, site=None, tiles=None, dates=None, days=None, products=[], fetch=False, **kwargs):
         self.dataclass = dataclass
@@ -311,6 +305,11 @@ class DataInventory(object):
                 pass
                 #VerboseOut(traceback.format_exc(), 4)
                 #VerboseOut('Inventory error %s' % e)
+        sensors = set([self.data[date].sensor for date in self.data])
+        self.sensors = {}
+        for i, s in enumerate(sensors):
+            self.sensors[s] = self.dataclass.Asset._sensors[s]
+            self.sensors[s]['color'] = Colors.BOLD + self._colors[i]
 
     def _temporal_extent(self, dates, days):
         """ Temporal extent (define self.dates and self.days) """
@@ -384,14 +383,14 @@ class DataInventory(object):
         oldyear = 0
         formatstr = '\n{:<12}' if compact else '{:<12}\n'
         for date in self.dates:
-            sensor_color = self.dataclass.Asset._sensors[self.data[date].sensor]['color']
+            sensor = self.sensors[self.data[date].sensor]
             if date.year != oldyear:
                 sys.stdout.write(Colors.BOLD + formatstr.format(date.year) + Colors.OFF)
             if compact:
                 dstr = ('{:^%s}' % (7 if md else 4)).format(date.strftime(dformat))
-                sys.stdout.write(sensor_color + dstr + Colors.OFF)
+                sys.stdout.write(sensor['color'] + dstr + Colors.OFF)
             else:
-                self.data[date].print_assets(dformat, products)
+                self.data[date].print_assets(dformat, products, color=sensor['color'])
             oldyear = date.year
         if self.numfiles != 0:
             VerboseOut("\n\n%s files on %s dates" % (self.numfiles, len(self.dates)))
@@ -407,10 +406,8 @@ class DataInventory(object):
     def print_legend(self):
         print Colors.BOLD + '\nSENSORS' + Colors.OFF
         sensors = {}
-        for key, val in self.dataclass.Asset._sensors.items():
-            sensors[val['description']] = val['color']
-        for k in sorted(sensors.keys()):
-            print sensors[k] + k + Colors.OFF
+        for key in sorted(self.sensors):
+            print self.sensors[key]['color'] + '%s: %s' % (key, self.sensors[key]['description']) + Colors.OFF
 
     @staticmethod
     def main(cls):

@@ -24,7 +24,6 @@ from datetime import datetime
 
 from gipif.core import Repository, Asset, Data
 from gipif.inventory import DataInventory
-from gipif.utils import Colors
 from agspy.utils.table import Table
 import gipif.settings as settings
 
@@ -52,7 +51,7 @@ class CDLRepository(Repository):
 class CDLAsset(Asset):
     Repository = CDLRepository
     _sensors = {
-        '': {'description': 'Crop Data Layer', 'color': Colors.BOLD + Colors.RED}
+        '': {'description': 'Crop Data Layer'}
     }
     _assets = {
         '': {

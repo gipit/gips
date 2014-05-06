@@ -27,7 +27,7 @@ import numpy
 import gippy
 from gipif.core import Repository, Asset, Data
 from gipif.inventory import DataInventory
-from gipif.utils import File2List, List2File, VerboseOut, Colors
+from gipif.utils import File2List, List2File, VerboseOut
 import gipif.settings as settings
 from pdb import set_trace
 
@@ -69,8 +69,8 @@ class AODAsset(Asset):
 
     # ???? Not specific to MODIS
     _sensors = {
-        'MOD': {'description': 'MODIS Terra', 'color': Colors.PURPLE},
-        'MYD': {'description': 'MODIS Aqua', 'color': Colors.BOLD + Colors.RED},
+        'MOD': {'description': 'MODIS Terra'},
+        'MYD': {'description': 'MODIS Aqua'},
     }
     _assets = {
         'MOD08': {

@@ -33,7 +33,7 @@ from pdb import set_trace
 import gippy
 from gipif.core import Repository, Asset, Data
 from gipif.inventory import DataInventory
-from gipif.utils import VerboseOut, RemoveFiles, Colors
+from gipif.utils import VerboseOut, RemoveFiles
 import gipif.settings as settings
 
 from gipif.data.aod import AODData
@@ -73,7 +73,6 @@ class LandsatAsset(Asset):
             'E': [1983, 1796, 1536, 1031, 220.0, 0, 83.44],
             'K1': [0, 0, 0, 0, 0, 607.76, 0],
             'K2': [0, 0, 0, 0, 0, 1260.56, 0],
-            'color': Colors.PURPLE
         },
         'LE7': {
             'description': 'Landsat 7',
@@ -86,7 +85,6 @@ class LandsatAsset(Asset):
             'E': [1997, 1812, 1533, 1039, 230.8, 0, 84.90],
             'K1': [0, 0, 0, 0, 0, 666.09, 0],
             'K2': [0, 0, 0, 0, 0, 1282.71, 0],
-            'color': Colors.BOLD + Colors.RED,
         },
         'LC8': {
             'description': 'Landsat 8',
@@ -98,7 +96,6 @@ class LandsatAsset(Asset):
             'E': [2638.35, 2031.08, 1821.09, 2075.48, 1272.96, 246.94, 90.61, 369.36, 0, 0],
             'K1': [0, 0, 0, 0, 0, 0, 0, 0, 774.89, 480.89],
             'K2': [0, 0, 0, 0, 0, 0, 0, 0, 1321.08, 1201.14],
-            'color': Colors.BOLD + Colors.GREEN
         }
     }
 
