@@ -101,7 +101,7 @@ class AODAsset(Asset):
         self.sensor = bname[:3]
         #datafiles = self.datafiles()
         prefix = 'HDF4_EOS:EOS_GRID:"'
-        self.products = {'aero': prefix + filename + '":mod08:Optical_Depth_Land_And_Ocean_Mean'}
+        self.products = {'aod': prefix + filename + '":mod08:Optical_Depth_Land_And_Ocean_Mean'}
 
     def datafiles(self):
         indexfile = self.filename + '.index'
@@ -129,15 +129,16 @@ class AODData(Data):
     Asset = AODAsset
 
     _products = {
-        'aero': {
-            'description': 'Aerosols',
+        'aod': {
+            'description': 'Aerosol Optical Depth',
             # the list of asset types associated with this product
             'assets': ['MOD08'],  # , 'MYD08'],
         },
-        'aerolta': {
-            'description': 'Aerosols, average daily',
+        'dailyaod': {
+            'description': 'Average daily AOD',
             # the list of asset types associated with this product
             'assets': ['MOD08'],  # , 'MYD08'],
+            'composite': True,
         },
     }
 
@@ -153,7 +154,7 @@ class AODData(Data):
     def process_composites(cls, products):
         start = datetime.datetime.now()
         for product in products:
-            if product == 'aerolta':
+            if product == 'dailyaod':
                 cls.process_aerolta_all()
 
     @classmethod
