@@ -431,6 +431,7 @@ class DataInventory(object):
         group.add_argument('-t', '--tiles', nargs='*', help='Tile designations', default=None)
         group.add_argument('-d', '--dates', help='Range of dates (YYYY-MM-DD,YYYY-MM-DD)')
         group.add_argument('--days', help='Include data within these days of year (doy1,doy2)', default=None)
+        group.add_argument('--sensors', help='Sensors to include', nargs='*', default=None)
         group.add_argument('--fetch', help='Fetch any missing data (if supported)', default=False, action='store_true')
         #group.add_argument('-p', '--products', nargs='*', help='Process/filter these products', default=None)
         group.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2: debug', default=1, type=int)
@@ -508,7 +509,7 @@ class DataInventory(object):
         try:
             inv = cls.inventory(
                 site=args.site, dates=args.dates, days=args.days, tiles=args.tiles,
-                products=products, pcov=args.pcov, ptile=args.ptile, fetch=args.fetch, **kwargs)
+                products=products, pcov=args.pcov, ptile=args.ptile, fetch=args.fetch, sensors=args.sensors, **kwargs)
             if args.command == 'inventory':
                 inv.print_inv(args.md, compact=args.compact, products=args.products)
             elif args.command == 'process':
