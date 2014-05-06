@@ -33,7 +33,7 @@ import ftplib
 import inspect
 
 import gippy
-from gipif.utils import VerboseOut, RemoveFiles, File2List, List2File, Colors
+from gipif.utils import VerboseOut, RemoveFiles, File2List, List2File
 from gipif.inventory import DataInventory
 import gipif.settings as settings
 from gipif.GeoVector import GeoVector
