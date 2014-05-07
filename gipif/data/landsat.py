@@ -252,7 +252,8 @@ class LandsatData(Data):
             atmos = AODData.inventory(tile='', dates=self.date.strftime('%Y-%j'), fetch=True, products=['aod'])
             atmos = atmos[atmos.dates[0]].tiles['']
             aod = atmos.get_point(geo['lat'], geo['lon'])
-        except:
+        except Exception, e:
+            VerboseOut(traceback.format_exc(), 5)
             VerboseOut('Problem retrieving AOD. Using default', 4)
             aod = 0.17
         s.aot550 = aod
