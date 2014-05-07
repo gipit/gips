@@ -213,7 +213,7 @@ class AODData(Data):
         #img[band].Smooth(imgout[1])
         #mean = numpy.multiply(imgout[1].Read(), mask)
 
-    def get_point(self, lat, lon, product='aero'):
+    def get_point(self, lat, lon, product='aod'):
         pixx = int(numpy.round(float(lon) + 179.5))
         pixy = int(numpy.round(89.5 - float(lat)))
         roi = gippy.iRect(pixx-1, pixy-1, 3, 3)
