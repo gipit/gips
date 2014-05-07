@@ -342,7 +342,7 @@ class Asset(object):
                 assets.append(archived[0])
 
         # Summarize
-        if len(numfiles) > 0:
+        if numfiles > 0:
             VerboseOut('%s files (%s links) from %s added to archive in %s' %
                       (numfiles, numlinks, os.path.abspath(path), datetime.now()-start))
         if numfiles != len(fnames):
