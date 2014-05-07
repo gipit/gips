@@ -249,7 +249,7 @@ class LandsatData(Data):
         #    print 'AOD (old) = %s' % old_aod
 
         try:
-            atmos = AODData.inventory(tile='', dates=self.date.strftime('%Y-%j'), fetch=True, products=['aero'])
+            atmos = AODData.inventory(tile='', dates=self.date.strftime('%Y-%j'), fetch=True, products=['aod'])
             atmos = atmos[atmos.dates[0]].tiles['']
             aod = atmos.get_point(geo['lat'], geo['lon'])
         except:
