@@ -31,7 +31,7 @@ from gipif.core import Repository, Asset, Data
 from gipif.inventory import DataInventory
 from gipif.utils import VerboseOut, File2List, List2File, RemoveFiles
 import gipif.settings as settings
-
+from pdb import set_trace
 
 class SARRepository(Repository):
     repo = settings.REPOS['SAR']
@@ -297,6 +297,7 @@ class SARData(Data):
                 # Note the date product DOES NOT mask by date
                 os.rename(datafiles['date'], fname)
                 os.rename(datafiles['date']+'.hdr', fname+'.hdr')
+                datafiles['date'] = fname
                 self.products['date'] = fname
 
         # Remove unused files
