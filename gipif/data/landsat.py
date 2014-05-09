@@ -217,14 +217,14 @@ class LandsatData(Data):
             optdep = 0.17
         f = None
 
-        VerboseOut('Optical Depth (from %s) = %s' % (source, optdep), 3)
+        VerboseOut('Optical Depth (from %s) = %s' % (source, optdep), 2)
         return optdep
 
     def SixS(self):
         from gipif.utils import atmospheric_model
         from Py6S import SixS, Geometry, AeroProfile, Altitudes, Wavelength, GroundReflectance, AtmosCorr, SixSHelpers
         start = datetime.now()
-        VerboseOut('Running atmospheric model (6S)', 3)
+        VerboseOut('Running atmospheric model (6S)', 2)
 
         dt = self.metadata['datetime']
         geo = self.metadata['geometry']
@@ -253,8 +253,8 @@ class LandsatData(Data):
             atmos = atmos[atmos.dates[0]].tiles['']
             aod = atmos.get_point(geo['lat'], geo['lon'])
         except Exception, e:
-            VerboseOut(traceback.format_exc(), 5)
-            VerboseOut('Problem retrieving AOD. Using default', 4)
+            VerboseOut(traceback.format_exc(), 3)
+            VerboseOut('Problem retrieving AOD. Using default', 2)
             aod = 0.17
         s.aot550 = aod
 
@@ -285,14 +285,14 @@ class LandsatData(Data):
                 outputs.append(s.outputs)
 
         results = {}
-        VerboseOut("{:>6} {:>8}{:>8}{:>8}".format('Band', 'T', 'Lu', 'Ld'), 3)
+        VerboseOut("{:>6} {:>8}{:>8}{:>8}".format('Band', 'T', 'Lu', 'Ld'), 2)
         for b, out in enumerate(outputs):
             t = out.trans['global_gas'].upward
             Lu = out.atmospheric_intrinsic_radiance
             Ld = (out.direct_solar_irradiance + out.diffuse_solar_irradiance + out.environmental_irradiance)/numpy.pi
             results[self.assets[''].visbands[b]] = [t, Lu, Ld]
-            VerboseOut("{:>6}: {:>8.3f}{:>8.2f}{:>8.2f}".format(self.assets[''].visbands[b], t, Lu, Ld), 3)
-        VerboseOut('Ran atmospheric model in %s' % str(datetime.now()-start), 3)
+            VerboseOut("{:>6}: {:>8.3f}{:>8.2f}{:>8.2f}".format(self.assets[''].visbands[b], t, Lu, Ld), 2)
+        VerboseOut('Ran atmospheric model in %s' % str(datetime.now()-start), 2)
 
         return results
 
@@ -394,10 +394,10 @@ class LandsatData(Data):
                 fname = imgout.Filename()
                 imgout = None
                 self.products[key] = fname
-                VerboseOut(' -> %s: processed in %s' % (os.path.basename(fname), datetime.now()-start))
+                VerboseOut(' -> %s: processed in %s' % (os.path.basename(fname), datetime.now()-start), 1)
             except Exception, e:
-                VerboseOut('Error creating product %s for %s: %s' % (key, bname, e), 3)
-                VerboseOut(traceback.format_exc(), 4)
+                VerboseOut('Error creating product %s for %s: %s' % (key, bname, e), 2)
+                VerboseOut(traceback.format_exc(), 3)
 
         # Process Indices
         indices = dict(groups['Index'], **groups['Tillage'])
@@ -410,7 +410,7 @@ class LandsatData(Data):
             prodarr = dict(zip([indices[p][0] for p in indices.keys()], fnames))
             prodout = gippy.Indices(img, prodarr)
             self.products.update(prodout)
-            VerboseOut(' -> %s: processed %s in %s' % (self.basename, indices.keys(), datetime.now()-start))
+            VerboseOut(' -> %s: processed %s in %s' % (self.basename, indices.keys(), datetime.now()-start), 1)
 
         img = None
         # cleanup directory
@@ -554,7 +554,7 @@ class LandsatData(Data):
             band.SetDynamicRange(dynrange[0], dynrange[1])
             image[bi] = band
 
-        VerboseOut('%s: read in %s' % (image.Basename(), datetime.now() - start), 3)
+        VerboseOut('%s: read in %s' % (image.Basename(), datetime.now() - start), 2)
         return image
 
     @classmethod

@@ -123,15 +123,15 @@ class Repository(object):
         """ Get GeoVector of sensor grid """
         fname = os.path.join(cls.vpath(), cls._tiles_vector)
         if os.path.isfile(fname):
-            VerboseOut('%s: tiles vector %s' % (cls.__name__, fname), 4)
             tiles = GeoVector(fname)
+            VerboseOut('%s: tiles vector %s' % (cls.__name__, fname), 4)
         else:
             try:
-                VerboseOut('%s: tiles vector %s' % (cls.__name__, cls._tiles_vector), 4)
                 db = settings.DATABASES['tiles']
                 dbstr = ("PG:dbname=%s host=%s port=%s user=%s password=%s" %
                         (db['NAME'], db['HOST'], db['PORT'], db['USER'], db['PASSWORD']))
                 tiles = GeoVector(dbstr, layer=cls._tiles_vector)
+                VerboseOut('%s: tiles vector %s' % (cls.__name__, cls._tiles_vector), 4)
             except:
                 raise Exception('unable to access %s tiles (file or database)' % cls.__name__)
         return tiles
@@ -165,7 +165,7 @@ class Repository(object):
                 remove_tiles.append(t)
         for t in remove_tiles:
             tiles.pop(t, None)
-        VerboseOut('%s: vector2tiles completed in %s' % (cls.__name__, datetime.now() - start), 4)
+        VerboseOut('%s: vector2tiles completed in %s' % (cls.__name__, datetime.now() - start), 2)
         return tiles
 
 
@@ -236,7 +236,7 @@ class Asset(object):
         for f in filenames:
             fname = os.path.join(path, f)
             if not os.path.exists(fname):
-                VerboseOut("Extracting %s" % f, 4)
+                VerboseOut("Extracting %s" % f, 3)
                 tfile.extract(f, path)
             try:
                 # this ensures we have permissions on extracted files
@@ -273,12 +273,12 @@ class Asset(object):
             ftp.retrlines('LIST', filenames.append)
 
             for f in ftp.nlst('*'):
-                VerboseOut("Downloading %s" % f, 3)
+                VerboseOut("Downloading %s" % f, 2)
                 ftp.retrbinary('RETR %s' % f, open(os.path.join(cls.Repository.spath(), f), "wb").write)
 
             ftp.close()
         except Exception, e:
-            VerboseOut(traceback.format_exc(), 4)
+            VerboseOut(traceback.format_exc(), 3)
             raise Exception("Error downloading")
 
     @classmethod
@@ -303,7 +303,7 @@ class Asset(object):
             files = glob.glob(os.path.join(tpath, cls._assets[a]['pattern']))
             # more than 1 asset??
             if len(files) > 1:
-                VerboseOut(files, 3)
+                VerboseOut(files, 2)
                 raise Exception("Duplicate(?) assets found")
             if len(files) == 1:
                 found.append(cls(files[0]))
@@ -357,7 +357,7 @@ class Asset(object):
             asset = cls(filename)
         except Exception, e:
             # if problem with inspection, move to quarantine
-            VerboseOut(traceback.format_exc(), 4)
+            VerboseOut(traceback.format_exc(), 3)
             qname = os.path.join(cls.Repository.qpath(), bname)
             if not os.path.exists(qname):
                 os.link(os.path.abspath(filename), qname)
@@ -376,9 +376,9 @@ class Asset(object):
                 # check if another asset exists
                 existing = cls.discover(asset.tile, d, asset.asset)
                 if len(existing) > 0:
-                    VerboseOut('%s: other version(s) already exists:' % bname, 2)
+                    VerboseOut('%s: other version(s) already exists:' % bname, 1)
                     for ef in existing:
-                        VerboseOut('\t%s' % os.path.basename(ef.filename), 2)
+                        VerboseOut('\t%s' % os.path.basename(ef.filename), 1)
                     otherversions = True
                 else:
                     try:
@@ -394,7 +394,7 @@ class Asset(object):
                         VerboseOut(bname + ' -> ' + newfilename, 2)
                         numlinks = numlinks + 1
                     except:
-                        VerboseOut(traceback.format_exc(), 4)
+                        VerboseOut(traceback.format_exc(), 3)
                         VerboseOut('%s: probem adding to archive' % filename)
             else:
                 VerboseOut('%s already in archive' % filename, 2)
@@ -469,10 +469,9 @@ class Data(object):
         self.products.update(prods)
         if len(self.assets) == 0:
             raise Exception('no assets')
-
         #VerboseOut('%s %s: assets and products found' % (tile, date), 5)
-        VerboseOut(self.assets, 5)
-        VerboseOut(self.products, 5)
+        #VerboseOut(self.assets, 5)
+        #VerboseOut(self.products, 5)
 
     @property
     def Repository(self):

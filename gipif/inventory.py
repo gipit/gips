@@ -71,7 +71,7 @@ class Tiles(object):
         #    self.used_sensors[key]['color'] = _colors[i]
 
         # TODO - expand verbose text: tiles, date, etc.
-        VerboseOut('%s: searching %s tiles for products and assets' % (self.date, len(self.tile_coverage)), 5)
+        VerboseOut('%s: searching %s tiles for products and assets' % (self.date, len(self.tile_coverage)), 4)
         self.tiles = {}
         for t in self.tile_coverage.keys():
             try:
@@ -83,7 +83,7 @@ class Tiles(object):
                 # check all tiles - should be same sensor - MODIS?
                 self.sensor = tile.sensor
             except:
-                VerboseOut(traceback.format_exc(), 5)
+                #VerboseOut(traceback.format_exc(), 5)
                 continue
         if len(self.tiles) == 0:
             raise Exception('No valid data found')
@@ -143,7 +143,7 @@ class Tiles(object):
             sensor = self.sensor if self.sensor != '' else ''
             for product in self.requested_products:
                 filename = os.path.join(datadir, bname + ('_%s_%s.tif' % (sensor, product)))
-                VerboseOut('Projecting to %s' % filename, 4)
+                VerboseOut('Projecting to %s' % filename, 2)
                 if not os.path.exists(filename):
                     filenames = [self.tiles[t].products[product] for t in self.tiles]
                     # TODO - cookiecutter should validate pixels in image.  Throw exception if not
@@ -156,7 +156,7 @@ class Tiles(object):
             if mask is not None:
                 self._applymask(self.products.values(), self.products[mask])
         t = datetime.now() - start
-        VerboseOut('%s: created project files for %s tiles in %s' % (self.date, len(self.tiles), t), 3)
+        VerboseOut('%s: created project files for %s tiles in %s' % (self.date, len(self.tiles), t), 2)
 
     def _mosaic(self, infiles, outfile, vectorfile):
         """ Mosaic multiple files together, but do not warp """
@@ -288,7 +288,7 @@ class DataInventory(object):
             try:
                 dataclass.fetch(products, self.tiles, (self.start_date, self.end_date), (self.start_day, self.end_day))
             except:
-                VerboseOut(traceback.format_exc(), 5)
+                VerboseOut(traceback.format_exc(), 3)
             dataclass.Asset.archive(Repository.spath())
 
         # get all potential matching dates for tiles
@@ -301,7 +301,7 @@ class DataInventory(object):
                         if date not in dates:
                             dates.append(date)
             except:
-                VerboseOut(traceback.format_exc(), 4)
+                VerboseOut(traceback.format_exc(), 3)
 
         self.numfiles = 0
         for date in sorted(dates):
@@ -312,8 +312,7 @@ class DataInventory(object):
                 self.numfiles = self.numfiles + len(dat.tiles)
             except Exception, e:
                 pass
-                #VerboseOut(traceback.format_exc(), 4)
-                #VerboseOut('Inventory error %s' % e)
+                #VerboseOut(traceback.format_exc(), 3)
         sensors = set([self.data[date].sensor for date in self.data])
         self.sensors = {}
         for i, s in enumerate(sensors):
@@ -350,11 +349,11 @@ class DataInventory(object):
         if self.requested_products is None:
             raise Exception('No products specified!')
         start = datetime.now()
-        VerboseOut('Processing %s files: %s' % (self.numfiles, ' '.join(self.requested_products)))
+        VerboseOut('Processing %s files: %s' % (self.numfiles, ' '.join(self.requested_products)), 1)
         for date in self.dates:
             self.data[date].process(*args, **kwargs)
         #self.data[date].process_composites(*args, **kwargs)
-        VerboseOut('Completed processing in %s' % (datetime.now()-start))
+        VerboseOut('Completed processing in %s' % (datetime.now()-start), 1)
 
     def project(self, *args, **kwargs):
         """ Create project files for data in inventory """
@@ -363,18 +362,18 @@ class DataInventory(object):
         start = datetime.now()
         pstr = ' '.join(self.requested_products)
         dstr = '%s dates (%s - %s)' % (len(self.dates), self.dates[0], self.dates[-1])
-        VerboseOut('Creating project files (%s) for %s' % (pstr, dstr))
+        VerboseOut('Creating project files (%s) for %s' % (pstr, dstr), 1)
         # res should default to data?
         for date in self.dates:
             self.data[date].project(*args, **kwargs)
-        VerboseOut('Completed creating project files in %s' % (datetime.now()-start))
+        VerboseOut('Completed creating project files in %s' % (datetime.now()-start), 1)
 
     def print_inv(self, md=False, compact=False):
         """ Print inventory """
         self.print_tile_coverage()
         print
         if len(self.dates) == 0:
-            VerboseOut('No matching files')
+            VerboseOut('No matching files!')
             return
         if self.site is not None:
             site_name = os.path.splitext(os.path.basename(self.site))[0]
@@ -404,7 +403,7 @@ class DataInventory(object):
                 self.data[date].print_assets(dformat, color=sensor['color'])
             oldyear = date.year
         if self.numfiles != 0:
-            VerboseOut("\n\n%s files on %s dates" % (self.numfiles, len(self.dates)))
+            VerboseOut("\n\n%s files on %s dates" % (self.numfiles, len(self.dates)), 1)
             self.print_legend()
 
     def print_tile_coverage(self):
@@ -457,7 +456,7 @@ class DataInventory(object):
         # Inventory
         parser = subparser.add_parser('inventory', help='Get Inventory', parents=parents, formatter_class=dhf)
         parser.add_argument('--md', help='Show dates using MM-DD', action='store_true', default=False)
-        parser.add_argument('--compact', help='Print only inventory dates (no coverage)', default=False, action='store_true')
+        parser.add_argument('--compact', help='Print only dates (no coverage)', default=False, action='store_true')
 
         # Processing
         parserp = subparser.add_parser('process', help='Process scenes', parents=parents, formatter_class=dhf)
@@ -481,7 +480,7 @@ class DataInventory(object):
         if 'format' in args:
             gippy.Options.SetDefaultFormat(args.format)
 
-        VerboseOut('GIPIF %s command line utility v%s' % (cls.name, __version__))
+        VerboseOut('GIPIF %s command line utility v%s' % (cls.name, __version__), 1)
 
         if args.command == 'archive':
             # TODO - take in path argument
@@ -527,7 +526,7 @@ class DataInventory(object):
                 gippy.Options.SetChunkSize(args.chunksize)
                 inv.project(args.res, datadir=args.datadir, mask=args.mask, nowarp=args.nowarp)
             else:
-                VerboseOut('Command %s not recognized' % cmd)
+                VerboseOut('Command %s not recognized' % cmd, 0)
         except Exception, e:
             VerboseOut('Error in %s: %s' % (args.command, e))
             VerboseOut(traceback.format_exc(), 4)
