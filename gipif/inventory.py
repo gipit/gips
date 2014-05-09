@@ -143,6 +143,7 @@ class Tiles(object):
             sensor = self.sensor if self.sensor != '' else ''
             for product in self.requested_products:
                 filename = os.path.join(datadir, bname + ('_%s_%s.tif' % (sensor, product)))
+                VerboseOut('Projecting to %s' % filename, 4)
                 if not os.path.exists(filename):
                     filenames = [self.tiles[t].products[product] for t in self.tiles]
                     # TODO - cookiecutter should validate pixels in image.  Throw exception if not
@@ -343,9 +344,9 @@ class DataInventory(object):
     def process(self, *args, **kwargs):
         """ Process data in inventory """
         if self.requested_products is None:
-            raise Exception('No products specified for processing')
+            raise Exception('No products specified!')
         start = datetime.now()
-        VerboseOut('Requested products (%s) for %s files' % (' '.join(self.requested_products), self.numfiles))
+        VerboseOut('Processing %s files: %s' % (self.numfiles, ' '.join(self.requested_products)))
         for date in self.dates:
             self.data[date].process(*args, **kwargs)
         #self.data[date].process_composites(*args, **kwargs)
@@ -353,6 +354,8 @@ class DataInventory(object):
 
     def project(self, *args, **kwargs):
         """ Create project files for data in inventory """
+        if self.requested_products is None:
+            raise Exception('No products specified!')
         start = datetime.now()
         pstr = ' '.join(self.requested_products)
         dstr = '%s dates (%s - %s)' % (len(self.dates), self.dates[0], self.dates[-1])
