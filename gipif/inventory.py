@@ -215,20 +215,24 @@ class Tiles(object):
         else:
             raise Exception('%s product does not exist' % product)
 
-    def print_assets(self, dformat='%j', products=False, color=''):
+    def print_assets(self, dformat='%j', color=''):
         """ Print coverage for each and every asset """
         #assets = [a for a in self.dataclass.Asset._assets]
         sys.stdout.write('{:^12}'.format(self.date.strftime(dformat)))
         asset_coverage = self.coverage()
         for a in sorted(asset_coverage):
             sys.stdout.write(color + '  {:>4.1f}%   '.format(asset_coverage[a]) + Colors.OFF)
-        if products:
-            prods = []
-            for t in self.tiles:
-                for p in self.tiles[t].products:
-                    prods.append(p)
-            for p in sorted(set(prods)):
-                sys.stdout.write('  '+p)
+        products = [p for t in self.tiles for p in self.tiles[t].products]
+        prods = []
+        for p in set(products):
+            if products.count(p) == len(self.tiles):
+                prods.append(p)
+        #prods = []
+        #for t in self.tiles:
+        #    for p in self.tiles[t].products:
+                #prods.append(p)
+        for p in sorted(set(prods)):
+            sys.stdout.write('  '+p)
         sys.stdout.write('\n')
 
     #def print_products(self, dformat='%j'):
@@ -365,7 +369,7 @@ class DataInventory(object):
             self.data[date].project(*args, **kwargs)
         VerboseOut('Completed creating project files in %s' % (datetime.now()-start))
 
-    def print_inv(self, md=False, compact=False, products=False):
+    def print_inv(self, md=False, compact=False):
         """ Print inventory """
         self.print_tile_coverage()
         print
@@ -382,8 +386,7 @@ class DataInventory(object):
         header = Colors.BOLD + Colors.UNDER + '{:^12}'.format('DATE')
         for a in sorted(self.dataclass.Asset._assets.keys()):
             header = header + ('{:^10}'.format(a if a != '' else 'Coverage'))
-        if products:
-            header = header + '{:^10}'.format('Products')
+        header = header + '{:^10}'.format('Products')
         header = header + Colors.OFF
         print header
         dformat = '%m-%d' if md else '%j'
@@ -398,7 +401,7 @@ class DataInventory(object):
                 dstr = ('{:^%s}' % (7 if md else 4)).format(date.strftime(dformat))
                 sys.stdout.write(sensor['color'] + dstr + Colors.OFF)
             else:
-                self.data[date].print_assets(dformat, products, color=sensor['color'])
+                self.data[date].print_assets(dformat, color=sensor['color'])
             oldyear = date.year
         if self.numfiles != 0:
             VerboseOut("\n\n%s files on %s dates" % (self.numfiles, len(self.dates)))
@@ -454,7 +457,6 @@ class DataInventory(object):
         # Inventory
         parser = subparser.add_parser('inventory', help='Get Inventory', parents=parents, formatter_class=dhf)
         parser.add_argument('--md', help='Show dates using MM-DD', action='store_true', default=False)
-        parser.add_argument('-p', '--products', help='Show products', default=False, action='store_true')
         parser.add_argument('--compact', help='Print only inventory dates (no coverage)', default=False, action='store_true')
 
         # Processing
@@ -517,7 +519,7 @@ class DataInventory(object):
                 site=args.site, dates=args.dates, days=args.days, tiles=args.tiles,
                 products=products, pcov=args.pcov, ptile=args.ptile, fetch=args.fetch, sensors=args.sensors, **kwargs)
             if args.command == 'inventory':
-                inv.print_inv(args.md, compact=args.compact, products=args.products)
+                inv.print_inv(args.md, compact=args.compact)
             elif args.command == 'process':
                 gippy.Options.SetChunkSize(args.chunksize)
                 inv.process(overwrite=args.overwrite)
