@@ -58,6 +58,15 @@ class ModisRepository(Repository):
         tile = "h%sv%s" % (h, v)
         return tile
 
+    # @classmethod
+    # def find_dates(cls, tile):
+    #     """ Get list of dates available in repository for a tile """
+    #     tdir = cls.path(tile=tile)
+    #     if os.path.exists(tdir):
+    #         return [datetime.strptime(os.path.basename(d), cls._datedir).date() for d in os.listdir(tdir)]
+    #     else:
+    #         return []
+
 
 class ModisAsset(Asset):
     Repository = ModisRepository
@@ -313,23 +322,38 @@ class ModisData(Data):
                 refl = gippy.GeoImage(reflsds) 
                 qc = gippy.GeoImage(qcsds) 
 
+
+                # print dir(refl)
+                # print dir(refl[0])
+                # print refl[0].NoDataValue()
+
                 redimg = refl[0].Read()
                 nirimg = refl[1].Read()
                 bluimg = refl[2].Read()
                 grnimg = refl[3].Read()
                 mirimg = refl[5].Read()
 
-                wmissingred = np.where(redimg == -32768)
-                wmissingnir = np.where(redimg == -32768)
-                wmissingblu = np.where(redimg == -32768)
-                wmissinggrn = np.where(redimg == -32768)
-                wmissingmir = np.where(redimg == -32768)
 
-                print len(wmissingred[0])
-                print len(wmissingnir[0])
-                print len(wmissingblu[0])
-                print len(wmissinggrn[0])
-                print len(wmissingmir[0])
+                # missing = redimg.max()
+                missing = 32767 
+
+                wred = np.where(redimg != missing)
+                wnir = np.where(nirimg != missing)
+                wblu = np.where(bluimg != missing)
+                wgrn = np.where(grnimg != missing)
+                wmir = np.where(mirimg != missing)
+
+                print len(wred[0])
+                print len(wnir[0])
+                print len(wblu[0])
+                print len(wgrn[0])
+                print len(wmir[0])
+
+                print redimg.min(), redimg.max(), redimg[wred].mean(), redimg[wred].max()
+                print nirimg.min(), nirimg.max(), nirimg[wnir].mean(), nirimg[wnir].max()
+                print bluimg.min(), bluimg.max(), bluimg[wblu].mean(), bluimg[wblu].max()
+                print grnimg.min(), grnimg.max(), grnimg[wgrn].mean(), grnimg[wgrn].max()
+                print mirimg.min(), mirimg.max(), mirimg[wnir].mean(), mirimg[wmir].max()
 
 
                 meta = {}
