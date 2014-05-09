@@ -89,7 +89,7 @@ class MODTRAN():
 
         # Create link to MODTRAN data dir
         if not os.path.lexists('DATA'):
-            os.symlink(_datadir, 'DATA')
+            os.symlink(self._datadir, 'DATA')
 
         if merraprofile:
             mprofile = atmprofile(lat, lon, date)

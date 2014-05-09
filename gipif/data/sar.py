@@ -30,11 +30,14 @@ import gippy
 from gipif.core import Repository, Asset, Data
 from gipif.inventory import DataInventory
 from gipif.utils import VerboseOut, File2List, List2File, RemoveFiles
-
+import gipif.settings as settings
+from pdb import set_trace
 
 class SARRepository(Repository):
-    _rootpath = '/titan/data/SAR'
-    #_tilesdir = 'tiles.dev'
+    repo = settings.REPOS['SAR']
+    _rootpath = repo.get('rootpath', Repository._rootpath)
+    _tiles_vector = repo.get('tiles_vector', Repository._tiles_vector)
+    _tile_attribute = repo.get('tile_attribute', Repository._tile_attribute)
 
     @classmethod
     def feature2tile(cls, feature):
@@ -137,7 +140,7 @@ class SARAsset(Asset):
 
         # Check if inspecting a file in the repository
         path = os.path.dirname(filename)
-        if self.Repository._rootpath in path:
+        if self.Repository.path() in path:
             date = datetime.datetime.strptime(os.path.basename(path), self.Repository._datedir).date()
             dates = date
             #VerboseOut('Date from repository = '+str(dates),4)
@@ -175,6 +178,7 @@ class SARAsset(Asset):
                 if not (cdate <= date <= (cdate + datetime.timedelta(days=45))):
                     raise Exception('%s: Date %s outside of cycle range (%s)' % (bname, str(date), str(cdate)))
             #VerboseOut('%s: inspect %s' % (fname,datetime.datetime.now()-start), 4)
+        self.date = dates
         self.rootname = rootname
 
     @classmethod
@@ -239,6 +243,9 @@ class SARData(Data):
         ('linci', {
             'description': 'Incident angles',
         }),
+        ('date', {
+            'description': 'Day of year array',
+        }),
     ])
     _groups = {
         'Standard': _products.keys(),
@@ -286,6 +293,12 @@ class SARData(Data):
                 os.rename(datafiles['linci'], fname)
                 os.rename(datafiles['linci']+'.hdr', fname+'.hdr')
                 self.products['linci'] = fname
+            if val[0] == 'date':
+                # Note the date product DOES NOT mask by date
+                os.rename(datafiles['date'], fname)
+                os.rename(datafiles['date']+'.hdr', fname+'.hdr')
+                datafiles['date'] = fname
+                self.products['date'] = fname
 
         # Remove unused files
         # TODO - checking key rather than val[0] (the full product suffix)

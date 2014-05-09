@@ -34,19 +34,21 @@ import gippy
 from gipif.core import Repository, Asset, Data
 from gipif.inventory import DataInventory
 from gipif.utils import File2List, List2File, VerboseOut
+import gipif.settings as settings
 
 
 def binmask(arr, bit):
     """ Return boolean array indicating which elements as binary have a 1 in
         a specified bit position. Input is Numpy array.
     """
-    return arr & (1<<(bit-1)) == (1<<(bit-1))
+    return arr & (1 << (bit-1)) == (1 << (bit-1))
 
 
 class ModisRepository(Repository):
-
-    _rootpath = '/titan/data/modis'
-    _tiles_vector = 'modis_sinusoidal_grid_world.shp'
+    repo = settings.REPOS['modis']
+    _rootpath = repo.get('rootpath', Repository._rootpath)
+    _tiles_vector = repo.get('tiles_vector', Repository._tiles_vector)
+    _tile_attribute = repo.get('tile_attribute', Repository._tile_attribute)
 
     @classmethod
     def feature2tile(cls, feature):

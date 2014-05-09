@@ -28,10 +28,16 @@ import gippy
 from gipif.core import Repository, Asset, Data
 from gipif.inventory import DataInventory
 from gipif.utils import File2List, List2File, VerboseOut
+import gipif.settings as settings
+from pdb import set_trace
 
 
 class AODRepository(Repository):
-    _rootpath = '/titan/data/atmos'
+    repo = settings.REPOS['AOD']
+    _rootpath = repo.get('rootpath', Repository._rootpath)
+    _tiles_vector = repo.get('tiles_vector', Repository._tiles_vector)
+    _tile_attribute = repo.get('tile_attribute', Repository._tile_attribute)
+
     _datedir = '%Y%j'
 
     @classmethod
@@ -57,6 +63,11 @@ class AODRepository(Repository):
                 dates.append(datetime.datetime.strptime(year+day, '%Y%j').date())
         return dates
 
+    @classmethod
+    def vector2tiles(cls, *args, **kwargs):
+        """ There are no tiles """
+        return {'': (1, 1)}
+
 
 class AODAsset(Asset):
     Repository = AODRepository
@@ -64,17 +75,17 @@ class AODAsset(Asset):
     # ???? Not specific to MODIS
     _sensors = {
         'MOD': {'description': 'MODIS Terra'},
-        'MYD': {'description': 'MODIS Aqua'},
+        #'MYD': {'description': 'MODIS Aqua'},
     }
     _assets = {
         'MOD08': {
             'pattern': 'MOD08_D3*hdf',
             'url': 'ladsweb.nascom.nasa.gov/allData/51/MOD08_D3'
         },
-        'MYD08': {
-            'pattern': 'MYD08_D3*hdf',
-            'url': 'ladsweb.nascom.nasa.gov/allData/51/MYD08_D3'
-        }
+        #'MYD08': {
+        #    'pattern': 'MYD08_D3*hdf',
+        #    'url': 'ladsweb.nascom.nasa.gov/allData/51/MYD08_D3'
+        #}
     }
 
     def __init__(self, filename):
@@ -90,7 +101,7 @@ class AODAsset(Asset):
         self.sensor = bname[:3]
         #datafiles = self.datafiles()
         prefix = 'HDF4_EOS:EOS_GRID:"'
-        self.products = {'aero': prefix + filename + '":mod08:Optical_Depth_Land_And_Ocean_Mean'}
+        self.products = {'aod': prefix + filename + '":mod08:Optical_Depth_Land_And_Ocean_Mean'}
 
     def datafiles(self):
         indexfile = self.filename + '.index'
@@ -107,9 +118,10 @@ class AODAsset(Asset):
     @classmethod
     def archive(cls, path='.', recursive=False, keep=False):
         assets = super(AODAsset, cls).archive(path, recursive, keep)
-        dates = [a.date for a in assets]
-        for date in set(dates):
-            AODData.process_aerolta_daily(date.strftime('%j'))
+        # this creates new LTA files every archiving
+        #dates = [a.date for a in assets]
+        #for date in set(dates):
+        #    AODData.process_aerolta_daily(date.strftime('%j'))
 
 
 class AODData(Data):
@@ -117,26 +129,33 @@ class AODData(Data):
     Asset = AODAsset
 
     _products = {
-        'aero': {
-            'description': 'Aerosols',
+        'aod': {
+            'description': 'Aerosol Optical Depth',
             # the list of asset types associated with this product
             'assets': ['MOD08'],  # , 'MYD08'],
         },
-        'aerolta': {
-            'description': 'Aerosols, average daily',
+        'dailyaod': {
+            'description': 'Average daily AOD',
             # the list of asset types associated with this product
             'assets': ['MOD08'],  # , 'MYD08'],
+            'composite': True,
         },
     }
 
-    def process(self, products):
-        start = datetime.datetime.now()
+    #def process(self, products):
+    #    start = datetime.datetime.now()
         #bname = os.path.basename(self.assets[''].filename)
-        for product in products:
-            print product
+    #    for product in products:
             #if product == 'aerolta':
             #    self.process_aerolta()
-            VerboseOut(' -> %s: processed %s in %s' % (fout, product, datetime.datetime.now()-start))
+    #        VerboseOut(' -> %s: processed %s in %s' % (fout, product, datetime.datetime.now()-start))
+
+    @classmethod
+    def process_composites(cls, products):
+        start = datetime.datetime.now()
+        for product in products:
+            if product == 'dailyaod':
+                cls.process_aerolta_all()
 
     @classmethod
     def process_mean(cls, filenames, fout):
@@ -164,7 +183,7 @@ class AODData(Data):
             totalvar[inds] = numpy.divide(totalvar[inds], counts[inds])
             imgout[1].Write(totalvar)
             t = datetime.datetime.now()-start
-            VerboseOut('%s: mean/variances for %s files processed in %s' % (os.path.basename(fout), len(filenames), t))
+            VerboseOut('%s: mean + variance for %s files processed in %s' % (os.path.basename(fout), len(filenames), t))
         return imgout
 
     @classmethod
@@ -174,6 +193,7 @@ class AODData(Data):
         fnames = [inv[d].tiles[''].products['aero'] for d in inv.dates]
         fout = os.path.join(cls.Asset.Repository.cpath('aerolta'), 'aerolta_%s.tif' % str(day).zfill(3))
         imgout = cls.process_mean(fnames, fout)
+        VerboseOut('%s: processed' % os.path.basename(fout), 3)
         return imgout.Filename()
 
     @classmethod
@@ -188,63 +208,64 @@ class AODData(Data):
         filenames = []
         for day in range(1, 366):
             filenames.append(cls.process_aerolta_daily(day))
+        cls.process_aerolta()
         # spatial average
         #img[band].Smooth(imgout[1])
         #mean = numpy.multiply(imgout[1].Read(), mask)
 
-    def get_point(self, lat, lon, product=''):
+    def get_point(self, lat, lon, product='aod'):
         pixx = int(numpy.round(float(lon) + 179.5))
         pixy = int(numpy.round(89.5 - float(lat)))
         roi = gippy.iRect(pixx-1, pixy-1, 3, 3)
-        img = self.open(product=product)
+        #img = self.open(product=product)
+        img = gippy.GeoImage(self.products[product], False)
         nodata = img[0].NoDataValue()
         vals = img[0].Read(roi).squeeze()
         # TODO - do this automagically in swig wrapper
         vals[numpy.where(vals == nodata)] = numpy.nan
 
         val = vals[1, 1]
-        if val is numpy.nan:
+        source = 'original'
+        if numpy.isnan(val):
             val = numpy.nanmean(vals)
+            source = 'original spatial average'
 
         cpath = self.Repository.cpath('aerolta')
         day = self.date.strftime('%j')
 
-        if val is numpy.nan:
-            img = gippy.GeoImage(os.path.join(cpath, 'aerolta_%s.tif' % str(day).zfill(3)))
-            vals = img[0].Read(roi).squeeze()
-            if vals == numpy.nan:
-                val = numpy.nanmean(vals)
-            else:
-                val = vals[1, 1]
+        # Long-term average for day
+        if numpy.isnan(val):
+            try:
+                img = gippy.GeoImage(os.path.join(cpath, 'aerolta_%s.tif' % str(day).zfill(3)))
+                vals = img[0].Read(roi).squeeze()
+                if numpy.isnan(vals):
+                    val = numpy.nanmean(vals)
+                    source = 'daily and spatial average'
+                else:
+                    val = vals[1, 1]
+                    source = 'daily average'
+            except:
+                pass
 
-        if val is numpy.nan:
-            img = gippy.GeoImage(os.path.join(cpath, 'aerolta.tif'))
-            vals = img[0].Read(roi).squeeze()
-            if vals == numpy.nan:
-                val = numpy.nanmean(vals)
-            else:
-                val = vals[1, 1]
+        # Long-term average for all days and years
+        if numpy.isnan(val):
+            try:
+                img = gippy.GeoImage(os.path.join(cpath, 'aerolta.tif'))
+                vals = img[0].Read(roi).squeeze()
+                if numpy.isnan(vals):
+                    val = numpy.nanmean(vals)
+                    source = 'all days and spatial average'
+                else:
+                    val = vals[1, 1]
+                    source = 'all days average'
+            except:
+                pass
 
-        set_trace()
-
-        #total = 0
-        #count = 0
-        #for x, y in numpy.ndindex(vals.shape):
-        #    if vals[x,y] != nodata:
-        #        total = total + vals[x,y]
-        #        count = count+1
-        #set_trace()
-
-        day = self.date.strftime('%j')
-        print 'val', val
-        if val == img[0].NoData():
-            fname = os.path.join(self.Repository.cpath('aerolta'), 'aerolta_%s' % day)
-            img = gippy.GeoImage(fname)
-            val = img[0].Read(roi).squeeze()
-            print 'val', val
-        if val == img[0].NoData():
-            print 'still nodata aerosols'
+        if numpy.isnan(val):
             val = 0.17
+            source = 'default'
+
+        VerboseOut('%s (from %s) = %s' % (product, source, val), 3)
         return val
 
 

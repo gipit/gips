@@ -25,20 +25,20 @@ import tarfile
 import copy
 import numpy
 from collections import OrderedDict
-from pdb import set_trace
 
 import gippy
 from gipif.core import Repository, Asset, Data
 from gipif.inventory import DataInventory
 from gipif.utils import VerboseOut, File2List, List2File, RemoveFiles
+import gipif.settings as settings
 
 
 class SARAnnualRepository(Repository):
-    _rootpath = '/titan/data/SARannual'
+    repo = settings.REPOS['SARannual']
+    _rootpath = repo.get('rootpath', Repository._rootpath)
+    _tiles_vector = repo.get('tiles_vector', Repository._tiles_vector)
+    _tile_attribute = repo.get('tile_attribute', Repository._tile_attribute)
     _datedir = '%Y'
-    #_tilesdir = 'tiles.dev'
-
-    _tiles_vector = 'sar_tiles'
 
     @classmethod
     def feature2tile(cls, feature):

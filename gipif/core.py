@@ -27,11 +27,10 @@ import ogr
 from datetime import datetime
 import glob
 from shapely.wkb import loads
-from shapely.geometry import shape
 import tarfile
 import traceback
 import ftplib
-from pdb import set_trace
+import inspect
 
 import gippy
 from gipif.utils import VerboseOut, RemoveFiles, File2List, List2File
@@ -42,8 +41,9 @@ from gipif.GeoVector import GeoVector
 
 class Repository(object):
     """ Singleton (all classmethods) of file locations and sensor tiling system  """
-    # root directory to data
     _rootpath = ''
+    _tiles_vector = 'tiles.shp'
+    _tile_attribute = 'tile'
     # Format code of date directories in repository
     _datedir = '%Y%j'
 
@@ -52,9 +52,6 @@ class Repository(object):
     _qdir = 'quarantine'
     _sdir = 'stage'
     _vdir = 'vectors'
-
-    _tiles_vector = 'tiles.shp'
-    _tile_attribute = 'tile'
 
     @classmethod
     def feature2tile(cls, feature):
@@ -155,7 +152,6 @@ class Repository(object):
         tiles = {}
         tlayer.ResetReading()
         feat = tlayer.GetNextFeature()
-        #fldindex = feat.GetFieldIndex(cls._tiles_attribute)
         while feat is not None:
             tgeom = loads(feat.GetGeometryRef().ExportToWkb())
             area = geom.intersection(tgeom).area
@@ -202,7 +198,7 @@ class Asset(object):
         # tile designation
         self.tile = ''
         # full date
-        self.date = datetime.now()
+        self.date = datetime(1900, 1, 1)
         # sensor code (key used in cls.sensors dictionary)
         self.sensor = ''
         # dictionary of existing products in asset {'product name': [filename(s)]}
@@ -266,8 +262,12 @@ class Asset(object):
         try:
             ftp = ftplib.FTP(ftpurl)
             ftp.login('anonymous', settings.EMAIL)
-            ftp.cwd(os.path.join(ftpdir, date.strftime('%Y'), date.strftime('%j')))
+            pth = os.path.join(ftpdir, date.strftime('%Y'), date.strftime('%j'))
             ftp.set_pasv(True)
+            try:
+                ftp.cwd(pth)
+            except Exception, e:
+                raise Exception("Error downloading")
 
             filenames = []
             ftp.retrlines('LIST', filenames.append)
@@ -277,7 +277,7 @@ class Asset(object):
                 ftp.retrbinary('RETR %s' % f, open(os.path.join(cls.Repository.spath(), f), "wb").write)
 
             ftp.close()
-        except:
+        except Exception, e:
             VerboseOut(traceback.format_exc(), 4)
             raise Exception("Error downloading")
 
@@ -342,8 +342,9 @@ class Asset(object):
                 assets.append(archived[0])
 
         # Summarize
-        VerboseOut('%s files (%s links) from %s added to archive in %s' %
-                  (numfiles, numlinks, os.path.abspath(path), datetime.now()-start))
+        if numfiles > 0:
+            VerboseOut('%s files (%s links) from %s added to archive in %s' %
+                      (numfiles, numlinks, os.path.abspath(path), datetime.now()-start))
         if numfiles != len(fnames):
             VerboseOut('%s files not added to archive' % (len(fnames)-numfiles))
         return assets
@@ -361,7 +362,7 @@ class Asset(object):
             if not os.path.exists(qname):
                 os.link(os.path.abspath(filename), qname)
             VerboseOut('%s -> quarantine (file error)' % filename, 2)
-            return 0
+            return (None, 0)
 
         dates = asset.date
         if not hasattr(dates, '__len__'):
@@ -425,6 +426,10 @@ class Data(object):
 
     def process(self, products):
         """ Make sure all products exist and process if needed """
+        pass
+
+    @classmethod
+    def process_composites(cls, products):
         pass
 
     def filter(self, **kwargs):
@@ -559,8 +564,11 @@ class Data(object):
                 asset_dates = cls.Asset.dates(a, t, dates, days)
                 for d in asset_dates:
                     if not cls.Asset.discover(t, d, a):
-                        status = cls.Asset.fetch(a, t, d)
-                        fetched.append((a, t, d))
+                        try:
+                            status = cls.Asset.fetch(a, t, d)
+                            fetched.append((a, t, d))
+                        except:
+                            pass
         return fetched
 
     @classmethod

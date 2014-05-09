@@ -27,6 +27,7 @@ from setuptools import setup
 import gipif.settings as settings
 
 from pdb import set_trace
+from gipif.version import __version__
 
 print 'GIPIF setup'
 
@@ -38,11 +39,11 @@ for repo, cfg in settings.REPOS.items():
 
 setup(
     name='gipif',
-    version='1.0',
+    version=__version__,
     description='Geospatial Image Processing and Inventory Framework',
     author='Matthew Hanson',
     author_email='mhanson@appliedgeosolutions.com',
     packages=['gipif', 'gipif.data'],
-    install_requires=['Py6S', 'shapely', 'gippy'],
+    install_requires=['Py6S', 'shapely', 'gippy>=0.9.4', 'python-dateutil'],
     entry_points={'console_scripts': console_scripts},
 )

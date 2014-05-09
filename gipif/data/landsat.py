@@ -27,11 +27,14 @@ import shutil
 import numpy
 from collections import OrderedDict
 from copy import deepcopy
+import traceback
+from pdb import set_trace
 
 import gippy
 from gipif.core import Repository, Asset, Data
 from gipif.inventory import DataInventory
 from gipif.utils import VerboseOut, RemoveFiles
+import gipif.settings as settings
 
 from gipif.data.aod import AODData
 from gipif.data.modtran import MODTRAN
@@ -39,12 +42,10 @@ from gipif.data.modtran import MODTRAN
 
 class LandsatRepository(Repository):
     """ Singleton (all class methods) to be overridden by child data classes """
-    _rootpath = '/titan/data/landsat'
-    _tiles_vector = 'landsat_wrs'
-    #_tilesdir = 'tiles.dev'
-
-    # attribute (column) in tiles vector giving tile id
-    _tile_attribute = 'pr'
+    repo = settings.REPOS['landsat']
+    _rootpath = repo.get('rootpath', Repository._rootpath)
+    _tiles_vector = repo.get('tiles_vector', Repository._tiles_vector)
+    _tile_attribute = repo.get('tile_attribute', Repository._tile_attribute)
 
     @classmethod
     def feature2tile(cls, feature):
@@ -58,9 +59,9 @@ class LandsatAsset(Asset):
 
     # combine sensormeta with sensor
     _sensors = {
-        'LT4': {
-            'description': 'Landsat 4',
-        },
+        #'LT4': {
+        #    'description': 'Landsat 4',
+        #},
         'LT5': {
             'description': 'Landsat 5',
             'bands': ['1', '2', '3', '4', '5', '6', '7'],
@@ -71,7 +72,7 @@ class LandsatAsset(Asset):
             'bandwidths': [0.065, 0.08, 0.06, 0.15, 0.2, 2.1, 0.26],
             'E': [1983, 1796, 1536, 1031, 220.0, 0, 83.44],
             'K1': [0, 0, 0, 0, 0, 607.76, 0],
-            'K2': [0, 0, 0, 0, 0, 1260.56, 0]
+            'K2': [0, 0, 0, 0, 0, 1260.56, 0],
         },
         'LE7': {
             'description': 'Landsat 7',
@@ -117,6 +118,8 @@ class LandsatAsset(Asset):
         year = fname[9:13]
         doy = fname[13:16]
         self.date = datetime.strptime(year+doy, "%Y%j")
+        if self.sensor not in self._sensors.keys():
+            raise Exception("Sensor %s not supported" % self.sensor)
         # Landsat specific additions
         smeta = self._sensors[self.sensor]
         self.meta = {}
@@ -146,7 +149,7 @@ class LandsatData(Data):
         # 'rgb': 'RGB image for viewing (quick processing)',
         'rad':  {'description': 'Surface-leaving radiance',  'args': '?'},
         'ref':  {'description': 'Surface reflectance', 'args': '?'},
-        'temp': {'description': 'Apparent temperature', 'args': '?'},
+        'temp': {'description': 'Brightness (apparent) temperature', 'toa': True},
         'acca': {'description': 'Automated Cloud Cover Assesment', 'args': '*', 'toa': True},
         'fmask': {'description': 'Fmask cloud cover', 'args': '*', 'toa': True},
         #'Indices': {
@@ -193,10 +196,10 @@ class LandsatData(Data):
             optdep = f[0].Read()[pixy, pixx] * 0.001
             source = 'Original'
         if os.path.isfile(os.path.join(librarydir, 'gapfilled/', atmospherefile)) and optdep < 0:
-            f = gippy.GeoImage(os.path.join(librarydir, 'gapfilled/', atmospherefile))
+            f = gippy.GeoImage(os.path.join(librarydir, 'gapfilled/', atmospherefile), False)
             optdep = f[0].Read()[pixy, pixx] * 0.001
             source = 'Gap-filled'
-            f = gippy.GeoImage(os.path.join(librarydir, 'gapfilled/', rmsefile))
+            f = gippy.GeoImage(os.path.join(librarydir, 'gapfilled/', rmsefile), False)
             rmse = f[0].Read()
             rmseval = float(rmse[pixy, pixx]) * 0.001
             VerboseOut('Estimated root mean squared error for this gapfilling is:'+str(rmseval), 3)
@@ -212,6 +215,7 @@ class LandsatData(Data):
         if optdep < 0:
             source = 'default'
             optdep = 0.17
+        f = None
 
         VerboseOut('Optical Depth (from %s) = %s' % (source, optdep), 3)
         return optdep
@@ -240,14 +244,19 @@ class LandsatData(Data):
         # TODO - dynamically adjust AeroProfile?
         s.aero_profile = AeroProfile.PredefinedType(AeroProfile.Continental)
 
-        old_aod = self.getaod(self.date, geo['lat'], geo['lon'])
-        VerboseOut('Old AOD = %s' % old_aod, 4)
+        #if gippy.Options.Verbose() >= 3:
+        #    old_aod = self.getaod(self.date, geo['lat'], geo['lon'])
+        #    print 'AOD (old) = %s' % old_aod
 
-        #atmos = AODData.inventory(tile='', dates=self.date.strftime('%Y-%j'), fetch=True, products=['aero'])
-        #atmos = atmos[atmos.dates[0]].tiles['']
-        #aod = atmos.get_point(geo['lat'], geo['lon'])
-        #VerboseOut('New AOD = %s' % aod, 4)
-        s.aot550 = old_aod
+        try:
+            atmos = AODData.inventory(tile='', dates=self.date.strftime('%Y-%j'), fetch=True, products=['aod'])
+            atmos = atmos[atmos.dates[0]].tiles['']
+            aod = atmos.get_point(geo['lat'], geo['lon'])
+        except Exception, e:
+            VerboseOut(traceback.format_exc(), 5)
+            VerboseOut('Problem retrieving AOD. Using default', 4)
+            aod = 0.17
+        s.aot550 = aod
 
         # Other settings
         s.ground_reflectance = GroundReflectance.HomogeneousLambertian(GroundReflectance.GreenVegetation)
@@ -370,15 +379,16 @@ class LandsatData(Data):
                         imgout.SetColor(lwbands[i], i+1)
                     imgout.SetNoData(-32768)
                     imgout.SetGain(0.1)
-                    e = 0.95
                     for col in lwbands:
-                        if toa:
-                            band = img[col]
-                        else:
-                            lat = self.metadata['geometry']['lat']
-                            lon = self.metadata['geometry']['lon']
-                            atmos = MODTRAN(meta[col], self.metadata['datetime'], lat, lon)
-                            band = (img[col] - (atmos.output[1] + (1-e) * atmos.output[2])) / (atmos.output[0] * e)
+                        band = img[col]
+                        #if toa:
+                        #    band = img[col]
+                        #else:
+                        #    lat = self.metadata['geometry']['lat']
+                        #    lon = self.metadata['geometry']['lon']
+                        #    atmos = MODTRAN(meta[col], self.metadata['datetime'], lat, lon)
+                        #    e = 0.95
+                        #    band = (img[col] - (atmos.output[1] + (1-e) * atmos.output[2])) / (atmos.output[0] * e)
                         band = (((band.pow(-1))*meta[col]['K1']+1).log().pow(-1))*meta[col]['K2'] - 273.15
                         band.Process(imgout[col])
                 fname = imgout.Filename()
