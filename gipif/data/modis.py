@@ -289,7 +289,7 @@ class ModisData(Data):
             ########################
             # LAND VEGETATION INDICES PRODUCT
             if val[0] == "indices":
-                VERSION = "0.0"
+                VERSION = "1.0"
                 assets = self._products['indices']['assets']
 
                 allsds = []
@@ -324,10 +324,7 @@ class ModisData(Data):
                 refl = gippy.GeoImage(reflsds) 
                 qc = gippy.GeoImage(qcsds) 
 
-
-                # print dir(refl)
-                # print dir(refl[0])
-                # print refl[0].NoDataValue()
+                missing = 32767 
 
                 redimg = refl[0].Read()
                 nirimg = refl[1].Read()
@@ -335,59 +332,80 @@ class ModisData(Data):
                 grnimg = refl[3].Read()
                 mirimg = refl[5].Read()
 
+                qcimg = qc[0].Read()
+                qcimg = qcimg.astype(np.int16)
+                qcimg[qcimg==255] = missing
 
-                # missing = redimg.max()
-                missing = 32767 
+                # print np.sum(qcimg==0)
+                # print np.sum(qcimg==1)
+                # print np.sum(qcimg==missing)
+                # print
+                # print np.sum(redimg == missing)
+                # print np.sum(nirimg == missing)
+                # print np.sum(bluimg == missing)
+                # print np.sum(grnimg == missing)
+                # print np.sum(mirimg == missing)
 
-                wred = np.where(redimg != missing)
-                wnir = np.where(nirimg != missing)
-                wblu = np.where(bluimg != missing)
-                wgrn = np.where(grnimg != missing)
-                wmir = np.where(mirimg != missing)
-
-                print len(wred[0])
-                print len(wnir[0])
-                print len(wblu[0])
-                print len(wgrn[0])
-                print len(wmir[0])
-
-                print redimg.min(), redimg.max(), redimg[wred].mean(), redimg[wred].max()
-                print nirimg.min(), nirimg.max(), nirimg[wnir].mean(), nirimg[wnir].max()
-                print bluimg.min(), bluimg.max(), bluimg[wblu].mean(), bluimg[wblu].max()
-                print grnimg.min(), grnimg.max(), grnimg[wgrn].mean(), grnimg[wgrn].max()
-                print mirimg.min(), mirimg.max(), mirimg[wnir].mean(), mirimg[wmir].max()
-
+                redimg[redimg<0.0] = 0.0
+                nirimg[nirimg<0.0] = 0.0
+                bluimg[bluimg<0.0] = 0.0
+                mirimg[mirimg<0.0] = 0.0
 
                 meta = {}
                 meta['AVAILABLE_ASSETS'] = "['MCD43A4', 'MCD43A2']"
                 meta['VERSION'] = VERSION
 
-                sys.exit()
+                ndvi = missing + np.zeros_like(redimg)
+                wg = np.where((redimg != missing)&(nirimg != missing)&(redimg+nirimg != 0.0))
+                ndvi[wg] = (nirimg[wg] - redimg[wg])/(nirimg[wg] + redimg[wg])
+                print "ndvi" 
+                print len(wg[0])
+                print ndvi.min(), ndvi.max()
+                print ndvi[wg].min(), ndvi[wg].max()
 
+                lswi = missing + np.zeros_like(redimg)
+                wg = np.where((nirimg != missing)&(mirimg != missing)&(nirimg+mirimg != 0.0))
+                lswi[wg] = (nirimg[wg] - mirimg[wg])/(nirimg[wg] + mirimg[wg])
+                print "lswi"
+                print len(wg[0])
+                print lswi.min(), lswi.max()
+                print lswi[wg].min(), lswi[wg].max()
 
-                ndvi = np.zeros_like(redimg)
+                brgt = missing + np.zeros_like(redimg)
+                wg = np.where((nirimg != missing)&(redimg != missing)&(bluimg != missing))
+                brgt[wg] = (nirimg[wg] + redimg[wg] + bluimg[wg])/3.0
+                print "brgt"
+                print len(wg[0])
+                print brgt.min(), brgt.max()
+                print brgt[wg].min(), brgt[wg].max()
 
                 # create output gippy image
-                imgout = gippy.GeoImage(outfname, img, gippy.GDT_Byte, 2)
+                imgout = gippy.GeoImage(outfname, refl, gippy.GDT_Int16, 4)
 
-                imgout.SetNoData(127)
+                imgout.SetNoData(missing)
                 imgout.SetOffset(0.0)
-                imgout.SetGain(1.0)
+                imgout.SetGain(0.0001)
 
-                imgout[0].Write(coverout)
-                imgout[1].Write(fracout)
+                imgout[0].Write(ndvi)
+                imgout[1].Write(lswi)
+                imgout[2].Write(brgt)
 
-                imgout.SetColor('Snow Cover', 1)
-                imgout.SetColor('Fractional Snow Cover', 2)
+                imgout[3].SetGain(1.0)
+                imgout[3].Write(qcimg)
+
+                imgout.SetColor('NDVI', 1)
+                imgout.SetColor('LSWI', 2)
+                imgout.SetColor('BRGT', 3)
+                imgout.SetColor('Best quality', 4)
 
                 for k, v in meta.items():
                     imgout.SetMeta(k, str(v))
 
 
-
-
             ########################
             # SNOW/ICE COVER PRODUCT
+            ########################
+
             if val[0] == "snow":
                 VERSION = "1.0"
                 assets = self._products['snow']['assets']
@@ -668,41 +686,6 @@ class ModisData(Data):
                     metaname = metaname.upper()
                     metanames[metaname] = str(hourmean)
 
-                # print "tempbands.GetMetaGroup('')"
-                # print tempbands.GetMetaGroup('')
-                # print "tempbands.Info()"
-                # print tempbands.Info()
-                # print "tempbands.BandNames()"
-                # print tempbands.BandNames()
-                # print "tempbands.Basename()"
-                # print tempbands.Basename()
-                # print "tempbands.DataType()"
-                # print tempbands.DataType()
-                # print "tempbands.NumBands()"
-                # print tempbands.NumBands()
-                # print "tempbands.NoDataMask()"
-                # print tempbands.NoDataMask()
-                # print
-                # print "tempbands[0].Description()"
-                # print tempbands[0].Description()
-                # print "tempbands[0].Basename()"
-                # print tempbands[0].Basename()
-                # print "tempbands[0].NoDataValue()"
-                # print tempbands[0].NoDataValue()
-                # print "tempbands[0].NoData()"
-                # print tempbands[0].NoData()
-                # print "tempbands[0].Info()"
-                # print tempbands[0].Info()
-                # print "tempbands[0].Units()"
-                # print tempbands[0].Units()
-                # print "tempbands[0].Gain()"
-                # print tempbands[0].Gain()
-                # print "tempbands[0].Offset()"
-                # print tempbands[0].Offset()
-                # print "tempbands[0].Filename()"
-                # print tempbands[0].Filename()
-                # print "tempbands[0].Format()"
-                # print tempbands[0].Format()
 
                 VerboseOut('writing %s' % outfname, 4)
                 imgout = gippy.GeoImage(outfname, tempbands, gippy.GDT_UInt16, 5)
