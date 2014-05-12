@@ -62,15 +62,10 @@ class Tiles(object):
         self.date = date
         self.products = {}
         self.requested_products = products
-
-        # For each tile locate files/products
         if sensors is None:
             sensors = dataclass.Asset._sensors.keys()
-        #self.used_sensors = {s: dataclass.Asset._sensors.get(s, None) for s in sensors}
-        #for i, key in enumerate(self.used_sensors):
-        #    self.used_sensors[key]['color'] = _colors[i]
 
-        # TODO - expand verbose text: tiles, date, etc.
+        # For each tile locate files/products
         VerboseOut('%s: searching %s tiles for products and assets' % (self.date, len(self.tile_coverage)), 4)
         self.tiles = {}
         for t in self.tile_coverage.keys():
@@ -80,7 +75,7 @@ class Tiles(object):
                 good = tile.filter(**kwargs)
                 if good and tile.sensor in sensors:
                     self.tiles[t] = tile
-                # check all tiles - should be same sensor - MODIS?
+                # TODO - check all tiles - should be same sensor?
                 self.sensor = tile.sensor
             except:
                 #VerboseOut(traceback.format_exc(), 5)
@@ -111,18 +106,11 @@ class Tiles(object):
                 VerboseOut('Processing products for tile %s: %s' % (tileid, ' '.join(toprocess.keys())), 2)
                 self.tiles[tileid].process(toprocess)
 
-    def process_composites(self, overwrite=False):
-        """ Determines what products need to be processed for each tile and calls Data.process """
-        for tileid, tile in self.tiles.items():
-            self.tiles[tileid].process_composites(self.requested_products)
-
     def project(self, res=None, datadir='', mask=None, nowarp=False):
         """ Create image of final product (reprojected/mosaiced) """
         if datadir == '':
             datadir = self.dataclass.name+'_data'
-
-        self.process()
-
+        #self.process()
         if not os.path.exists(datadir):
             os.makedirs(datadir)
         datadir = os.path.abspath(datadir)
@@ -252,7 +240,6 @@ class DataInventory(object):
         # default to all tiles
         if tiles is None and self.site is None:
             tiles = Repository.find_tiles()
-
         # if tiles provided, make coverage all 100%
         if tiles is not None:
             self.tiles = {}
@@ -260,11 +247,10 @@ class DataInventory(object):
                 self.tiles[t] = (1, 1)
         elif tiles is None and self.site is not None:
             self.tiles = Repository.vector2tiles(GeoVector(self.site), **kwargs)
-
         self._temporal_extent(dates, days)
-
         self.data = {}
-        # Create product dictionary of requested products and filename
+
+        # Ensure product list if dictionary of products + arguments
         prod_dict = {}
         if isinstance(products, list):
             prod_dict = dict([p, [p]] for p in products)
@@ -275,14 +261,15 @@ class DataInventory(object):
         if len(prod_dict) == 0 and len(dataclass._products) == 1:
             p = dataclass._products.keys()[0]
             prod_dict = {p: [p]}
-        # seperate out any composite products from normal products
-        self.requested_products = {}
-        self.composites = {}
+
+        # seperate out standard (each tile processed) and composite products (using inventory)
+        self.standard_products = {}
+        self.composite_products = {}
         for p in prod_dict:
             if self.dataclass._products[p].get('composite', False):
-                self.composites[p] = prod_dict[p]
+                self.composite_products[p] = prod_dict[p]
             else:
-                self.requested_products[p] = prod_dict[p]
+                self.standard_products[p] = prod_dict[p]
         if fetch:
             products = [val[0] for val in prod_dict.values()]
             try:
@@ -307,7 +294,7 @@ class DataInventory(object):
         for date in sorted(dates):
             try:
                 dat = Tiles(dataclass=dataclass, site=self.site, tiles=self.tiles,
-                            date=date, products=self.requested_products, **kwargs)
+                            date=date, products=self.standard_products, **kwargs)
                 self.data[date] = dat
                 self.numfiles = self.numfiles + len(dat.tiles)
             except Exception, e:
@@ -346,19 +333,24 @@ class DataInventory(object):
 
     def process(self, *args, **kwargs):
         """ Process data in inventory """
-        if self.requested_products is None:
+        if len(self.standard_products) + len(self.composite_products) == 0:
             raise Exception('No products specified!')
-        start = datetime.now()
-        VerboseOut('Processing %s files: %s' % (self.numfiles, ' '.join(self.requested_products)), 1)
-        for date in self.dates:
-            self.data[date].process(*args, **kwargs)
-        #self.data[date].process_composites(*args, **kwargs)
-        VerboseOut('Completed processing in %s' % (datetime.now()-start), 1)
+        sz = self.numfiles
+        if self.standard_products is not None:
+            start = datetime.now()
+            VerboseOut('Processing %s files: %s' % (sz, ' '.join(self.standard_products)), 1)
+            for date in self.dates:
+                self.data[date].process(*args, **kwargs)
+            VerboseOut('Completed processing in %s' % (datetime.now()-start), 1)
+        if self.composite_products is not None:
+            start = datetime.now()
+            VerboseOut('Processing %s files into composites: %s' % (sz, ' '.join(self.composite_products)), 1)
+            self.dataclass.process_composites(self, self.composite_products, *args, **kwargs)
+            VerboseOut('Completed processing in %s' % (datetime.now()-start), 1)
 
     def project(self, *args, **kwargs):
         """ Create project files for data in inventory """
-        if self.requested_products is None:
-            raise Exception('No products specified!')
+        self.process(*args, **kwargs)
         start = datetime.now()
         pstr = ' '.join(self.requested_products)
         dstr = '%s dates (%s - %s)' % (len(self.dates), self.dates[0], self.dates[-1])

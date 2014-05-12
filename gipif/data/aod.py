@@ -151,11 +151,23 @@ class AODData(Data):
     #        VerboseOut(' -> %s: processed %s in %s' % (fout, product, datetime.datetime.now()-start))
 
     @classmethod
-    def process_composites(cls, products):
+    def process_composites(cls, inventory, products, **kwargs):
         start = datetime.datetime.now()
+        from pdb import set_trace
         for product in products:
             if product == 'dailyaod':
-                cls.process_aerolta_all()
+                """ Calculate AOT long-term multi-year averages (lta) for given day """
+                for day in range(inventory.start_day, inventory.end_day):
+                    dates = [d for d in inventory.dates if int(d.strftime('%j')) == day]
+                    filenames = [inventory[d].tiles[''].products['aod'] for d in inventory.dates]
+                    fout = os.path.join(cls.Asset.Repository.cpath('aod_daily'), 'aod_daily_%s.tif' % str(day).zfill(3))
+                    imgout = cls.process_mean(filenames, fout)
+                    VerboseOut('%s: processed' % os.path.basename(fout), 2)
+            if product == 'lta':
+                #filenames = glob.glob(os.path.join(cls.Asset.Repository.cpath('aerolta'), 'aerolta_*.tif'))
+                #fout = os.path.join(cls.Asset.Repository.cpath('aerolta'), 'aerolta.tif')
+                #cls.process_mean(filenames, fout)
+                pass
 
     @classmethod
     def process_mean(cls, filenames, fout):
@@ -185,33 +197,6 @@ class AODData(Data):
             t = datetime.datetime.now()-start
             VerboseOut('%s: mean + variance for %s files processed in %s' % (os.path.basename(fout), len(filenames), t))
         return imgout
-
-    @classmethod
-    def process_aerolta_daily(cls, day):
-        """ Calculate AOT long-term multi-year averages (lta) for given day """
-        inv = cls.inventory(products=['aero'], days="%s,%s" % (day, day))
-        fnames = [inv[d].tiles[''].products['aero'] for d in inv.dates]
-        fout = os.path.join(cls.Asset.Repository.cpath('aerolta'), 'aerolta_%s.tif' % str(day).zfill(3))
-        imgout = cls.process_mean(fnames, fout)
-        VerboseOut('%s: processed' % os.path.basename(fout), 3)
-        return imgout.Filename()
-
-    @classmethod
-    def process_aerolta(cls):
-        filenames = glob.glob(os.path.join(cls.Asset.Repository.cpath('aerolta'), 'aerolta_*.tif'))
-        fout = os.path.join(cls.Asset.Repository.cpath('aerolta'), 'aerolta.tif')
-        cls.process_mean(filenames, fout)
-
-    @classmethod
-    def process_aerolta_all(cls):
-        """ Process all daily long-term average and final lta average file """
-        filenames = []
-        for day in range(1, 366):
-            filenames.append(cls.process_aerolta_daily(day))
-        cls.process_aerolta()
-        # spatial average
-        #img[band].Smooth(imgout[1])
-        #mean = numpy.multiply(imgout[1].Read(), mask)
 
     def get_point(self, lat, lon, product='aod'):
         pixx = int(numpy.round(float(lon) + 179.5))

@@ -165,7 +165,7 @@ class Repository(object):
                 remove_tiles.append(t)
         for t in remove_tiles:
             tiles.pop(t, None)
-        VerboseOut('%s: vector2tiles completed in %s' % (cls.__name__, datetime.now() - start), 2)
+        VerboseOut('%s: vector2tiles completed in %s' % (cls.__name__, datetime.now() - start), 4)
         return tiles
 
 
@@ -429,7 +429,8 @@ class Data(object):
         pass
 
     @classmethod
-    def process_composites(cls, products):
+    def process_composites(cls, inventory, products, **kwargs):
+        """ Process composite products using provided inventory """
         pass
 
     def filter(self, **kwargs):
