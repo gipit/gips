@@ -265,11 +265,11 @@ class DataInventory(object):
         # seperate out standard (each tile processed) and composite products (using inventory)
         self.standard_products = {}
         self.composite_products = {}
-        for p in prod_dict:
-            if self.dataclass._products[p].get('composite', False):
-                self.composite_products[p] = prod_dict[p]
+        for p, val in prod_dict.items():
+            if self.dataclass._products[val[0]].get('composite', False):
+                self.composite_products[p] = val
             else:
-                self.standard_products[p] = prod_dict[p]
+                self.standard_products[p] = val
         if fetch:
             products = [val[0] for val in prod_dict.values()]
             try:
