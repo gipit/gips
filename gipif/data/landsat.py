@@ -160,10 +160,10 @@ class LandsatData(Data):
         'ndsi': {'description': 'Normalized Difference Snow Index', 'group': 'Index'},
         'satvi': {'description': 'Soil-adjusted Total Vegetation Index', 'group': 'Index'},
         #'Tillage Indices': {
-        'ndti': {'description': 'Normalized Difference Tillage Index', 'group': 'Tillage Indices'},
-        'crc':  {'description': 'Crop Residue Cover', 'group': 'Tillage Indices'},
-        'sti':  {'description': 'Standard Tillage Index', 'group': 'Tillage Indices'},
-        'isti': {'description': 'Inverse Standard Tillage Index', 'group': 'Tillage Indices'},
+        'ndti': {'description': 'Normalized Difference Tillage Index', 'group': 'Tillage'},
+        'crc':  {'description': 'Crop Residue Cover', 'group': 'Tillage'},
+        'sti':  {'description': 'Standard Tillage Index', 'group': 'Tillage'},
+        'isti': {'description': 'Inverse Standard Tillage Index', 'group': 'Tillage'},
     }
     _defaultproduct = 'ref'
 
