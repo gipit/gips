@@ -415,7 +415,6 @@ class Data(object):
 
     _pattern = '*.tif'
     _products = {}
-    _groups = {'': ''}
 
     def meta(self):
         """ Retrieve metadata for this tile """

@@ -165,11 +165,6 @@ class LandsatData(Data):
         'sti':  {'description': 'Standard Tillage Index', 'group': 'Tillage Indices'},
         'isti': {'description': 'Inverse Standard Tillage Index', 'group': 'Tillage Indices'},
     }
-    #_groups = {
-    #    'Standard': ['rad', 'ref', 'temp', 'acca', 'fmask'],
-    #    'Index': ['bi', 'ndvi', 'evi', 'lswi', 'ndsi', 'satvi'],
-    #    'Tillage': ['ndti', 'crc', 'sti', 'isti']
-    #}
     _defaultproduct = 'ref'
 
     def getaod(self, date, lat, lon):
