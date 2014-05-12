@@ -574,12 +574,9 @@ class Data(object):
     def products2groups(cls, products):
         """ Convert product list to groupings """
         groups = {}
-        for group in cls._groups:
-            groups[group] = {}
-            for p in products:
-                p0 = p.split('_')[0]
-                if p0 in cls._groups[group]:
-                    groups[group][p] = products[p]
+        for p, val in products.items():
+            group = cls._products[val[0]].get('group', 'Standard')
+            groups[group] = val
         return groups
 
     @classmethod
