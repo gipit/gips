@@ -23,13 +23,13 @@ import datetime
 import gdal
 import ftplib
 import numpy
+import glob
 
 import gippy
 from gipif.core import Repository, Asset, Data
 from gipif.inventory import DataInventory
 from gipif.utils import File2List, List2File, VerboseOut
 import gipif.settings as settings
-from pdb import set_trace
 
 
 class AODRepository(Repository):
@@ -134,12 +134,17 @@ class AODData(Data):
             # the list of asset types associated with this product
             'assets': ['MOD08'],  # , 'MYD08'],
         },
-        'dailyaod': {
+        'ltad': {
             'description': 'Average daily AOD',
             # the list of asset types associated with this product
             'assets': ['MOD08'],  # , 'MYD08'],
             'composite': True,
         },
+        'lta': {
+            'description': 'Average AOD',
+            'assets': ['MOD08'],
+            'composite': True
+        }
     }
 
     #def process(self, products):
@@ -152,22 +157,25 @@ class AODData(Data):
 
     @classmethod
     def process_composites(cls, inventory, products, **kwargs):
-        start = datetime.datetime.now()
-        from pdb import set_trace
         for product in products:
-            if product == 'dailyaod':
-                """ Calculate AOT long-term multi-year averages (lta) for given day """
-                for day in range(inventory.start_day, inventory.end_day):
+            cpath = cls.Asset.Repository.cpath('ltad')
+            path = os.path.join(cpath, 'ltad')
+            # Calculate AOT long-term multi-year averages (lta) for given day
+            if product == 'ltad':
+                for day in range(inventory.start_day, inventory.end_day+1):
                     dates = [d for d in inventory.dates if int(d.strftime('%j')) == day]
-                    filenames = [inventory[d].tiles[''].products['aod'] for d in inventory.dates]
-                    fout = os.path.join(cls.Asset.Repository.cpath('aod_daily'), 'aod_daily_%s.tif' % str(day).zfill(3))
+                    filenames = [inventory[d].tiles[''].products['aod'] for d in dates]
+                    fout = path + '%s.tif' % str(day).zfill(3)
                     imgout = cls.process_mean(filenames, fout)
-                    VerboseOut('%s: processed' % os.path.basename(fout), 2)
+            # Calculate single average per pixel (all days and years)
             if product == 'lta':
-                #filenames = glob.glob(os.path.join(cls.Asset.Repository.cpath('aerolta'), 'aerolta_*.tif'))
-                #fout = os.path.join(cls.Asset.Repository.cpath('aerolta'), 'aerolta.tif')
-                #cls.process_mean(filenames, fout)
-                pass
+                filenames = glob.glob(path+'*.tif')
+                if len(filenames) > 0:
+                    fout = os.path.join(cpath, 'lta.tif')
+                    imgout = cls.process_mean(filenames, fout)
+                else:
+                    raise Exception('No daily LTA files exist!')
+            imgout = None
 
     @classmethod
     def process_mean(cls, filenames, fout):

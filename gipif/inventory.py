@@ -336,13 +336,13 @@ class DataInventory(object):
         if len(self.standard_products) + len(self.composite_products) == 0:
             raise Exception('No products specified!')
         sz = self.numfiles
-        if self.standard_products is not None:
+        if len(self.standard_products) > 0:
             start = datetime.now()
             VerboseOut('Processing %s files: %s' % (sz, ' '.join(self.standard_products)), 1)
             for date in self.dates:
                 self.data[date].process(*args, **kwargs)
             VerboseOut('Completed processing in %s' % (datetime.now()-start), 1)
-        if self.composite_products is not None:
+        if len(self.composite_products) > 0:
             start = datetime.now()
             VerboseOut('Processing %s files into composites: %s' % (sz, ' '.join(self.composite_products)), 1)
             self.dataclass.process_composites(self, self.composite_products, *args, **kwargs)

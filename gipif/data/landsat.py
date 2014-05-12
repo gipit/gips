@@ -153,23 +153,23 @@ class LandsatData(Data):
         'acca': {'description': 'Automated Cloud Cover Assesment', 'args': '*', 'toa': True},
         'fmask': {'description': 'Fmask cloud cover', 'args': '*', 'toa': True},
         #'Indices': {
-        'bi':   {'description': 'Brightness Index'},
-        'ndvi': {'description': 'Normalized Difference Vegetation Index'},
-        'evi':  {'description': 'Enhanced Vegetation Index'},
-        'lswi': {'description': 'Land Surface Water Index'},
-        'ndsi': {'description': 'Normalized Difference Snow Index'},
-        'satvi': {'description': 'Soil-adjusted Total Vegetation Index'},
+        'bi':   {'description': 'Brightness Index', 'group': 'Index'},
+        'ndvi': {'description': 'Normalized Difference Vegetation Index', 'group': 'Index'},
+        'evi':  {'description': 'Enhanced Vegetation Index', 'group': 'Index'},
+        'lswi': {'description': 'Land Surface Water Index', 'group': 'Index'},
+        'ndsi': {'description': 'Normalized Difference Snow Index', 'group': 'Index'},
+        'satvi': {'description': 'Soil-adjusted Total Vegetation Index', 'group': 'Index'},
         #'Tillage Indices': {
-        'ndti': {'description': 'Normalized Difference Tillage Index'},
-        'crc':  {'description': 'Crop Residue Cover'},
-        'sti':  {'description': 'Standard Tillage Index'},
-        'isti': {'description': 'Inverse Standard Tillage Index'},
+        'ndti': {'description': 'Normalized Difference Tillage Index', 'group': 'Tillage Indices'},
+        'crc':  {'description': 'Crop Residue Cover', 'group': 'Tillage Indices'},
+        'sti':  {'description': 'Standard Tillage Index', 'group': 'Tillage Indices'},
+        'isti': {'description': 'Inverse Standard Tillage Index', 'group': 'Tillage Indices'},
     }
-    _groups = {
-        'Standard': ['rad', 'ref', 'temp', 'acca', 'fmask'],
-        'Index': ['bi', 'ndvi', 'evi', 'lswi', 'ndsi', 'satvi'],
-        'Tillage': ['ndti', 'crc', 'sti', 'isti']
-    }
+    #_groups = {
+    #    'Standard': ['rad', 'ref', 'temp', 'acca', 'fmask'],
+    #    'Index': ['bi', 'ndvi', 'evi', 'lswi', 'ndsi', 'satvi'],
+    #    'Tillage': ['ndti', 'crc', 'sti', 'isti']
+    #}
     _defaultproduct = 'ref'
 
     def getaod(self, date, lat, lon):

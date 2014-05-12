@@ -586,23 +586,25 @@ class Data(object):
     @classmethod
     def arg_parser(cls):
         parser = argparse.ArgumentParser(add_help=False, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-        for gname in cls._groups:
-            if gname == '':
-                gname = 'Standard'
-                products = cls._products.keys()
-            else:
-                products = cls._groups[gname]
-            group = parser.add_argument_group('%s product arguments' % gname)
-            for p in products:
-                if p != '':
-                    product = cls._products[p]
-                    nargs = product.get('args', None)
-                    if nargs == '?':
-                        group.add_argument('--%s' % p, help=product['description'], nargs=nargs, const=[])
-                    elif nargs == '*':
-                        group.add_argument('--%s' % p, help=product['description'], nargs=nargs)
-                    else:
-                        group.add_argument('--%s' % p, help=product['description'], action='store_true')
+        groups = {}
+        for p in cls._products.values():
+            group = p.get('group', 'Standard')
+            if group == 'Standard' and p.get('composite'):
+                group = 'Composites'
+            if group not in groups:
+                groups[group] = parser.add_argument_group('%s product arguments' % group)
+        for p, product in cls._products.items():
+            if p != '':
+                group = product.get('group', 'Standard')
+                if group == 'Standard' and product.get('composite'):
+                    group = 'Composites'
+                nargs = product.get('args', None)
+                if nargs == '?':
+                    groups[group].add_argument('--%s' % p, help=product['description'], nargs=nargs, const=[])
+                elif nargs == '*':
+                    groups[group].add_argument('--%s' % p, help=product['description'], nargs=nargs)
+                else:
+                    groups[group].add_argument('--%s' % p, help=product['description'], action='store_true')
         return parser
 
     @classmethod
