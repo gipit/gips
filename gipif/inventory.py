@@ -34,8 +34,6 @@ import commands
 import tempfile
 from gipif.version import __version__
 
-from pdb import set_trace
-
 
 class Tiles(object):
     """ Collection of tiles for a single date """

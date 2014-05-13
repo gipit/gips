@@ -166,54 +166,6 @@ class LandsatData(Data):
     }
     _defaultproduct = 'ref'
 
-    def getaod(self, date, lat, lon):
-        # TODO - clean this up.  This is non-portable
-        #look in MOD08 library for appropriate DOY and YEAR file
-        year = date.strftime('%Y')
-        doy = date.strftime('%j')
-        librarydir = '/titan/data/modis/mod08d3/'
-        prefix = 'MOD08_D3.A'
-        suffix = 'OpticalDepth.tif'
-        atmospherefile = prefix + year + doy + suffix
-        ltaatmospherefile = prefix + 'LTA' + doy + suffix
-        altaatmospherefile = prefix + 'LTA' + suffix
-        rmsefile = 'RMSE_GapFill_OpticalDepth_2000to2012.tif'
-
-        optdep = -9999
-        pixx = int(numpy.round(float(lon) + 179.5))
-        pixy = int(numpy.round(89.5 - float(lat)))
-        rmseval = None
-
-        #open appropriate file and find the appropriate pixel
-        if os.path.isfile(os.path.join(librarydir, atmospherefile)):
-            f = gippy.GeoImage(os.path.join(librarydir, atmospherefile))
-            optdep = f[0].Read()[pixy, pixx] * 0.001
-            source = 'Original'
-        if os.path.isfile(os.path.join(librarydir, 'gapfilled/', atmospherefile)) and optdep < 0:
-            f = gippy.GeoImage(os.path.join(librarydir, 'gapfilled/', atmospherefile), False)
-            optdep = f[0].Read()[pixy, pixx] * 0.001
-            source = 'Gap-filled'
-            f = gippy.GeoImage(os.path.join(librarydir, 'gapfilled/', rmsefile), False)
-            rmse = f[0].Read()
-            rmseval = float(rmse[pixy, pixx]) * 0.001
-            VerboseOut('Estimated root mean squared error for this gapfilling is:'+str(rmseval), 3)
-        if os.path.isfile(os.path.join(librarydir, 'LTA/', ltaatmospherefile)) and optdep < 0:
-            atmospherefile = prefix + 'LTA' + doy + suffix
-            f = gippy.GeoImage(os.path.join(librarydir, 'LTA/', ltaatmospherefile))
-            optdep = f[0].Read()[pixy, pixx] * 0.001
-            source = 'LTA'
-        if optdep < 0:
-            f = gippy.GeoImage(os.path.join(librarydir, 'LTA/', altaatmospherefile))
-            optdep = f[0].Read()[pixy, pixx] * 0.001
-            source = 'all LTA'
-        if optdep < 0:
-            source = 'default'
-            optdep = 0.17
-        f = None
-
-        VerboseOut('Optical Depth (from %s) = %s' % (source, optdep), 2)
-        return optdep
-
     def SixS(self):
         from gipif.utils import atmospheric_model
         from Py6S import SixS, Geometry, AeroProfile, Altitudes, Wavelength, GroundReflectance, AtmosCorr, SixSHelpers
@@ -238,17 +190,13 @@ class LandsatData(Data):
         # TODO - dynamically adjust AeroProfile?
         s.aero_profile = AeroProfile.PredefinedType(AeroProfile.Continental)
 
-        #if gippy.Options.Verbose() >= 3:
-        #    old_aod = self.getaod(self.date, geo['lat'], geo['lon'])
-        #    print 'AOD (old) = %s' % old_aod
-
         try:
             atmos = AODData.inventory(tile='', dates=self.date.strftime('%Y-%j'), fetch=True, products=['aod'])
             atmos = atmos[atmos.dates[0]].tiles['']
             aod = atmos.get_point(geo['lat'], geo['lon'])
         except Exception, e:
             VerboseOut(traceback.format_exc(), 3)
-            VerboseOut('Problem retrieving AOD. Using default', 2)
+            VerboseOut('Problem retrieving AOD. Using default', 3)
             aod = 0.17
         s.aot550 = aod
 
