@@ -171,7 +171,7 @@ class AODData(Data):
             if product == 'lta':
                 filenames = glob.glob(path+'*.tif')
                 if len(filenames) > 0:
-                    fout = os.path.join(cpath, 'lta.tif')
+                    fout = os.path.join(cls.Asset.Repository.cpath(), 'lta.tif')
                     imgout = cls.process_mean(filenames, fout)
                 else:
                     raise Exception('No daily LTA files exist!')
@@ -212,8 +212,8 @@ class AODData(Data):
         vals = img[0].Read(roi).squeeze()
         variances = img[1].Read(roi)
         if numpy.isnan(vals[1, 1]):
-            val = numpy.nanmean(vals)
-            var = numpy.nanmean(variances)
+            val = numpy.mean(vals[numpy.isnan(vals)])
+            var = numpy.mean(variances[numpy.isnan(variances)])
         else:
             val = vals[1, 1]
             var = variances[1, 1]
@@ -234,7 +234,7 @@ class AODData(Data):
         aod = vals[1, 1]
         source = 'actual'
         if numpy.isnan(aod):
-            aod = numpy.nanmean(vals)
+            aod = numpy.mean(vals[numpy.isnan(vals)])
             source = 'actual spatial average'
 
         day = self.date.strftime('%j')
