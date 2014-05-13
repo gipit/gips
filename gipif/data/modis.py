@@ -201,6 +201,10 @@ class ModisAsset(Asset):
     def fetch(cls, asset, tile, date):
         VerboseOut('%s: fetch tile %s for %s' % (asset, tile, date), 3)
 
+
+        #tilesvector = self.Repository.tiles_vector()
+
+
         if date.date() < cls._assets[asset]['startdate']:
             print "date is too early"
             return 3
