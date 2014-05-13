@@ -407,15 +407,17 @@ class LandsatData(Data):
             # Run TOA
             fnames = [os.path.join(self.path, self.basename + '_' + key) for key in indices_toa]
             prodarr = dict(zip([indices_toa[p][0] for p in indices_toa.keys()], fnames))
-            prodout = gippy.Indices(img, prodarr)
-            self.products.update(prodout)
+            if len(fnames) > 0:
+                prodout = gippy.Indices(img, prodarr)
+                self.products.update(prodout)
             # Run atmospherically corrected
             for col in visbands:
                 img[col] = ((img[col]-atmos[col][1])/atmos[col][0]) * (1.0/atmos[col][2])
             fnames = [os.path.join(self.path, self.basename + '_' + key) for key in indices]
-            prodarr = dict(zip([indices[p][0] for p in indices.keys()], fnames))
-            prodout = gippy.Indices(img, prodarr)
-            self.products.update(prodout)
+            if len(fnames) > 0:
+                prodarr = dict(zip([indices[p][0] for p in indices.keys()], fnames))
+                prodout = gippy.Indices(img, prodarr)
+                self.products.update(prodout)
             VerboseOut(' -> %s: processed %s in %s' % (self.basename, indices0.keys(), datetime.now()-start), 1)
 
         img = None

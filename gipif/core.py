@@ -490,6 +490,7 @@ class Data(object):
 
     def link(self, products, path='', copy=False):
         """ Create links in path to tile products """
+        filenames = []
         for p in products:
             fname = self.products[p]
             bname = os.path.basename(fname)
@@ -517,6 +518,8 @@ class Data(object):
                         VerboseOut('%s: soft linking' % bname, 2)
                     except:
                         VerboseOut('%s: Problem creating link' % bname, 2)
+            filenames.append(fullbname)
+        return filenames
 
     ##########################################################################
     # Class methods

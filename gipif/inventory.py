@@ -122,8 +122,8 @@ class Tiles(object):
         start = datetime.now()
         if self.site is None:
             for t in self.tiles:
-                self.tiles[t].link(products=self.requested_products.keys(), path=datadir, copy=True if mask else False)
-                filenames = [self.tiles[t].products[p] for p in self.requested_products]
+                filenames = self.tiles[t].link(products=self.requested_products.keys(), path=datadir, copy=True)
+                #filenames = [self.tiles[t].products[p] for p in self.requested_products]
                 if mask is not None:
                     self._applymask(filenames, self.tiles[t].products[mask])
         else:
@@ -192,6 +192,8 @@ class Tiles(object):
                 img = gippy.GeoImage(f)
                 img.AddMask(mimg[0]).Process()
                 img = None
+                #fn = os.path.splitext(f)
+                #os.rename(f, fn[0] + '_masked' + fn[1])
         mimg = None
 
     def open(self, product='', update=True):
@@ -352,7 +354,7 @@ class DataInventory(object):
         """ Create project files for data in inventory """
         self.process(*args, **kwargs)
         start = datetime.now()
-        pstr = ' '.join(self.requested_products)
+        pstr = ' '.join(self.standard_products)  # .join(self.composite_products)
         dstr = '%s dates (%s - %s)' % (len(self.dates), self.dates[0], self.dates[-1])
         VerboseOut('Creating project files (%s) for %s' % (pstr, dstr), 1)
         # res should default to data?
