@@ -95,7 +95,7 @@ class Tiles(object):
             asset_coverage[a] = cov*100
         return asset_coverage
 
-    def process(self, overwrite=False):
+    def process(self, overwrite=False, **kwargs):
         """ Determines what products need to be processed for each tile and calls Data.process """
         for tileid, tile in self.tiles.items():
             toprocess = {}
@@ -104,7 +104,7 @@ class Tiles(object):
                     toprocess[pname] = args
             if len(toprocess) != 0:
                 VerboseOut('Processing products for tile %s: %s' % (tileid, ' '.join(toprocess.keys())), 2)
-                self.tiles[tileid].process(toprocess)
+                self.tiles[tileid].process(toprocess, **kwargs)
 
     def project(self, res=None, datadir='', mask=None, nowarp=False):
         """ Create image of final product (reprojected/mosaiced) """
@@ -265,11 +265,11 @@ class DataInventory(object):
         # seperate out standard (each tile processed) and composite products (using inventory)
         self.standard_products = {}
         self.composite_products = {}
-        for p in prod_dict:
-            if self.dataclass._products[p].get('composite', False):
-                self.composite_products[p] = prod_dict[p]
+        for p, val in prod_dict.items():
+            if self.dataclass._products[val[0]].get('composite', False):
+                self.composite_products[p] = val
             else:
-                self.standard_products[p] = prod_dict[p]
+                self.standard_products[p] = val
         if fetch:
             products = [val[0] for val in prod_dict.values()]
             try:
@@ -432,12 +432,10 @@ class DataInventory(object):
         group.add_argument('-d', '--dates', help='Range of dates (YYYY-MM-DD,YYYY-MM-DD)')
         group.add_argument('--days', help='Include data within these days of year (doy1,doy2)', default=None)
         group.add_argument('--sensors', help='Sensors to include', nargs='*', default=None)
-        group.add_argument('--fetch', help='Fetch any missing data (if supported)', default=False, action='store_true')
-        #group.add_argument('-p', '--products', nargs='*', help='Process/filter these products', default=None)
-        group.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2: debug', default=1, type=int)
         group.add_argument('--%cov', dest='pcov', help='Threshold of %% tile coverage over site', default=0, type=int)
         group.add_argument('--%tile', dest='ptile', help='Threshold of %% tile used', default=0, type=int)
-        group.add_argument('--suffix', help='Suffix on end of filename (before extension)', default='')
+        group.add_argument('--fetch', help='Fetch any missing data (if supported)', default=False, action='store_true')
+        group.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2: debug', default=1, type=int)
         extra = []
         for arg, kwargs in cls.extra_arguments().items():
             extra.append(kwargs['dest'])
@@ -453,12 +451,14 @@ class DataInventory(object):
         # Processing
         parserp = subparser.add_parser('process', help='Process scenes', parents=parents, formatter_class=dhf)
         group = parserp.add_argument_group('Processing Options')
+        group.add_argument('--suffix', help='Suffix on end of filename (before extension)', default='')
         group.add_argument('--overwrite', help='Overwrite exiting output file(s)', default=False, action='store_true')
         group.add_argument('--chunksize', help='Chunk size in MB', default=512.0)
 
         # Project
         parser = subparser.add_parser('project', help='Create project', parents=parents, formatter_class=dhf)
         group = parser.add_argument_group('Project options')
+        group.add_argument('--suffix', help='Suffix on end of filename (before extension)', default='')
         group.add_argument('--nowarp', help='Mosaic, but do not warp', default=False, action='store_true')
         group.add_argument('--res', nargs=2, help='Resolution of (warped) output rasters', default=None, type=float)
         group.add_argument('--mask', nargs='?', help='Apply this product to all (warped) products', const='acca')
@@ -475,12 +475,13 @@ class DataInventory(object):
         VerboseOut('GIPIF %s command line utility v%s' % (cls.name, __version__), 1)
 
         if args.command == 'archive':
-            # TODO - take in path argument
             cls.Asset.archive(recursive=args.recursive, keep=args.keep)
             exit(1)
 
-        suffix = '_' + args.suffix if args.suffix != '' else ''
-        #products = [p for p in cls.Tile._products if eval('args.%s' % p) not in [None, False]]
+        try:
+            suffix = '_' + args.suffix if args.suffix != '' else ''
+        except:
+            suffix = ''
         products = {}
         for p in cls._products:
             if p != '':
@@ -513,7 +514,7 @@ class DataInventory(object):
                 inv.print_inv(args.md, compact=args.compact)
             elif args.command == 'process':
                 gippy.Options.SetChunkSize(args.chunksize)
-                inv.process(overwrite=args.overwrite)
+                inv.process(overwrite=args.overwrite, **kwargs)
             elif args.command == 'project':
                 gippy.Options.SetChunkSize(args.chunksize)
                 inv.project(args.res, datadir=args.datadir, mask=args.mask, nowarp=args.nowarp)

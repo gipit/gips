@@ -206,6 +206,20 @@ class AODData(Data):
             VerboseOut('%s: mean + variance for %s files processed in %s' % (os.path.basename(fout), len(filenames), t))
         return imgout
 
+    def _read_point(self, filename, roi):
+        """ Read single point from mean/var file and return if valid, or mean/var of 3x3 neighborhood """
+        img = gippy.GeoImage(filename)
+        vals = img[0].Read(roi).squeeze()
+        variances = img[1].Read(roi)
+        if numpy.isnan(vals[1, 1]):
+            val = numpy.nanmean(vals)
+            var = numpy.nanmean(variances)
+        else:
+            val = vals[1, 1]
+            var = variances[1, 1]
+        img = None
+        return val, var
+
     def get_point(self, lat, lon, product='aod'):
         pixx = int(numpy.round(float(lon) + 179.5))
         pixy = int(numpy.round(89.5 - float(lat)))
@@ -217,49 +231,50 @@ class AODData(Data):
         # TODO - do this automagically in swig wrapper
         vals[numpy.where(vals == nodata)] = numpy.nan
 
-        val = vals[1, 1]
-        source = 'original'
-        if numpy.isnan(val):
-            val = numpy.nanmean(vals)
-            source = 'original spatial average'
+        aod = vals[1, 1]
+        source = 'actual'
+        if numpy.isnan(aod):
+            aod = numpy.nanmean(vals)
+            source = 'actual spatial average'
 
-        cpath = self.Repository.cpath('aerolta')
         day = self.date.strftime('%j')
 
-        # Long-term average for day
-        if numpy.isnan(val):
-            try:
-                img = gippy.GeoImage(os.path.join(cpath, 'aerolta_%s.tif' % str(day).zfill(3)))
-                vals = img[0].Read(roi).squeeze()
-                if numpy.isnan(vals):
-                    val = numpy.nanmean(vals)
-                    source = 'daily and spatial average'
-                else:
-                    val = vals[1, 1]
-                    source = 'daily average'
-            except:
-                pass
+        # Calculate best estimate from multiple sources
+        if numpy.isnan(aod):
+            aod = 0.0
+            norm = 0.0
+            cnt = 0
 
-        # Long-term average for all days and years
-        if numpy.isnan(val):
-            try:
-                img = gippy.GeoImage(os.path.join(cpath, 'aerolta.tif'))
-                vals = img[0].Read(roi).squeeze()
-                if numpy.isnan(vals):
-                    val = numpy.nanmean(vals)
-                    source = 'all days and spatial average'
-                else:
-                    val = vals[1, 1]
-                    source = 'all days average'
-            except:
-                pass
+            source = 'best estimate'
+            # LTA-Daily
+            filename = os.path.join(self.Repository.cpath('ltad'), 'ltad%s.tif' % str(day).zfill(3))
+            val, var = self._read_point(filename, roi)
+            if not numpy.isnan(val):
+                aod = val/var
+                norm = var
+                cnt = cnt + 1
+            VerboseOut('AOD: LTA-Daily = %s, %s' % (val, var), 4)
 
-        if numpy.isnan(val):
-            val = 0.17
+            # LTA
+            val, var = self._read_point(self.Repository.cpath('lta.tif'), roi)
+            if not numpy.isnan(val):
+                aod = aod + val/var
+                norm = norm + var
+                cnt = cnt + 1
+            VerboseOut('AOD: LTA = %s, %s' % (val, var), 4)
+
+            # TODO - adjacent days
+
+            # Final AOD estimate
+            aod = aod/norm
+            VerboseOut('AOD = %s, var=%s' % (aod, norm/cnt))
+
+        if numpy.isnan(aod):
+            aod = 0.17
             source = 'default'
 
-        VerboseOut('%s (from %s) = %s' % (product, source, val), 3)
-        return val
+        VerboseOut('AOD (%s) = %s' % (source, aod), 3)
+        return aod
 
 
 def main():

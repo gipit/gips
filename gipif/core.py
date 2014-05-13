@@ -423,7 +423,7 @@ class Data(object):
         # add metadata to dictionary
         return {}
 
-    def process(self, products):
+    def process(self, products, **kwargs):
         """ Make sure all products exist and process if needed """
         pass
 
@@ -574,12 +574,12 @@ class Data(object):
     def products2groups(cls, products):
         """ Convert product list to groupings """
         groups = {}
-        for group in cls._groups:
+        for p, val in cls._products.items():
+            group = val.get('group', 'Standard')
             groups[group] = {}
-            for p in products:
-                p0 = p.split('_')[0]
-                if p0 in cls._groups[group]:
-                    groups[group][p] = products[p]
+        for p, val in products.items():
+            group = cls._products[val[0]].get('group', 'Standard')
+            groups[group][p] = val
         return groups
 
     @classmethod
@@ -598,7 +598,10 @@ class Data(object):
                 if group == 'Standard' and product.get('composite'):
                     group = 'Composites'
                 nargs = product.get('args', None)
-                if nargs == '?':
+                choices = product.get('choices', None)
+                if choices is not None:
+                    groups[group].add_argument('--%s' % p, help=product['description'], choices=choices, nargs='?', const=[])
+                elif nargs == '?':
                     groups[group].add_argument('--%s' % p, help=product['description'], nargs=nargs, const=[])
                 elif nargs == '*':
                     groups[group].add_argument('--%s' % p, help=product['description'], nargs=nargs)
