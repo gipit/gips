@@ -273,7 +273,7 @@ class AODData(Data):
             aod = 0.17
             source = 'default'
 
-        VerboseOut('%s (from %s) = %s' % (product, source, aod), 3)
+        VerboseOut('AOD (%s) = %s' % (source, aod), 3)
         return aod
 
 
