@@ -95,7 +95,7 @@ class Tiles(object):
             asset_coverage[a] = cov*100
         return asset_coverage
 
-    def process(self, overwrite=False):
+    def process(self, overwrite=False, **kwargs):
         """ Determines what products need to be processed for each tile and calls Data.process """
         for tileid, tile in self.tiles.items():
             toprocess = {}
@@ -104,7 +104,7 @@ class Tiles(object):
                     toprocess[pname] = args
             if len(toprocess) != 0:
                 VerboseOut('Processing products for tile %s: %s' % (tileid, ' '.join(toprocess.keys())), 2)
-                self.tiles[tileid].process(toprocess)
+                self.tiles[tileid].process(toprocess, **kwargs)
 
     def project(self, res=None, datadir='', mask=None, nowarp=False):
         """ Create image of final product (reprojected/mosaiced) """
@@ -513,7 +513,7 @@ class DataInventory(object):
                 inv.print_inv(args.md, compact=args.compact)
             elif args.command == 'process':
                 gippy.Options.SetChunkSize(args.chunksize)
-                inv.process(overwrite=args.overwrite)
+                inv.process(overwrite=args.overwrite, **kwargs)
             elif args.command == 'project':
                 gippy.Options.SetChunkSize(args.chunksize)
                 inv.project(args.res, datadir=args.datadir, mask=args.mask, nowarp=args.nowarp)

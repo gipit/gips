@@ -28,7 +28,6 @@ import numpy
 from collections import OrderedDict
 from copy import deepcopy
 import traceback
-from pdb import set_trace
 
 import gippy
 from gipif.core import Repository, Asset, Data
@@ -147,23 +146,23 @@ class LandsatData(Data):
     _products = {
         #'Standard': {
         # 'rgb': 'RGB image for viewing (quick processing)',
-        'rad':  {'description': 'Surface-leaving radiance',  'args': '?'},
-        'ref':  {'description': 'Surface reflectance', 'args': '?'},
+        'rad':  {'description': 'Surface-leaving radiance', 'choices': ['toa']},
+        'ref':  {'description': 'Surface reflectance', 'choices': ['toa']},
         'temp': {'description': 'Brightness (apparent) temperature', 'toa': True},
         'acca': {'description': 'Automated Cloud Cover Assesment', 'args': '*', 'toa': True},
         'fmask': {'description': 'Fmask cloud cover', 'args': '*', 'toa': True},
         #'Indices': {
-        'bi':   {'description': 'Brightness Index', 'group': 'Index'},
-        'ndvi': {'description': 'Normalized Difference Vegetation Index', 'group': 'Index'},
-        'evi':  {'description': 'Enhanced Vegetation Index', 'group': 'Index'},
-        'lswi': {'description': 'Land Surface Water Index', 'group': 'Index'},
-        'ndsi': {'description': 'Normalized Difference Snow Index', 'group': 'Index'},
-        'satvi': {'description': 'Soil-adjusted Total Vegetation Index', 'group': 'Index'},
+        'bi':   {'description': 'Brightness Index', 'group': 'Index', 'choices': ['toa']},
+        'ndvi': {'description': 'Normalized Difference Vegetation Index', 'group': 'Index', 'choices': ['toa']},
+        'evi':  {'description': 'Enhanced Vegetation Index', 'group': 'Index', 'choices': ['toa']},
+        'lswi': {'description': 'Land Surface Water Index', 'group': 'Index', 'choices': ['toa']},
+        'ndsi': {'description': 'Normalized Difference Snow Index', 'group': 'Index', 'choices': ['toa']},
+        'satvi': {'description': 'Soil-adjusted Total Vegetation Index', 'group': 'Index', 'choices': ['toa']},
         #'Tillage Indices': {
-        'ndti': {'description': 'Normalized Difference Tillage Index', 'group': 'Tillage'},
-        'crc':  {'description': 'Crop Residue Cover', 'group': 'Tillage'},
-        'sti':  {'description': 'Standard Tillage Index', 'group': 'Tillage'},
-        'isti': {'description': 'Inverse Standard Tillage Index', 'group': 'Tillage'},
+        'ndti': {'description': 'Normalized Difference Tillage Index', 'group': 'Tillage', 'choices': ['toa']},
+        'crc':  {'description': 'Crop Residue Cover', 'group': 'Tillage', 'choices': ['toa']},
+        'sti':  {'description': 'Standard Tillage Index', 'group': 'Tillage', 'choices': ['toa']},
+        'isti': {'description': 'Inverse Standard Tillage Index', 'group': 'Tillage', 'choices': ['toa']},
     }
     _defaultproduct = 'ref'
 
@@ -291,13 +290,13 @@ class LandsatData(Data):
 
         return results
 
-    def process(self, products):
+    def process(self, products, **kwargs):
         """ Make sure all products have been processed """
         start = datetime.now()
         bname = os.path.basename(self.assets[''].filename)
         img = self._readraw()
 
-        # running atmosphere
+        # running atmosphere if any products require it
         toa = True
         for val in products.values():
             toa = toa and (self._products[val[0]].get('toa', False) or 'toa' in val)
@@ -395,17 +394,29 @@ class LandsatData(Data):
                 VerboseOut(traceback.format_exc(), 3)
 
         # Process Indices
-        indices = dict(groups['Index'], **groups['Tillage'])
-        if len(indices) > 0:
+        indices0 = dict(groups['Index'], **groups['Tillage'])
+        if len(indices0) > 0:
             start = datetime.now()
-            # TODO - this assumes atmospheric correct - what if mix of atmos and non-atmos?
+            indices = {}
+            indices_toa = {}
+            for key, val in indices0.items():
+                if 'toa' in val:
+                    indices_toa[key] = val
+                else:
+                    indices[key] = val
+            # Run TOA
+            fnames = [os.path.join(self.path, self.basename + '_' + key) for key in indices_toa]
+            prodarr = dict(zip([indices_toa[p][0] for p in indices_toa.keys()], fnames))
+            prodout = gippy.Indices(img, prodarr)
+            self.products.update(prodout)
+            # Run atmospherically corrected
             for col in visbands:
                 img[col] = ((img[col]-atmos[col][1])/atmos[col][0]) * (1.0/atmos[col][2])
             fnames = [os.path.join(self.path, self.basename + '_' + key) for key in indices]
             prodarr = dict(zip([indices[p][0] for p in indices.keys()], fnames))
             prodout = gippy.Indices(img, prodarr)
             self.products.update(prodout)
-            VerboseOut(' -> %s: processed %s in %s' % (self.basename, indices.keys(), datetime.now()-start), 1)
+            VerboseOut(' -> %s: processed %s in %s' % (self.basename, indices0.keys(), datetime.now()-start), 1)
 
         img = None
         # cleanup directory
@@ -560,7 +571,8 @@ class LandsatData(Data):
                 'help': 'Threshold of max %% cloud cover',
                 'default': 100,
                 'type': int
-            }}
+            },
+        }
 
 
 def main():
