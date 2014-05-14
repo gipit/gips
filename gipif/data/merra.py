@@ -18,129 +18,263 @@
 #   along with this program. If not, see <http://www.gnu.org/licenses/>
 ################################################################################
 
-# TODO - WORK IN PROGRESS. CONVERT TO gippy Data subclass
+import sys
+import os
+import re
+import time
+import datetime
+import urllib
+from osgeo import gdal
+from collections import OrderedDict
 
-from pdb import set_trace
+import math
+import numpy as np
 
-def _interp(arr, x, y):
-    """ Bilinear interpolation of 2x2 array. 0 <= (x,y) < 1.0 """
-    b1 = arr[0,0]
-    b2 = arr[1,0] - arr[0,0]
-    b3 = arr[0,1] - arr[0,0]
-    b4 = arr[0,0] - arr[1,0] - arr[0,1] + arr[1,1]
-    return b1 + b2*x + b3*y + b4*x*y
+import gippy
+from gipif.core import Repository, Asset, Data
+from gipif.inventory import DataInventory
+from gipif.utils import File2List, List2File, VerboseOut
+import gipif.settings as settings
 
-def fetchmerra(date):
-    product = 'MAI6NVANA.5.2.0'
-    minutes = date.hour * 60 + date.minute
-    if minutes < 180:
-        date = date - datetime.timedelta(days=1)
 
-    if date.year < 1993:
-        stream = 1
-    elif date.year < 2001:
-        stream = 2
-    else: stream = 3
+def binmask(arr, bit):
+    """ Return boolean array indicating which elements as binary have a 1 in
+        a specified bit position. Input is Numpy array.
+    """
+    return arr & (1 << (bit-1)) == (1 << (bit-1))
 
-    minorversion = ['0','1']
 
-    for mv in minorversion:
-        hdf = 'MERRA%s0%s.prod.assim.inst6_3d_ana_Nv.%s.hdf' % (stream, mv, date.strftime('%Y%m%d'))
-        fname = os.path.join(_merraroot,product,date.strftime('%Y'),date.strftime('%m'),hdf)
-        if not os.path.exists(fname):
-            wfname = fname.replace(_merraroot,'ftp://goldsmr3.sci.gsfc.nasa.gov/data/s4pa/MERRA/')
-            try:
-                os.makedirs(os.path.dirname(fname))
-            except:
-                pass
-            import urllib
-            #start = datetime.datetime.now()
-            try:
-                urllib.urlretrieve(wfname, fname)
-                break
-            except:
-                pass
-        else: break
-    return fname
+class MerraRepository(Repository):
+    repo = settings.REPOS['merra']
+    _rootpath = repo.get('rootpath', Repository._rootpath)
+    _tiles_vector = repo.get('tiles_vector', Repository._tiles_vector)
+    _tile_attribute = repo.get('tile_attribute', Repository._tile_attribute)
 
-def atmprofile(lat,lon,date):
-    """ Fetch atmospheric profile from MERRA data """
-    minutes = date.hour * 60 + date.minute
+    @classmethod
+    def feature2tile(cls, feature):
+        """ convert tile field attributes to tile identifier """
+        fldindex_h = feature.GetFieldIndex("h")
+        fldindex_v = feature.GetFieldIndex("v")
+        h = str(int(feature.GetField(fldindex_h))).zfill(2)
+        v = str(int(feature.GetField(fldindex_v))).zfill(2)
+        tile = "h%sv%s" % (h, v)
+        return tile
 
-    # Determine best time to use
-    if minutes < 180:
-        # use previous day midnight
-        timeindex = 0
-        #date = date - datetime.timedelta(days=1)
-    elif minutes < 540:
-        timeindex = 1
-    elif minutes < 900:
-        timeindex = 2
-    elif minutes < 1260:
-        timeindex = 3
-    else: timeindex = 0
 
-    fname = fetchmerra(date)
+class MerraAsset(Asset):
+    Repository = MerraRepository
 
-    import nio
-    f = nio.open_file(fname)
+    _sensors = {
+        'MAT': {'description': 'MERRA IAU'},
+        'MST': {'description': 'MERRA Land'},
+        'MAI': {'description': 'MERRA DAS'}
+    }
 
-    #times = f.variables['TIME_EOSGRID'][:]
-    heights = f.variables['Height_EOSGRID'][:]
-    lats = f.variables['YDim_EOSGRID'][:]
-    lons = f.variables['XDim_EOSGRID'][:]
+    _asset_layers = {
+        'MAT1NXSLV': {}
+    }
 
-    latinds = np.arange(len(lats))
-    loninds = np.arange(len(lons))
-    latind = np.interp(lat,lats,latinds)
-    lonind = np.interp(lon,lons,loninds)
-    lat0 = np.floor(latind).astype(int)
-    lat1 = lat0+2
-    lon0 = np.floor(lonind).astype(int)
-    lon1 = lon0+2
-    flat = latind-lat0
-    flon = lonind-lon0
+    _assets = {
+        'MAT1NXSLV': {
 
-    # Extract variables
-    PS = _interp(f.variables['PS'][timeindex,lat0:lat1,lon0:lon1], flat, flon)
-    temp = []
-    humidity = []
-    ozone = []
-    #delp = []
-    for h in range(0,len(heights)):
-        temp.append( _interp( f.variables['T'][timeindex,h,lat0:lat1,lon0:lon1], flat,flon)-273.15 )
-        humidity.append( _interp( f.variables['QV'][timeindex,h,lat0:lat1,lon0:lon1], flat,flon) )
-        ozone.append( _interp( f.variables['O3'][timeindex,h,lat0:lat1,lon0:lon1], flat,flon) )
-        #delp.append( _interp( f.variables['DELP'][timeindex,h,lat0:lat1,lon0:lon1], flat,flon) )
-    f.close()
+            # MERRA300.prod.assim.tavg1_2d_slv_Nx.20100101.hdf
+            'pattern': 'MERRA300.prod.assim.tavg1_2d_slv_Nx*hdf',
 
-    return {'height':heights,'temp':temp,'humidity':humidity,'ozone':ozone} #'delp':delp}
+            'url': 'ftp://goldsmr2.sci.gsfc.nasa.gov/data/s4pa/MERRA/MAT1NXSLV.5.2.0/',
+            'startdate': datetime.date(1979, 1, 11),
+            'latency': -45
+        },
+    }
 
-def _test_atmprofile():
-    import matplotlib.pyplot as plt
-    data = atmprofile(43,-72,'')
-    h = data['height']
+    # Not used anywhere
+    _launchdate = {
+    }
 
-    plt.figure()
+    # Should this be specified on a per asset basis?
+    _defaultresolution = (0.666666666666667, -0.498614958448753)
 
-    plt.subplot(221)
-    plt.plot(h,data['temp'])
-    plt.xlabel('atm height (hPa)')
-    plt.ylabel('temp (C)')
 
-    plt.subplot(222)
-    plt.plot(h,data['humidity'])
-    plt.xlabel('atm height (hPa)')
-    plt.ylabel('humidity (C)') 
+    def __init__(self, filename):
+        """ Inspect a single file and get some metadata """
+        super(MerraAsset, self).__init__(filename)
 
-    plt.subplot(223)
-    plt.plot(h,data['ozone'])
-    plt.xlabel('atm height (hPa)')
-    plt.ylabel('ozone mixing ratio') 
 
-    plt.subplot(224)
-    plt.plot(h,data['delp'])
-    plt.xlabel('atm height (hPa)')
-    plt.ylabel('delp')
+        bname = os.path.basename(filename)
 
-    plt.show()
+        self.asset = bname[0:7]
+        self.tile = bname[17:23]
+        year = bname[9:13]
+        doy = bname[13:16]
+
+        self.date = datetime.datetime.strptime(year+doy, "%Y%j").date()
+        self.sensor = bname[:3]
+
+        datafiles = self.datafiles()
+
+
+    def datafiles(self):
+
+        indexfile = self.filename + '.index'
+
+        # TODO: get File2List to handle missing file and empty file in the same way
+        try:
+            datafiles = File2List(indexfile)
+        except:
+            datafiles = []
+
+        if not datafiles:
+            gdalfile = gdal.Open(self.filename)
+            subdatasets = gdalfile.GetSubDatasets()
+            datafiles = [s[0] for s in subdatasets]
+            List2File(datafiles, indexfile)
+
+        return datafiles
+
+    @classmethod
+    def _filepattern(cls, asset, tile, date):
+        """ used by fetch only """
+
+        year, month, day = date.timetuple()[:3]
+
+        # MERRA300.prod.assim.tavg1_2d_slv_Nx.20100101.hdf
+
+        # pattern = ''.join(['(', asset, '.A', str(year), str(doy).zfill(3), '.', tile, '.005.\d{13}.hdf)'])
+
+        datestr = str(year) + str(month).zfill(2) + str(day).zfill(2)
+
+        # pattern = ''.join(['(', 'MERRA300.prod.assim.tavg1_2d_slv_Nx.', datestr, '.hdf)'])
+
+        pattern = "(MERRA300.prod.assim.tavg1_2d_slv_Nx.%s.hdf)" % datestr
+
+        print "pattern", pattern
+
+        return pattern
+
+
+    @classmethod
+    def _remote_subdirs(cls, asset, tile, date):
+        """ used by fetch only """
+        year, month, day = date.timetuple()[:3]
+        httploc = cls._assets[asset]['url']
+
+        # mainurl = ''.join([httploc, '/', str(year), '.', '%02d' % month, '.', '%02d' % day])
+
+        mainurl = "%s/%04d/%02d" % (httploc, year, month)
+
+        # mainurl = ''.join([httploc, '/', str(year), '/', '%02d' % month])
+
+        print "mainurl", mainurl
+
+        return mainurl
+
+
+    @classmethod
+    def fetch(cls, asset, tile, date):
+
+        VerboseOut('%s: fetch tile %s for %s' % (asset, tile, date), 3)
+
+        print dir(cls.Repository)
+
+        tilesvector = cls.Repository.tiles_vector()
+
+
+        # if date.date() < cls._assets[asset]['startdate']:
+        #     print "date is too early"
+        #     return 3
+
+        # if date > datetime.datetime.now() - datetime.timedelta(cls._assets[asset]['latency']):
+        #     print "date is too recent"
+        #     return 3
+
+        pattern = cls._filepattern(asset, tile, date)
+        mainurl = cls._remote_subdirs(asset, tile, date)
+        outdir = cls.Repository.spath()
+
+        VerboseOut('%s: mainurl %s, pattern %s' % (asset, mainurl, pattern), 4)
+
+        print "outdir", outdir
+        print "pattern", pattern
+        print "mainurl", mainurl
+
+
+        # assetname = ""
+        # tileid = ""
+        
+        # h = int(tileid[1:3])
+        # v = int(tileid[4:6])
+
+        # print h, v
+
+        # x0 = ORIG[0] + 12.0*(h - 1)
+        # y0 = ORIG[1] + 10.0*(v - 1)
+        # dx = 12.0
+        # dy = 10.0
+
+        # nx = int(round(dx/RES[0]))
+        # ny = int(round(-dy/RES[1]))
+        # ix0 = int(round((x0 - ORIG[0])/RES[0]))
+        # iy0 = int(round(-(y0 - ORIG[1])/RES[1]))
+        # ix1 = ix0 + nx
+        # iy1 = iy0 + ny
+
+        # print "x0, y0", x0, y0
+        # print "nx, ny", nx, ny
+        # print "ix0, iy0", ix0, iy0
+        # print "ix1, iy1", ix1, iy1
+
+        # dataset = open_url(LOC)
+
+        # keys = dataset.keys()
+
+        # names = []
+        # for i, key in enumerate(keys):
+        #     x = dataset[key]
+        #     print i, key, x.shape
+        #     if x.shape == (24, 361, 540):
+        #         names.append(key)        
+
+        # print names
+        # print len(names)
+
+        # assert assetname in names, "asset name is not in SDS list"
+
+        # data = dataset[assetname][:, iy0:iy1, ix0:ix1].astype('float32')
+        # print data.shape
+
+        # proj = raster.create_proj(4326)
+        # geo = raster.create_geo((x0, y0), RES[0], RES[1])
+        # meta = {}
+
+        # print type(data)
+
+        # print data.dtype
+
+        # print dataset['Time'][:]
+        # print dataset['TIME'][:]
+
+        # outfilename = assetname + ".tif"
+        # names = ['%02d30GMT' % i for i in range(24)]
+        # raster.write_raster(outfilename, data, proj, geo, meta, bandnames=names)
+
+
+
+ 
+
+class MerraData(Data):
+    """ A tile of data (all assets and products) """
+    name = 'Merra'
+    Asset = MerraAsset
+    _pattern = '*.tif' 
+    _products = {
+        'temp': {
+            'description': 'Air temperature data',
+            'assets': ['MAT1NXSLV']
+        },
+    }
+    
+    # def process(self, products):
+
+
+
+def main():
+    DataInventory.main(MerraData)
