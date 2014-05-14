@@ -27,7 +27,7 @@ Several packages are required for GIPIF. These notes are for Ubuntu systems.
     $ sudo apt-get update
 
     2) Then install the required dependencies
-    $ sudo apt-get install python-setuptools python-numpy python-gdal g++ libgdal1-dev gdal-bin libboost-dev-all swig2.0 swig
+    $ sudo apt-get install python-setuptools python-numpy python-gdal g++ libgdal1-dev gdal-bin libboost-dev swig2.0 swig
     These are required for Py6S
     $ sudo apt-get install python-scipy python-matplotlib
 
