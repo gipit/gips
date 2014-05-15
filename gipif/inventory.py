@@ -129,7 +129,7 @@ class Tiles(object):
             sensor = self.sensor if self.sensor != '' else ''
             for product in self.requested_products:
                 filename = os.path.join(datadir, bname + ('_%s_%s.tif' % (sensor, product)))
-                VerboseOut('Projecting to %s' % filename, 2)
+                #VerboseOut('Projecting to %s' % filename, 2)
                 if not os.path.exists(filename):
                     filenames = [self.tiles[t].products[product] for t in self.tiles]
                     # TODO - cookiecutter should validate pixels in image.  Throw exception if not
