@@ -108,7 +108,6 @@ class Tiles(object):
         """ Create image of final product (reprojected/mosaiced) """
         if datadir == '':
             datadir = self.dataclass.name+'_data'
-        #self.process()
         if not os.path.exists(datadir):
             os.makedirs(datadir)
         datadir = os.path.abspath(datadir)
@@ -116,7 +115,6 @@ class Tiles(object):
             res = self.dataclass.Asset._defaultresolution
         if not hasattr(res, "__len__"):
             res = [res, res]
-        #elif len(res) == 1: res = [res[0],res[0]]
         start = datetime.now()
         if self.site is None:
             for t in self.tiles:
@@ -131,14 +129,17 @@ class Tiles(object):
                 filename = os.path.join(datadir, bname + ('_%s_%s.tif' % (sensor, product)))
                 #VerboseOut('Projecting to %s' % filename, 2)
                 if not os.path.exists(filename):
-                    filenames = [self.tiles[t].products[product] for t in self.tiles]
-                    # TODO - cookiecutter should validate pixels in image.  Throw exception if not
-                    if nowarp:
-                        imgout = self._mosaic(filenames, filename, self.site)
-                    else:
-                        imgout = gippy.CookieCutter(filenames, filename, self.site, res[0], res[1])
-                    imgout = None
-                self.products[product] = filename
+                    try:
+                        filenames = [self.tiles[t].products[product] for t in self.tiles]
+                        # TODO - cookiecutter should validate pixels in image.  Throw exception if not
+                        if nowarp:
+                            imgout = self._mosaic(filenames, filename, self.site)
+                        else:
+                            imgout = gippy.CookieCutter(filenames, filename, self.site, res[0], res[1])
+                        imgout = None
+                        self.products[product] = filename
+                    except:
+                        VerboseOut("Problem projecting %s" % filename, 3)
             if mask is not None:
                 self._applymask(self.products.values(), self.products[mask])
         t = datetime.now() - start
@@ -305,6 +306,8 @@ class DataInventory(object):
         for i, s in enumerate(sensors):
             self.sensors[s] = self.dataclass.Asset._sensors[s]
             self.sensors[s]['color'] = Colors.BOLD + self._colors[i]
+        if len(dates) == 0:
+            raise Exception("No matching files in inventory!")
 
     def _temporal_extent(self, dates, days):
         """ Temporal extent (define self.dates and self.days) """
@@ -333,6 +336,7 @@ class DataInventory(object):
 
     def process(self, *args, **kwargs):
         """ Process data in inventory """
+        from pdb import set_trace
         if len(self.standard_products) + len(self.composite_products) == 0:
             raise Exception('No products specified!')
         sz = self.numfiles
@@ -340,7 +344,10 @@ class DataInventory(object):
             start = datetime.now()
             VerboseOut('Processing %s files: %s' % (sz, ' '.join(self.standard_products)), 1)
             for date in self.dates:
-                self.data[date].process(*args, **kwargs)
+                try:
+                    self.data[date].process(*args, **kwargs)
+                except:
+                    pass
             VerboseOut('Completed processing in %s' % (datetime.now()-start), 1)
         if len(self.composite_products) > 0:
             start = datetime.now()
@@ -364,9 +371,6 @@ class DataInventory(object):
         """ Print inventory """
         self.print_tile_coverage()
         print
-        if len(self.dates) == 0:
-            VerboseOut('No matching files!')
-            return
         if self.site is not None:
             site_name = os.path.splitext(os.path.basename(self.site))[0]
             print Colors.BOLD + 'Asset Coverage for site %s' % site_name + Colors.OFF
