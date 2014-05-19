@@ -26,10 +26,8 @@ def main():
 
     group = parser0.add_argument_group('algorithm options')
     group.add_argument('-o', '--output', help='Output file name', default='rice.tif')
-    group.add_argument('--water', 'Sigma nought threshold for water', default=-12.0, type=float)
-    group.add_argument('--land', 'Sigma nought threshold for land', default=-10.0, type=float)
-    group.add_argument('--mean', help='Mean water signal', default=-12.0, type=float)
-    group.add_argument('--sd', help='Water signal std dev', default=1.0, type=float)
+    group.add_argument('--water', help='Sigma nought threshold for water', default=-12.0, type=float)
+    group.add_argument('--land', help='Sigma nought threshold for land', default=-10.0, type=float)
 
     args = parser0.parse_args()
     gippy.Options.SetVerbose(args.verbose)

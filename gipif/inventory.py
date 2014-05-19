@@ -137,9 +137,9 @@ class Tiles(object):
                         else:
                             imgout = gippy.CookieCutter(filenames, filename, self.site, res[0], res[1])
                         imgout = None
-                        self.products[product] = filename
                     except:
                         VerboseOut("Problem projecting %s" % filename, 3)
+                self.products[product] = filename
             if mask is not None:
                 self._applymask(self.products.values(), self.products[mask])
         t = datetime.now() - start
