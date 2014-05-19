@@ -4,8 +4,10 @@ import argparse
 import numpy
 import gippy
 from gipif.data.sar import SARData
+from gipif.utils import VerboseOut
 from pdb import set_trace
 
+__version__ = '0.1.0'
 
 def main():
     dhf = argparse.ArgumentDefaultsHelpFormatter
@@ -24,6 +26,8 @@ def main():
 
     group = parser0.add_argument_group('algorithm options')
     group.add_argument('-o', '--output', help='Output file name', default='rice.tif')
+    group.add_argument('--water', 'Sigma nought threshold for water', default=-12.0, type=float)
+    group.add_argument('--land', 'Sigma nought threshold for land', default=-10.0, type=float)
     group.add_argument('--mean', help='Mean water signal', default=-12.0, type=float)
     group.add_argument('--sd', help='Water signal std dev', default=1.0, type=float)
 
@@ -41,32 +45,43 @@ def main():
     for d in inv.dates:
         days.append((d-inv.dates[0]).days)
     imgs = inv.get_timeseries(product='sign')
+    nodata = imgs[0].NoDataValue()
 
-    print 'dates = ', len(inv.dates)
+    VerboseOut('Flood Detect v%s' % __version__)
+    VerboseOut('Processing %s dates' % len(inv.dates))
 
     # Flood detect algorithm
-    imgout = gippy.GeoImage(args.output, imgs, gippy.GDT_Byte, 1)
-    th0 = args.mean + args.sd
-    th1 = args.mean + 3 * args.sd
-    last_water = (imgs[0] > th0).Read()
+    imgout = gippy.GeoImage(args.output, imgs, gippy.GDT_Byte, 3)
+    imgout.SetNoData(0)
+    th0 = args.water
+    th1 = args.land
+    last_water = (imgs[0] < th0).Read()
+    last_water[numpy.where(last_water == nodata)] = 0
     #dried = (imgs[0] > th1).Read()
     hits = numpy.zeros(last_water.shape)
+    numobs = numpy.zeros(last_water.shape)
     for b in range(1, imgs.NumBands()):
-        print b
-        water = (imgs[b] > th0).Read()
+        VerboseOut('Process band %s' % b, 2)
+        numobs = numobs + imgs[b].DataMask()
+        # Current dry land mask
         dried = (imgs[b] > th1).Read()
-        print 'before where'
+        dried[numpy.where(dried == nodata)] = 0
+        # Find transitional pixels (water->dry) and increment
         inds = numpy.where(numpy.logical_and(dried, last_water))
-        print 'after where'
         hits[inds] = hits[inds] + 1
-        last_water = water
+        #imgout[b+1].Write(hits)
+        # update water mask
+        water = (imgs[b] < th0).Read()
+        water[numpy.where(water == nodata)] = 0
+        last_water = last_water + water
+        # Reset water mask if it was dry
+        last_water[numpy.where(dried > 0)] = 0
     imgout[0].Write(hits)
+    imgout[1].Write(numobs)
+    imgout[2].Write(numpy.divide(hits, numobs) * 50)
 
     imgout = None
     imgs = None
-
-    set_trace()
-
 
 if __name__ == "__main__":
     main()
