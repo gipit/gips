@@ -65,22 +65,38 @@ class MerraAsset(Asset):
     Repository = MerraRepository
 
     _sensors = {
-        'MAT': {'description': 'MERRA IAU'},
-        'MST': {'description': 'MERRA Land'},
-        'MAI': {'description': 'MERRA DAS'}
+        # there is not a MERRA sensor. These are product groups
+        'MAT1NXSLV': {'description': 'MERRA IAU 2d atmospheric single-level diagnostics'},
+        'MST1NXMLD': {'description': 'MERRA-Land 2d land surface diagnostics'},
+        'MAI1NXINT': {'description': 'MERRA IAU 2d Vertical integrals'}
     }
 
-    _asset_layers = {
-        'MAT1NXSLV': {}
-    }
+    # _asset_layers = {
+    #     'MAT1NXSLV': {}
+    # }
 
     _assets = {
-        'MAT1NXSLV': {
-
-            # MERRA300.prod.assim.tavg1_2d_slv_Nx.20100101.hdf
-            'pattern': 'MERRA300.prod.assim.tavg1_2d_slv_Nx*hdf',
-
-            'url': 'ftp://goldsmr2.sci.gsfc.nasa.gov/data/s4pa/MERRA/MAT1NXSLV.5.2.0/',
+        'TS': {
+            'description': 'Surface skin temperature',
+            'pattern': 'MERRA_MAT1NXSLV_TS_*.tif',
+            'url': 'http://goldsmr2.sci.gsfc.nasa.gov:80/opendap/MERRA/MAT1NXSLV.5.2.0',
+            'source': 'MERRA%s.prod.assim.tavg1_2d_slv_Nx.%04d%02d%02d.hdf',
+            'startdate': datetime.date(1979, 1, 11),
+            'latency': -45
+        },
+        'T2M': {
+            'description': 'Temperature at 2 m above the displacement height',
+            'pattern': 'MERRA_MAT1NXSLV_T2M_*.tif',
+            'url': 'http://goldsmr2.sci.gsfc.nasa.gov:80/opendap/MERRA/MAT1NXSLV.5.2.0',
+            'source': 'MERRA%s.prod.assim.tavg1_2d_slv_Nx.%04d%02d%02d.hdf',
+            'startdate': datetime.date(1979, 1, 11),
+            'latency': -45
+        },
+        'T10M': {
+            'description': 'Temperature at 10 m above the displacement height',
+            'pattern': 'MERRA_MAT1NXSLV_T10M_*.tif',
+            'url': 'http://goldsmr2.sci.gsfc.nasa.gov:80/opendap/MERRA/MAT1NXSLV.5.2.0',
+            'source': 'MERRA%s.prod.assim.tavg1_2d_slv_Nx.%04d%02d%02d.hdf',
             'startdate': datetime.date(1979, 1, 11),
             'latency': -45
         },
@@ -91,174 +107,212 @@ class MerraAsset(Asset):
     }
 
     # Should this be specified on a per asset basis?
-    _defaultresolution = (0.666666666666667, -0.498614958448753)
-
+    _defaultresolution = (0.666666666666667, -0.50)
 
     def __init__(self, filename):
         """ Inspect a single file and get some metadata """
         super(MerraAsset, self).__init__(filename)
 
-
         bname = os.path.basename(filename)
+        bname = os.path.splitext(bname)[0]
 
-        self.asset = bname[0:7]
-        self.tile = bname[17:23]
-        year = bname[9:13]
-        doy = bname[13:16]
+        print
+        print "init"
+
+        print "bname", bname
+        parts = bname.split('_')
+        print "parts", parts
+
+        # MERRA_MAT1NXSLV_%s_%s_%s.tif
+
+        self.sensor = parts[1]
+        self.asset = parts[2]
+        self.tile = parts[3]
+        year = parts[4]
+        doy = parts[5]
+
+        print "self.sensor, self.asset, self.tile, year, doy:", self.sensor, self.asset, self.tile, year, doy
+        print
 
         self.date = datetime.datetime.strptime(year+doy, "%Y%j").date()
-        self.sensor = bname[:3]
 
         datafiles = self.datafiles()
 
 
     def datafiles(self):
+        """ Get list of datafiles from asset (if archive file) """
 
-        indexfile = self.filename + '.index'
+        print "self.filename", self.filename
 
-        # TODO: get File2List to handle missing file and empty file in the same way
-        try:
-            datafiles = File2List(indexfile)
-        except:
-            datafiles = []
-
-        if not datafiles:
-            gdalfile = gdal.Open(self.filename)
-            subdatasets = gdalfile.GetSubDatasets()
-            datafiles = [s[0] for s in subdatasets]
-            List2File(datafiles, indexfile)
-
-        return datafiles
-
-    @classmethod
-    def _filepattern(cls, asset, tile, date):
-        """ used by fetch only """
-
-        year, month, day = date.timetuple()[:3]
-
-        # MERRA300.prod.assim.tavg1_2d_slv_Nx.20100101.hdf
-
-        # pattern = ''.join(['(', asset, '.A', str(year), str(doy).zfill(3), '.', tile, '.005.\d{13}.hdf)'])
-
-        datestr = str(year) + str(month).zfill(2) + str(day).zfill(2)
-
-        # pattern = ''.join(['(', 'MERRA300.prod.assim.tavg1_2d_slv_Nx.', datestr, '.hdf)'])
-
-        pattern = "(MERRA300.prod.assim.tavg1_2d_slv_Nx.%s.hdf)" % datestr
-
-        print "pattern", pattern
-
-        return pattern
+        # try:
+        #     datafiles = File2List(indexfile)
+        # except:
+        #     datafiles = []
 
 
-    @classmethod
-    def _remote_subdirs(cls, asset, tile, date):
-        """ used by fetch only """
-        year, month, day = date.timetuple()[:3]
-        httploc = cls._assets[asset]['url']
+    # def datafiles(self):
 
-        # mainurl = ''.join([httploc, '/', str(year), '.', '%02d' % month, '.', '%02d' % day])
+    #     indexfile = self.filename + '.index'
 
-        mainurl = "%s/%04d/%02d" % (httploc, year, month)
+    #     # TODO: get File2List to handle missing file and empty file in the same way
+    #     try:
+    #         datafiles = File2List(indexfile)
+    #     except:
+    #         datafiles = []
 
-        # mainurl = ''.join([httploc, '/', str(year), '/', '%02d' % month])
+    #     if not datafiles:
+    #         gdalfile = gdal.Open(self.filename)
+    #         subdatasets = gdalfile.GetSubDatasets()
+    #         datafiles = [s[0] for s in subdatasets]
+    #         List2File(datafiles, indexfile)
 
-        print "mainurl", mainurl
+    #     return datafiles
 
-        return mainurl
+    # @classmethod
+    # def _filepattern(cls, asset, tile, date):
+    #     """ used by fetch only """
+    #     year, month, day = date.timetuple()[:3]
+    #     # MERRA300.prod.assim.tavg1_2d_slv_Nx.20100101.hdf
+    #     # pattern = ''.join(['(', asset, '.A', str(year), str(doy).zfill(3), '.', tile, '.005.\d{13}.hdf)'])
+    #     datestr = str(year) + str(month).zfill(2) + str(day).zfill(2)
+    #     # pattern = ''.join(['(', 'MERRA300.prod.assim.tavg1_2d_slv_Nx.', datestr, '.hdf)'])
+    #     pattern = "(MERRA300.prod.assim.tavg1_2d_slv_Nx.%s.hdf)" % datestr
+    #     print "pattern", pattern
+    #     return pattern
+
+    # @classmethod
+    # def _remote_subdirs(cls, asset, tile, date):
+    #     """ used by fetch only """
+    #     year, month, day = date.timetuple()[:3]
+    #     httploc = cls._assets[asset]['url']
+    #     # mainurl = ''.join([httploc, '/', str(year), '.', '%02d' % month, '.', '%02d' % day])
+    #     mainurl = "%s/%04d/%02d" % (httploc, year, month)
+    #     # mainurl = ''.join([httploc, '/', str(year), '/', '%02d' % month])
+    #     print "mainurl", mainurl
+    #     return mainurl
 
 
     @classmethod
     def fetch(cls, asset, tile, date):
 
+        from pydap.client import open_url
+        from agspy.utils import raster
+
         VerboseOut('%s: fetch tile %s for %s' % (asset, tile, date), 3)
 
-        print dir(cls.Repository)
+        outdir = cls.Repository.spath()
 
         tilesvector = cls.Repository.tiles_vector()
 
-
-        # if date.date() < cls._assets[asset]['startdate']:
-        #     print "date is too early"
-        #     return 3
-
-        # if date > datetime.datetime.now() - datetime.timedelta(cls._assets[asset]['latency']):
-        #     print "date is too recent"
-        #     return 3
-
-        pattern = cls._filepattern(asset, tile, date)
-        mainurl = cls._remote_subdirs(asset, tile, date)
-        outdir = cls.Repository.spath()
-
-        VerboseOut('%s: mainurl %s, pattern %s' % (asset, mainurl, pattern), 4)
-
+        print "asset", asset
+        print "tile", tile
+        print "date", date
         print "outdir", outdir
-        print "pattern", pattern
-        print "mainurl", mainurl
+
+        for fid in tilesvector.get_fids():
+            feature = tilesvector.get_feature(fid)
+            if feature['tileid'] == tile:
+                break
+
+        bounds = eval(feature['bounds'])
+        print "bounds", bounds
+        x0 = bounds[0]
+        y0 = bounds[1]
+
+        y1 = bounds[3]
+
+        RES = (0.666666666666667, 0.50)
+        ORIG = (-180., -90.)
+
+        dx = 12.0
+        dy = 10.0
+
+        nx = int(round(dx/RES[0]))
+        ny = int(round(dy/RES[1]))
+
+        # verify bounds
+        h = int(tile[1:3])
+        v = int(tile[4:6])
+
+        print h, v
+        x0_alt = ORIG[0] + dx*(h - 1)
+        y0_alt = ORIG[1] + dy*(18 - v)
+
+        print "x0, y0", x0, y0
+        print "x0_alt, y0_alt", x0_alt, y0_alt
+        assert x0 == x0_alt
+        assert y0 == y0_alt
 
 
-        # assetname = ""
-        # tileid = ""
-        
-        # h = int(tileid[1:3])
-        # v = int(tileid[4:6])
+        ix0 = int(round((x0 - ORIG[0])/RES[0]))
+        iy0 = int(round((y0 - ORIG[1])/RES[1]))
+        ix1 = ix0 + nx
+        iy1 = iy0 + ny
 
-        # print h, v
+        print "x0, y0", x0, y0
+        print "nx, ny", nx, ny
+        print "ix0, iy0", ix0, iy0
+        print "ix1, iy1", ix1, iy1
 
-        # x0 = ORIG[0] + 12.0*(h - 1)
-        # y0 = ORIG[1] + 10.0*(v - 1)
-        # dx = 12.0
-        # dy = 10.0
+        url = cls._assets[asset]['url']
 
-        # nx = int(round(dx/RES[0]))
-        # ny = int(round(-dy/RES[1]))
-        # ix0 = int(round((x0 - ORIG[0])/RES[0]))
-        # iy0 = int(round(-(y0 - ORIG[1])/RES[1]))
-        # ix1 = ix0 + nx
-        # iy1 = iy0 + ny
+        if date.year > 2000:
+            ver = '300'
+        elif date.year > 1992:
+            ver = '200'
+        else:
+            ver = '100'
 
-        # print "x0, y0", x0, y0
-        # print "nx, ny", nx, ny
-        # print "ix0, iy0", ix0, iy0
-        # print "ix1, iy1", ix1, iy1
+        source = cls._assets[asset]['source'] % (ver, date.year, date.month, date.day)
 
-        # dataset = open_url(LOC)
+        loc = "%s/%04d/%02d/%s" % (url, date.year, date.month, source)
 
-        # keys = dataset.keys()
+        print "loc", loc
 
-        # names = []
-        # for i, key in enumerate(keys):
-        #     x = dataset[key]
-        #     print i, key, x.shape
-        #     if x.shape == (24, 361, 540):
-        #         names.append(key)        
+        dataset = open_url(loc)
+
+        print dataset
+
+        keys = dataset.keys()
+        names = []
+        for i, key in enumerate(keys):
+            x = dataset[key]
+            # print i, key, x.shape
+            if x.shape == (24, 361, 540):
+                names.append(key)        
 
         # print names
         # print len(names)
 
-        # assert assetname in names, "asset name is not in SDS list"
+        assert asset in names, "asset name is not in SDS list"
 
-        # data = dataset[assetname][:, iy0:iy1, ix0:ix1].astype('float32')
-        # print data.shape
+        data = dataset[asset][:, iy0:iy1, ix0:ix1].astype('float32')
+        data = data[:,::-1,:]
 
-        # proj = raster.create_proj(4326)
-        # geo = raster.create_geo((x0, y0), RES[0], RES[1])
-        # meta = {}
+        print data.shape
+        print type(data)
+        print data.dtype
 
-        # print type(data)
+        proj = raster.create_proj(4326)
+        geo = (x0, RES[0], 0.0, y1, 0.0, -RES[1])
 
-        # print data.dtype
+        description = cls._assets[asset]['description']
 
-        # print dataset['Time'][:]
-        # print dataset['TIME'][:]
+        meta = {'ASSET':asset, 'TILE':tile, 'DATE':str(date.date()),
+            'DESCRIPTION':description, 'SOURCE':loc}
 
-        # outfilename = assetname + ".tif"
-        # names = ['%02d30GMT' % i for i in range(24)]
-        # raster.write_raster(outfilename, data, proj, geo, meta, bandnames=names)
+        names = ['%02d30GMT' % i for i in range(24)]
+
+        doy = date.strftime('%j')
+
+        print "asset, tile, date.year, doy", asset, tile, date.year, doy
+        outfilename = "MERRA_MAT1NXSLV_%s_%s_%4d_%s.tif" % (asset, tile, date.year, doy)
+        outpath = os.path.join(outdir, outfilename)
+
+        print "Writing to", outpath
+        raster.write_raster(outpath, data, proj, geo, meta, bandnames=names)
 
 
-
- 
 
 class MerraData(Data):
     """ A tile of data (all assets and products) """
@@ -266,13 +320,52 @@ class MerraData(Data):
     Asset = MerraAsset
     _pattern = '*.tif' 
     _products = {
-        'temp': {
+        'temp_modis': {
             'description': 'Air temperature data',
-            'assets': ['MAT1NXSLV']
+            'assets': ['TS', 'T2M', 'T10M']
         },
     }
     
-    # def process(self, products):
+
+    def process(self, products, **kwargs):
+
+        print kwargs
+        print products
+
+        for key, val in products.items():
+
+            outfname = os.path.join(self.path, self.basename + '_' + key)        
+            VerboseOut("outfname: %s" % outfname, 4)
+
+            if val[0] == "temp_modis":
+                VERSION = "1.0"
+                assets = self._products['temp_modis']['assets']
+
+                allsds = []
+                missingassets = []
+                availassets = []
+                assetids = []
+
+                for asset in assets:
+                    try:
+                        sds = self.assets[asset].datafiles()
+                    except Exception,e:
+                        missingassets.append(asset)
+                    else:
+                        assetids.append(assets.index(asset))
+                        availassets.append(asset)
+                        allsds.extend(sds)
+
+                if missingassets:
+                    VerboseOut('There are missing assets: %s,%s,%s' % (str(self.date), str(self.id), str(missingassets)), 4)
+                    continue
+
+                print "assetids", assetids
+                print "availassets", availassets
+                print "missingassets", missingassets
+                for i,sds in enumerate(allsds):
+                    print "i, sds", i,sds
+
 
 
 

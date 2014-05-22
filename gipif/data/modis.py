@@ -276,7 +276,11 @@ class ModisData(Data):
         }
     }
     
-    def process(self, products):
+    def process(self, products, **kwargs):
+
+        print kwargs
+        print products
+
 
         platformnames = {'MOD':'Terra', 'MYD':'Aqua'}
 
@@ -308,7 +312,10 @@ class ModisData(Data):
                         allsds.extend(sds)
 
                 if missingassets:
-                    raise Exception, "There are missing assets"
+                    VerboseOut('There are missing assets: %s,%s,%s' % (str(self.date), str(self.id), str(missingassets)), 4)
+                    continue
+                    # raise Exception, "There are missing assets"
+                    # print message, then continue
 
                 print "assetids", assetids
                 print "availassets", availassets
@@ -433,8 +440,9 @@ class ModisData(Data):
 
                 if not availassets:
                     VerboseOut('Both assets are missing: %s,%s,%s' % (str(self.date), str(self.id), str(missingassets)), 4)
-                    # continue
-                    raise Exception, "Both assets are missing"
+                    continue
+                    # raise Exception, "Both assets are missing"
+
 
                 if not missingassets:
                     availbands = [0,1]
@@ -454,7 +462,7 @@ class ModisData(Data):
                 meta['AVAILABLE_ASSETS'] = str(availassets)
                 meta['VERSION'] = VERSION
 
-                # there are four temperature bands
+                # there are two snow bands
                 for iband, band in enumerate(availbands):
 
                     # get the data values for both bands
@@ -713,6 +721,8 @@ class ModisData(Data):
                 for k, v in metanames.items():
                     imgout.SetMeta(k, v)
 
+            # add product to inventory
+            self.products[val[0]] = outfname
 
 def main():
     DataInventory.main(ModisData)
