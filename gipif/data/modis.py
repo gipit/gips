@@ -287,6 +287,9 @@ class ModisData(Data):
         for key, val in products.items():
         
             outfname = os.path.join(self.path, self.basename + '_' + key)        
+
+            VerboseOut("self.path: %s" % self.path, 4)
+            VerboseOut("self.basename: %s" % self.basename, 4)
             VerboseOut("outfname: %s" % outfname, 4)
 
 
@@ -343,19 +346,10 @@ class ModisData(Data):
                 qcimg = qcimg.astype(np.int16)
                 qcimg[qcimg==255] = missing
 
-                # print np.sum(qcimg==0)
-                # print np.sum(qcimg==1)
-                # print np.sum(qcimg==missing)
-                # print
-                # print np.sum(redimg == missing)
-                # print np.sum(nirimg == missing)
-                # print np.sum(bluimg == missing)
-                # print np.sum(grnimg == missing)
-                # print np.sum(mirimg == missing)
-
                 redimg[redimg<0.0] = 0.0
                 nirimg[nirimg<0.0] = 0.0
                 bluimg[bluimg<0.0] = 0.0
+                grnimg[grnimg<0.0] = 0.0
                 mirimg[mirimg<0.0] = 0.0
 
                 meta = {}
@@ -378,16 +372,27 @@ class ModisData(Data):
                 print lswi.min(), lswi.max()
                 print lswi[wg].min(), lswi[wg].max()
 
+
+
+                vari = missing + np.zeros_like(redimg)
+                wg = np.where((grnimg != missing)&(redimg != missing)&(bluimg != missing)&(grnimg+redimg-bluimg != 0.0))
+                vari[wg] = (grnimg[wg] - redimg[wg]) / (grnimg[wg] + redimg[wg] - bluimg[wg])
+                print "vari"
+                print len(wg[0])
+                print vari.min(), vari.max()
+                print vari[wg].min(), vari[wg].max()
+
                 brgt = missing + np.zeros_like(redimg)
-                wg = np.where((nirimg != missing)&(redimg != missing)&(bluimg != missing))
-                brgt[wg] = (nirimg[wg] + redimg[wg] + bluimg[wg])/3.0
+                wg = np.where((nirimg != missing)&(redimg != missing)&(bluimg != missing)&(grnimg != missing))
+                brgt[wg] = 0.3*bluimg[wg] + 0.3*redimg[wg] + 0.1*nirimg[wg] + 0.3*grnimg[wg]
                 print "brgt"
                 print len(wg[0])
                 print brgt.min(), brgt.max()
                 print brgt[wg].min(), brgt[wg].max()
 
+
                 # create output gippy image
-                imgout = gippy.GeoImage(outfname, refl, gippy.GDT_Int16, 4)
+                imgout = gippy.GeoImage(outfname, refl, gippy.GDT_Int16, 5)
 
                 imgout.SetNoData(missing)
                 imgout.SetOffset(0.0)
@@ -395,15 +400,17 @@ class ModisData(Data):
 
                 imgout[0].Write(ndvi)
                 imgout[1].Write(lswi)
-                imgout[2].Write(brgt)
+                imgout[2].Write(vari)
+                imgout[3].Write(brgt)
 
-                imgout[3].SetGain(1.0)
-                imgout[3].Write(qcimg)
+                imgout[4].SetGain(1.0)
+                imgout[4].Write(qcimg)
 
                 imgout.SetColor('NDVI', 1)
                 imgout.SetColor('LSWI', 2)
-                imgout.SetColor('BRGT', 3)
-                imgout.SetColor('Best quality', 4)
+                imgout.SetColor('VARI', 3)
+                imgout.SetColor('BRGT', 4)
+                imgout.SetColor('Best quality', 5)
 
                 for k, v in meta.items():
                     imgout.SetMeta(k, str(v))
