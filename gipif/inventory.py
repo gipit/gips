@@ -33,6 +33,7 @@ from gipif.GeoVector import GeoVector
 import commands
 import tempfile
 from gipif.version import __version__
+from pdb import set_trace
 
 
 class Tiles(object):
@@ -334,9 +335,8 @@ class DataInventory(object):
         img = gippy.GeoImage(filenames)
         return img
 
-    def process(self, *args, **kwargs):
+    def process(self, **kwargs):
         """ Process data in inventory """
-        from pdb import set_trace
         if len(self.standard_products) + len(self.composite_products) == 0:
             raise Exception('No products specified!')
         sz = self.numfiles
@@ -345,19 +345,19 @@ class DataInventory(object):
             VerboseOut('Processing %s files: %s' % (sz, ' '.join(self.standard_products)), 1)
             for date in self.dates:
                 try:
-                    self.data[date].process(*args, **kwargs)
+                    self.data[date].process(**kwargs)
                 except:
                     pass
             VerboseOut('Completed processing in %s' % (datetime.now()-start), 1)
         if len(self.composite_products) > 0:
             start = datetime.now()
             VerboseOut('Processing %s files into composites: %s' % (sz, ' '.join(self.composite_products)), 1)
-            self.dataclass.process_composites(self, self.composite_products, *args, **kwargs)
+            self.dataclass.process_composites(self, self.composite_products, **kwargs)
             VerboseOut('Completed processing in %s' % (datetime.now()-start), 1)
 
     def project(self, *args, **kwargs):
         """ Create project files for data in inventory """
-        self.process(*args, **kwargs)
+        self.process(**kwargs)
         start = datetime.now()
         pstr = ' '.join(self.standard_products)  # .join(self.composite_products)
         dstr = '%s dates (%s - %s)' % (len(self.dates), self.dates[0], self.dates[-1])
