@@ -278,9 +278,8 @@ class ModisData(Data):
     
     def process(self, products, **kwargs):
 
-        print kwargs
-        print products
-
+        VerboseOut(kwargs, 3)
+        VerboseOut(products, 3)
 
         platformnames = {'MOD':'Terra', 'MYD':'Aqua'}
 
@@ -729,7 +728,7 @@ class ModisData(Data):
                     imgout.SetMeta(k, v)
 
             # add product to inventory
-            self.products[val[0]] = outfname
+            self.products[val[0]] = imgout.Filename()
 
 def main():
     DataInventory.main(ModisData)
