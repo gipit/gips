@@ -26,6 +26,7 @@ from datetime import datetime
 import traceback
 import shutil
 import textwrap
+from pprint import pprint
 
 import gippy
 from gipif.utils import VerboseOut, parse_dates, Colors
@@ -34,6 +35,23 @@ import commands
 import tempfile
 from gipif.version import __version__
 from pdb import set_trace
+
+
+def project_inventory(datadir=''):
+    """ Inventory a directory of project files """
+    files = glob.glob(os.path.join(datadir, '*'))
+    inv = {}
+    for f in files:
+        basename = os.path.splitext(os.path.basename(f))[0]
+        parts = basename.split('_')
+        date = datetime.strptime(parts[0], '%Y%j').date()
+        sensor = parts[1]
+        product = basename[len(parts[0])+len(parts[1])+2:]
+        if date in inv.keys():
+            inv[date][product] = f
+        else:
+            inv[date] = {product: f}
+    return inv
 
 
 class Tiles(object):
@@ -112,14 +130,23 @@ class Tiles(object):
         if not hasattr(res, "__len__"):
             res = [res, res]
         start = datetime.now()
+        bname = self.date.strftime('%Y%j')
+        sensor = self.sensor if self.sensor != '' else ''
         if self.site is None:
             for t in self.tiles:
                 datadir = self._datadir(t) if datadir == '' else datadir
-                filenames = self.tiles[t].link(products=self.requested_products.keys(), path=datadir, copy=True)
+                for p in self.requested_products:
+                    fout = os.path.join(datadir, bname + ('_%s_%s.tif' % (sensor, p)))
+                    if not os.path.exists(fout):
+                        try:
+                            VerboseOut("Creating %s" % os.path.basename(fout))
+                            shutil.copy(self.tiles[t].products[p], fout)
+                        except:
+                            VerboseOut("Problem copying %s" % filename, 3)
         else:
-            datadir = self._datadir(os.path.splitext(os.path.basename(self.site))[0]) if datadir == '' else datadir
-            bname = self.date.strftime('%Y%j')
-            sensor = self.sensor if self.sensor != '' else ''
+            sitename = os.path.splitext(os.path.basename(self.site))[0]
+            resstr = '_%sx%s' % (res[0], res[1])
+            datadir = self._datadir(sitename + resstr) if datadir == '' else datadir
             for product in self.requested_products:
                 filename = os.path.join(datadir, bname + ('_%s_%s.tif' % (sensor, product)))
                 if not os.path.exists(filename):
