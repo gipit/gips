@@ -120,7 +120,6 @@ class Tiles(object):
         if self.site is None:
             for t in self.tiles:
                 filenames = self.tiles[t].link(products=self.requested_products.keys(), path=datadir, copy=True)
-                #filenames = [self.tiles[t].products[p] for p in self.requested_products]
                 if mask is not None:
                     self._applymask(filenames, self.tiles[t].products[mask])
         else:
@@ -140,6 +139,8 @@ class Tiles(object):
                         imgout = None
                     except:
                         VerboseOut("Problem projecting %s" % filename, 3)
+                from pdb import set_trace
+                set_trace()
                 self.products[product] = filename
             if mask is not None:
                 self._applymask(self.products.values(), self.products[mask])
