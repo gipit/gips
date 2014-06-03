@@ -495,6 +495,7 @@ class Data(object):
             fname = self.products[p]
             bname = os.path.basename(fname)
             fullbname = os.path.join(path, bname)
+            filenames.append(fullbname)
             if copy:
                 try:
                     if os.path.exists(fullbname):
@@ -518,7 +519,6 @@ class Data(object):
                         VerboseOut('%s: soft linking' % bname, 2)
                     except:
                         VerboseOut('%s: Problem creating link' % bname, 2)
-            filenames.append(fullbname)
         return filenames
 
     ##########################################################################
