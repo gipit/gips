@@ -4,12 +4,10 @@ import argparse
 import numpy
 import gippy
 from gipif.inventory import project_inventory
-from gipif.data.sar import SARData
-from gipif.data.landsat import LandsatData
 from gipif.utils import VerboseOut
-from pdb import set_trace
 
-__version__ = '0.1.0'
+__version__ = '0.6.0'
+
 
 def main():
     dhf = argparse.ArgumentDefaultsHelpFormatter

@@ -28,8 +28,6 @@ import gipif.settings as settings
 import glob
 from gipif.version import __version__
 
-print 'GIPIF setup'
-
 # console scripts
 console_scripts = []
 for repo, cfg in settings.REPOS.items():
@@ -41,8 +39,6 @@ if os.path.exists('bin'):
     files = glob.glob('bin/*.py')
     for f in files:
         scripts.append(f)
-
-print 'scripts',scripts 
 
 setup(
     name='gipif',
