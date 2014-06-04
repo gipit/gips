@@ -39,7 +39,7 @@ from pdb import set_trace
 
 def project_inventory(datadir=''):
     """ Inventory a directory of project files """
-    files = glob.glob(os.path.join(datadir, '*'))
+    files = glob.glob(os.path.join(datadir, '*.tif'))
     inv = {}
     for f in files:
         basename = os.path.splitext(os.path.basename(f))[0]
