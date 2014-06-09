@@ -284,13 +284,13 @@ class ModisData(Data):
         platformnames = {'MOD':'Terra', 'MYD':'Aqua'}
 
         for key, val in products.items():
-        
-            outfname = os.path.join(self.path, self.basename + '_' + key)        
+
+            productname = '_'.join(self.basename.split('_')[:-1] + ['MOD'])
+            outfname = os.path.join(self.path, productname + '_' + key)        
 
             VerboseOut("self.path: %s" % self.path, 4)
-            VerboseOut("self.basename: %s" % self.basename, 4)
+            VerboseOut("productname: %s" % productname, 4)
             VerboseOut("outfname: %s" % outfname, 4)
-
 
             ########################
             # LAND VEGETATION INDICES PRODUCT
@@ -370,8 +370,6 @@ class ModisData(Data):
                 print len(wg[0])
                 print lswi.min(), lswi.max()
                 print lswi[wg].min(), lswi[wg].max()
-
-
 
                 vari = missing + np.zeros_like(redimg)
                 wg = np.where((grnimg != missing)&(redimg != missing)&(bluimg != missing)&(grnimg+redimg-bluimg != 0.0))
