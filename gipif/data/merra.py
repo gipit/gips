@@ -100,6 +100,16 @@ class MerraAsset(Asset):
             'startdate': datetime.date(1979, 1, 11),
             'latency': -45
         },
+        'PRECTOT': {
+            'description': 'Total Precipitation (kg m-2 s-1)',
+            'pattern': 'MERRA_MAT1NXSLV_PRECTOT_*.tif',
+            # 'pattern': 'MERRA_MST1NXMLD_PRECIP_*.tif',
+            'url': 'http://goldsmr2.sci.gsfc.nasa.gov/opendap/MERRA/MST1NXMLD.5.2.0',
+            # MERRA300.prod.simul.tavg1_2d_mld_Nx.20140103.hdf
+            'source': 'MERRA%s.prod.simul.tavg1_2d_mld_Nx.%04d%02d%02d.hdf',
+            'startdate': datetime.date(1980, 1, 1),
+            'latency': -45        
+        }
     }
 
     # Not used anywhere
@@ -324,6 +334,10 @@ class MerraData(Data):
             'description': 'Air temperature data',
             'assets': ['TS', 'T2M', 'T10M']
         },
+        'daily_weather': {
+            'description': 'Climate forcing data, e.g. for DNDC',
+            'assets': ['T2M', 'PRECTOT']        
+        }
     }
     
 
@@ -334,10 +348,49 @@ class MerraData(Data):
 
         for key, val in products.items():
 
-            outfname = os.path.join(self.path, self.basename + '_' + key)        
+            outfname = os.path.join(self.path, self.basename + '_' + key)
             VerboseOut("outfname: %s" % outfname, 4)
 
-            if val[0] == "temp_modis":
+            if val[0] == "daily_weather":
+                VERSION = "1.0"
+                assets = self._products['daily_weather']['assets']
+
+                allsds = []
+                missingassets = []
+                availassets = []
+                assetids = []
+
+                for asset in assets:
+                    try:
+                        sds = self.assets[asset].datafiles()
+                    except Exception,e:
+                        missingassets.append(asset)
+                    else:
+                        assetids.append(assets.index(asset))
+                        availassets.append(asset)
+                        allsds.extend(sds)
+
+                if missingassets:
+                    VerboseOut('There are missing assets: %s,%s,%s' % (str(self.date), str(self.id), str(missingassets)), 4)
+                    continue
+
+                print "assetids", assetids
+                print "availassets", availassets
+                print "missingassets", missingassets
+                for i,sds in enumerate(allsds):
+                    print "i, sds", i,sds
+
+                t10 = allsds[0].Read()
+                prectot = allsds[1].Read()
+
+                print t10.shape
+                print t10.min(), t10.mean(), t10.max()
+
+                print prectot.shape
+                print prectot.min(), prectot.mean(), prectot.max()
+
+
+            elif val[0] == "temp_modis":
                 VERSION = "1.0"
                 assets = self._products['temp_modis']['assets']
 
