@@ -488,39 +488,6 @@ class Data(object):
         except:
             raise Exception('%s problem reading' % product)
 
-    def link(self, products, path='', copy=False):
-        """ Create links in path to tile products """
-        filenames = []
-        for p in products:
-            fname = self.products[p]
-            bname = os.path.basename(fname)
-            fullbname = os.path.join(path, bname)
-            if copy:
-                try:
-                    if os.path.exists(fullbname):
-                        info = os.stat(fullbname)
-                        if info.st_nlink == 1:
-                            continue
-                        else:
-                            os.remove(fullbname)
-                    VerboseOut('%s: copying' % bname, 2)
-                    shutil.copy(fname, fullbname)
-                except:
-                    raise Exception('%s: Problem copying file' % bname)
-            else:
-                # try hard link first, if it fails, soft link
-                try:
-                    os.link(fname, fullbname)
-                    VerboseOut('%s: hard linking' % bname, 2)
-                except:
-                    try:
-                        os.symlink(fname, fullbname)
-                        VerboseOut('%s: soft linking' % bname, 2)
-                    except:
-                        VerboseOut('%s: Problem creating link' % bname, 2)
-            filenames.append(fullbname)
-        return filenames
-
     ##########################################################################
     # Class methods
     ##########################################################################

@@ -242,7 +242,11 @@ class LandsatData(Data):
         """ Make sure all products have been processed """
         start = datetime.now()
         bname = os.path.basename(self.assets[''].filename)
-        img = self._readraw()
+        try:
+            img = self._readraw()
+        except Exception, e:
+            VerboseOut('Error reading original data file for %s: %s' % (key, bname, e), 2)
+            VerboseOut(traceback.format_exc(), 3)
 
         # running atmosphere if any products require it
         toa = True

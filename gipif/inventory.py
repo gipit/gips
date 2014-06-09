@@ -26,6 +26,7 @@ from datetime import datetime
 import traceback
 import shutil
 import textwrap
+from pprint import pprint
 
 import gippy
 from gipif.utils import VerboseOut, parse_dates, Colors
@@ -34,6 +35,23 @@ import commands
 import tempfile
 from gipif.version import __version__
 from pdb import set_trace
+
+
+def project_inventory(datadir=''):
+    """ Inventory a directory of project files """
+    files = glob.glob(os.path.join(datadir, '*.tif'))
+    inv = {}
+    for f in files:
+        basename = os.path.splitext(os.path.basename(f))[0]
+        parts = basename.split('_')
+        date = datetime.strptime(parts[0], '%Y%j').date()
+        sensor = parts[1]
+        product = basename[len(parts[0])+len(parts[1])+2:]
+        if date in inv.keys():
+            inv[date][product] = f
+        else:
+            inv[date] = {product: f}
+    return inv
 
 
 class Tiles(object):
@@ -105,30 +123,32 @@ class Tiles(object):
                 VerboseOut('Processing products for tile %s: %s' % (tileid, ' '.join(toprocess.keys())), 2)
                 self.tiles[tileid].process(toprocess, **kwargs)
 
-    def project(self, res=None, datadir='', mask=None, nowarp=False):
+    def project(self, res=None, datadir='', nowarp=False):
         """ Create image of final product (reprojected/mosaiced) """
-        if datadir == '':
-            datadir = self.dataclass.name+'_data'
-        if not os.path.exists(datadir):
-            os.makedirs(datadir)
-        datadir = os.path.abspath(datadir)
         if res is None:
             res = self.dataclass.Asset._defaultresolution
         if not hasattr(res, "__len__"):
             res = [res, res]
         start = datetime.now()
+        bname = self.date.strftime('%Y%j')
+        sensor = self.sensor if self.sensor != '' else ''
         if self.site is None:
             for t in self.tiles:
-                filenames = self.tiles[t].link(products=self.requested_products.keys(), path=datadir, copy=True)
-                #filenames = [self.tiles[t].products[p] for p in self.requested_products]
-                if mask is not None:
-                    self._applymask(filenames, self.tiles[t].products[mask])
+                datadir = self._datadir(t) if datadir == '' else datadir
+                for p in self.requested_products:
+                    fout = os.path.join(datadir, bname + ('_%s_%s.tif' % (sensor, p)))
+                    if not os.path.exists(fout):
+                        try:
+                            VerboseOut("Creating %s" % os.path.basename(fout))
+                            shutil.copy(self.tiles[t].products[p], fout)
+                        except:
+                            VerboseOut("Problem copying %s" % filename, 3)
         else:
-            bname = os.path.splitext(os.path.basename(self.site))[0] + '_' + self.date.strftime('%Y%j')
-            sensor = self.sensor if self.sensor != '' else ''
+            sitename = os.path.splitext(os.path.basename(self.site))[0]
+            resstr = '_%sx%s' % (res[0], res[1])
+            datadir = self._datadir(sitename + resstr) if datadir == '' else datadir
             for product in self.requested_products:
                 filename = os.path.join(datadir, bname + ('_%s_%s.tif' % (sensor, product)))
-                #VerboseOut('Projecting to %s' % filename, 2)
                 if not os.path.exists(filename):
                     try:
                         filenames = [self.tiles[t].products[product] for t in self.tiles]
@@ -141,10 +161,17 @@ class Tiles(object):
                     except:
                         VerboseOut("Problem projecting %s" % filename, 3)
                 self.products[product] = filename
-            if mask is not None:
-                self._applymask(self.products.values(), self.products[mask])
         t = datetime.now() - start
         VerboseOut('%s: created project files for %s tiles in %s' % (self.date, len(self.tiles), t), 2)
+
+    def _datadir(self, name):
+        """ Determine data directory and created if needed """
+        if name != '':
+            name = '_' + name
+        datadir = '%sData%s' % (self.dataclass.name, name)
+        if not os.path.exists(datadir):
+            os.makedirs(datadir)
+        return os.path.abspath(datadir)
 
     def _mosaic(self, infiles, outfile, vectorfile):
         """ Mosaic multiple files together, but do not warp """
@@ -184,17 +211,6 @@ class Tiles(object):
         shutil.rmtree(os.path.dirname(maskname))
         shutil.rmtree(os.path.dirname(vec1name))
         return imgout
-
-    def _applymask(self, filenames, mask):
-        mimg = gippy.GeoImage(mask)
-        for f in filenames:
-            if f != mask:
-                img = gippy.GeoImage(f)
-                img.AddMask(mimg[0]).Process()
-                img = None
-                #fn = os.path.splitext(f)
-                #os.rename(f, fn[0] + '_masked' + fn[1])
-        mimg = None
 
     def open(self, product='', update=True):
         """ Open and return final product GeoImage """
@@ -362,7 +378,6 @@ class DataInventory(object):
         pstr = ' '.join(self.standard_products)  # .join(self.composite_products)
         dstr = '%s dates (%s - %s)' % (len(self.dates), self.dates[0], self.dates[-1])
         VerboseOut('Creating project files (%s) for %s' % (pstr, dstr), 1)
-        # res should default to data?
         for date in self.dates:
             self.data[date].project(*args, **kwargs)
         VerboseOut('Completed creating project files in %s' % (datetime.now()-start), 1)
@@ -465,8 +480,7 @@ class DataInventory(object):
         group.add_argument('--suffix', help='Suffix on end of filename (before extension)', default='')
         group.add_argument('--nowarp', help='Mosaic, but do not warp', default=False, action='store_true')
         group.add_argument('--res', nargs=2, help='Resolution of (warped) output rasters', default=None, type=float)
-        group.add_argument('--mask', nargs='?', help='Apply this product to all (warped) products', const='acca')
-        group.add_argument('--datadir', help='Directory to save project files', default=cls.name+'_data')
+        group.add_argument('--datadir', help='Directory to save project files (default auto-generated)', default='')
         group.add_argument('--format', help='Format for output file', default="GTiff")
         group.add_argument('--chunksize', help='Chunk size in MB', type=float, default=512.0)
 
@@ -500,14 +514,6 @@ class DataInventory(object):
                         products[key+suffix] = [p] + val
                     else:
                         products[p+'_'+val+suffix] = [p, val]
-        if args.command == 'project':
-            if args.mask:
-                m = args.mask.split('_')
-                if len(m) == 1:
-                    products[args.mask] = m
-                else:
-                    products[args.mask] = m
-        #print 'Requested Products: ', products
         kwargs = dict(zip(extra, [eval('args.%s' % a) for a in extra]))
 
         try:
@@ -521,7 +527,7 @@ class DataInventory(object):
                 inv.process(overwrite=args.overwrite, **kwargs)
             elif args.command == 'project':
                 gippy.Options.SetChunkSize(args.chunksize)
-                inv.project(args.res, datadir=args.datadir, mask=args.mask, nowarp=args.nowarp)
+                inv.project(args.res, datadir=args.datadir, nowarp=args.nowarp)
             else:
                 VerboseOut('Command %s not recognized' % cmd, 0)
         except Exception, e:
