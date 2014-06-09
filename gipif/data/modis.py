@@ -134,6 +134,13 @@ class ModisAsset(Asset):
             'startdate': datetime.date(2002, 7, 8),
             'latency': -1,
             'layers': _asset_layers['MOD11']
+        },
+        'MOD09Q1': {
+            'pattern': 'MOD09Q1*hdf',
+            'url': 'http://e4ftl01.cr.usgs.gov/MOLT/MOD09Q1.005/',
+            'startdate': datetime.date(2000, 2, 18),
+            'latency': -7,
+            'layers': _asset_layers['MOD11']
         }
     }
 
@@ -273,6 +280,10 @@ class ModisData(Data):
         'indices': {
             'description': 'Land indices',
             'assets': ['MCD43A4', 'MCD43A2']
+        },
+        'ndvi': {
+            'description': 'Normalized Difference Vegetation Index',
+            'assets': ['MOD09Q1']
         }
     }
     
@@ -414,6 +425,88 @@ class ModisData(Data):
                 for k, v in meta.items():
                     imgout.SetMeta(k, str(v))
 
+            ################################################
+            # NORMALIZED DIFFERENCE VEGETATION INDEX PRODUCT
+
+            if val[0] == "ndvi":
+                VERSION = "1.0"
+                assets = self._products['ndvi']['assets']
+
+                allsds = []
+                missingassets = []
+                availassets = []
+                assetids = []
+
+                for asset in assets:
+                    try:
+                        sds = self.assets[asset].datafiles()
+                    except Exception,e:
+                        missingassets.append(asset)
+                    else:
+                        assetids.append(assets.index(asset))
+                        availassets.append(asset)
+                        allsds.extend(sds)
+
+                if missingassets:
+                    VerboseOut('There are missing assets: %s,%s,%s' % (str(self.date), str(self.id), str(missingassets)), 4)
+                    continue
+                    # raise Exception, "There are missing assets"
+                    # print message, then continue
+
+                print "assetids", assetids
+                print "availassets", availassets
+                print "missingassets", missingassets
+                for i,sds in enumerate(allsds):
+                    print "i, sds", i,sds
+
+                # there should be 3? SDSs, 2 bands and 1 QC layer
+
+                reflsds = [allsds[i] for i in range(2)]
+                qcsds = [allsds[i] for i in range(2,3)]
+
+                refl = gippy.GeoImage(reflsds) 
+                qc = gippy.GeoImage(qcsds) 
+
+                missing = 32767 
+
+                redimg = refl[0].Read()
+                nirimg = refl[1].Read()
+
+                qcimg = qc[0].Read()
+                qcimg = qcimg.astype(np.uint16)
+                qcimg[qcimg==255] = missing
+
+                redimg[redimg<0.0] = 0.0
+                nirimg[nirimg<0.0] = 0.0
+                
+                meta = {}
+                meta['AVAILABLE_ASSETS'] = "['MOD09Q1']"
+                meta['VERSION'] = VERSION
+
+                ndvi = missing + np.zeros_like(redimg)
+                wg = np.where((redimg != missing)&(nirimg != missing)&(redimg+nirimg != 0.0))
+                ndvi[wg] = (nirimg[wg] - redimg[wg])/(nirimg[wg] + redimg[wg])
+                print "ndvi" 
+                print len(wg[0])
+                print ndvi.min(), ndvi.max()
+                print ndvi[wg].min(), ndvi[wg].max()
+
+                # create output gippy image
+                imgout = gippy.GeoImage(outfname, refl, gippy.GDT_Int16, 2) #this number is how many output bands
+
+                imgout.SetNoData(missing)
+                imgout.SetOffset(0.0)
+                imgout.SetGain(0.0001)
+
+                imgout[0].Write(ndvi)
+                
+                imgout[1].Write(qcimg)
+
+                imgout.SetColor('NDVI', 1)
+                imgout.SetColor('Best quality', 2)
+
+                for k, v in meta.items():
+                    imgout.SetMeta(k, str(v))
 
             ########################
             # SNOW/ICE COVER PRODUCT
