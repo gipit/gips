@@ -141,7 +141,8 @@ class Tiles(object):
                         try:
                             VerboseOut("Creating %s" % os.path.basename(fout))
                             shutil.copy(self.tiles[t].products[p], fout)
-                        except:
+                        except Exception, e:
+                            VerboseOut(traceback.format_exc(), 3)
                             VerboseOut("Problem copying %s" % filename, 3)
         else:
             sitename = os.path.splitext(os.path.basename(self.site))[0]
@@ -195,6 +196,8 @@ class Tiles(object):
         cmd = 'gdal_merge.py -o %s -ul_lr %s %s %s' % (outfile, ullr, nodatastr, " ".join(infiles))
         result = commands.getstatusoutput(cmd)
         imgout = gippy.GeoImage(outfile)
+        for b in range(0, img.NumBands()):
+            imgout[b].CopyMeta(img[b])
         # warp and rasterize vector
         vec1 = vector.transform(srs)
         vec1name = vec1.filename
