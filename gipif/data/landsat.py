@@ -258,7 +258,11 @@ class LandsatData(Data):
                 numbands = img.NumBands()-2
             else:
                 numbands = img.NumBands()
-            atmos = self.SixS()
+            try:
+                atmos = self.SixS()
+            except Exception, e:
+                VerboseOut('Problem running atmospheric model', 2)
+                VerboseOut(traceback.format_exc(), 3)
 
         # Break down by group
         groups = self.products2groups(products)
