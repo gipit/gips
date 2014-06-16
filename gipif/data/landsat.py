@@ -38,6 +38,8 @@ import gipif.settings as settings
 from gipif.data.aod import AODData
 from gipif.data.modtran import MODTRAN
 
+__version__ = '0.7.0'
+
 
 class LandsatRepository(Repository):
     """ Singleton (all class methods) to be overridden by child data classes """
@@ -157,7 +159,9 @@ class LandsatData(Data):
         'evi':  {'description': 'Enhanced Vegetation Index', 'group': 'Index', 'choices': ['toa']},
         'lswi': {'description': 'Land Surface Water Index', 'group': 'Index', 'choices': ['toa']},
         'ndsi': {'description': 'Normalized Difference Snow Index', 'group': 'Index', 'choices': ['toa']},
-        'satvi': {'description': 'Soil-adjusted Total Vegetation Index', 'group': 'Index', 'choices': ['toa']},
+        'ndwi': {'description': 'Normalized Difference Water Index', 'group': 'Index', 'choices': ['toa']},
+        'satvi': {'description': 'Soil-Adjusted Total Vegetation Index', 'group': 'Index', 'choices': ['toa']},
+        'msavi2': {'description': 'Modified Soil-Adjusted Vegetation Index (revised)', 'group': 'Index', 'choices': ['toa']},
         #'Tillage Indices': {
         'ndti': {'description': 'Normalized Difference Tillage Index', 'group': 'Tillage', 'choices': ['toa']},
         'crc':  {'description': 'Crop Residue Cover', 'group': 'Tillage', 'choices': ['toa']},
@@ -193,19 +197,19 @@ class LandsatData(Data):
         try:
             atmos = AODData.inventory(tile='', dates=self.date.strftime('%Y-%j'), fetch=True, products=['aod'])
             atmos = atmos[atmos.dates[0]].tiles['']
-            aod = atmos.get_point(geo['lat'], geo['lon'])
+            self.aod = atmos.get_point(geo['lat'], geo['lon'])
         except Exception, e:
             VerboseOut(traceback.format_exc(), 3)
             VerboseOut('Problem retrieving AOD. Using default', 3)
-            aod = 0.17
-        s.aot550 = aod
+            self.aod = ('default', 0.17)
+        s.aot550 = self.aod[1]
 
         # Other settings
         s.ground_reflectance = GroundReflectance.HomogeneousLambertian(GroundReflectance.GreenVegetation)
         s.atmos_corr = AtmosCorr.AtmosCorrLambertianFromRadiance(1.0)
 
         # Used for testing
-        filter_function = False
+        filter_function = True
         if filter_function:
             if self.sensor == 'LT5':
                 func = SixSHelpers.Wavelengths.run_landsat_tm
@@ -270,6 +274,11 @@ class LandsatData(Data):
         meta = self.assets[''].meta
         visbands = self.assets[''].visbands
         lwbands = self.assets[''].lwbands
+
+        md = self.meta_dict()
+        if not toa:
+            md["AOD Source"] = str(self.aod[0])
+            md["AOD Value"] = str(self.aod[1])
 
         # create non-atmospherically corrected apparent reflectance and temperature image
         reflimg = gippy.GeoImage(img)
@@ -342,6 +351,7 @@ class LandsatData(Data):
                         band = (((band.pow(-1))*meta[col]['K1']+1).log().pow(-1))*meta[col]['K2'] - 273.15
                         band.Process(imgout[col])
                 fname = imgout.Filename()
+                imgout.SetMeta(md)
                 imgout = None
                 self.products[key] = fname
                 VerboseOut(' -> %s: processed in %s' % (os.path.basename(fname), datetime.now()-start), 1)
@@ -364,7 +374,7 @@ class LandsatData(Data):
             fnames = [os.path.join(self.path, self.basename + '_' + key) for key in indices_toa]
             prodarr = dict(zip([indices_toa[p][0] for p in indices_toa.keys()], fnames))
             if len(fnames) > 0:
-                prodout = gippy.Indices(img, prodarr)
+                prodout = gippy.Indices(img, prodarr, md)
                 self.products.update(prodout)
             # Run atmospherically corrected
             for col in visbands:
@@ -372,7 +382,7 @@ class LandsatData(Data):
             fnames = [os.path.join(self.path, self.basename + '_' + key) for key in indices]
             if len(fnames) > 0:
                 prodarr = dict(zip([indices[p][0] for p in indices.keys()], fnames))
-                prodout = gippy.Indices(img, prodarr)
+                prodout = gippy.Indices(img, prodarr, md)
                 self.products.update(prodout)
             VerboseOut(' -> %s: processed %s in %s' % (self.basename, indices0.keys(), datetime.now()-start), 1)
 
@@ -479,7 +489,6 @@ class LandsatData(Data):
         # TODO - now that metadata part of LandsatData object some of these keys not needed
         self.metadata = {
             'filenames': filenames,
-            'path': self.path,
             'gain': gain,
             'offset': offset,
             'dynrange': dynrange,
@@ -489,6 +498,12 @@ class LandsatData(Data):
             'clouds': clouds
         }
         #self.metadata.update(smeta)
+
+    @classmethod
+    def meta_dict(cls):
+        meta = super(LandsatData, cls).meta_dict()
+        meta['GIPIF-landsat Version'] = __version__
+        return meta
 
     def _readraw(self):
         """ Read in Landsat bands using original tar.gz file """
