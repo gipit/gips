@@ -34,7 +34,6 @@ from gipif.GeoVector import GeoVector
 import commands
 import tempfile
 from gipif.version import __version__
-from pdb import set_trace
 
 
 def project_inventory(datadir=''):
@@ -142,8 +141,8 @@ class Tiles(object):
                             VerboseOut("Creating %s" % os.path.basename(fout))
                             shutil.copy(self.tiles[t].products[p], fout)
                         except Exception, e:
+                            VerboseOut("Problem copying %s" % fout, 2)
                             VerboseOut(traceback.format_exc(), 3)
-                            VerboseOut("Problem copying %s" % filename, 3)
         else:
             sitename = os.path.splitext(os.path.basename(self.site))[0]
             resstr = '_%sx%s' % (res[0], res[1])
@@ -160,7 +159,7 @@ class Tiles(object):
                             imgout = gippy.CookieCutter(filenames, filename, self.site, res[0], res[1])
                         imgout = None
                     except:
-                        VerboseOut("Problem projecting %s" % filename, 3)
+                        VerboseOut("Problem projecting %s" % filename, 2)
                 self.products[product] = filename
         t = datetime.now() - start
         VerboseOut('%s: created project files for %s tiles in %s' % (self.date, len(self.tiles), t), 2)
