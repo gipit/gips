@@ -41,7 +41,7 @@ def main():
     nodata = img[0].NoDataValue()
 
     # Flood detect algorithm
-    imgout = gippy.GeoImage(args.output, img, gippy.GDT_Byte, img.NumBands()+2)
+    imgout = gippy.GeoImage(args.output, img, gippy.GDT_Int16, img.NumBands()+2)
     imgout[0].SetDescription('hits')
     imgout[1].SetDescription('num_observations')
     for b in range(0, img.NumBands()):
