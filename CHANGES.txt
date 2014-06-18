@@ -1,6 +1,5 @@
-#!/usr/bin/env python
 ################################################################################
-#    GIPPY: Geospatial Image Processing library for Python
+#    GIPIF: Geospatial Image Processing and Inventory Framework
 #
 #    Copyright (C) 2014 Matthew A Hanson
 #
@@ -20,3 +19,12 @@
 
 v0.6.6
 - removed masking feature from 'project' command (replaced with gip_mask)
+- changed file naming for project files.  Directory named with shape or tileid and resolution, files named  date_sensor_product
+- added gip.py script for general purpose processing on project data directories
+- project: metadata properly copied from data
+- metadata added to all processed files
+- bumped version of GIPPY dependency to 0.9.6
+
+landsat changes:
+- exception handling when calling atmospheric model
+- added NDWI and MSAVI2 indices to products
