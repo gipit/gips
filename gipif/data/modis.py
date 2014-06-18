@@ -462,6 +462,10 @@ class ModisData(Data):
                 reflsds = [allsds[i] for i in range(2)]
                 qcsds = [allsds[i] for i in range(2,3)]
 
+                metanames = {}
+                metanames['AVAILABLE_ASSETS'] = "['MOD09Q1']"
+                metanames['VERSION'] = VERSION
+
                 refl = gippy.GeoImage(reflsds) 
                 qc = gippy.GeoImage(qcsds) 
 
@@ -470,16 +474,49 @@ class ModisData(Data):
                 redimg = refl[0].Read()
                 nirimg = refl[1].Read()
 
-                qcimg = qc[0].Read()
-                qcimg = qcimg.astype(np.uint16)
-                qcimg[qcimg==255] = missing
+                #bestmask = qc[0].Read()
+				#bestmask = bestmask.astype(np.uint16)
+				
+        #         for iband, band in enumerate(availbands):
+
+        #             qc=qc[iband].Read()
+
+        #             # first two bits are 10 or 11
+    				# newmaskbad = binmask(qc, 2)
+        #             # first two bits are 01
+        #             newmaskokay = binmask(qc, 2) & ~binmask(qc,1)
+        #             # first two bits are 00
+        #             newmaskbest = ~binmask(qc, 1) & ~binmask(qc, 2)
+
+    				# numbad = np.sum(newmaskbad)
+        #             fracbad = np.sum(newmaskbad)/float(newmaskbad.size)
+
+        #             numokay = np.sum(newmaskokay)
+        #             fracokay = np.sum(newmaskokay)/float(newmaskokay.size)
+        #             assert numokay == qc.size - numbad
+
+        #             numbest = np.sum(newmaskbest)
+        #             fracbest = np.sum(newmaskbest)/float(newmaskbest.size)
+
+        #             bestmask = newmaskbest.astype('uint16')
+
+        #             metaname = "NUMBAD"
+        #             metaname = metaname.upper()
+        #             # print "metaname", metaname
+        #             metanames[metaname] = str(numbad)
+
+        #             metaname = "NUMOKAY"
+        #             metaname = metaname.upper()
+        #             # print "metaname", metaname
+        #             metanames[metaname] = str(numokay)
+
+        #             metaname = "NUMBEST"
+        #             metaname = metaname.upper()
+        #             # print "metaname", metaname
+        #             metanames[metaname] = str(numbest)
 
                 redimg[redimg<0.0] = 0.0
                 nirimg[nirimg<0.0] = 0.0
-                
-                meta = {}
-                meta['AVAILABLE_ASSETS'] = "['MOD09Q1']"
-                meta['VERSION'] = VERSION
 
                 ndvi = missing + np.zeros_like(redimg)
                 wg = np.where((redimg != missing)&(nirimg != missing)&(redimg+nirimg != 0.0))
@@ -490,7 +527,7 @@ class ModisData(Data):
                 print ndvi[wg].min(), ndvi[wg].max()
 
                 # create output gippy image
-                imgout = gippy.GeoImage(outfname, refl, gippy.GDT_Int16, 2) #this number is how many output bands
+                imgout = gippy.GeoImage(outfname, ndvi, gippy.GDT_Int16, 1) #this number is how many output bands. Does this need to be uint with qc layer?
 
                 imgout.SetNoData(missing)
                 imgout.SetOffset(0.0)
@@ -498,10 +535,10 @@ class ModisData(Data):
 
                 imgout[0].Write(ndvi)
                 
-                imgout[1].Write(qcimg)
+                #imgout[1].Write(bestmask)
 
                 imgout.SetColor('NDVI', 1)
-                imgout.SetColor('Best quality', 2)
+                #imgout.SetColor('Best quality', 2)
 
                 for k, v in meta.items():
                     imgout.SetMeta(k, str(v))
@@ -668,7 +705,7 @@ class ModisData(Data):
                     imgout.SetMeta(k, str(v))
 
 
-            #####################
+            ######################
             # TEMPERATURE PRODUCT
             if val[0] == "temp":
                 VERSION = "1.0"
