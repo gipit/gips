@@ -131,6 +131,10 @@ class Tiles(object):
         start = datetime.now()
         bname = self.date.strftime('%Y%j')
         sensor = self.sensor if self.sensor != '' else ''
+        if datadir != '':
+            if not os.path.exists(datadir):
+                os.makedirs(datadir)
+            datadir = os.path.abspath(datadir)
         if self.site is None:
             for t in self.tiles:
                 datadir = self._datadir(t) if datadir == '' else datadir
