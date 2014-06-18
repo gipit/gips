@@ -209,8 +209,8 @@ class LandsatData(Data):
         s.atmos_corr = AtmosCorr.AtmosCorrLambertianFromRadiance(1.0)
 
         # Used for testing
-        filter_function = True
-        if filter_function:
+        #filter_function = True
+        if self.sensor != 'LC8':
             if self.sensor == 'LT5':
                 func = SixSHelpers.Wavelengths.run_landsat_tm
             elif self.sensor == 'LE7':
