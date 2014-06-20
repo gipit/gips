@@ -577,6 +577,13 @@ class ModisData(Data):
 
             #####################
             # TEMPERATURE PRODUCT
+
+            # TODO:
+            # use a missing value that is not zero, e.g. 32767
+            # because 0 is a valid value in the QC mask
+            # OR:
+            # use 1,2 in the QC mask instead of 0,1
+
             if val[0] == "temp":
                 VERSION = "1.0"
                 assets = self._products['temp']['assets']
