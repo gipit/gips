@@ -37,6 +37,7 @@ from gipif.utils import VerboseOut, RemoveFiles, File2List, List2File
 from gipif.inventory import DataInventory
 import gipif.settings as settings
 from gipif.GeoVector import GeoVector
+from gipif.version import __version__
 
 
 class Repository(object):
@@ -435,6 +436,13 @@ class Data(object):
     def filter(self, **kwargs):
         """ Check if tile passes filter """
         return True
+
+    @classmethod
+    def meta_dict(cls):
+        return {
+            'GIPIF Version': __version__,
+            'GIPPY Version': gippy.__version__,
+        }
 
     ##########################################################################
     # Override these functions if not using a tile/date directory structure

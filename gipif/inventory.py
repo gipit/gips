@@ -34,7 +34,6 @@ from gipif.GeoVector import GeoVector
 import commands
 import tempfile
 from gipif.version import __version__
-from pdb import set_trace
 
 
 def project_inventory(datadir=''):
@@ -123,7 +122,7 @@ class Tiles(object):
                 VerboseOut('Processing products for tile %s: %s' % (tileid, ' '.join(toprocess.keys())), 2)
                 self.tiles[tileid].process(toprocess, **kwargs)
 
-    def project(self, res=None, datadir='', nowarp=False):
+    def project(self, res=None, datadir='', crop=False, nowarp=False):
         """ Create image of final product (reprojected/mosaiced) """
         if res is None:
             res = self.dataclass.Asset._defaultresolution
@@ -132,6 +131,10 @@ class Tiles(object):
         start = datetime.now()
         bname = self.date.strftime('%Y%j')
         sensor = self.sensor if self.sensor != '' else ''
+        if datadir != '':
+            if not os.path.exists(datadir):
+                os.makedirs(datadir)
+            datadir = os.path.abspath(datadir)
         if self.site is None:
             for t in self.tiles:
                 datadir = self._datadir(t) if datadir == '' else datadir
@@ -142,8 +145,8 @@ class Tiles(object):
                             VerboseOut("Creating %s" % os.path.basename(fout))
                             shutil.copy(self.tiles[t].products[p], fout)
                         except Exception, e:
+                            VerboseOut("Problem copying %s" % fout, 2)
                             VerboseOut(traceback.format_exc(), 3)
-                            VerboseOut("Problem copying %s" % filename, 3)
         else:
             sitename = os.path.splitext(os.path.basename(self.site))[0]
             resstr = '_%sx%s' % (res[0], res[1])
@@ -157,10 +160,10 @@ class Tiles(object):
                         if nowarp:
                             imgout = self._mosaic(filenames, filename, self.site)
                         else:
-                            imgout = gippy.CookieCutter(filenames, filename, self.site, res[0], res[1])
+                            imgout = gippy.CookieCutter(filenames, filename, self.site, res[0], res[1], crop)
                         imgout = None
                     except:
-                        VerboseOut("Problem projecting %s" % filename, 3)
+                        VerboseOut("Problem projecting %s" % filename, 2)
                 self.products[product] = filename
         t = datetime.now() - start
         VerboseOut('%s: created project files for %s tiles in %s' % (self.date, len(self.tiles), t), 2)
@@ -481,6 +484,7 @@ class DataInventory(object):
         parser = subparser.add_parser('project', help='Create project', parents=parents, formatter_class=dhf)
         group = parser.add_argument_group('Project options')
         group.add_argument('--suffix', help='Suffix on end of filename (before extension)', default='')
+        group.add_argument('--crop', help='Crop output down to minimum bounding box (if warping)', default=False, action='store_true')
         group.add_argument('--nowarp', help='Mosaic, but do not warp', default=False, action='store_true')
         group.add_argument('--res', nargs=2, help='Resolution of (warped) output rasters', default=None, type=float)
         group.add_argument('--datadir', help='Directory to save project files (default auto-generated)', default='')
@@ -530,7 +534,7 @@ class DataInventory(object):
                 inv.process(overwrite=args.overwrite, **kwargs)
             elif args.command == 'project':
                 gippy.Options.SetChunkSize(args.chunksize)
-                inv.project(args.res, datadir=args.datadir, nowarp=args.nowarp)
+                inv.project(args.res, datadir=args.datadir, crop=args.crop, nowarp=args.nowarp)
             else:
                 VerboseOut('Command %s not recognized' % cmd, 0)
         except Exception, e:

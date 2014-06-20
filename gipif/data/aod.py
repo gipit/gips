@@ -242,10 +242,10 @@ class AODData(Data):
         aod = vals[1, 1]
         var = 0
         totalvar = 0
-        source = 'actual'
+        source = 'MODIS (MOD08_D3)'
         if numpy.isnan(aod):
             aod = numpy.mean(vals[~numpy.isnan(vals)])
-            source = 'actual spatial average'
+            source = 'MODIS (MOD08_D3) spatial average'
 
         day = self.date.strftime('%j')
         # Calculate best estimate from multiple sources
@@ -255,7 +255,7 @@ class AODData(Data):
             cnt = 0
             nodata = -32768
 
-            source = 'best estimate'
+            source = 'Weighted estimate using MODIS LTA values'
             # LTA-Daily
             filename = os.path.join(self.Repository.cpath('ltad'), 'ltad%s.tif' % str(day).zfill(3))
             val, var = self._read_point(filename, roi, nodata)
@@ -287,8 +287,8 @@ class AODData(Data):
             aod = 0.17
             source = 'default'
 
-        VerboseOut('AOD (%s) = %s' % (source, aod), 2)
-        return aod
+        VerboseOut('AOD: Source = %s Value = %s' % (source, aod), 2)
+        return (source, aod)
 
 
 def main():
