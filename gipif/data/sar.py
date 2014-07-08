@@ -31,7 +31,7 @@ from gipif.core import Repository, Asset, Data
 from gipif.inventory import DataInventory
 from gipif.utils import VerboseOut, File2List, List2File, RemoveFiles
 import gipif.settings as settings
-from pdb import set_trace
+
 
 class SARRepository(Repository):
     repo = settings.REPOS['SAR']
@@ -260,7 +260,7 @@ class SARData(Data):
         files = self.assets[''].extract(filenames=[hdr_bname])
         return self.Asset._meta(files['hdr'])
 
-    def process(self, products):
+    def process(self, products, **kwargs):
         """ Make sure all products have been pre-processed """
         if len(products) == 0:
             raise Exception('Tile %s: No products specified' % self.tile)
