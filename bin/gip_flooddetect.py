@@ -57,12 +57,13 @@ def main():
     last_water = (img[0] < th0).Read()
     last_water[numpy.where(last_water == nodata)] = 0
     hits = numpy.zeros(last_water.shape)
-    numobs = numpy.zeros(last_water.shape)
+    numobs = img[0].DataMask()
     days = last_water
     imgout[2].Write(days)
     for b in range(1, img.NumBands()):
-        VerboseOut('Processing %s' % dates[b], 2)
-        days = days + (last_water * (dates[b]-dates[0]).days)
+        dday = (dates[b]-dates[b-1]).days
+        VerboseOut('Processing %s: %s days' % (dates[b], dday), 2)
+        days = days + (last_water * dday)
         # Increment # of observations
         numobs = numobs + img[b].DataMask()
         # Current dry land mask
