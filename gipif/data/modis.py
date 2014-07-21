@@ -140,8 +140,8 @@ class ModisAsset(Asset):
             'url': 'http://e4ftl01.cr.usgs.gov/MOLT/MOD09Q1.005/',
             'startdate': datetime.date(2000, 2, 18),
             'latency': -7,
-            'layers': _asset_layers['MOD11']
         }
+
     }
 
     # Not used anywhere
@@ -284,7 +284,7 @@ class ModisData(Data):
         'ndvi': {
             'description': 'Normalized Difference Vegetation Index',
             'assets': ['MOD09Q1']
-        }
+        },
     }
     
     def process(self, products, **kwargs):
@@ -302,6 +302,101 @@ class ModisData(Data):
             VerboseOut("self.path: %s" % self.path, 4)
             VerboseOut("productname: %s" % productname, 4)
             VerboseOut("outfname: %s" % outfname, 4)
+
+
+
+            ################################################
+            # NORMALIZED DIFFERENCE VEGETATION INDEX PRODUCT
+
+            if val[0] == "ndvi":
+
+                VERSION = "1.0"
+                assets = self._products['ndvi']['assets']
+
+                allsds = []
+                missingassets = []
+                availassets = []
+                assetids = []
+
+                for asset in assets:
+                    try:
+                        sds = self.assets[asset].datafiles()
+                    except Exception,e:
+                        missingassets.append(asset)
+                    else:
+                        assetids.append(assets.index(asset))
+                        availassets.append(asset)
+                        allsds.extend(sds)
+
+                if missingassets:
+                    VerboseOut('There are missing assets: %s,%s,%s' % (str(self.date), str(self.id), str(missingassets)), 4)
+                    continue
+                    # raise Exception, "There are missing assets"
+                    # print message, then continue
+
+                meta = {}
+                meta['AVAILABLE_ASSETS'] = "['MOD09Q1']"
+                meta['VERSION'] = VERSION
+
+                print "assetids", assetids
+                print "availassets", availassets
+                print "missingassets", missingassets
+                for i,sds in enumerate(allsds):
+                    print "i, sds", i,sds
+
+                # there should be 3? SDSs, 2 bands and 1 QC layer
+
+                reflsds = [allsds[i] for i in range(2)]
+                qcsds = [allsds[i] for i in range(2,3)]
+
+                metanames = {}
+                metanames['AVAILABLE_ASSETS'] = "['MOD09Q1']"
+                metanames['VERSION'] = VERSION
+
+                refl = gippy.GeoImage(reflsds) 
+                qc = gippy.GeoImage(qcsds) 
+
+                missing = 32767 
+
+                redimg = refl[0].Read()
+                nirimg = refl[1].Read()
+
+                redimg[redimg<0.0] = 0.0
+                nirimg[nirimg<0.0] = 0.0
+
+                ndvi = missing + np.zeros_like(redimg)
+
+                wg = np.where((redimg != missing)&(nirimg != missing)&(redimg+nirimg != 0.0))
+                ndvi[wg] = (nirimg[wg] - redimg[wg])/(nirimg[wg] + redimg[wg])
+
+                print "ndvi" 
+                print len(wg[0])
+                print ndvi.min(), ndvi.max()
+                print ndvi[wg].min(), ndvi[wg].max()
+
+                # create output gippy image
+
+                #this number is how many output bands. Does this need to be uint with qc layer?
+
+                print "dtype", refl.DataType()
+
+                imgout = gippy.GeoImage(outfname, refl, refl.DataType(), 1) 
+
+                imgout.SetNoData(missing)
+                imgout.SetOffset(0.0)
+                imgout.SetGain(0.0001)
+
+                imgout[0].Write(ndvi)
+                
+                #imgout[1].Write(bestmask)
+
+                imgout.SetColor('NDVI', 1)
+                #imgout.SetColor('Best quality', 2)
+
+                for k, v in meta.items():
+                    imgout.SetMeta(k, str(v))
+
+
 
             ########################
             # LAND VEGETATION INDICES PRODUCT
@@ -423,125 +518,6 @@ class ModisData(Data):
                 for k, v in meta.items():
                     imgout.SetMeta(k, str(v))
 
-            ################################################
-            # NORMALIZED DIFFERENCE VEGETATION INDEX PRODUCT
-
-            if val[0] == "ndvi":
-                VERSION = "1.0"
-                assets = self._products['ndvi']['assets']
-
-                allsds = []
-                missingassets = []
-                availassets = []
-                assetids = []
-
-                for asset in assets:
-                    try:
-                        sds = self.assets[asset].datafiles()
-                    except Exception,e:
-                        missingassets.append(asset)
-                    else:
-                        assetids.append(assets.index(asset))
-                        availassets.append(asset)
-                        allsds.extend(sds)
-
-                if missingassets:
-                    VerboseOut('There are missing assets: %s,%s,%s' % (str(self.date), str(self.id), str(missingassets)), 4)
-                    continue
-                    # raise Exception, "There are missing assets"
-                    # print message, then continue
-
-                print "assetids", assetids
-                print "availassets", availassets
-                print "missingassets", missingassets
-                for i,sds in enumerate(allsds):
-                    print "i, sds", i,sds
-
-                # there should be 3? SDSs, 2 bands and 1 QC layer
-
-                reflsds = [allsds[i] for i in range(2)]
-                qcsds = [allsds[i] for i in range(2,3)]
-
-                metanames = {}
-                metanames['AVAILABLE_ASSETS'] = "['MOD09Q1']"
-                metanames['VERSION'] = VERSION
-
-                refl = gippy.GeoImage(reflsds) 
-                qc = gippy.GeoImage(qcsds) 
-
-                missing = 32767 
-
-                redimg = refl[0].Read()
-                nirimg = refl[1].Read()
-
-                #bestmask = qc[0].Read()
-				#bestmask = bestmask.astype(np.uint16)
-				
-        #         for iband, band in enumerate(availbands):
-
-        #             qc=qc[iband].Read()
-
-        #             # first two bits are 10 or 11
-    				# newmaskbad = binmask(qc, 2)
-        #             # first two bits are 01
-        #             newmaskokay = binmask(qc, 2) & ~binmask(qc,1)
-        #             # first two bits are 00
-        #             newmaskbest = ~binmask(qc, 1) & ~binmask(qc, 2)
-
-    				# numbad = np.sum(newmaskbad)
-        #             fracbad = np.sum(newmaskbad)/float(newmaskbad.size)
-
-        #             numokay = np.sum(newmaskokay)
-        #             fracokay = np.sum(newmaskokay)/float(newmaskokay.size)
-        #             assert numokay == qc.size - numbad
-
-        #             numbest = np.sum(newmaskbest)
-        #             fracbest = np.sum(newmaskbest)/float(newmaskbest.size)
-
-        #             bestmask = newmaskbest.astype('uint16')
-
-        #             metaname = "NUMBAD"
-        #             metaname = metaname.upper()
-        #             # print "metaname", metaname
-        #             metanames[metaname] = str(numbad)
-
-        #             metaname = "NUMOKAY"
-        #             metaname = metaname.upper()
-        #             # print "metaname", metaname
-        #             metanames[metaname] = str(numokay)
-
-        #             metaname = "NUMBEST"
-        #             metaname = metaname.upper()
-        #             # print "metaname", metaname
-        #             metanames[metaname] = str(numbest)
-
-                redimg[redimg<0.0] = 0.0
-                nirimg[nirimg<0.0] = 0.0
-
-                ndvi = missing + np.zeros_like(redimg)
-                wg = np.where((redimg != missing)&(nirimg != missing)&(redimg+nirimg != 0.0))
-                ndvi[wg] = (nirimg[wg] - redimg[wg])/(nirimg[wg] + redimg[wg])
-                print "ndvi" 
-                print len(wg[0])
-                print ndvi.min(), ndvi.max()
-                print ndvi[wg].min(), ndvi[wg].max()
-
-                # create output gippy image
-                imgout = gippy.GeoImage(outfname, ndvi, gippy.GDT_Int16, 1) #this number is how many output bands. Does this need to be uint with qc layer?
-
-                imgout.SetNoData(missing)
-                imgout.SetOffset(0.0)
-                imgout.SetGain(0.0001)
-
-                imgout[0].Write(ndvi)
-                
-                #imgout[1].Write(bestmask)
-
-                imgout.SetColor('NDVI', 1)
-                #imgout.SetColor('Best quality', 2)
-
-                for k, v in meta.items():
-                    imgout.SetMeta(k, str(v))
 
             ########################
             # SNOW/ICE COVER PRODUCT
@@ -705,7 +681,7 @@ class ModisData(Data):
                     imgout.SetMeta(k, str(v))
 
 
-            ######################
+            #####################
             # TEMPERATURE PRODUCT
 
             # TODO:
