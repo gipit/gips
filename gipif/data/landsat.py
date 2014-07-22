@@ -58,6 +58,16 @@ class LandsatAsset(Asset):
     """ Landsat asset (original raw tar file) """
     Repository = LandsatRepository
 
+    # tassled cap coefficients for L5 and L7
+    _tcapcoef = [
+        [0.3561, 0.3972, 0.3904, 0.6966, 0.2286, 0.1596],
+        [-0.3344, -0.3544, -0.4556, 0.6966, -0.0242, -0.2630],
+        [0.2626, 0.2141, 0.0926, 0.0656, -0.7629, -0.5388],
+        [0.0805, -0.0498, 0.1950, -0.1327, 0.5752, -0.7775],
+        [-0.7252, -0.0202, 0.6683, 0.0631, -0.1494, -0.0274],
+        [0.4000, -0.8172, 0.3832, 0.0602, -0.1095, 0.0985]
+    ]
+
     # combine sensormeta with sensor
     _sensors = {
         #'LT4': {
@@ -74,6 +84,7 @@ class LandsatAsset(Asset):
             'E': [1983, 1796, 1536, 1031, 220.0, 0, 83.44],
             'K1': [0, 0, 0, 0, 0, 607.76, 0],
             'K2': [0, 0, 0, 0, 0, 1260.56, 0],
+            'tcap': _tcapcoef,
         },
         'LE7': {
             'description': 'Landsat 7',
@@ -86,6 +97,7 @@ class LandsatAsset(Asset):
             'E': [1997, 1812, 1533, 1039, 230.8, 0, 84.90],
             'K1': [0, 0, 0, 0, 0, 666.09, 0],
             'K2': [0, 0, 0, 0, 0, 1282.71, 0],
+            'tcap': _tcapcoef,
         },
         'LC8': {
             'description': 'Landsat 8',
@@ -97,6 +109,14 @@ class LandsatAsset(Asset):
             'E': [2638.35, 2031.08, 1821.09, 2075.48, 1272.96, 246.94, 90.61, 369.36, 0, 0],
             'K1': [0, 0, 0, 0, 0, 0, 0, 0, 774.89, 480.89],
             'K2': [0, 0, 0, 0, 0, 0, 0, 0, 1321.08, 1201.14],
+            'tcap': [
+                [0.3029, 0.2786, 0.4733, 0.5599, 0.508, 0.1872],
+                [-0.2941, -0.243, -0.5424, 0.7276, 0.0713, -0.1608],
+                [0.1511, 0.1973, 0.3283, 0.3407, -0.7117, -0.4559],
+                [-0.8239, 0.0849, 0.4396, -0.058, 0.2013, -0.2773],
+                [-0.3294, 0.0557, 0.1056, 0.1855, -0.4349, 0.8085],
+                [0.1079, -0.9023, 0.4119, 0.0575, -0.0259, 0.0252],
+            ]
         }
     }
 
@@ -153,6 +173,7 @@ class LandsatData(Data):
         'temp': {'description': 'Brightness (apparent) temperature', 'toa': True},
         'acca': {'description': 'Automated Cloud Cover Assesment', 'args': '*', 'toa': True},
         'fmask': {'description': 'Fmask cloud cover', 'args': '*', 'toa': True},
+        'tcap': {'description': 'Tassled cap transformation', 'toa': True},
         #'Indices': {
         'bi':   {'description': 'Brightness Index', 'group': 'Index', 'choices': ['toa']},
         'ndvi': {'description': 'Normalized Difference Vegetation Index', 'group': 'Index', 'choices': ['toa']},
@@ -332,6 +353,15 @@ class LandsatData(Data):
                     else:
                         for col in visbands:
                             (((img[col]-atmos[col][1])/atmos[col][0]) * (1.0/atmos[col][2])).Process(imgout[col])
+                elif val[0] == 'tcap':
+                    tmpimg = gippy.GeoImage(reflimg)
+                    tmpimg.PruneBands(['BLUE', 'GREEN', 'RED', 'NIR', 'SWIR1', 'SWIR2'])
+                    tmpimg.SetColor('SWIR2', 6)     # work-around
+                    arr = numpy.array(self.Asset._sensors[self.sensor]['tcap']).astype('float32')
+                    imgout = gippy.LinearTransform(tmpimg, fname, arr)
+                    outbands = ['Brightness', 'Greenness', 'Wetness', 'TCT4', 'TCT5', 'TCT6']
+                    for i in range(0, imgout.NumBands()):
+                        imgout.SetColor(outbands[i], i+1)
                 elif val[0] == 'temp':
                     imgout = gippy.GeoImage(fname, img, gippy.GDT_Int16, len(lwbands))
                     for i in range(0, imgout.NumBands()):

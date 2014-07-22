@@ -17,6 +17,11 @@
 #   along with this program. If not, see <http://www.gnu.org/licenses/>
 ################################################################################
 
+v0.6.7
+
+landsat:
+- added tassled cap transformation
+
 v0.6.6
 - removed masking feature from 'project' command (replaced with gip_mask)
 - changed file naming for project files.  Directory named with shape or tileid and resolution, files named  date_sensor_product
