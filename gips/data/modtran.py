@@ -21,7 +21,7 @@
 import os
 import datetime
 import commands
-from gipif.utils import List2File
+from gips.utils import List2File
 
 
 def atmospheric_model(doy, lat):

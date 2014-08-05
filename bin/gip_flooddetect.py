@@ -3,8 +3,8 @@
 import argparse
 import numpy
 import gippy
-from gipif.inventory import project_inventory
-from gipif.utils import VerboseOut
+from gips.inventory import project_inventory
+from gips.utils import VerboseOut
 
 __version__ = '0.7.0'
 

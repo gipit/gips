@@ -22,10 +22,10 @@ import os
 import glob
 from datetime import datetime
 
-from gipif.core import Repository, Asset, Data
-from gipif.inventory import DataInventory
+from gips.core import Repository, Asset, Data
+from gips.inventory import DataInventory
 from agspy.utils.table import Table
-import gipif.settings as settings
+import gips.settings as settings
 
 
 class CDLRepository(Repository):

@@ -26,10 +26,10 @@ import numpy
 import glob
 
 import gippy
-from gipif.core import Repository, Asset, Data
-from gipif.inventory import DataInventory
-from gipif.utils import File2List, List2File, VerboseOut
-import gipif.settings as settings
+from gips.core import Repository, Asset, Data
+from gips.inventory import DataInventory
+from gips.utils import File2List, List2File, VerboseOut
+import gips.settings as settings
 
 
 class AODRepository(Repository):

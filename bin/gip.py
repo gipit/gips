@@ -27,8 +27,8 @@ import shutil
 import tempfile
 
 import gippy
-from gipif.inventory import project_inventory
-from gipif.utils import VerboseOut
+from gips.inventory import project_inventory
+from gips.utils import VerboseOut
 from pdb import set_trace
 
 __version__ = '0.6.0'

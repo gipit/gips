@@ -19,7 +19,7 @@ from scipy.misc import toimage
 import gc
 import warnings
 
-from gipif.inventory import project_inventory
+from gips.inventory import project_inventory
 
 __version__ = '0.1.0'
 

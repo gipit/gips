@@ -30,13 +30,13 @@ from copy import deepcopy
 import traceback
 
 import gippy
-from gipif.core import Repository, Asset, Data
-from gipif.inventory import DataInventory
-from gipif.utils import VerboseOut, RemoveFiles
-import gipif.settings as settings
+from gips.core import Repository, Asset, Data
+from gips.inventory import DataInventory
+from gips.utils import VerboseOut, RemoveFiles
+import gips.settings as settings
 
-from gipif.data.aod import AODData
-from gipif.data.modtran import MODTRAN
+from gips.data.aod import AODData
+from gips.data.modtran import MODTRAN
 
 __version__ = '0.7.0'
 
@@ -192,7 +192,7 @@ class LandsatData(Data):
     _defaultproduct = 'ref'
 
     def SixS(self):
-        from gipif.utils import atmospheric_model
+        from gips.utils import atmospheric_model
         from Py6S import SixS, Geometry, AeroProfile, Altitudes, Wavelength, GroundReflectance, AtmosCorr, SixSHelpers
         start = datetime.now()
         VerboseOut('Running atmospheric model (6S)', 2)

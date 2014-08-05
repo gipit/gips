@@ -33,11 +33,11 @@ import ftplib
 import inspect
 
 import gippy
-from gipif.utils import VerboseOut, RemoveFiles, File2List, List2File
-from gipif.inventory import DataInventory
-import gipif.settings as settings
-from gipif.GeoVector import GeoVector
-from gipif.version import __version__
+from gips.utils import VerboseOut, RemoveFiles, File2List, List2File
+from gips.inventory import DataInventory
+import gips.settings as settings
+from gips.GeoVector import GeoVector
+from gips.version import __version__
 
 
 class Repository(object):

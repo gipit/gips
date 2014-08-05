@@ -29,11 +29,11 @@ import textwrap
 from pprint import pprint
 
 import gippy
-from gipif.utils import VerboseOut, parse_dates, Colors
-from gipif.GeoVector import GeoVector
+from gips.utils import VerboseOut, parse_dates, Colors
+from gips.GeoVector import GeoVector
 import commands
 import tempfile
-from gipif.version import __version__
+from gips.version import __version__
 
 
 def project_inventory(datadir=''):
@@ -190,7 +190,7 @@ class Tiles(object):
         # transform vector to image projection
         vector = GeoVector(vectorfile)
         vsrs = vector.proj()
-        from gipif.GeoVector import transform_shape
+        from gips.GeoVector import transform_shape
         geom = transform_shape(vector.union(), vsrs, srs)
         extent = geom.bounds
         ullr = "%f %f %f %f" % (extent[0], extent[3], extent[2], extent[1])

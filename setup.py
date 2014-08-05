@@ -24,15 +24,15 @@ setup for GIPIF
 
 import os
 from setuptools import setup
-import gipif.settings as settings
+import gips.settings as settings
 import glob
-from gipif.version import __version__
+from gips.version import __version__
 
 # console scripts
 console_scripts = []
 for repo, cfg in settings.REPOS.items():
     if cfg['rootpath'] != '':
-        console_scripts.append('%s = gipif.data.%s:main' % (repo, repo.lower()))
+        console_scripts.append('%s = gips.data.%s:main' % (repo, repo.lower()))
 
 scripts = []
 if os.path.exists('bin'):
@@ -41,12 +41,12 @@ if os.path.exists('bin'):
         scripts.append(f)
 
 setup(
-    name='gipif',
+    name='gips',
     version=__version__,
     description='Geospatial Image Processing and Inventory Framework',
     author='Matthew Hanson',
     author_email='mhanson@appliedgeosolutions.com',
-    packages=['gipif', 'gipif.data'],
+    packages=['gips', 'gips.data'],
     install_requires=['Py6S>=1.5.0', 'shapely', 'gippy>=0.9.8', 'python-dateutil'],
     scripts=scripts,
     entry_points={'console_scripts': console_scripts},

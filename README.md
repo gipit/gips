@@ -31,7 +31,7 @@ Several packages are required for GIPIF. These notes are for Ubuntu systems.
     These are required for Py6S
     $ sudo apt-get install python-scipy python-matplotlib
 
-    3) Edit gipif/settings.py to update with your environment
+    3) Edit gips/settings.py to update with your environment
         - DATABASES: set connection settings and database if data tile vectors are stored in PostGIS
         - REPOS: set 'rootpath' for each dataset you want to enable
         - EMAIL: administrator email address
@@ -63,7 +63,7 @@ Some datasets may require 6S to perform atmospheric correction. Follow the instr
 To update GIPIF at a later date (will require root privileges)
 
     1) Get latest changes from git
-    $ cd [gipif directory]
+    $ cd [gips directory]
     $ git pull
 
     2) Run setup
