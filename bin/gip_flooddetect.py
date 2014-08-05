@@ -11,10 +11,10 @@ __version__ = '0.7.0'
 
 def main():
     dhf = argparse.ArgumentDefaultsHelpFormatter
-    parser0 = argparse.ArgumentParser(description='GIPIF Flood Detect', formatter_class=dhf)
+    parser0 = argparse.ArgumentParser(description='GIPS Flood Detect', formatter_class=dhf)
 
     #group = parser0.add_argument_group('inventory arguments')
-    parser0.add_argument('datadir', help='GIPIF Project directory', default='./')
+    parser0.add_argument('datadir', help='GIPS Project directory', default='./')
     parser0.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2: debug', default=1, type=int)
     parser0.add_argument('-p', '--product', help='Product to operate on', required=True)
 

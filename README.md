@@ -1,5 +1,5 @@
 
-    **GIPIF**: Geospatial Image Processing and Inventory Framework
+    **GIPS**: Geospatial Image Processing and Inventory Framework
 
     Copyright (C) 2014 Matthew A Hanson
 
@@ -16,10 +16,10 @@
    You should have received a copy of the GNU General Public License
    along with this program. If not, see <http://www.gnu.org/licenses/>
 
-# GIPIF Installation
+# GIPS Installation
 
 First step is to clone this repository to your local machine if you have not already done so.
-Several packages are required for GIPIF. These notes are for Ubuntu systems.
+Several packages are required for GIPS. These notes are for Ubuntu systems.
 
     1) First install the UbuntuGIS Repository:
     $ sudo apt-get install python-software-properties
@@ -41,7 +41,7 @@ Several packages are required for GIPIF. These notes are for Ubuntu systems.
         - For each directory create 'tiles' and 'vectors' subdirectories
         - For each dataset put a shapefile 'tiles.shp' holding the tiles for the dataset
 
-    5) Then install GIPIF
+    5) Then install GIPS
     $ ./setup.py install
 
 Some datasets may require 6S to perform atmospheric correction. Follow the instructions here to install 6S:
@@ -60,7 +60,7 @@ Some datasets may require 6S to perform atmospheric correction. Follow the instr
         with this line:
             FC      = gfortran -std=legacy -ffixed-line-length-none $(FFLAGS)
 
-To update GIPIF at a later date (will require root privileges)
+To update GIPS at a later date (will require root privileges)
 
     1) Get latest changes from git
     $ cd [gips directory]
@@ -69,15 +69,15 @@ To update GIPIF at a later date (will require root privileges)
     2) Run setup
     $ ./setup.py install
 
-    If there is an error about a bad header, remove the previous GIPIF package
+    If there is an error about a bad header, remove the previous GIPS package
     $ ls /usr/local/lib/python2.7/dist-packages
-        look for GIPIF package name
-    $ rm -rf /usr/local/lib/python2.7/dist-packages/[GIPIF-package-name]
+        look for GIPS package name
+    $ rm -rf /usr/local/lib/python2.7/dist-packages/[GIPS-package-name]
         Then go to step 2 again
 
-## GIPIF Development Note
+## GIPS Development Note
 
-For developing GIPIF, it is recommended that you use a python virtual environment 
+For developing GIPS, it is recommended that you use a python virtual environment 
 This allows multiple users on the same system to independently develop without 
 collisions. If you are in a virtual environment (ve), install or develop will install
 to the ve instead of the system

@@ -440,7 +440,7 @@ class Data(object):
     @classmethod
     def meta_dict(cls):
         return {
-            'GIPIF Version': __version__,
+            'GIPS Version': __version__,
             'GIPPY Version': gippy.__version__,
         }
 

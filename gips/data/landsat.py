@@ -532,7 +532,7 @@ class LandsatData(Data):
     @classmethod
     def meta_dict(cls):
         meta = super(LandsatData, cls).meta_dict()
-        meta['GIPIF-landsat Version'] = __version__
+        meta['GIPS-landsat Version'] = __version__
         return meta
 
     def _readraw(self):

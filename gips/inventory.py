@@ -440,7 +440,7 @@ class DataInventory(object):
     @staticmethod
     def main(cls):
         dhf = argparse.ArgumentDefaultsHelpFormatter
-        parser0 = argparse.ArgumentParser(description='GIPIF %s Data Utility v%s' % (cls.name, __version__),
+        parser0 = argparse.ArgumentParser(description='GIPS %s Data Utility v%s' % (cls.name, __version__),
                                           formatter_class=argparse.RawTextHelpFormatter)
         subparser = parser0.add_subparsers(dest='command')
 
@@ -497,7 +497,7 @@ class DataInventory(object):
         if 'format' in args:
             gippy.Options.SetDefaultFormat(args.format)
 
-        VerboseOut('GIPIF %s command line utility v%s' % (cls.name, __version__), 1)
+        VerboseOut('GIPS %s command line utility v%s' % (cls.name, __version__), 1)
 
         if args.command == 'archive':
             cls.Asset.archive(recursive=args.recursive, keep=args.keep)

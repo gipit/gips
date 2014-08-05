@@ -40,7 +40,7 @@ if __name__ == "__main__":
     subparser = parser0.add_subparsers(dest='command')
 
     genparser = argparse.ArgumentParser(add_help=False, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    genparser.add_argument('datadir', help='GIPIF Project directory')
+    genparser.add_argument('datadir', help='GIPS Project directory')
     genparser.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2: debug', default=1, type=int)
 
     parser = subparser.add_parser('mask', parents=[genparser], help='Mask files with a product OR file')
