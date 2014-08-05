@@ -18,9 +18,12 @@
 ################################################################################
 
 v0.6.7
+- changed library name to GIPS
 
 landsat:
 - added tassled cap transformation
+- reflectance not allowed to be negative (capped at 0)
+
 
 v0.6.6
 - removed masking feature from 'project' command (replaced with gip_mask)
