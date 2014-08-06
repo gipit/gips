@@ -171,7 +171,13 @@ class LandsatData(Data):
         'rad':  {'description': 'Surface-leaving radiance', 'choices': ['toa']},
         'ref':  {'description': 'Surface reflectance', 'choices': ['toa']},
         'temp': {'description': 'Brightness (apparent) temperature', 'toa': True},
-        'acca': {'description': 'Automated Cloud Cover Assesment', 'args': '*', 'toa': True},
+        'acca': {'description':
+                     ('Automated Cloud Cover Assesment -- 0 to 3 arguments. '
+                      'First is erosion kernel diameter in pixels, '
+                      'second is dilation kernel diameter in pixels, '
+                      'and last is the cloud height in meters. '
+                      'If not specified, the values are 5, 10 and 4000.'),
+                 'args': '*', 'toa': True},
         'fmask': {'description': 'Fmask cloud cover', 'args': '*', 'toa': True},
         'tcap': {'description': 'Tassled cap transformation', 'toa': True},
         #'Indices': {
