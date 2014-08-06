@@ -109,3 +109,24 @@ if __name__ == "__main__":
                 cmd = cmd + ' -dstalpha'
             out = commands.getstatusoutput(cmd)
             print '%s -> %s: %s' % (os.path.basename(f), os.path.basename(fout), datetime.datetime.now()-start)
+
+"""
+create polygon code
+    elif args.command == 'create':
+        start = datetime.datetime.now()
+        dbstr = "dbname=%s host=%s port=%s user=%s password=%s" % (args.dbname, args.dbhost, args.dbport, args.dbuser, args.dbpass)
+        #sql = "select * FROM %s where %s.%s = '%s'" % (args.layer,args.layer,args.col,args.value[0])
+        sql = "select * FROM %s where %s" % (args.layer,args.where)
+        #if len(args.value) > 1: 
+        #    for v in args.value[1:]: sql = sql + " OR %s.%s = '%s' " % (args.layer, args.col, v)
+        #for a in args.admin1:
+        #    sql = sql + ' admin1.name = %s ' % a
+        #for a in args.admin2:
+        #    sql = sql + ' usa_counties.name = %s ' % a
+        cmd = 'ogr2ogr %s PG:"%s" -sql "%s"' % (args.output,dbstr,sql)
+        if args.overwrite: cmd = cmd + ' -overwrite'
+        print cmd
+        out = commands.getstatusoutput(cmd)
+        #print out
+        print '%s: %s' % (args.output,datetime.datetime.now()-start)
+"""

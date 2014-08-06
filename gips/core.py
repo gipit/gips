@@ -38,6 +38,7 @@ from gips.inventory import DataInventory
 import gips.settings as settings
 from gips.GeoVector import GeoVector
 from gips.version import __version__
+from gips.inventory import project_inventory
 
 
 class Repository(object):
@@ -597,3 +598,19 @@ class Data(object):
         # archive
         # inventory
         # process
+
+
+def algorithm_main(cls):
+    """ Main for algorithm classes """
+    dhf = argparse.ArgumentDefaultsHelpFormatter
+    script = 'GIPS: %s v%s' % (cls.name, cls.__version__)
+    parser = argparse.ArgumentParser(formatter_class=dhf, parents=[cls.arg_parser()], description=script)
+    parser.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2+: debug', default=1, type=int)
+    parser.add_argument('datadir', help='GIPS Project directory')
+
+    args = parser.parse_args()
+    gippy.Options.SetVerbose(args.verbose)
+    VerboseOut(script)
+    inv = project_inventory(args.datadir)
+
+    cls(inv, **vars(args))

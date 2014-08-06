@@ -30,9 +30,19 @@ from gips.version import __version__
 
 # console scripts
 console_scripts = []
+# Data scripts
 for repo, cfg in settings.REPOS.items():
     if cfg['rootpath'] != '':
         console_scripts.append('%s = gips.data.%s:main' % (repo, repo.lower()))
+# Algorithms
+for f in glob.glob('gips/algorithms/*.py'):
+    try:
+        name = os.path.splitext(os.path.basename(f))[0]
+        if name != '__init__':
+            script = 'gips_%s = gips.algorithms.%s:main' % (name, name.lower())
+            console_scripts.append(script)
+    except:
+        pass
 
 scripts = []
 if os.path.exists('bin'):
@@ -43,10 +53,10 @@ if os.path.exists('bin'):
 setup(
     name='gips',
     version=__version__,
-    description='Geospatial Image Processing and Inventory Framework',
+    description='Geospatial Image Processing System',
     author='Matthew Hanson',
     author_email='mhanson@appliedgeosolutions.com',
-    packages=['gips', 'gips.data'],
+    packages=['gips', 'gips.data', 'gips.algorithms'],
     install_requires=['Py6S>=1.5.0', 'shapely', 'gippy>=0.9.8', 'python-dateutil'],
     scripts=scripts,
     entry_points={'console_scripts': console_scripts},

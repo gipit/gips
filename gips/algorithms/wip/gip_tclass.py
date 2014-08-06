@@ -5,12 +5,12 @@ import sys
 import argparse
 from datetime import datetime
 import agspy.utils.dateparse as dateparse
-import pandas, numpy
+import numpy
+import pandas
 import gippy
 from sklearn import svm
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import confusion_matrix
-
 
 # temp imports
 import glob
@@ -94,7 +94,7 @@ def main():
 
     gparser = argparse.ArgumentParser(add_help=False, formatter_class=dhf)
     group = gparser.add_argument_group('General Options')
-    group.add_argument('-v','--verbose', help='Verbosity level', default=1, type=int)
+    group.add_argument('-v', '--verbose', help='Verbosity level', default=1, type=int)
 
     parser = subparser.add_parser('truth', help='Make single truth map from multiple maps')
     parser.add_argument('files', help='List of truth files', nargs='+')
@@ -103,35 +103,34 @@ def main():
         parents=[gparser], formatter_class=dhf)
     parser.add_argument('indir', help='Input data directory of training data')
     #parser.add_argument('product', help='Product to train on (will find matching files)')
-    parser.add_argument('-d','--days', help='Beginning and end of interval (doy1,doy2)',default=(1,365))
+    parser.add_argument('-d', '--days', help='Beginning and end of interval (doy1,doy2)', default=(1, 365))
     parser.add_argument('--max', help='Maximum number of samples', default=10000, type=int)
-    parser.add_argument('-o','--output', help='Output directory', default='train')
-    
-    parser = subparser.add_parser('test', help='Use training data to test and output metrics', 
-        parents=[gparser], formatter_class=dhf)
-    parser.add_argument('-i','--input',help='Input training data directory',default='train')
-    #parser.add_argument('-o','--output', help='Output directory', default='test')
-    parser.add_argument('--start',help='Starting day of year', default=None, type=int)
-    parser.add_argument('--step',help='Number of days per step', default=8, type=int)
+    parser.add_argument('-o', '--output', help='Output directory', default='train')
 
-    parser = subparser.add_parser('class', help='Classify', 
+    parser = subparser.add_parser('test', help='Use training data to test and output metrics',
         parents=[gparser], formatter_class=dhf)
+    parser.add_argument('-i', '--input', help='Input training data directory', default='train')
+    #parser.add_argument('-o','--output', help='Output directory', default='test')
+    parser.add_argument('--start', help='Starting day of year', default=None, type=int)
+    parser.add_argument('--step', help='Number of days per step', default=8, type=int)
+
+    parser = subparser.add_parser('class', help='Classify', parents=[gparser], formatter_class=dhf)
     #parser.add_argument('files', nargs='*', help='Image file to classify')
-    parser.add_argument('-s','--site',help='Vector file for region of interest', default='site.shp')
-    parser.add_argument('-d','--dates',help='Range of dates (YYYY-MM-DD,YYYY-MM-DD)')
-    parser.add_argument('--days',help='Include data within these days of year (doy1,doy2)',default=None)
-    parser.add_argument('-i','--input',help='Input training data directory',default='train')
-    parser.add_argument('-o','--output', help='Output directory', default='classify')
+    parser.add_argument('-s', '--site', help='Vector file for region of interest', default='site.shp')
+    parser.add_argument('-d', '--dates', help='Range of dates (YYYY-MM-DD,YYYY-MM-DD)')
+    parser.add_argument('--days', help='Include data within these days of year (doy1,doy2)', default=None)
+    parser.add_argument('-i', '--input', help='Input training data directory', default='train')
+    parser.add_argument('-o', '--output', help='Output directory', default='classify')
     parser.add_argument('--series', help='Run for every day in data inventory', default=False, action='store_true')
 
-    parser = subparser.add_parser('analyze', help='Compare directory of outputs vs truth', 
+    parser = subparser.add_parser('analyze', help='Compare directory of outputs vs truth',
         parents=[gparser], formatter_class=dhf)
-    parser.add_argument('-i','--input',help='Input data directory of classmaps',required=True)
-    parser.add_argument('-t','--truth',help='Truth map to compare against',default=None)
+    parser.add_argument('-i', '--input', help='Input data directory of classmaps', required=True)
+    parser.add_argument('-t', '--truth', help='Truth map to compare against', default=None)
 
-    parser = subparser.add_parser('show', help='Display animation of classmaps vs time', 
+    parser = subparser.add_parser('show', help='Display animation of classmaps vs time',
         parents=[gparser], formatter_class=dhf)
-    parser.add_argument('-i','--input', help='Input data directory of classmaps',required=True)
+    parser.add_argument('-i', '--input', help='Input data directory of classmaps', required=True)
 
     args = parser0.parse_args()
     gippy.Options.SetVerbose(args.verbose)
