@@ -1,5 +1,6 @@
+#!/usr/bin/env python
 ################################################################################
-#    GIPS: Geospatial Image Processing and Inventory Framework
+#    GIPPY: Geospatial Image Processing library for Python
 #
 #    Copyright (C) 2014 Matthew A Hanson
 #
@@ -17,26 +18,16 @@
 #   along with this program. If not, see <http://www.gnu.org/licenses/>
 ################################################################################
 
-v0.6.8
-- added algorithms module back to main GIPS
+class algorithm(object):
 
+	@classmethod
+	def add_options(cls,subparser,parents=[]):
+		pass
 
-v0.6.7
-- changed library name to GIPS
+	@classmethod
+	def process():
+		pass
 
-landsat:
-- added tassled cap transformation
-- reflectance not allowed to be negative (capped at 0)
+	def __init__(self):
+		pass
 
-
-v0.6.6
-- removed masking feature from 'project' command (replaced with gip_mask)
-- changed file naming for project files.  Directory named with shape or tileid and resolution, files named  date_sensor_product
-- added gip.py script for general purpose processing on project data directories
-- project: metadata properly copied from data
-- metadata added to all processed files
-- bumped version of GIPPY dependency to 0.9.6
-
-landsat changes:
-- exception handling when calling atmospheric model
-- added NDWI and MSAVI2 indices to products
