@@ -6,7 +6,7 @@ from datetime import datetime
 import numpy as np
 
 import gippy
-from gips.algorithms import core
+from gips import core
 from gips.utils import VerboseOut
 
 
@@ -59,7 +59,7 @@ class Mask(object):
 
 
 def main():
-    core.main(Mask)
+    core.algorithm_main(Mask)
 
 
 if __name__ == "__main__":
