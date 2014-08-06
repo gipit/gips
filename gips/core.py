@@ -33,9 +33,10 @@ import ftplib
 import inspect
 
 import gippy
+import gips
 from gips.utils import VerboseOut, RemoveFiles, File2List, List2File
 from gips.inventory import DataInventory
-import gips.settings as settings
+
 from gips.GeoVector import GeoVector
 from gips.version import __version__
 from gips.inventory import project_inventory
@@ -129,7 +130,7 @@ class Repository(object):
             VerboseOut('%s: tiles vector %s' % (cls.__name__, fname), 4)
         else:
             try:
-                db = settings.DATABASES['tiles']
+                db = gips.settings.DATABASES['tiles']
                 dbstr = ("PG:dbname=%s host=%s port=%s user=%s password=%s" %
                         (db['NAME'], db['HOST'], db['PORT'], db['USER'], db['PASSWORD']))
                 tiles = GeoVector(dbstr, layer=cls._tiles_vector)
@@ -263,7 +264,7 @@ class Asset(object):
 
         try:
             ftp = ftplib.FTP(ftpurl)
-            ftp.login('anonymous', settings.EMAIL)
+            ftp.login('anonymous', gips.settings.EMAIL)
             pth = os.path.join(ftpdir, date.strftime('%Y'), date.strftime('%j'))
             ftp.set_pasv(True)
             try:
@@ -603,7 +604,7 @@ class Data(object):
 def algorithm_main(cls):
     """ Main for algorithm classes """
     dhf = argparse.ArgumentDefaultsHelpFormatter
-    script = 'GIPS: %s v%s' % (cls.name, cls.__version__)
+    script = 'GIPS (v%s): %s (v%s)' % (gips.__version__, cls.name, cls.__version__)
     parser = argparse.ArgumentParser(formatter_class=dhf, parents=[cls.arg_parser()], description=script)
     parser.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2+: debug', default=1, type=int)
     parser.add_argument('datadir', help='GIPS Project directory')
@@ -614,3 +615,66 @@ def algorithm_main(cls):
     inv = project_inventory(args.datadir)
 
     cls(inv, **vars(args))
+
+"""
+    //! Rice detection algorithm
+    GeoImage RiceDetect(const GeoImage& image, string filename, vector<int> days, float th0, float th1, int dth0, int dth1) {
+        if (Options::Verbose() > 1) cout << "RiceDetect(" << image.Basename() << ") -> " << filename << endl;
+
+        GeoImage imgout(filename, image, GDT_Byte, image.NumBands());
+        imgout.SetNoData(0);
+        imgout[0].SetDescription("rice");
+        for (unsigned int b=1;b<image.NumBands();b++) {
+            imgout[b].SetDescription("day"+to_string(days[b]));
+        }
+
+        CImg<float> cimg;
+        CImg<unsigned char> cimg_datamask, cimg_dmask;
+        CImg<int> cimg_th0, cimg_th0_prev, cimg_flood, cimg_flood_prev;
+        int delta_day;
+
+        for (unsigned int iChunk=1; iChunk<=image[0].NumChunks(); iChunk++) {
+            if (Options::Verbose() > 3) cout << "Chunk " << iChunk << " of " << image[0].NumChunks() << endl;
+            cimg = image[0].Read<float>(iChunk);
+            cimg_datamask = image[0].DataMask(iChunk);
+            CImg<int> DOY(cimg.width(), cimg.height(), 1, 1, 0);
+            CImg<int> cimg_rice(cimg.width(), cimg.height(), 1, 1, 0);
+            cimg_th0_prev = cimg.get_threshold(th0);
+            cimg_flood = (cimg_th0_prev^1).mul(cimg_datamask);
+
+            for (unsigned int b=1;b<image.NumBands();b++) {
+                if (Options::Verbose() > 3) cout << "Day " << days[b] << endl;
+                delta_day = days[b]-days[b-1];
+                cimg = image[b].Read<float>(iChunk);
+                cimg_datamask = image[b].DataMask(iChunk);
+                cimg_th0 = cimg.get_threshold(th0);
+                // Replace any nodata values with the last value
+                cimg_forXY(cimg_datamask, x, y) {
+                    if (cimg_datamask(x,y) == 0) { cimg_th0(x,y) = cimg_th0_prev(x,y); }
+                }
+
+                DOY += delta_day;                                       // running total of days
+                DOY.mul(cimg_flood);                                    // reset if it hasn't been flooded yet
+                DOY.mul(cimg_th0);                                      // reset if in hydroperiod
+
+                cimg_dmask = DOY.get_threshold(dth1,false,true)^=1;      // mask of where past high date
+                DOY.mul(cimg_dmask);
+
+                // locate (and count) where rice criteria met
+                CImg<unsigned char> newrice = cimg.threshold(th1,false,true) & DOY.get_threshold(dth0,false,true);
+                cimg_rice = cimg_rice + newrice;
+
+                // update flood map
+                cimg_flood |= (cimg_th0^1);
+                // remove new found rice pixels, and past high date
+                cimg_flood.mul(newrice^=1).mul(cimg_dmask);
+
+                //imgout[b].Write(DOY, iChunk);
+                imgout[b].Write(DOY, iChunk);
+                cimg_th0_prev = cimg_th0;
+            }
+            imgout[0].Write(cimg_rice,iChunk);              // rice map count
+        }
+        return imgout;
+    }
+"""
