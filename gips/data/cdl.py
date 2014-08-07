@@ -21,10 +21,10 @@
 import os
 import glob
 from datetime import datetime
+from csv import DictReader
 
 from gips.core import Repository, Asset, Data
 from gips.inventory import DataInventory
-from agspy.utils.table import Table
 import gips.settings as settings
 
 
@@ -91,7 +91,8 @@ class CDLData(Data):
     }
 
     _legend_file = os.path.join(CDLRepository._rootpath, 'CDL_Legend.csv')
-    _legend = map(lambda x: x.lower(), Table(csvfile=_legend_file)['ClassName'])
+    _legend = [row['ClassName'].lower()
+               for row in DictReader(open(_legend_file))]
 
     @classmethod
     def get_code(cls, cropname):
