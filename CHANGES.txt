@@ -17,12 +17,10 @@
 #   along with this program. If not, see <http://www.gnu.org/licenses/>
 ################################################################################
 
-v0.6.8
-- added algorithms module back to main GIPS
-
-
 v0.6.7
 - changed library name to GIPS
+- added algorithms module back to main GIPS
+- bumped GIPPY dependency to 0.9.7
 
 landsat:
 - added tassled cap transformation

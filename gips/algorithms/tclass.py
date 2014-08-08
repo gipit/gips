@@ -1,16 +1,18 @@
 #!/usr/bin/env python
 
 import os
-import sys
 import argparse
 from datetime import datetime
-import agspy.utils.dateparse as dateparse
 import numpy
 import pandas
-import gippy
 from sklearn import svm
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import confusion_matrix
+
+import gippy
+from gips import core
+import gips.utils as dateparse
+from gips.inventory import project_inventory
 
 # temp imports
 import glob
@@ -19,7 +21,7 @@ from scipy.misc import toimage
 import gc
 import warnings
 
-from gips.inventory import project_inventory
+
 
 __version__ = '0.1.0'
 
@@ -73,9 +75,6 @@ def calculate_stats(cmi): #ytrue, ypred):
     return {'kappa': kappa, 'overall': overall, 'maxmiss': maxmiss, 
         'producers': producers, 'consumers': consumers, 'npts': npts} #, 'cm': npts }
 
-def VerboseOut(txt, level=1):
-    if gippy.Options.Verbose() >= level: print txt
-
 def classify(model, data, nodata=-32768):
     VerboseOut('Classifying', 2)
     #data = numpy.squeeze(gippy.GeoImage_float(img).Read())
@@ -87,94 +86,37 @@ def classify(model, data, nodata=-32768):
     classmap = classmap.reshape(dims[1],dims[2])
     return classmap
 
-def main():
-    dhf = argparse.ArgumentDefaultsHelpFormatter
-    parser0 = argparse.ArgumentParser(description='Rice DSS Mapper', formatter_class=argparse.RawTextHelpFormatter)
-    subparser = parser0.add_subparsers(dest='command')
 
-    gparser = argparse.ArgumentParser(add_help=False, formatter_class=dhf)
-    group = gparser.add_argument_group('General Options')
-    group.add_argument('-v', '--verbose', help='Verbosity level', default=1, type=int)
+class TIC(object):
+    name = 'Temporal Image Classifier'
+    __version__ = '0.1.0'
 
-    parser = subparser.add_parser('truth', help='Make single truth map from multiple maps')
-    parser.add_argument('files', help='List of truth files', nargs='+')
+    def __init__(self, inv, command, products, truth):
+        self.inventory = inv
+        self.products = products
+        self.truth = truth
+        self.project = project
 
-    parser = subparser.add_parser('train', help='Generate temporal vectors from data', 
-        parents=[gparser], formatter_class=dhf)
-    parser.add_argument('indir', help='Input data directory of training data')
-    #parser.add_argument('product', help='Product to train on (will find matching files)')
-    parser.add_argument('-d', '--days', help='Beginning and end of interval (doy1,doy2)', default=(1, 365))
-    parser.add_argument('--max', help='Maximum number of samples', default=10000, type=int)
-    parser.add_argument('-o', '--output', help='Output directory', default='train')
+        start = datetime.now()
+        if cmd == 'train':
+            self.train()
+            
+        elif cmd == 'test' or cmd == 'class':
+            # Read training data
+            datafiles = [os.path.join(args.input, p+'.pkl') for p in products]
+            dfs = {}
+            for f in datafiles:
+                basename = os.path.splitext(os.path.basename(f))[0]
+                dfs[basename] = pandas.read_pickle(f)
+                days = dfs[basename].columns
+            truth = numpy.squeeze(pandas.read_pickle(os.path.join(args.input, 'truth.pkl')))
+            classes = numpy.unique(truth.values).astype(int)
+            cdl = gippy.GeoImage(os.path.join(args.input, 'cdl.tif'))
 
-    parser = subparser.add_parser('test', help='Use training data to test and output metrics',
-        parents=[gparser], formatter_class=dhf)
-    parser.add_argument('-i', '--input', help='Input training data directory', default='train')
-    #parser.add_argument('-o','--output', help='Output directory', default='test')
-    parser.add_argument('--start', help='Starting day of year', default=None, type=int)
-    parser.add_argument('--step', help='Number of days per step', default=8, type=int)
+        VerboseOut('Completed %s in %s' % (cmd, datetime.now()-start),2)
 
-    parser = subparser.add_parser('class', help='Classify', parents=[gparser], formatter_class=dhf)
-    #parser.add_argument('files', nargs='*', help='Image file to classify')
-    parser.add_argument('-s', '--site', help='Vector file for region of interest', default='site.shp')
-    parser.add_argument('-d', '--dates', help='Range of dates (YYYY-MM-DD,YYYY-MM-DD)')
-    parser.add_argument('--days', help='Include data within these days of year (doy1,doy2)', default=None)
-    parser.add_argument('-i', '--input', help='Input training data directory', default='train')
-    parser.add_argument('-o', '--output', help='Output directory', default='classify')
-    parser.add_argument('--series', help='Run for every day in data inventory', default=False, action='store_true')
 
-    parser = subparser.add_parser('analyze', help='Compare directory of outputs vs truth',
-        parents=[gparser], formatter_class=dhf)
-    parser.add_argument('-i', '--input', help='Input data directory of classmaps', required=True)
-    parser.add_argument('-t', '--truth', help='Truth map to compare against', default=None)
-
-    parser = subparser.add_parser('show', help='Display animation of classmaps vs time',
-        parents=[gparser], formatter_class=dhf)
-    parser.add_argument('-i', '--input', help='Input data directory of classmaps', required=True)
-
-    args = parser0.parse_args()
-    gippy.Options.SetVerbose(args.verbose)
-    gippy.Options.SetChunkSize(512)
-
-    products = ['ndvi', 'lswi']
-
-    VerboseOut('Temporal Classifier v%s' % __version__)
-
-    if args.command == 'test' or args.command == 'class':
-        # Read training data
-        datafiles = [os.path.join(args.input, p+'.pkl') for p in products]
-        dfs = {}
-        for f in datafiles:
-            basename = os.path.splitext(os.path.basename(f))[0]
-            dfs[basename] = pandas.read_pickle(f)
-            days = dfs[basename].columns
-        truth = numpy.squeeze(pandas.read_pickle(os.path.join(args.input, 'truth.pkl')))
-        classes = numpy.unique(truth.values).astype(int)
-        cdl = gippy.GeoImage(os.path.join(args.input, 'cdl.tif'))
-
-    if args.command == 'truth':
-        # Merge multiple truth files into one showing agreement over all
-        # Read in truth files from directory
-        print 'Input files: ', args.files
-        random.seed()
-        VerboseOut('Merging truth files', 2)
-        for i, filename in enumerate(glob.glob('CDL/CDL*mask.tif')):
-            cdl = gippy.GeoImage(filename)
-            if i == 0:
-                cdlimg = gippy.GeoRaster_byte(cdl[0]).Read()
-                cdlout = gippy.GeoImage(os.path.join(args.output, 'cdl'), cdl)
-                cdlout.CopyColorTable(cdl)
-                cdlout.SetNoData(0)
-            else:
-                img = gippy.GeoRaster_byte(cdl[0]).Read()
-                it = numpy.nditer(cdlimg, flags=['multi_index'])
-                while not it.finished:
-                    (x, y) = it.multi_index
-                    if cdlimg[x, y] != img[x, y]:
-                        cdlimg[x, y] = 0
-                    it.iternext()
-                img = None
-            cdl = None
+        """
         # Pruning down to max samples
         VerboseOut('Pruning truth map', 2)
         for i in range(1,numpy.max(cdlimg)+1):
@@ -190,112 +132,37 @@ def main():
                 locs = numpy.where(cdlimg == i)
                 VerboseOut('Class %s: %s -> %s samples' % (i, num, len(locs[0])), 2)
         gippy.GeoRaster_byte(cdlout[0]).Write(cdlimg)
-        VerboseOut('CDL processed in %s' % (datetime.now() - start))        
+        VerboseOut('CDL processed in %s' % (datetime.now() - start))   
+        """
 
-    if args.command == 'train':
-        start = datetime.now()
-        inv = project_inventory(args.indir)
-        VerboseOut('Extracting pixel temporal vectors from %s' % os.path.basename(args.indir), 2)
+    def train(self):
+        VerboseOut('Extracting training data', 2)
+        days = [d.day for d in self.inventory.dates]                
 
-        import pdb
-        pdb.set_trace()
+        # Prune down pixels in truth
+        truth = gippy.GeoImage(truth)
 
-        # Create day of year array TODO - auto from file list
-        tmp = map(int, (args.days.split(',')))
-        days = [d for d in range(tmp[0], tmp[1]+1)]                
-        
-        for p in products:
-            filenames = {}
-            ### REPLACE WITH INVENTORY
-            for filename in glob.glob('training_data/*%s*tif' % p):
-                basename = os.path.basename(filename)
-                #year = int(basename[0:4])
-                day = int(basename[4:7])
-                filenames[day] = filename
-                # what to do if more than one day?....average?
-            day_index = sorted(filenames.keys())
-            ########
+        for p in self.products:
+            # Pull out truth pixels
+            data = img.Extract(truth[0])
+            truth = data[0, :]
+            data = data[1:, :]
 
-            # Replace with gippy temporal read/open class (or factory function)
-            img = gippy.GeoImage(filenames[day_index[0]])
-            filenames.pop(day_index[0],None)
-            for day in sorted(filenames.keys()):
-                img.AddBand(gippy.GeoImage(filenames[day])[0])
-            data = gippy.GeoImage_float(img).Extract(cdlout[0])
-
-            truth = data[0,:]
-            data = data[1:,:]
-
-            df = pandas.DataFrame(data, index=day_index)
+            # Fill in signature Interpolate to complete signature
+            df = pandas.DataFrame(data, index=days)
             df[df == -32768] = numpy.nan
-            df = df.reindex(index=days)
-            for col in df.columns: df[col] = df[col].interpolate()
-            df.fillna(method='bfill',inplace=True)
-            df.fillna(method='ffill',inplace=True)
-            df.T.to_pickle( os.path.join(args.output,'%s.pkl' % p) )
-            VerboseOut('Extracted %s training data in %s' % (p,datetime.now()-start),2)
+            df = df.reindex(index=[d for d in range(days[0], days[-1]+1)])
+            for col in df.columns:
+                df[col] = df[col].interpolate()
+            # Fill in end values with nodata
+            df.fillna(method='bfill', inplace=True)
+            df.fillna(method='ffill', inplace=True)
 
-        pandas.DataFrame(truth).to_pickle(os.path.join(args.output,'truth.pkl'))
-        VerboseOut('Done training: %s' % (datetime.now()-start))
+            # Write output files
+            df.T.to_pickle( os.path.join(self.project, 'tclass_%s.pkl' % p) )
+        pandas.DataFrame(truth).to_pickle(os.path.join(self.project, 'tclass_truth.pkl'))
 
-    elif args.command == 'test':
-        from sklearn.cross_validation import train_test_split
-        start = datetime.now()
-
-        # Day vector
-        if args.start is None: args.start = min(days)
-        testdays = range(args.start,max(days),args.step)
-        cur_testdays = []
-        accuracy = numpy.zeros((len(classes),len(testdays)),float)
-
-        outputdir = 'test_d%s_s%s' % (args.start, args.step)
-        if not os.path.exists(outputdir): os.makedirs(outputdir)
-
-        for iday,day in enumerate(testdays):
-            cur_testdays.append(day)
-            i = 0
-            for key in dfs:
-                if i == 0:
-                    data = dfs[key][cur_testdays]
-                else:
-                    data = data.join(dfs[key][cur_testdays],rsuffix=key)
-                i = i+1
-
-            # Split into train and test
-            X_train, X_test, y_train, y_test = train_test_split(data,truth,train_size=0.25)
-
-            # Classify
-            classifier = RandomForestClassifier()
-            classifier.fit(X_train, numpy.squeeze(y_train))
-            y_pred = classifier.predict(X_test)
-
-            # Generate confusion matrix
-            cm = pandas.DataFrame(confusion_matrix(y_test, y_pred), index=classes, columns=classes)
-            totals = numpy.sum(cm.values,1)
-            for i,c in enumerate(classes): accuracy[i,iday] = cm.values[i,i]/float(totals[i])
-            cm.to_csv(os.path.join(outputdir,'confusion_matrix_%s.csv' % day))
-            stats = calculate_stats(cm)
-            f = open(os.path.join(outputdir,'confusion_matrix_%s_stats.csv' % day), 'w')
-            f.write('kappa = %s\n' % stats['kappa'])
-            f.write('overall = %s\n' % stats['overall'])
-            f.write('maxmiss = %s\n' % stats['maxmiss'])
-            f.write('producers = ')
-            for item in stats['producers']: f.write(str(item))
-            f.write('\n')
-            f.write('consumers = ')
-            for item in stats['consumers']: f.write(str(item))
-            f.write('\n')
-            f.write('npts = ')
-            for item in stats['npts']: f.write(str(item))
-            f.write('\n')
-            f.close()
-            VerboseOut("Day %s: %4.2f%%" % (day, cm.values[2,2]/float(totals[2]) * 100), 1)
-
-        print 'Done: %s' % (datetime.now() - start)
-        filename = os.path.join(outputdir,'accuracy.csv')
-        pandas.DataFrame(accuracy, index=classes, columns=cur_testdays).to_csv(filename)
-
-    elif args.command == 'class':
+    def classify(self):
         from gippy.data.landsat import LandsatData
         maxclouds = 39
         if not os.path.exists(args.output): os.makedirs(args.output)
@@ -370,7 +237,7 @@ def main():
 
             VerboseOut('Classified in %s' % (datetime.now() - start))
 
-    elif args.command == 'analyze':
+    def analyze(self):
         # compare directory of classmaps with truth map
         if args.truth is None:
             header = 'Day, Rice (ha)'
@@ -415,7 +282,65 @@ def main():
 
         f.close()
 
-    elif args.command == 'show':
+    def test(self):
+        from sklearn.cross_validation import train_test_split
+        start = datetime.now()
+
+        # Day vector
+        if args.start is None: args.start = min(days)
+        testdays = range(args.start,max(days),args.step)
+        cur_testdays = []
+        accuracy = numpy.zeros((len(classes),len(testdays)),float)
+
+        outputdir = 'test_d%s_s%s' % (args.start, args.step)
+        if not os.path.exists(outputdir): os.makedirs(outputdir)
+
+        for iday,day in enumerate(testdays):
+            cur_testdays.append(day)
+            i = 0
+            for key in dfs:
+                if i == 0:
+                    data = dfs[key][cur_testdays]
+                else:
+                    data = data.join(dfs[key][cur_testdays],rsuffix=key)
+                i = i+1
+
+            # Split into train and test
+            X_train, X_test, y_train, y_test = train_test_split(data,truth,train_size=0.25)
+
+            # Classify
+            classifier = RandomForestClassifier()
+            classifier.fit(X_train, numpy.squeeze(y_train))
+            y_pred = classifier.predict(X_test)
+
+            # Generate confusion matrix
+            cm = pandas.DataFrame(confusion_matrix(y_test, y_pred), index=classes, columns=classes)
+            totals = numpy.sum(cm.values,1)
+            for i,c in enumerate(classes): accuracy[i,iday] = cm.values[i,i]/float(totals[i])
+            cm.to_csv(os.path.join(outputdir,'confusion_matrix_%s.csv' % day))
+            stats = calculate_stats(cm)
+            f = open(os.path.join(outputdir,'confusion_matrix_%s_stats.csv' % day), 'w')
+            f.write('kappa = %s\n' % stats['kappa'])
+            f.write('overall = %s\n' % stats['overall'])
+            f.write('maxmiss = %s\n' % stats['maxmiss'])
+            f.write('producers = ')
+            for item in stats['producers']: f.write(str(item))
+            f.write('\n')
+            f.write('consumers = ')
+            for item in stats['consumers']: f.write(str(item))
+            f.write('\n')
+            f.write('npts = ')
+            for item in stats['npts']: f.write(str(item))
+            f.write('\n')
+            f.close()
+            VerboseOut("Day %s: %4.2f%%" % (day, cm.values[2,2]/float(totals[2]) * 100), 1)
+
+        print 'Done: %s' % (datetime.now() - start)
+        filename = os.path.join(outputdir,'accuracy.csv')
+        pandas.DataFrame(accuracy, index=classes, columns=cur_testdays).to_csv(filename)
+
+    """
+    def show(self):
         filenames = glob.glob(os.path.join(args.input,'classmap*tif'))
         for filename in filenames:
             gimg = gippy.GeoImage(filename)
@@ -426,7 +351,54 @@ def main():
             set_trace()
             img = numpy.resize(img,(int(800*ar),800))
             toimage(img).show()
-            set_trace()
+            set_trace()        
+    """
+
+    @classmethod
+    def arg_parser(cls):
+        dhf = argparse.ArgumentDefaultsHelpFormatter
+        parser0 = argparse.ArgumentParser(formatter_class=dhf)
+        subparser = parser0.add_subparsers(dest='command')
+
+        # Train
+        parser = subparser.add_parser('train', help='Generate temporal vectors from data', formatter_class=dhf)
+        parser.add_argument('-p', '--products', help='Products to operate on', nargs='*')
+        parser.add_argument('-s', '--samples', help='Number of samples to extract', default=10000, type=int)
+        parser.add_argument('-d', '--days', help='Beginning and end of interval (doy1,doy2)', default=(1, 365))
+        parser.add_argument('-o', '--output', help='Output directory', default='train')
+
+        # Classify
+        parser = subparser.add_parser('class', help='Classify', formatter_class=dhf)
+        #parser.add_argument('files', nargs='*', help='Image file to classify')
+        parser.add_argument('-s', '--site', help='Vector file for region of interest', default='site.shp')
+        parser.add_argument('-d', '--dates', help='Range of dates (YYYY-MM-DD,YYYY-MM-DD)')
+        parser.add_argument('--days', help='Include data within these days of year (doy1, doy2)', default=None)
+        parser.add_argument('-i', '--input', help='Input training data directory', default='train')
+        parser.add_argument('-o', '--output', help='Output directory', default='classify')
+        parser.add_argument('--series', help='Run for every day in data inventory', default=False, action='store_true')
+
+        # Results
+        parser = subparser.add_parser('analyze', help='Compare directory of outputs vs truth', formatter_class=dhf)
+        parser.add_argument('-i', '--input', help='Input data directory of classmaps', required=True)
+        parser.add_argument('-t', '--truth', help='Truth map to compare against', default=None)
+
+        #parser = subparser.add_parser('show', help='Display animation of classmaps vs time',
+        #    parents=[gparser], formatter_class=dhf)
+        #parser.add_argument('-i', '--input', help='Input data directory of classmaps', required=True)
+
+        # Test
+        parser = subparser.add_parser('test', help='Use training data to test and output metrics',
+            formatter_class=dhf)
+        parser.add_argument('-i', '--input', help='Input training data directory', default='train')
+        #parser.add_argument('-o','--output', help='Output directory', default='test')
+        parser.add_argument('--start', help='Starting day of year', default=None, type=int)
+        parser.add_argument('--step', help='Number of days per step', default=8, type=int)
+
+        return parser0
+
+
+def main():
+    core.algorithm_main(TIC)
 
 
 if __name__ == "__main__":
