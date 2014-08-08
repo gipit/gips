@@ -605,16 +605,19 @@ def algorithm_main(cls):
     """ Main for algorithm classes """
     dhf = argparse.ArgumentDefaultsHelpFormatter
     script = 'GIPS (v%s): %s (v%s)' % (gips.__version__, cls.name, cls.__version__)
-    parser = argparse.ArgumentParser(formatter_class=dhf, parents=[cls.arg_parser()], description=script)
+    parser = argparse.ArgumentParser(add_help=False, formatter_class=dhf, parents=[cls.arg_parser()], description=script)
     parser.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2+: debug', default=1, type=int)
-    parser.add_argument('datadir', help='GIPS Project directory')
+    parser.add_argument('project', help='GIPS Project directory')
 
     args = parser.parse_args()
     gippy.Options.SetVerbose(args.verbose)
     VerboseOut(script)
-    inv = project_inventory(args.datadir)
-
-    cls(inv, **vars(args))
+    try:
+        inv = project_inventory(args.project)
+        cls(inv, **vars(args))
+    except Exception, e:
+        VerboseOut('Error in %s: %s' % (cls.name, e))
+        VerboseOut(traceback.format_exc(), 4)
 
 """
     //! Rice detection algorithm

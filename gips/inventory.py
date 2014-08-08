@@ -38,6 +38,8 @@ from gips.version import __version__
 
 def project_inventory(datadir=''):
     """ Inventory a directory of project files """
+    if not os.path.exists(datadir):
+        raise Exception('Directory %s does not exist!' % datadir)
     files = glob.glob(os.path.join(datadir, '*.tif'))
     inv = {}
     for f in files:
