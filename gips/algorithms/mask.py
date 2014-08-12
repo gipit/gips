@@ -15,7 +15,7 @@ class Mask(object):
     __version__ = '0.1.0'
     suffix = '_masked'
 
-    def __init__(self, inv, file_mask='', product_mask='', overwrite=False, *args, **kwargs):
+    def __init__(self, inv, file_mask='', product_mask='', overwrite=False, **kwargs):
         if file_mask == '' and product_mask == '':
             raise Exception('No masks supplied!')
         if file_mask != '':
