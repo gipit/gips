@@ -6,33 +6,35 @@ from datetime import datetime
 import numpy as np
 
 import gippy
-from gips import core
+from gips.core import Algorithm
 from gips.utils import VerboseOut
+from gips.inventory import project_inventory
 
 
-class Mask(object):
+class Mask(Algorithm):
     name = 'Mask'
     __version__ = '0.1.0'
     suffix = '_masked'
 
-    def __init__(self, inv, file_mask='', product_mask='', overwrite=False, **kwargs):
-        if file_mask == '' and product_mask == '':
+    def __init__(self, project, fmask='', pmask='', overwrite=False, **kwargs):
+        inv = project_inventory(project)
+        if fmask == '' and pmask == '':
             raise Exception('No masks supplied!')
-        if file_mask != '':
-            mask_file = gippy.GeoImage(file_mask)
+        if fmask != '':
+            mask_file = gippy.GeoImage(fmask)
         for date in sorted(inv):
             VerboseOut('%s' % date)
-            if product_mask != '':
-                mask_product = gippy.GeoImage(inv[date][product_mask])
+            if pmask != '':
+                mask_product = gippy.GeoImage(inv[date][pmask])
             for p in inv[date]:
-                if product_mask != p:
+                if pmask != p:
                     fname = inv[date][p]
                     img = gippy.GeoImage(fname)
                     maskit = False
-                    if file_mask != '':
+                    if fmask != '':
                         img.AddMask(mask_file[0])
                         maskit = True
-                    if product_mask != '':
+                    if pmask != '':
                         img.AddMask(mask_product[0])
                         maskit = True
                     if maskit:
@@ -48,10 +50,10 @@ class Mask(object):
         mask_file = None
 
     @classmethod
-    def arg_parser(cls):
-        parser = argparse.ArgumentParser(add_help=False, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-        parser.add_argument('-f', '--file_mask', help='Mask files with this file (of matching dimensions)', default='')
-        parser.add_argument('-p', '--product_mask', help='Mask files with this product (in project directory)', default='')
+    def parser(cls):
+        parser = argparse.ArgumentParser(add_help=False, parents=[cls.project_parser()])
+        parser.add_argument('--fmask', help='Mask files with this file (of matching dimensions)', default='')
+        parser.add_argument('--pmask', help='Mask files with this product (in project directory)', default='')
         parser.add_argument('--overwrite', help='Overwrite existing files', default=False, action='store_true')
         #parser.add_argument('-i', '--invert', help='Invert mask (0->1, 1->0)', default=False, action='store_true')
         #parser.add_argument('--value', help='Mask == val', default=1)
@@ -59,8 +61,8 @@ class Mask(object):
 
 
 def main():
-    core.algorithm_main(Mask)
+    Mask.main()
 
 
-if __name__ == "__main__":
-    main()
+#if __name__ == "__main__":
+#    main()

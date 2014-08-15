@@ -39,7 +39,6 @@ from gips.inventory import DataInventory
 
 from gips.GeoVector import GeoVector
 from gips.version import __version__
-from gips.inventory import project_inventory
 
 
 class Repository(object):
@@ -601,23 +600,61 @@ class Data(object):
         # process
 
 
-def algorithm_main(cls):
-    """ Main for algorithm classes """
-    dhf = argparse.ArgumentDefaultsHelpFormatter
-    script = 'GIPS (v%s): %s (v%s)' % (gips.__version__, cls.name, cls.__version__)
-    parser = argparse.ArgumentParser(add_help=False, formatter_class=dhf, parents=[cls.arg_parser()], description=script)
-    parser.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2+: debug', default=1, type=int)
-    parser.add_argument('project', help='GIPS Project directory')
+class Algorithm(object):
+    name = 'Algorithm Name'
+    __version__ = '0.0.0'
 
-    args = parser.parse_args()
-    gippy.Options.SetVerbose(args.verbose)
-    VerboseOut(script)
-    try:
-        inv = project_inventory(args.project)
-        cls(inv, **vars(args))
-    except Exception, e:
-        VerboseOut('Error in %s: %s' % (cls.name, e))
-        VerboseOut(traceback.format_exc(), 4)
+    def __init__(self, command, **kwargs):
+        """ Default init calls member function with same name as sub command """
+        start = datetime.now()
+        VerboseOut('Running %s' % command, 2)
+        exec('self.%s(**kwargs)' % command)
+        VerboseOut('Completed %s in %s' % (command, datetime.now()-start), 2)
+
+    @classmethod
+    def info(cls):
+        """ Name and versions of algorithm and GIPS library """
+        return 'GIPS (v%s): %s (v%s)' % (gips.__version__, cls.name, cls.__version__)
+
+    @classmethod
+    def parser(cls):
+        """ Parser for algorithm specific options """
+        parser = argparse.ArgumentParser(add_help=False)
+        return parser
+
+    @classmethod
+    def project_parser(cls):
+        """ Parser for using GIPS project directory """
+        parser = argparse.ArgumentParser(add_help=False)
+        parser.add_argument('project', help='GIPS Project directory')
+        # TODO add to parser and auto filter products from inventory
+        #parser.add_argument('-p', '--products', help='Products to operate on', nargs='*')
+        return parser
+
+    @classmethod
+    def vparser(cls):
+        """ Parser for adding verbose keyword """
+        parser = argparse.ArgumentParser(add_help=False)
+        parser.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2+: debug', default=1, type=int)
+        return parser
+
+    @classmethod
+    def main(cls):
+        """ Main for algorithm classes """
+        dhf = argparse.ArgumentDefaultsHelpFormatter
+
+        # Top level parser
+        parser = argparse.ArgumentParser(formatter_class=dhf, parents=[cls.parser(), cls.vparser()], description=cls.info())
+
+        args = parser.parse_args()
+        gippy.Options.SetVerbose(args.verbose)
+        VerboseOut(cls.info())
+
+        try:
+            cls(**vars(args))
+        except Exception, e:
+            VerboseOut('Error in %s: %s' % (cls.name, e))
+            VerboseOut(traceback.format_exc(), 3)
 
 """
     //! Rice detection algorithm
