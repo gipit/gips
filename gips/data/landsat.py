@@ -354,11 +354,11 @@ class LandsatData(Data):
                     imgout.SetNoData(-32768)
                     imgout.SetGain(0.0001)
                     if toa:
-                        for col in visbands:
-                            reflimg[col].Process(imgout[col])
+                        for c in visbands:
+                            reflimg[c].Process(imgout[c])
                     else:
-                        for col in visbands:
-                            (((img[col]-atmos[col][1])/atmos[col][0]) * (1.0/atmos[col][2])).max(0).Process(imgout[col])
+                        for c in visbands:
+                            (((img[c]-atmos[c][1])/atmos[c][0]) * (1.0/atmos[c][2])).max(0.0001).Process(imgout[c])
                 elif val[0] == 'tcap':
                     tmpimg = gippy.GeoImage(reflimg)
                     tmpimg.PruneBands(['BLUE', 'GREEN', 'RED', 'NIR', 'SWIR1', 'SWIR2'])
