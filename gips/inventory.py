@@ -45,11 +45,12 @@ def project_inventory(datadir=''):
     for f in files:
         basename = os.path.splitext(os.path.basename(f))[0]
         parts = basename.split('_')
-        print(
-            'Warning: TIF file in GIPS project directory does not follow '
-            '"DATE_SENSOR_PRODUCT.tif" naming convention ({}.tif)'
-            .format(basename)
-        )
+        if len(parts) != 3:
+            print(
+                'Warning: TIF file in GIPS project directory does not follow '
+                '"DATE_SENSOR_PRODUCT.tif" naming convention ({}.tif)'
+                .format(basename)
+            )
         date = datetime.strptime(parts[0], '%Y%j').date()
         sensor = parts[1]
         product = basename[len(parts[0])+len(parts[1])+2:]
