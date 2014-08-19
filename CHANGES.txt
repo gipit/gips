@@ -16,6 +16,11 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program. If not, see <http://www.gnu.org/licenses/>
 ################################################################################
+v0.6.8
+- added Algorithm base class and updated scripts to utilize Algorithm class
+
+landsat:
+- fixed check of negative reflectances (was converted to NoData)
 
 v0.6.7
 - changed library name to GIPS
