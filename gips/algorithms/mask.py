@@ -8,7 +8,7 @@ import numpy as np
 import gippy
 from gips.core import Algorithm
 from gips.utils import VerboseOut
-from gips.inventory import project_inventory
+from gips.inventory import ProjectInventory
 
 
 class Mask(Algorithm):
@@ -16,19 +16,18 @@ class Mask(Algorithm):
     __version__ = '0.1.0'
     suffix = '_masked'
 
-    def __init__(self, project, fmask='', pmask='', overwrite=False, **kwargs):
-        inv = project_inventory(project)
+    def run(self, fmask='', pmask='', overwrite=False, **kwargs):
         if fmask == '' and pmask == '':
             raise Exception('No masks supplied!')
         if fmask != '':
             mask_file = gippy.GeoImage(fmask)
-        for date in sorted(inv):
+        for date in sorted(self.inv):
             VerboseOut('%s' % date)
             if pmask != '':
-                mask_product = gippy.GeoImage(inv[date][pmask])
-            for p in inv[date]:
+                mask_product = gippy.GeoImage(self.inv[date][pmask])
+            for p in self.inv[date]:
                 if pmask != p:
-                    fname = inv[date][p]
+                    fname = self.inv[date][p]
                     img = gippy.GeoImage(fname)
                     maskit = False
                     if fmask != '':

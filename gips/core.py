@@ -35,7 +35,7 @@ import inspect
 import gippy
 import gips
 from gips.utils import VerboseOut, RemoveFiles, File2List, List2File
-from gips.inventory import DataInventory
+from gips.inventory import DataInventory, ProjectInventory
 
 from gips.GeoVector import GeoVector
 from gips.version import __version__
@@ -604,9 +604,15 @@ class Algorithm(object):
     name = 'Algorithm Name'
     __version__ = '0.0.0'
 
-    def __init__(self, command, **kwargs):
-        """ Default init calls member function with same name as sub command """
+    def __init__(self, **kwargs):
+        """ Calls "run" function, or "command" if algorithm uses subparser """
         start = datetime.now()
+        if 'projdir' in kwargs:
+            self.inv = ProjectInventory(kwargs['projdir'], kwargs.get('products'))
+        if 'command' not in kwargs:
+            command = 'run'
+        else:
+            command = kwargs['command']
         VerboseOut('Running %s' % command, 2)
         exec('self.%s(**kwargs)' % command)
         VerboseOut('Completed %s in %s' % (command, datetime.now()-start), 2)
@@ -626,9 +632,8 @@ class Algorithm(object):
     def project_parser(cls):
         """ Parser for using GIPS project directory """
         parser = argparse.ArgumentParser(add_help=False)
-        parser.add_argument('project', help='GIPS Project directory')
-        # TODO add to parser and auto filter products from inventory
-        #parser.add_argument('-p', '--products', help='Products to operate on', nargs='*')
+        parser.add_argument('projdir', help='GIPS Project directory')
+        parser.add_argument('-p', '--products', help='Products to operate on', nargs='*')
         return parser
 
     @classmethod
