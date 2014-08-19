@@ -36,23 +36,50 @@ import tempfile
 from gips.version import __version__
 
 
-def project_inventory(datadir=''):
-    """ Inventory a directory of project files """
-    if not os.path.exists(datadir):
-        raise Exception('Directory %s does not exist!' % datadir)
-    files = glob.glob(os.path.join(datadir, '*.tif'))
-    inv = {}
-    for f in files:
-        basename = os.path.splitext(os.path.basename(f))[0]
-        parts = basename.split('_')
-        date = datetime.strptime(parts[0], '%Y%j').date()
-        sensor = parts[1]
-        product = basename[len(parts[0])+len(parts[1])+2:]
-        if date in inv.keys():
-            inv[date][product] = f
-        else:
-            inv[date] = {product: f}
-    return inv
+class Inventory(object):
+    """ Base class for project and data inventory classes """
+
+    def __init__(self):
+        pass
+
+    @property
+    def dates(self):
+        """ Get sorted list of dates """
+        return sorted(self.data.keys())
+
+    def get_timeseries(self, product='', dates=None):
+        """ Read all files as time series """
+        if dates is None:
+            dates = self.dates
+        filenames = [self.data[date][product] for date in dates]
+        img = gippy.GeoImage(filenames)
+        return img
+
+    def __getitem__(self, date):
+        """ Indexing operator for class """
+        return self.data[date]
+
+
+class ProjectInventory(Inventory):
+    """ Inventory of project directory """
+
+    def __init__(self, datadir='', products=[]):
+        self.projdir = datadir
+        self.requested_products = products
+        if not os.path.exists(datadir):
+            raise Exception('Directory %s does not exist!' % datadir)
+        files = glob.glob(os.path.join(datadir, '*.tif'))
+        self.data = {}
+        for f in files:
+            basename = os.path.splitext(os.path.basename(f))[0]
+            parts = basename.split('_')
+            date = datetime.strptime(parts[0], '%Y%j').date()
+            sensor = parts[1]
+            product = basename[len(parts[0])+len(parts[1])+2:]
+            if date in self.data.keys():
+                self.data[date][product] = f
+            else:
+                self.data[date] = {product: f}
 
 
 class Tiles(object):
