@@ -608,8 +608,8 @@ class Algorithm(object):
         if 'projdir' in kwargs:
             self.inv = ProjectInventory(kwargs['projdir'], kwargs.get('products'))
 
-    def run(self, **kwargs):
-        """ Calls "run" function, or "command" if algorithm uses subparser """
+    def _run(self, **kwargs):
+        """ Calls "run_all" function, or "command" if algorithm uses subparser """
         start = datetime.now()
         if 'command' not in kwargs:
             command = 'run_all'
@@ -620,7 +620,7 @@ class Algorithm(object):
         VerboseOut('Completed %s in %s' % (command, datetime.now()-start), 2)
         pass
 
-    def run_all(self, **kwargs):
+    def run(self, **kwargs):
         pass
 
     @classmethod
