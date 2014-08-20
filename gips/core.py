@@ -605,19 +605,22 @@ class Algorithm(object):
     __version__ = '0.0.0'
 
     def __init__(self, **kwargs):
-        """ Calls "run" function, or "command" if algorithm uses subparser """
-        start = datetime.now()
         if 'projdir' in kwargs:
             self.inv = ProjectInventory(kwargs['projdir'], kwargs.get('products'))
+
+    def run(self, **kwargs):
+        """ Calls "run" function, or "command" if algorithm uses subparser """
+        start = datetime.now()
         if 'command' not in kwargs:
-            command = 'run'
+            command = 'run_all'
         else:
             command = kwargs['command']
             VerboseOut('Running %s' % command, 2)
         exec('self.%s(**kwargs)' % command)
         VerboseOut('Completed %s in %s' % (command, datetime.now()-start), 2)
+        pass
 
-    def run(self, **kwargs):
+    def run_all(self, **kwargs):
         pass
 
     @classmethod
@@ -637,6 +640,7 @@ class Algorithm(object):
         parser = argparse.ArgumentParser(add_help=False)
         parser.add_argument('projdir', help='GIPS Project directory')
         parser.add_argument('-p', '--products', help='Products to operate on', nargs='*')
+        #parser.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2+: debug', default=1, type=int)
         return parser
 
     @classmethod
@@ -659,7 +663,8 @@ class Algorithm(object):
         VerboseOut(cls.info())
 
         try:
-            cls(**vars(args))
+            alg = cls(**vars(args))
+            alg.run(**vars(args))
         except Exception, e:
             VerboseOut('Error in %s: %s' % (cls.name, e))
             VerboseOut(traceback.format_exc(), 3)
