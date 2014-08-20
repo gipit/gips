@@ -10,8 +10,8 @@ from gips.core import Algorithm
 from gips.utils import VerboseOut
 
 
-class Tcup(Algorithm):
-    name = 'Truth Classification Utility Program'
+class Truth(Algorithm):
+    name = 'Truth Utilities'
     __version__ = '1.0.0'
 
     def merge(self, files, output, **kwargs):
@@ -82,4 +82,4 @@ class Tcup(Algorithm):
 
 
 def main():
-    Tcup.main()
+    Truth.main()
