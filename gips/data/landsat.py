@@ -221,14 +221,7 @@ class LandsatData(Data):
         # TODO - dynamically adjust AeroProfile?
         s.aero_profile = AeroProfile.PredefinedType(AeroProfile.Continental)
 
-        try:
-            atmos = AODData.inventory(tile='', dates=self.date.strftime('%Y-%j'), fetch=True, products=['aod'])
-            atmos = atmos[atmos.dates[0]].tiles['']
-            self.aod = atmos.get_point(geo['lat'], geo['lon'])
-        except Exception, e:
-            VerboseOut(traceback.format_exc(), 3)
-            VerboseOut('Problem retrieving AOD. Using default', 3)
-            self.aod = ('default', 0.17)
+        self.aod = AODData.get_aod(geo['lat'], geo['lon'], self.date)
         s.aot550 = self.aod[1]
 
         # Other settings

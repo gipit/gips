@@ -206,7 +206,8 @@ class AODData(Data):
             VerboseOut('%s: mean + variance for %s files processed in %s' % (os.path.basename(fout), len(filenames), t))
         return imgout
 
-    def _read_point(self, filename, roi, nodata):
+    @classmethod
+    def _read_point(cls, filename, roi, nodata):
         """ Read single point from mean/var file and return if valid, or mean/var of 3x3 neighborhood """
         if not os.path.exists(filename):
             return (numpy.nan, numpy.nan)
@@ -227,28 +228,34 @@ class AODData(Data):
         except:
             return (numpy.nan, numpy.nan)
 
-    def get_point(self, lat, lon, product='aod'):
+    @classmethod
+    def get_aod(cls, lat, lon, date, fetch=True):
         pixx = int(numpy.round(float(lon) + 179.5))
         pixy = int(numpy.round(89.5 - float(lat)))
         roi = gippy.iRect(pixx-1, pixy-1, 3, 3)
-        #img = self.open(product=product)
-        img = gippy.GeoImage(self.products[product], False)
-        nodata = img[0].NoDataValue()
-        vals = img[0].Read(roi).squeeze()
-        img = None
-        # TODO - do this automagically in swig wrapper
-        vals[numpy.where(vals == nodata)] = numpy.nan
 
-        aod = vals[1, 1]
+        # try reading actual data file first
+        try:
+            dat = cls.inventory(tile='', dates=date.strftime('%Y-%j'), fetch=fetch, products=['aod'])
+            img = gippy.GeoImage(self.products['aod'])
+            vals = img[0].Read(roi).squeeze()
+            img = None
+            # TODO - do this automagically in swig wrapper
+            vals[numpy.where(vals == img[0].NoDataValue())] = numpy.nan
+            aod = vals[1, 1]
+            source = 'MODIS (MOD08_D3)'
+            if numpy.isnan(aod):
+                aod = numpy.mean(vals[~numpy.isnan(vals)])
+                source = 'MODIS (MOD08_D3) spatial average'
+        except Exception, e:
+            aod = numpy.nan
+
         var = 0
         totalvar = 0
-        source = 'MODIS (MOD08_D3)'
-        if numpy.isnan(aod):
-            aod = numpy.mean(vals[~numpy.isnan(vals)])
-            source = 'MODIS (MOD08_D3) spatial average'
 
-        day = self.date.strftime('%j')
+        day = date.strftime('%j')
         # Calculate best estimate from multiple sources
+        repo = cls.Asset.Repository
         if numpy.isnan(aod):
             aod = 0.0
             norm = 0.0
@@ -257,8 +264,8 @@ class AODData(Data):
 
             source = 'Weighted estimate using MODIS LTA values'
             # LTA-Daily
-            filename = os.path.join(self.Repository.cpath('ltad'), 'ltad%s.tif' % str(day).zfill(3))
-            val, var = self._read_point(filename, roi, nodata)
+            filename = os.path.join(repo.cpath('ltad'), 'ltad%s.tif' % str(day).zfill(3))
+            val, var = cls._read_point(filename, roi, nodata)
             var = var if var != 0.0 else val
             if not numpy.isnan(val):
                 aod = val/var
@@ -268,7 +275,7 @@ class AODData(Data):
             VerboseOut('AOD: LTA-Daily = %s, %s' % (val, var), 3)
 
             # LTA
-            val, var = self._read_point(os.path.join(self.Repository.cpath(), 'lta.tif'), roi, nodata)
+            val, var = cls._read_point(os.path.join(repo.cpath(), 'lta.tif'), roi, nodata)
             var = var if var != 0.0 else val
             if not numpy.isnan(val):
                 aod = aod + val/var
