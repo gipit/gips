@@ -18,9 +18,11 @@
 ################################################################################
 v0.6.8
 - added Algorithm base class and updated scripts to utilize Algorithm class
+- additional algorithm scripts added (gips_tclass, gips_truth, gips_mask)
 
 landsat:
 - fixed check of negative reflectances (was converted to NoData)
+- fixed bug where AOD was not calculating long term average if data not available
 
 v0.6.7
 - changed library name to GIPS
