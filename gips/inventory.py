@@ -64,22 +64,26 @@ class ProjectInventory(Inventory):
     """ Inventory of project directory """
 
     def __init__(self, datadir='', products=[]):
-        self.projdir = datadir
+        self.projdir = datadir.rstrip('/')
         self.requested_products = products
         if not os.path.exists(datadir):
             raise Exception('Directory %s does not exist!' % datadir)
         files = glob.glob(os.path.join(datadir, '*.tif'))
         self.data = {}
+        products = set()
         for f in files:
             basename = os.path.splitext(os.path.basename(f))[0]
             parts = basename.split('_')
             date = datetime.strptime(parts[0], '%Y%j').date()
             sensor = parts[1]
             product = basename[len(parts[0])+len(parts[1])+2:]
+            products.add(product)
             if date in self.data.keys():
                 self.data[date][product] = f
             else:
                 self.data[date] = {product: f}
+        if not self.requested_products:
+            self.requested_products = products
 
 
 class Tiles(object):
