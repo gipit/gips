@@ -617,6 +617,9 @@ class Algorithm(object):
         exec('self.%s(**kwargs)' % command)
         VerboseOut('Completed %s in %s' % (command, datetime.now()-start), 2)
 
+    def run(self, **kwargs):
+        pass
+
     @classmethod
     def info(cls):
         """ Name and versions of algorithm and GIPS library """
