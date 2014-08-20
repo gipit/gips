@@ -28,70 +28,35 @@ warnings.filterwarnings('ignore', category=DeprecationWarning, module='pandas', 
 #warnings.filterwarnings('ignore', category=UserWarning, module='sklearn', lineno=41)
 
 
-def cmatrix(truth, pred, output=None, nodata=None):
-    """ Caculated confusion matrix and common metrics
-        producer accuracy - % of class correctly identified (inverse is false negative rate)
-        consumer accuracy - % liklihood pixel of that class is correct (reliability) inverse is false positive rate
-    """
-    if nodata is not None:
-        valid = numpy.where(truth != nodata)
-        truth = truth[valid]
-        pred = pred[valid]
-        valid = numpy.where(pred != nodata)
-        truth = truth[valid]
-        pred = pred[valid]
-    cm = confusion_matrix(truth, pred).astype('float')
-    cm_diag = numpy.diag(cm).astype('float')
-    rowsums = cm.sum(axis=0)
-    colsums = cm.sum(axis=1)
-    total = rowsums.sum().astype('float')
-    accuracy = cm_diag.sum() / total
-    prod_accuracy = cm_diag / colsums
-    user_accuracy = cm_diag / rowsums
-
-    #err = (rowsums/total * colsums/total).sum()
-    #kappa = (accuracy - err)/(1. - err)
-    classes = numpy.unique(numpy.concatenate((truth, pred)))
-    df = pandas.DataFrame(cm, index=classes, columns=classes)
-    return {'cm': df, 'accuracy': accuracy,  # 'kappa': kappa,
-            'prod_accuracy': prod_accuracy, 'user_accuracy': user_accuracy}
-
-
-def calculate_stats(cmi):  # ytrue, ypred):
-    #cmi = confusion_matrix(ytrue, ypred)
-    cmi = cmi.values
-    npts = cmi.sum(axis=1)
-    cm = cmi.copy().astype('float32')/cmi.sum()
-    overall = numpy.sum(numpy.diag(cm))
-    producers = numpy.diag(cm) / numpy.sum(cm, axis=1)
-    consumers = numpy.diag(cm) / numpy.sum(cm, axis=0)
-    ave_producers = producers.mean()
-    ave_consumers = producers.mean()
-    err = numpy.sum(cm.sum(axis=0) * cm.sum(axis=1))
-    kappa = (overall - err)/(1. - err)
-    nrm = cmi.astype('float32')/numpy.diag(cmi)
-    maxmiss = numpy.triu(nrm, 1).max()
-    return {'kappa': kappa, 'overall': overall, 'maxmiss': maxmiss,
-            'producers': producers, 'consumers': consumers, 'npts': npts}  # , 'cm': npts }
-
-
-class TIC(Algorithm):
+class Tclass(Algorithm):
     name = 'Temporal Image Classifier'
     __version__ = '1.0.0'
 
-    def train(self, truth, **kwargs):
+    def __init__(self, truth, train, **kwargs):
+        super(Tclass, self).__init__(**kwargs)
+        if os.path.exists(truth):
+            self.timg = gippy.GeoImage(truth)
+        self.traindir = train.rstrip('/')
+
+    def run(self, **kwargs):
+        """ Train using truth, then classify """
+        self.train(**kwargs)
+        self.classify(**kwargs)
+
+    def train(self, train, **kwargs):
         """ Extract training data from data given truth map """
-        days = [int(d.strftime('%j')) for d in self.inv.dates]
+        tinv = ProjectInventory(train, self.inv.requested_products)
+        days = [int(d.strftime('%j')) for d in tinv.dates]
 
-        gimg_truth = gippy.GeoImage(truth)
-        dout = '%s.%s.tclass-train' % (os.path.basename(self.inv.projdir), gimg_truth.Basename())
-        if not os.path.exists(dout):
-            os.makedirs(dout)
+        prefix = os.path.join(tinv.projdir, self.timg.Basename() + '.')
 
-        for p in self.inv.requested_products:
+        for p in tinv.requested_products:
+            fout = prefix + p + '.pkl'
+            if os.path.exists(fout):
+                continue
             # Extract data from training images and truth image
-            img = self.inv.get_timeseries(p)
-            data = img.Extract(gimg_truth[0])
+            img = tinv.get_timeseries(p)
+            data = img.Extract(self.timg[0])
             truth = data[0, :]
             data = data[1:, :]
             data[data == img[0].NoDataValue()] = numpy.nan
@@ -108,56 +73,48 @@ class TIC(Algorithm):
             df.fillna(method='ffill', inplace=True)
 
             # Write output files
-            fout = os.path.join(dout, '%s.pkl' % p)
             VerboseOut('Writing out %s' % fout, 2)
             df.T.to_pickle(fout)
-        fout = os.path.join(dout, 'truth.pkl')
-        VerboseOut('Writing out %s' % fout, 2)
-        pandas.DataFrame(truth).to_pickle(fout)
+        fout = prefix + 'truth.pkl'
+        if not os.path.exists(fout):
+            VerboseOut('Writing out %s' % fout, 2)
+            pandas.DataFrame(truth).to_pickle(fout)
 
-    def _readtrain(self, truth):
+    def _readtrain(self):
         """ Read training data """
         # Read training data
-        datafiles = [os.path.join(truth, p+'.pkl') for p in self.inv.requested_products]
+        prefix = os.path.join(self.traindir, self.timg.Basename())
+        datafiles = ['%s.%s.pkl' % (prefix, p) for p in self.inv.requested_products]
         self.dfs = {}
         for f in datafiles:
-            basename = os.path.splitext(os.path.basename(f))[0]
+            basename = os.path.splitext(os.path.basename(f))[0][len(self.timg.Basename())+1:]
             self.dfs[basename] = pandas.read_pickle(f)
             days = self.dfs[basename].columns
-        self.truth = numpy.squeeze(pandas.read_pickle(os.path.join(truth, 'truth.pkl')))
+        self.truth = numpy.squeeze(pandas.read_pickle(prefix + '.truth.pkl'))
         #self.classes = numpy.unique(truth.values).astype(int)
 
-    def classify(self, truth='', series=False, colortable='', **kwargs):
+    def classify(self, series=False, **kwargs):
         """ Classify data given training data """
-
-        if not os.path.exists(truth):
-            raise Exception("Training directory does not exist!")
 
         # Create output directory and link to training data
         self.dout = '%s.tclass' % self.inv.projdir
         if not os.path.exists(self.dout):
             os.makedirs(self.dout)
-        training_link = os.path.abspath(os.path.join(self.dout, 'training'))
+        truth_link = os.path.abspath(os.path.join(self.dout, 'truth'))
+        training_link = os.path.abspath(os.path.join(self.dout, 'train'))
+        if os.path.exists(truth_link):
+            os.remove(truth_link)
         if os.path.exists(training_link):
             os.remove(training_link)
-        os.symlink(os.path.abspath(truth), training_link)
-
-        self.colortable = gippy.GeoImage(colortable)
+        os.symlink(os.path.abspath(self.timg.Filename()), truth_link)
+        os.symlink(os.path.abspath(self.traindir), training_link)
 
         if series:
             date_series = [self.inv.dates[0].strftime('%Y-%j') + ',' + d.strftime('%Y-%j') for d in self.inv.dates]
         else:
             date_series = [self.inv.dates]
 
-        """
-        if not os.path.exists(args.output):
-            os.makedirs(args.output)
-        updatedir = os.path.join(args.output, 'updates')
-        if not os.path.exists(updatedir):
-            os.makedirs(updatedir)
-        """
-
-        self._readtrain(truth)
+        self._readtrain()
         self.series = series
 
         if series:
@@ -181,7 +138,7 @@ class TIC(Algorithm):
             if i == 0:
                 tdata = self.dfs[p][days]
             else:
-                tdata = tdata.join(dfs[p][days], rsuffix=p)
+                tdata = tdata.join(self.dfs[p][days], rsuffix=p)
             i = i+1
 
         VerboseOut('Extracting data from images', 2)
@@ -205,12 +162,11 @@ class TIC(Algorithm):
         classmap = self._classify(classifier, data, gimg[0].NoDataValue())
 
         # Output most recently added
-        fout = os.path.join(self.dout, 'tclass.day%s' % str(days[-1]).zfill(3))
+        fout = os.path.join(self.dout, '%s' % str(days[-1]).zfill(3))
         VerboseOut('Writing classmap to %s' % fout)
         imgout = gippy.GeoImage(fout, gimg, gippy.GDT_Byte, 1)
         imgout.SetNoData(0)
-        if self.colortable != '':
-            imgout.CopyColorTable(self.colortable)
+        imgout.CopyColorTable(self.timg)
         try:
             imgout[0].Write(classmap)
         except Exception, e:
@@ -224,7 +180,7 @@ class TIC(Algorithm):
             else:
                 locs = numpy.where(classmap != 0)
                 self.classmap_todate[locs] = classmap[locs]
-                fout = os.path.join(self.dout, 'tclass.day%s_master' % str(days[-1]).zfill(3))
+                fout = os.path.join(self.dout, '%s_master' % str(days[-1]).zfill(3))
                 VerboseOut('Writing classmap to %s' % fout)
                 imgout = gippy.GeoImage(fout, gimg, gippy.GDT_Byte, 1)
                 imgout.SetNoData(0)
@@ -246,51 +202,32 @@ class TIC(Algorithm):
         classmap = classmap.reshape(dims[1], dims[2])
         return classmap
 
-    def analyze(self):
-        # compare directory of classmaps with truth map
-        if args.truth is None:
-            header = 'Day, Rice (ha)'
-        else:
-            cdl = gippy.GeoImage(args.truth)
-            truth = gippy.GeoRaster_byte(cdl[0]).Read()
-            header = 'Day, Overall Accuracy, Rice Kappa, Rice Accuracy, Rice Reliability, Rice (ha)'
+    @classmethod
+    def parser(cls):
+        parser = argparse.ArgumentParser(add_help=False, parents=[cls.project_parser()])
+        parser.add_argument('-t', '--truth', help='Truth image used with training data', required=True)
+        parser.add_argument('--train', help='Directory of training data', required=True)
+        parser.add_argument('--series', help='Run days as series', default=False, action='store_true')
 
-        basename = os.path.basename(args.input)
-        f = open(os.path.join(args.input,basename + '_analysis.csv'), 'w')
-        f.write(header+'\n')
-        classmaps = glob.glob(os.path.join(args.input, 'classmap*tif'))
-        for classmap in classmaps:
-            gimg = gippy.GeoImage(classmap)
-            day = gimg.Basename()[12:15]
-            pred = gippy.GeoRaster_byte(gimg[0]).Read()          
-            # get total rice, in hectares
-            ricetotal = len(numpy.where(pred == 3)[0]) * 0.09
+        """
+        parser = subparser.add_parser('show', help='Display animation of classmaps vs time',
+            parents=[gparser], formatter_class=dhf)
+        parser.add_argument('-i', '--input', help='Input data directory of classmaps', required=True)
 
-            if args.truth is None:
-                line = '%s, %4.2f' % (day, ricetotal)
-            else:
-                result = cmatrix(truth, pred, nodata=0)
-                loc = numpy.where(result['cm'].columns == 3)
+        parser = subparser.add_parser('test', help='Use training data to test and output metrics',
+            formatter_class=dhf)
+        parser.add_argument('-i', '--input', help='Input training data directory', default='train')
+        #parser.add_argument('-o','--output', help='Output directory', default='test')
+        parser.add_argument('--start', help='Starting day of year', default=None, type=int)
+        parser.add_argument('--step', help='Number of days per step', default=8, type=int)
+        """
+        return parser
 
-                cm = result['cm'].values
-                ricecm = numpy.zeros((2,2))
-                ricecm[1,1] = cm[loc,loc]
-                ricecm[0,1] = (cm[loc,:].sum() - ricecm[1,1])
-                ricecm[1,0] = (cm[:,loc].sum() - ricecm[1,1])
-                ricecm[0,0] = cm.sum().sum() - ricecm.sum()
-                rowsums = cm.sum(axis=0)
-                colsums = cm.sum(axis=1)
-                total = rowsums.sum().astype('float')
-                err = (rowsums/total * colsums/total).sum()
-                kappa = (numpy.diag(ricecm).sum()/total - err)/(1. - err)
-                
-                line = '%s, %4.2f, %4.2f, %4.2f, %4.2f, %8.2f' % \
-                    (day, result['accuracy'], kappa, result['prod_accuracy'][loc], result['user_accuracy'][loc], ricetotal)
-                f.write(line+'\n')
-            print line
 
-        f.close()
+def main():
+    Tclass.main()
 
+    """
     def test(self):
         from sklearn.cross_validation import train_test_split
         start = datetime.now()
@@ -347,7 +284,7 @@ class TIC(Algorithm):
         print 'Done: %s' % (datetime.now() - start)
         filename = os.path.join(outputdir,'accuracy.csv')
         pandas.DataFrame(accuracy, index=classes, columns=cur_testdays).to_csv(filename)
-
+    """
     """
     def show(self):
         filenames = glob.glob(os.path.join(args.input,'classmap*tif'))
@@ -362,41 +299,3 @@ class TIC(Algorithm):
             toimage(img).show()
             set_trace()
     """
-
-    @classmethod
-    def parser(cls):
-        parser0 = argparse.ArgumentParser(add_help=False)
-        subparser = parser0.add_subparsers(dest='command')
-
-        parser = subparser.add_parser('train', parents=[cls.project_parser(), cls.vparser()],
-            help='Generate temporal vectors from data')
-        parser.add_argument('-t', '--truth', help='Truth image (should be pruned)', required=True)
-
-        parser = subparser.add_parser('classify', parents=[cls.project_parser(), cls.vparser()])
-        parser.add_argument('-t', '--truth', help='tclass directory containing truth data')
-        #parser.add_argument('-o', '--output', help='Output directory', default='classify')
-        parser.add_argument('--colortable', help='Copy color table from this file', default='')
-        parser.add_argument('--series', help='Run days as series', default=False, action='store_true')
-
-        """
-        # Results
-        parser = subparser.add_parser('analyze', help='Compare directory of outputs vs truth', formatter_class=dhf)
-        parser.add_argument('-i', '--input', help='Input data directory of classmaps', required=True)
-
-        #parser = subparser.add_parser('show', help='Display animation of classmaps vs time',
-        #    parents=[gparser], formatter_class=dhf)
-        #parser.add_argument('-i', '--input', help='Input data directory of classmaps', required=True)
-
-        # Test
-        parser = subparser.add_parser('test', help='Use training data to test and output metrics',
-            formatter_class=dhf)
-        parser.add_argument('-i', '--input', help='Input training data directory', default='train')
-        #parser.add_argument('-o','--output', help='Output directory', default='test')
-        parser.add_argument('--start', help='Starting day of year', default=None, type=int)
-        parser.add_argument('--step', help='Number of days per step', default=8, type=int)
-        """
-        return parser0
-
-
-def main():
-    TIC.main()
