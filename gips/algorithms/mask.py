@@ -13,7 +13,7 @@ from gips.inventory import ProjectInventory
 
 class Mask(Algorithm):
     name = 'Mask'
-    __version__ = '0.1.0'
+    __version__ = '0.1.1'
     suffix = '_masked'
 
     def run(self, fmask='', pmask='', overwrite=False, **kwargs):
@@ -21,7 +21,7 @@ class Mask(Algorithm):
             raise Exception('No masks supplied!')
         if fmask != '':
             mask_file = gippy.GeoImage(fmask)
-        for date in sorted(self.inv):
+        for date in self.inv.dates:
             VerboseOut('%s' % date)
             if pmask != '':
                 mask_product = gippy.GeoImage(self.inv[date][pmask])
