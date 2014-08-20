@@ -5,7 +5,6 @@ import argparse
 from datetime import datetime
 import numpy
 import pandas
-import random
 from sklearn import svm
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import confusion_matrix
@@ -78,40 +77,14 @@ def calculate_stats(cmi):  # ytrue, ypred):
 
 class TIC(Algorithm):
     name = 'Temporal Image Classifier'
-    __version__ = '0.1.0'
-
-    """
-
-        """
-
-    @classmethod
-    def prune_truth(cls, truthfile='', samples=10, **kwargs):
-        """ Prune down a truth image to a max number of samples """
-        suffix = '_pruned%sk' % str(samples)
-        samples = samples * 1000
-        gimg_truth = gippy.GeoImage(truthfile)
-        timg = gimg_truth[0].Read()
-        for i in range(1, numpy.max(timg)+1):
-            locs = numpy.where(timg == i)
-            num = len(locs[0])
-            if num > samples:
-                sample = random.sample(range(0, num-1), num-samples)
-                locs = (locs[0][sample], locs[1][sample])
-                timg[locs] = 0
-            elif num < 10:
-                timg[locs] = 0
-            if num != 0:
-                locs = numpy.where(timg == i)
-                VerboseOut('Class %s: %s -> %s samples' % (i, num, len(locs[0])), 2)
-        gimg_pruned = gippy.GeoImage(os.path.splitext(truthfile)[0] + suffix, gimg_truth)
-        gimg_pruned[0].Write(timg)
+    __version__ = '1.0.0'
 
     def train(self, truth, **kwargs):
         """ Extract training data from data given truth map """
         days = [int(d.strftime('%j')) for d in self.inv.dates]
 
         gimg_truth = gippy.GeoImage(truth)
-        dout = '%s.%s.tclass' % (os.path.basename(self.inv.projdir), gimg_truth.Basename())
+        dout = '%s.%s.tclass-train' % (os.path.basename(self.inv.projdir), gimg_truth.Basename())
         if not os.path.exists(dout):
             os.makedirs(dout)
 
@@ -154,10 +127,22 @@ class TIC(Algorithm):
         self.truth = numpy.squeeze(pandas.read_pickle(os.path.join(truth, 'truth.pkl')))
         #self.classes = numpy.unique(truth.values).astype(int)
 
-    def classify(self, truth='', series=False, **kwargs):
+    def classify(self, truth='', series=False, colortable='', **kwargs):
         """ Classify data given training data """
 
-        self.dout = truth
+        if not os.path.exists(truth):
+            raise Exception("Training directory does not exist!")
+
+        # Create output directory and link to training data
+        self.dout = '%s.tclass' % self.inv.projdir
+        if not os.path.exists(self.dout):
+            os.makedirs(self.dout)
+        training_link = os.path.abspath(os.path.join(self.dout, 'training'))
+        if os.path.exists(training_link):
+            os.remove(training_link)
+        os.symlink(os.path.abspath(truth), training_link)
+
+        self.colortable = gippy.GeoImage(colortable)
 
         if series:
             date_series = [self.inv.dates[0].strftime('%Y-%j') + ',' + d.strftime('%Y-%j') for d in self.inv.dates]
@@ -205,7 +190,7 @@ class TIC(Algorithm):
         for p in self.inv.requested_products:
             gimg = self.inv.get_timeseries(p, dates=dates)
             # TODO - move numpy.squeeze into swig interface file?
-            arr = numpy.squeeze(gimg.TimeSeries(days))
+            arr = numpy.squeeze(gimg.TimeSeries(days.astype('float64')))
 
             if len(days) == 1:
                 dims = arr.shape
@@ -224,8 +209,8 @@ class TIC(Algorithm):
         VerboseOut('Writing classmap to %s' % fout)
         imgout = gippy.GeoImage(fout, gimg, gippy.GDT_Byte, 1)
         imgout.SetNoData(0)
-        set_trace()
-        #imgout.CopyColorTable(cdl)
+        if self.colortable != '':
+            imgout.CopyColorTable(self.colortable)
         try:
             imgout[0].Write(classmap)
         except Exception, e:
@@ -235,19 +220,18 @@ class TIC(Algorithm):
 
         if self.series:
             if len(days) == 1:
-                classmap_todate = classmap
+                self.classmap_todate = classmap
             else:
                 locs = numpy.where(classmap != 0)
-                classmap_todate[locs] = classmap[locs]
-                fout = os.path.join(args.output, 'tclass.day%s_master' % str(days[-1]).zfill(3))
+                self.classmap_todate[locs] = classmap[locs]
+                fout = os.path.join(self.dout, 'tclass.day%s_master' % str(days[-1]).zfill(3))
                 VerboseOut('Writing classmap to %s' % fout)
                 imgout = gippy.GeoImage(fout, gimg, gippy.GDT_Byte, 1)
                 imgout.SetNoData(0)
-                #imgout.CopyColorTable(cdl)
-                imgout[0].Write(classmap_todate)
-
+                if self.colortable != '':
+                    imgout.CopyColorTable(self.colortable)
+                imgout[0].Write(self.classmap_todate)
         imgout = None
-
         VerboseOut('Trained and classified in %s' % (datetime.now() - start), 2)
 
     def _classify(self, model, data, nodata=-32768):
@@ -257,8 +241,8 @@ class TIC(Algorithm):
         dims = data.shape
         data = data.reshape(dims[0], dims[1]*dims[2]).T
         valid = numpy.all(data != nodata, axis=1)
-        classmap = numpy.zeros((dims[1]*dims[2]), numpy.byte)
-        classmap[valid] = model.predict(data[valid, :]).astype(numpy.byte)
+        classmap = numpy.zeros((dims[1]*dims[2]), numpy.uint8)
+        classmap[valid] = model.predict(data[valid, :]).astype(numpy.uint8)
         classmap = classmap.reshape(dims[1], dims[2])
         return classmap
 
@@ -384,10 +368,6 @@ class TIC(Algorithm):
         parser0 = argparse.ArgumentParser(add_help=False)
         subparser = parser0.add_subparsers(dest='command')
 
-        parser = subparser.add_parser('prune_truth', parents=[cls.vparser()], help='Prune Truth')
-        parser.add_argument('-s', '--samples', help='Number of samples (in 1K units) to extract', default=10, type=int)
-        parser.add_argument('-t', '--truthfile', help='Truth map to prune')
-
         parser = subparser.add_parser('train', parents=[cls.project_parser(), cls.vparser()],
             help='Generate temporal vectors from data')
         parser.add_argument('-t', '--truth', help='Truth image (should be pruned)', required=True)
@@ -395,6 +375,7 @@ class TIC(Algorithm):
         parser = subparser.add_parser('classify', parents=[cls.project_parser(), cls.vparser()])
         parser.add_argument('-t', '--truth', help='tclass directory containing truth data')
         #parser.add_argument('-o', '--output', help='Output directory', default='classify')
+        parser.add_argument('--colortable', help='Copy color table from this file', default='')
         parser.add_argument('--series', help='Run days as series', default=False, action='store_true')
 
         """
