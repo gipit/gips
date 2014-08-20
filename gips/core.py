@@ -613,7 +613,7 @@ class Algorithm(object):
             command = 'run'
         else:
             command = kwargs['command']
-        VerboseOut('Running %s' % command, 2)
+            VerboseOut('Running %s' % command, 2)
         exec('self.%s(**kwargs)' % command)
         VerboseOut('Completed %s in %s' % (command, datetime.now()-start), 2)
 
