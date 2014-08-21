@@ -38,7 +38,7 @@ for repo, cfg in settings.REPOS.items():
 for f in glob.glob('gips/algorithms/*.py'):
     try:
         name = os.path.splitext(os.path.basename(f))[0]
-        if name != '__init__':
+        if name not in ['__init__', 'core.py']:
             script = 'gips_%s = gips.algorithms.%s:main' % (name, name.lower())
             console_scripts.append(script)
     except:

@@ -38,7 +38,6 @@ from gips.utils import VerboseOut, RemoveFiles, File2List, List2File
 from gips.inventory import DataInventory, ProjectInventory
 
 from gips.GeoVector import GeoVector
-from gips.version import __version__
 
 
 class Repository(object):
@@ -441,7 +440,7 @@ class Data(object):
     @classmethod
     def meta_dict(cls):
         return {
-            'GIPS Version': __version__,
+            'GIPS Version': gips.__version__,
             'GIPPY Version': gippy.__version__,
         }
 
@@ -598,136 +597,3 @@ class Data(object):
         # archive
         # inventory
         # process
-
-
-class Algorithm(object):
-    name = 'Algorithm Name'
-    __version__ = '0.0.0'
-
-    def __init__(self, **kwargs):
-        if 'projdir' in kwargs:
-            self.inv = ProjectInventory(kwargs['projdir'], kwargs.get('products'))
-
-    def _run(self, **kwargs):
-        """ Calls "run_all" function, or "command" if algorithm uses subparser """
-        start = datetime.now()
-        if 'command' not in kwargs:
-            command = 'run_all'
-        else:
-            command = kwargs['command']
-            VerboseOut('Running %s' % command, 2)
-        exec('self.%s(**kwargs)' % command)
-        VerboseOut('Completed %s in %s' % (command, datetime.now()-start), 2)
-        pass
-
-    def run(self, **kwargs):
-        pass
-
-    @classmethod
-    def info(cls):
-        """ Name and versions of algorithm and GIPS library """
-        return 'GIPS (v%s): %s (v%s)' % (gips.__version__, cls.name, cls.__version__)
-
-    @classmethod
-    def parser(cls):
-        """ Parser for algorithm specific options """
-        parser = argparse.ArgumentParser(add_help=False)
-        return parser
-
-    @classmethod
-    def project_parser(cls):
-        """ Parser for using GIPS project directory """
-        parser = argparse.ArgumentParser(add_help=False)
-        parser.add_argument('projdir', help='GIPS Project directory')
-        parser.add_argument('-p', '--products', help='Products to operate on', nargs='*')
-        #parser.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2+: debug', default=1, type=int)
-        return parser
-
-    @classmethod
-    def vparser(cls):
-        """ Parser for adding verbose keyword """
-        parser = argparse.ArgumentParser(add_help=False)
-        parser.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2+: debug', default=1, type=int)
-        return parser
-
-    @classmethod
-    def main(cls):
-        """ Main for algorithm classes """
-        dhf = argparse.ArgumentDefaultsHelpFormatter
-
-        # Top level parser
-        parser = argparse.ArgumentParser(formatter_class=dhf, parents=[cls.parser(), cls.vparser()], description=cls.info())
-
-        args = parser.parse_args()
-        gippy.Options.SetVerbose(args.verbose)
-        VerboseOut(cls.info())
-
-        try:
-            alg = cls(**vars(args))
-            alg.run(**vars(args))
-        except Exception, e:
-            VerboseOut('Error in %s: %s' % (cls.name, e))
-            VerboseOut(traceback.format_exc(), 3)
-
-"""
-    //! Rice detection algorithm
-    GeoImage RiceDetect(const GeoImage& image, string filename, vector<int> days, float th0, float th1, int dth0, int dth1) {
-        if (Options::Verbose() > 1) cout << "RiceDetect(" << image.Basename() << ") -> " << filename << endl;
-
-        GeoImage imgout(filename, image, GDT_Byte, image.NumBands());
-        imgout.SetNoData(0);
-        imgout[0].SetDescription("rice");
-        for (unsigned int b=1;b<image.NumBands();b++) {
-            imgout[b].SetDescription("day"+to_string(days[b]));
-        }
-
-        CImg<float> cimg;
-        CImg<unsigned char> cimg_datamask, cimg_dmask;
-        CImg<int> cimg_th0, cimg_th0_prev, cimg_flood, cimg_flood_prev;
-        int delta_day;
-
-        for (unsigned int iChunk=1; iChunk<=image[0].NumChunks(); iChunk++) {
-            if (Options::Verbose() > 3) cout << "Chunk " << iChunk << " of " << image[0].NumChunks() << endl;
-            cimg = image[0].Read<float>(iChunk);
-            cimg_datamask = image[0].DataMask(iChunk);
-            CImg<int> DOY(cimg.width(), cimg.height(), 1, 1, 0);
-            CImg<int> cimg_rice(cimg.width(), cimg.height(), 1, 1, 0);
-            cimg_th0_prev = cimg.get_threshold(th0);
-            cimg_flood = (cimg_th0_prev^1).mul(cimg_datamask);
-
-            for (unsigned int b=1;b<image.NumBands();b++) {
-                if (Options::Verbose() > 3) cout << "Day " << days[b] << endl;
-                delta_day = days[b]-days[b-1];
-                cimg = image[b].Read<float>(iChunk);
-                cimg_datamask = image[b].DataMask(iChunk);
-                cimg_th0 = cimg.get_threshold(th0);
-                // Replace any nodata values with the last value
-                cimg_forXY(cimg_datamask, x, y) {
-                    if (cimg_datamask(x,y) == 0) { cimg_th0(x,y) = cimg_th0_prev(x,y); }
-                }
-
-                DOY += delta_day;                                       // running total of days
-                DOY.mul(cimg_flood);                                    // reset if it hasn't been flooded yet
-                DOY.mul(cimg_th0);                                      // reset if in hydroperiod
-
-                cimg_dmask = DOY.get_threshold(dth1,false,true)^=1;      // mask of where past high date
-                DOY.mul(cimg_dmask);
-
-                // locate (and count) where rice criteria met
-                CImg<unsigned char> newrice = cimg.threshold(th1,false,true) & DOY.get_threshold(dth0,false,true);
-                cimg_rice = cimg_rice + newrice;
-
-                // update flood map
-                cimg_flood |= (cimg_th0^1);
-                // remove new found rice pixels, and past high date
-                cimg_flood.mul(newrice^=1).mul(cimg_dmask);
-
-                //imgout[b].Write(DOY, iChunk);
-                imgout[b].Write(DOY, iChunk);
-                cimg_th0_prev = cimg_th0;
-            }
-            imgout[0].Write(cimg_rice,iChunk);              // rice map count
-        }
-        return imgout;
-    }
-"""
