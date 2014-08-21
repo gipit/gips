@@ -43,9 +43,11 @@ class Tclass(Algorithm):
         self.train(**kwargs)
         self.classify(**kwargs)
 
-    def train(self, train, **kwargs):
+    def train(self, **kwargs):
         """ Extract training data from data given truth map """
-        tinv = ProjectInventory(train, self.inv.requested_products)
+        start = datetime.now()
+        VerboseOut('Extracting training data to form spectral vectors', 2)
+        tinv = ProjectInventory(self.traindir, self.inv.requested_products)
         days = [int(d.strftime('%j')) for d in tinv.dates]
 
         prefix = os.path.join(tinv.projdir, self.timg.Basename() + '.')
@@ -65,6 +67,8 @@ class Tclass(Algorithm):
             df = pandas.DataFrame(data, index=days)
             df.dropna(axis=1, how='all', inplace=True)
             truth = truth[df.columns.values]
+            # aggregate identical days
+            df = df.groupby(lambda x: x).mean()
             df = df.reindex(index=[d for d in range(min(days), max(days)+1)])
             VerboseOut('Interpolating and filling', 2)
             for col in df.columns:
@@ -75,10 +79,14 @@ class Tclass(Algorithm):
             # Write output files
             VerboseOut('Writing out %s' % fout, 2)
             df.T.to_pickle(fout)
+            img = None
+            data = None
+            df = None
         fout = prefix + 'truth.pkl'
         if not os.path.exists(fout):
             VerboseOut('Writing out %s' % fout, 2)
             pandas.DataFrame(truth).to_pickle(fout)
+        VerboseOut('Done extracting training data in %s' % (datetime.now()-start))
 
     def _readtrain(self):
         """ Read training data """
@@ -91,6 +99,7 @@ class Tclass(Algorithm):
             self.dfs[basename] = pandas.read_pickle(f)
             days = self.dfs[basename].columns
         self.truth = numpy.squeeze(pandas.read_pickle(prefix + '.truth.pkl'))
+        set_trace()
         #self.classes = numpy.unique(truth.values).astype(int)
 
     def classify(self, series=False, **kwargs):
