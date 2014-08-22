@@ -2,10 +2,12 @@
 
 import argparse
 from datetime import datetime
+import traceback
 
 import gippy
 import gips
 from gips.utils import VerboseOut
+from gips.inventory import ProjectInventory
 
 
 class Algorithm(object):
