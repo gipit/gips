@@ -7,13 +7,14 @@ import numpy as np
 
 import gippy
 from gips.algorithms.core import Algorithm
-from gips.utils import VerboseOut
+from gips.utils import VerboseOut, basename
 from gips.inventory import ProjectInventory
+from pdb import set_trace
 
 
 class Mask(Algorithm):
     name = 'Mask'
-    __version__ = '0.1.1'
+    __version__ = '1.0.0'
     suffix = '_masked'
 
     def run(self, fmask='', pmask='', overwrite=False, **kwargs):
@@ -22,37 +23,38 @@ class Mask(Algorithm):
         if fmask != '':
             mask_file = gippy.GeoImage(fmask)
         for date in self.inv.dates:
-            VerboseOut('%s' % date)
-            if pmask != '':
-                mask_product = gippy.GeoImage(self.inv[date][pmask])
-            for p in self.inv[date]:
-                if pmask != p:
-                    fname = self.inv[date][p]
-                    img = gippy.GeoImage(fname)
-                    maskit = False
-                    if fmask != '':
-                        img.AddMask(mask_file[0])
-                        maskit = True
-                    if pmask != '':
-                        img.AddMask(mask_product[0])
-                        maskit = True
-                    if maskit:
-                        VerboseOut('Masking %s' % fname, 2)
-                        if overwrite:
-                            img.Process()
-                        else:
-                            fout = os.path.splitext(fname)[0]
-                            img.Process(fout+self.suffix)
-                    img.ClearMasks()
-                    img = None
-            mask_product = None
+            VerboseOut('Masking files from %s' % date)
+            available_masks = self.inv[date].masks(pmask)
+            for p in self.inv[date].products:
+                # don't mask any masks
+                if p in available_masks:
+                    continue
+                meta = ''
+                img = self.inv[date].open(p, True)
+                if fmask != '':
+                    img.AddMask(mask_file[0])
+                    meta = basename(fmask) + ' '
+                for mask in available_masks:
+                    img.AddMask(self.inv[date].open(mask)[0])
+                    meta = meta + basename(self.inv[date][mask]) + ' '
+                if meta != '':
+                    VerboseOut('Masking %s' % img.Basename(), 2)
+                    if overwrite:
+                        img.Process()
+                        imgout.SetMeta('MASKS', meta)
+                    else:
+                        fout = os.path.splitext(img.Filename())[0]
+                        imgout = img.Process(fout+self.suffix)
+                        imgout.SetMeta('MASKS', meta)
+                        imgout = None
+                img = None
         mask_file = None
 
     @classmethod
     def parser(cls):
         parser = argparse.ArgumentParser(add_help=False, parents=[cls.project_parser()])
         parser.add_argument('--fmask', help='Mask files with this file (of matching dimensions)', default='')
-        parser.add_argument('--pmask', help='Mask files with this product (in project directory)', default='')
+        parser.add_argument('--pmask', help='Mask files with this product', nargs='*', default=[])
         parser.add_argument('--overwrite', help='Overwrite existing files', default=False, action='store_true')
         #parser.add_argument('-i', '--invert', help='Invert mask (0->1, 1->0)', default=False, action='store_true')
         #parser.add_argument('--value', help='Mask == val', default=1)
