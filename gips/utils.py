@@ -87,6 +87,10 @@ def RemoveFiles(filenames, extensions=['']):
                 continue
 
 
+def basename(str):
+    return os.path.splitext(os.path.basename(str))[0]
+
+
 def atmospheric_model(doy, lat):
     """ Determine atmospheric model
     1 - Tropical
