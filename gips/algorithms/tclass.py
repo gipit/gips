@@ -10,7 +10,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import confusion_matrix
 
 import gippy
-from gips.core import Algorithm
+from gips.algorithms.core import Algorithm
 from gips.utils import VerboseOut
 from gips.inventory import ProjectInventory
 

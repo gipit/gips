@@ -6,7 +6,7 @@ from datetime import datetime
 import numpy as np
 
 import gippy
-from gips.core import Algorithm
+from gips.algorithms.core import Algorithm
 from gips.utils import VerboseOut
 from gips.inventory import ProjectInventory
 

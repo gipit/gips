@@ -6,7 +6,7 @@ import random
 import numpy
 
 import gippy
-from gips.core import Algorithm
+from gips.algorithms.core import Algorithm
 from gips.utils import VerboseOut
 
 

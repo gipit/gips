@@ -46,8 +46,9 @@ class Algorithm(object):
     def project_parser(cls):
         """ Parser for using GIPS project directory """
         parser = argparse.ArgumentParser(add_help=False)
-        parser.add_argument('projdir', help='GIPS Project directory')
-        parser.add_argument('-p', '--products', help='Products to operate on', nargs='*')
+        group = parser.add_argument_group('project options')
+        group.add_argument('projdir', help='GIPS Project directory')
+        group.add_argument('-p', '--products', help='Products to operate on', nargs='*')
         #parser.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2+: debug', default=1, type=int)
         return parser
 

@@ -4,7 +4,7 @@ import argparse
 import numpy as np
 
 import gippy
-from gips.core import Algorithm
+from gips.algorithms.core import Algorithm
 from gips.utils import VerboseOut
 
 
