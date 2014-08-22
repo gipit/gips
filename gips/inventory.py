@@ -52,6 +52,7 @@ class Products(object):
             date = dt.strptime(parts[ind], '%Y%j').date()
             sensor = parts[1+ind]
             product = parts[2+ind]
+            # is it a product or a mask
             self.products.add(product)
             self.sensors.add(sensor)
             self.filenames[(product, sensor)] = f
@@ -73,6 +74,15 @@ class Products(object):
     def doy(self):
         """ Day of year """
         return self.date.strftime('%j')
+
+    def masks(self, patterns=None):
+        if not patterns:
+            patterns = ['acca', 'fmask', 'mask']
+        m = []
+        for p in self.products:
+            if any(pattern in p for pattern in patterns):
+                m.append(p)
+        return m
 
     def open(self, product='', update=False):
         """ Open and return GeoImage """
