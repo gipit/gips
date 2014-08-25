@@ -15,7 +15,7 @@ from pdb import set_trace
 class Mask(Algorithm):
     name = 'Mask'
     __version__ = '1.0.0'
-    suffix = '_masked'
+    suffix = '-masked'
 
     def run(self, fmask='', pmask='', overwrite=False, **kwargs):
         if fmask == '' and pmask == '':
