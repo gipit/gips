@@ -413,7 +413,7 @@ class DataInventory(Inventory):
             exit(1)
 
         try:
-            suffix = '_' + args.suffix if args.suffix != '' else ''
+            suffix = '-' + args.suffix if args.suffix != '' else ''
         except:
             suffix = ''
         products = {}
@@ -426,11 +426,13 @@ class DataInventory(Inventory):
                     elif isinstance(val, list):
                         key = p
                         for i in val:
-                            key = key + '_' + i
+                            key = key + '-' + i
                         products[key+suffix] = [p] + val
                     else:
-                        products[p+'_'+val+suffix] = [p, val]
+                        products[p+'-'+val+suffix] = [p, val]
         kwargs = dict(zip(extra, [eval('args.%s' % a) for a in extra]))
+        print products
+        set_trace()
 
         try:
             inv = cls.inventory(
