@@ -431,8 +431,6 @@ class DataInventory(Inventory):
                     else:
                         products[p+'-'+val+suffix] = [p, val]
         kwargs = dict(zip(extra, [eval('args.%s' % a) for a in extra]))
-        print products
-        set_trace()
 
         try:
             inv = cls.inventory(
