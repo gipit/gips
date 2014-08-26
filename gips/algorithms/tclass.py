@@ -99,7 +99,6 @@ class Tclass(Algorithm):
             self.dfs[basename] = pandas.read_pickle(f)
             days = self.dfs[basename].columns
         self.truth = numpy.squeeze(pandas.read_pickle(prefix + '.truth.pkl'))
-        set_trace()
         #self.classes = numpy.unique(truth.values).astype(int)
 
     def classify(self, series=False, **kwargs):
@@ -212,11 +211,11 @@ class Tclass(Algorithm):
         return classmap
 
     @classmethod
-    def parser(cls):
-        parser = argparse.ArgumentParser(add_help=False, parents=[cls.project_parser()])
-        parser.add_argument('-t', '--truth', help='Truth image used with training data', required=True)
-        parser.add_argument('--train', help='Directory of training data', required=True)
-        parser.add_argument('--series', help='Run days as series', default=False, action='store_true')
+    def parser(cls, parser0):
+        cls.add_project_parser(parser0)
+        parser0.add_argument('-t', '--truth', help='Truth image used with training data', required=True)
+        parser0.add_argument('--train', help='Directory of training data', required=True)
+        parser0.add_argument('--series', help='Run days as series', default=False, action='store_true')
 
         """
         parser = subparser.add_parser('show', help='Display animation of classmaps vs time',
@@ -230,7 +229,7 @@ class Tclass(Algorithm):
         parser.add_argument('--start', help='Starting day of year', default=None, type=int)
         parser.add_argument('--step', help='Number of days per step', default=8, type=int)
         """
-        return parser
+        return parser0
 
 
 def main():

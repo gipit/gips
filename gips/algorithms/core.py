@@ -18,11 +18,11 @@ class Algorithm(object):
         if 'projdir' in kwargs:
             self.inv = ProjectInventory(kwargs['projdir'], kwargs.get('products'))
 
-    def _run(self, **kwargs):
-        """ Calls "run_all" function, or "command" if algorithm uses subparser """
+    def run_command(self, **kwargs):
+        """ Calls "run" function, or "command" if algorithm uses subparser """
         start = datetime.now()
         if 'command' not in kwargs:
-            command = 'run_all'
+            command = 'run'
         else:
             command = kwargs['command']
             VerboseOut('Running %s' % command, 2)
@@ -39,26 +39,27 @@ class Algorithm(object):
         return 'GIPS (v%s): %s (v%s)' % (gips.__version__, cls.name, cls.__version__)
 
     @classmethod
-    def parser(cls):
-        """ Parser for algorithm specific options """
-        parser = argparse.ArgumentParser(add_help=False)
-        return parser
+    def parser(cls, parser0):
+        """ Parser for algorithm specific options (defined by children) """
+        return parser0
 
     @classmethod
-    def project_parser(cls):
-        """ Parser for using GIPS project directory """
+    def subparser(cls, parser0):
+        """ Add subparser to parser and return keywords user to include """
+        subparser = parser0.add_subparsers(dest='command')
         parser = argparse.ArgumentParser(add_help=False)
+        parser.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2+: debug', default=1, type=int)
+        kwargs = {
+            'formatter_class': argparse.ArgumentDefaultsHelpFormatter,
+            'parents': [parser],
+        }
+        return (subparser, kwargs)
+
+    @classmethod
+    def add_project_parser(cls, parser):
         group = parser.add_argument_group('project options')
         group.add_argument('projdir', help='GIPS Project directory')
         group.add_argument('-p', '--products', help='Products to operate on', nargs='*')
-        #parser.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2+: debug', default=1, type=int)
-        return parser
-
-    @classmethod
-    def vparser(cls):
-        """ Parser for adding verbose keyword """
-        parser = argparse.ArgumentParser(add_help=False)
-        parser.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2+: debug', default=1, type=int)
         return parser
 
     @classmethod
@@ -67,8 +68,9 @@ class Algorithm(object):
         dhf = argparse.ArgumentDefaultsHelpFormatter
 
         # Top level parser
-        p0 = [cls.parser(), cls.vparser()]
-        parser = argparse.ArgumentParser(formatter_class=dhf, parents=p0, description=cls.info())
+        parser = argparse.ArgumentParser(formatter_class=dhf, description=cls.info())
+        parser.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2+: debug', default=1, type=int)
+        parser = cls.parser(parser)
 
         args = parser.parse_args()
         gippy.Options.SetVerbose(args.verbose)
@@ -76,7 +78,7 @@ class Algorithm(object):
 
         try:
             alg = cls(**vars(args))
-            alg.run(**vars(args))
+            alg.run_command(**vars(args))
         except Exception, e:
             VerboseOut('Error in %s: %s' % (cls.name, e))
             VerboseOut(traceback.format_exc(), 3)

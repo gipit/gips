@@ -164,24 +164,23 @@ class Truth(Algorithm):
         """
 
     @classmethod
-    def parser(cls):
-        dhf = argparse.ArgumentDefaultsHelpFormatter
-        parser0 = argparse.ArgumentParser(add_help=False)
-        subparser = parser0.add_subparsers(dest='command')
+    def parser(cls, parser0):
+        # Add a subparser and get keywords to add to commands
+        subparser, kwargs = cls.subparser(parser0)
 
         h = 'Merge multiple truth maps into single map of agreement'
-        parser = subparser.add_parser('merge', parents=[cls.vparser()], help=h, formatter_class=dhf)
+        parser = subparser.add_parser('merge', help=h, **kwargs)
         parser.add_argument('files', help='List of truth files', nargs='+')
         parser.add_argument('-o', '--output', help='Output file', required=True)
 
         h = 'Prune truth to S samples per class'
-        parser = subparser.add_parser('prune', parents=[cls.vparser()], help=h, formatter_class=dhf)
+        parser = subparser.add_parser('prune', help=h, **kwargs)
         parser.add_argument('truthfile', help='Truth map to prune')
         parser.add_argument('-s', '--samples', help='Number of samples (in 1K units) to extract', default=10, type=int)
 
         # Results
         h = 'Compare truth maps output map(s)'
-        parser = subparser.add_parser('analyze', parents=[cls.vparser()], help=h, formatter_class=dhf)
+        parser = subparser.add_parser('analyze', help=h, **kwargs)
         parser.add_argument('-d', '--datadir', help='Input data directory of classmaps', required=True)
         parser.add_argument('-t', '--truth', help='Truth image (not pruned)', required=True)
 

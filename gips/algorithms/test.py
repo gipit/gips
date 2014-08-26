@@ -30,9 +30,8 @@ class Test(Algorithm):
             print outarr, outarr.dtype, '\n'
 
     @classmethod
-    def parser(cls):
-        parser = argparse.ArgumentParser(add_help=False)
-        return parser
+    def parser(cls, parser0):
+        return parser0
 
 
 def main():

@@ -51,19 +51,15 @@ class Mask(Algorithm):
         mask_file = None
 
     @classmethod
-    def parser(cls):
-        parser = argparse.ArgumentParser(add_help=False, parents=[cls.project_parser()])
-        parser.add_argument('--fmask', help='Mask files with this file (of matching dimensions)', default='')
-        parser.add_argument('--pmask', help='Mask files with this product', nargs='*', default=[])
-        parser.add_argument('--overwrite', help='Overwrite existing files', default=False, action='store_true')
+    def parser(cls, parser0):
+        cls.add_project_parser(parser0)
+        parser0.add_argument('--fmask', help='Mask files with this file (of matching dimensions)', default='')
+        parser0.add_argument('--pmask', help='Mask files with this product', nargs='*', default=[])
+        parser0.add_argument('--overwrite', help='Overwrite existing files', default=False, action='store_true')
         #parser.add_argument('-i', '--invert', help='Invert mask (0->1, 1->0)', default=False, action='store_true')
         #parser.add_argument('--value', help='Mask == val', default=1)
-        return parser
+        return parser0
 
 
 def main():
     Mask.main()
-
-
-#if __name__ == "__main__":
-#    main()
