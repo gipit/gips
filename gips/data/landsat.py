@@ -269,8 +269,7 @@ class LandsatData(Data):
         try:
             img = self._readraw()
         except Exception, e:
-            VerboseOut('Error reading original data file for %s: %s' % (key, bname, e), 2)
-            VerboseOut(traceback.format_exc(), 3)
+            raise Exception('Error reading %s: %s' % (bname, e))
 
         # running atmosphere if any products require it
         toa = True
@@ -331,7 +330,7 @@ class LandsatData(Data):
                 elif val[0] == 'rad':
                     imgout = gippy.GeoImage(fname, img, gippy.GDT_Int16, len(visbands))
                     for i in range(0, imgout.NumBands()):
-                        imgout.SetColor(visbands[i], i+1)
+                        imgout.SetBandName(visbands[i], i+1)
                     imgout.SetNoData(-32768)
                     imgout.SetGain(0.1)
                     if toa:
@@ -343,7 +342,7 @@ class LandsatData(Data):
                 elif val[0] == 'ref':
                     imgout = gippy.GeoImage(fname, img, gippy.GDT_Int16, len(visbands))
                     for i in range(0, imgout.NumBands()):
-                        imgout.SetColor(visbands[i], i+1)
+                        imgout.SetBandName(visbands[i], i+1)
                     imgout.SetNoData(-32768)
                     imgout.SetGain(0.0001)
                     if toa:
@@ -355,16 +354,16 @@ class LandsatData(Data):
                 elif val[0] == 'tcap':
                     tmpimg = gippy.GeoImage(reflimg)
                     tmpimg.PruneBands(['BLUE', 'GREEN', 'RED', 'NIR', 'SWIR1', 'SWIR2'])
-                    tmpimg.SetColor('SWIR2', 6)     # work-around
+                    tmpimg.SetBandName('SWIR2', 6)     # work-around
                     arr = numpy.array(self.Asset._sensors[self.sensor]['tcap']).astype('float32')
                     imgout = gippy.LinearTransform(tmpimg, fname, arr)
                     outbands = ['Brightness', 'Greenness', 'Wetness', 'TCT4', 'TCT5', 'TCT6']
                     for i in range(0, imgout.NumBands()):
-                        imgout.SetColor(outbands[i], i+1)
+                        imgout.SetBandName(outbands[i], i+1)
                 elif val[0] == 'temp':
                     imgout = gippy.GeoImage(fname, img, gippy.GDT_Int16, len(lwbands))
                     for i in range(0, imgout.NumBands()):
-                        imgout.SetColor(lwbands[i], i+1)
+                        imgout.SetBandName(lwbands[i], i+1)
                     imgout.SetNoData(-32768)
                     imgout.SetGain(0.1)
                     for col in lwbands:
@@ -553,7 +552,7 @@ class LandsatData(Data):
         # Geometry used for calculating incident irradiance
         colors = self.assets['']._sensors[self.sensor]['colors']
         for bi in range(0, len(self.metadata['filenames'])):
-            image.SetColor(colors[bi], bi+1)
+            image.SetBandName(colors[bi], bi+1)
             # need to do this or can we index correctly?
             band = image[bi]
             band.SetGain(self.metadata['gain'][bi])
