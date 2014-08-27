@@ -152,19 +152,23 @@ class ProjectInventory(Inventory):
 
         self.products = {}
         files = glob.glob(os.path.join(self.projdir, '*.tif'))
-        self.product_set = set()
+        product_set = set()
         for dat in Products.discover(files):
             self.products[dat.date] = dat
-            self.product_set = self.product_set.union(dat.products)
+            product_set = product_set.union(dat.products)
 
         if not products:
-            products = self.product_set
+            products = product_set
         self.requested_products = products
 
     @property
     def data(self):
         """ alias used by base class to self.products """
         return self.products
+
+    def product_list(self, date):
+        """ Intersection of available products for this date and requested products """
+        return self.products[date].products.intersection(self.requested_products)
 
     def get_timeseries(self, product='', dates=None):
         """ Read all files as time series """
@@ -268,6 +272,7 @@ class DataInventory(Inventory):
                 try:
                     self.data[date].process(**kwargs)
                 except:
+                    VerboseOut(traceback.format_exc(), 3)
                     pass
             VerboseOut('Completed processing in %s' % (dt.now()-start), 1)
         if len(self.composite_products) > 0:
