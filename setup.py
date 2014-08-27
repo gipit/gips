@@ -57,7 +57,7 @@ setup(
     author='Matthew Hanson',
     author_email='mhanson@appliedgeosolutions.com',
     packages=['gips', 'gips.data', 'gips.algorithms'],
-    install_requires=['Py6S>=1.5.0', 'shapely', 'gippy>=0.9.9', 'python-dateutil'],
+    install_requires=['Py6S>=1.5.0', 'shapely', 'gippy>=1.0.0', 'python-dateutil'],
     scripts=scripts,
     entry_points={'console_scripts': console_scripts},
 )
