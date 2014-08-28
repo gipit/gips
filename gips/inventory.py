@@ -115,7 +115,7 @@ class Products(object):
         instances = []
         for date, fnames in groupby(sorted(files), lambda x: dt.strptime(basename(x).split('_')[ind], '%Y%j').date()):
             for sensor, fnames2 in groupby(sorted(fnames), lambda x: basename(x).split('_')[1]):
-                instances.append(cls(list(fnames2))
+                instances.append(cls(list(fnames2)))
         return instances
 
 
