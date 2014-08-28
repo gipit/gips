@@ -14,7 +14,7 @@ import tempfile
 
 
 class Tiles(object):
-    """ Collection of tiles for a single date """
+    """ Collection of tiles for a single date and sensor """
 
     def __init__(self, dataclass, site=None, tiles=None, date=None,
                  products=None, sensors=None, **kwargs):
@@ -56,6 +56,10 @@ class Tiles(object):
                 continue
         if len(self.tiles) == 0:
             raise Exception('No valid data found')
+
+    @property
+    def numfiles(self):
+        return len(self.tiles)
 
     def coverage(self):
         """ Calculates % coverage of site for each asset """
@@ -157,7 +161,13 @@ class Tiles(object):
         shutil.rmtree(os.path.dirname(vec1name))
         return imgout
 
-    def print_assets(self, dformat='%j', color=''):
+    def pprint_header(self):
+        header = Colors.BOLD + Colors.UNDER + '{:^12}'.format('DATE')
+        for a in sorted(self.dataclass.Asset._assets.keys()):
+            header = header + ('{:^10}'.format(a if a != '' else 'Coverage'))
+        return header + '{:^10}'.format('Products') + Colors.OFF
+
+    def pprint(self, dformat='%j', color=''):
         """ Print coverage for each and every asset """
         #assets = [a for a in self.dataclass.Asset._assets]
         sys.stdout.write('{:^12}'.format(self.date.strftime(dformat)))

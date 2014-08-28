@@ -37,38 +37,36 @@ from pdb import set_trace
 
 
 class Products(object):
-    """ Collection of products (files) for a single date """
+    """ Collection of products (files) for a single date and sensor """
 
     def __init__(self, filenames):
-        """ Find all data for this date and sensor """
+        """ Create products with these filenames (should all be same date/sensor) """
+        # TODO - check that all dates and sensors are the same for all filenames
         if not isinstance(filenames, list):
             raise TypeError('requires list (of filenames)')
         self.filenames = {}
-        self.sensors = set()
         self.products = set()
         ind = len(os.path.basename(filenames[0]).split('_')) - 3
         for f in filenames:
             parts = basename(f).split('_')
             date = dt.strptime(parts[ind], '%Y%j').date()
-            sensor = parts[1+ind]
+            self.sensor = parts[1+ind]
             product = parts[2+ind]
             # is it a product or a mask
             self.products.add(product)
-            self.sensors.add(sensor)
-            self.filenames[(product, sensor)] = f
+            self.filenames[product] = f
         self.date = date
 
     def __getitem__(self, key):
         """ Return filename for product or (product, sensor) """
-        if isinstance(key, tuple):
-            return self.filenames[key]
-        elif len(self.sensors) == 1:
-            return self.filenames[(key, list(self.sensors)[0])]
-        else:
-            raise Exception('Need sensor key with multiple sensors')
+        return self.filenames[key]
 
     def __str__(self):
-        return '%s: %s' % (self.date, ' '.join(self.products))
+        return '%s (%s): %s' % (self.date, self.sensor, ' '.join(self.products))
+
+    @property
+    def numfiles(self):
+        return len(self.filenames)
 
     @property
     def doy(self):
@@ -93,6 +91,18 @@ class Products(object):
         else:
             raise Exception('%s product does not exist' % product)
 
+    def pprint_header(self):
+        return Colors.BOLD + Colors.UNDER + '{:^12}'.format('DATE') + '{:^10}'.format('Products') + Colors.OFF
+
+    def pprint(self, dformat='%j', color=''):
+        """ Print data products """
+        sys.stdout.write(color)
+        sys.stdout.write('{:^12}'.format(self.date.strftime(dformat)))
+        sys.stdout.write(' '.join(self.products))
+        if color != '':
+            sys.stdout.write(Colors.OFF)
+        sys.stdout.write('\n')
+
     @classmethod
     def discover(cls, files):
         """ Factory function returns instance for every date/sensor in filenames or directory """
@@ -104,12 +114,15 @@ class Products(object):
 
         instances = []
         for date, fnames in groupby(files, lambda x: dt.strptime(basename(x).split('_')[ind], '%Y%j').date()):
-            instances.append(cls([f for f in fnames]))
+            for sensor, fnames2 in groupby(fnames, lambda x: basename(x).split('_')[1]):
+                instances.append(cls([f for f in fnames2]))
         return instances
 
 
 class Inventory(object):
     """ Base class for inventories """
+    _colors = [Colors.PURPLE, Colors.RED, Colors.GREEN, Colors.BLUE]
+
     # TODO - add code for managing site(?) and common printing
 
     def __init__(self):
@@ -126,6 +139,18 @@ class Inventory(object):
         return sorted(self.data.keys())
 
     @property
+    def sensors(self):
+        sensors = {}
+        for i, s in enumerate(sorted(set([self.data[d].sensor for d in self.data.keys()]))):
+            sensors[s] = {'color': self._colors[i]}
+        return sensors
+
+    @property
+    def numfiles(self):
+        """ Total number of files in inventory """
+        return sum([d.numfiles for d in self.data.values()])
+
+    @property
     def datestr(self):
         return '%s dates (%s - %s)' % (len(self.dates), self.dates[0], self.dates[-1])
 
@@ -139,6 +164,36 @@ class Inventory(object):
         else:
             days = (1, 366)
         self.start_day, self.end_day = (int(days[0]), int(days[1]))
+
+    def pprint(self, md=False, compact=False):
+        print self.data[self.data.keys()[0]].pprint_header()
+        dformat = '%m-%d' if md else '%j'
+        oldyear = 0
+        formatstr = '\n{:<12}' if compact else '{:<12}\n'
+        for date in self.dates:
+            scode = self.data[date].sensor
+            if date.year != oldyear:
+                sys.stdout.write(Colors.BOLD + formatstr.format(date.year) + Colors.OFF)
+            if compact:
+                dstr = ('{:^%s}' % (7 if md else 4)).format(date.strftime(dformat))
+                sys.stdout.write(self.sensors[scode]['color'] + dstr + Colors.OFF)
+            else:
+                self.data[date].pprint(dformat, color=self.sensors[scode]['color'])
+            oldyear = date.year
+        if self.numfiles != 0:
+            VerboseOut("\n\n%s files on %s dates" % (self.numfiles, len(self.dates)), 1)
+            self.print_legend()
+
+    def print_legend(self):
+        print Colors.BOLD + '\nSENSORS' + Colors.OFF
+        for key in sorted(self.sensors):
+            try:
+                desc = self.dataclass.Asset._sensors[key]['description']
+                scode = key+': ' if key != '' else ''
+            except:
+                desc = ''
+                scode = key
+            print self.sensors[key]['color'] + '%s%s' % (scode, desc) + Colors.OFF
 
 
 class ProjectInventory(Inventory):
@@ -156,7 +211,6 @@ class ProjectInventory(Inventory):
         for dat in Products.discover(files):
             self.products[dat.date] = dat
             product_set = product_set.union(dat.products)
-
         if not products:
             products = product_set
         self.requested_products = products
@@ -242,21 +296,14 @@ class DataInventory(Inventory):
             except:
                 VerboseOut(traceback.format_exc(), 3)
 
-        self.numfiles = 0
         for date in sorted(dates):
             try:
                 dat = Tiles(dataclass=dataclass, site=self.site, tiles=self.tiles,
                             date=date, products=self.standard_products, **kwargs)
                 self.data[date] = dat
-                self.numfiles = self.numfiles + len(dat.tiles)
             except Exception, e:
                 pass
                 #VerboseOut(traceback.format_exc(), 3)
-        sensors = set([self.data[date].sensor for date in self.data])
-        self.sensors = {}
-        for i, s in enumerate(sensors):
-            self.sensors[s] = self.dataclass.Asset._sensors[s]
-            self.sensors[s]['color'] = Colors.BOLD + self._colors[i]
         if len(dates) == 0:
             raise Exception("No matching files in inventory!")
 
@@ -303,7 +350,7 @@ class DataInventory(Inventory):
         VerboseOut('Completed GIPS project in %s' % (dt.now()-start))
         return ProjectInventory(datadir)
 
-    def print_inv(self, md=False, compact=False):
+    def pprint(self, **kwargs):
         """ Print inventory """
         self.print_tile_coverage()
         print
@@ -313,29 +360,7 @@ class DataInventory(Inventory):
             print Colors.BOLD + 'Asset Holdings' + Colors.OFF
         # Header
         #datestr = ' Month/Day' if md else ' Day of Year'
-        header = Colors.BOLD + Colors.UNDER + '{:^12}'.format('DATE')
-        for a in sorted(self.dataclass.Asset._assets.keys()):
-            header = header + ('{:^10}'.format(a if a != '' else 'Coverage'))
-        header = header + '{:^10}'.format('Products')
-        header = header + Colors.OFF
-        print header
-        dformat = '%m-%d' if md else '%j'
-        # Asset inventory
-        oldyear = 0
-        formatstr = '\n{:<12}' if compact else '{:<12}\n'
-        for date in self.dates:
-            sensor = self.sensors[self.data[date].sensor]
-            if date.year != oldyear:
-                sys.stdout.write(Colors.BOLD + formatstr.format(date.year) + Colors.OFF)
-            if compact:
-                dstr = ('{:^%s}' % (7 if md else 4)).format(date.strftime(dformat))
-                sys.stdout.write(sensor['color'] + dstr + Colors.OFF)
-            else:
-                self.data[date].print_assets(dformat, color=sensor['color'])
-            oldyear = date.year
-        if self.numfiles != 0:
-            VerboseOut("\n\n%s files on %s dates" % (self.numfiles, len(self.dates)), 1)
-            self.print_legend()
+        super(DataInventory, self).pprint(**kwargs)
 
     def print_tile_coverage(self):
         if self.site is not None:
@@ -343,13 +368,6 @@ class DataInventory(Inventory):
             print Colors.UNDER + '{:^8}{:>14}{:>14}'.format('Tile', '% Coverage', '% Tile Used') + Colors.OFF
             for t in sorted(self.tiles):
                 print "{:>8}{:>11.1f}%{:>11.1f}%".format(t, self.tiles[t][0]*100, self.tiles[t][1]*100)
-
-    def print_legend(self):
-        print Colors.BOLD + '\nSENSORS' + Colors.OFF
-        sensors = {}
-        for key in sorted(self.sensors):
-            scode = key+': ' if key != '' else ''
-            print self.sensors[key]['color'] + '%s%s' % (scode, self.sensors[key]['description']) + Colors.OFF
 
     @staticmethod
     def main(cls):
@@ -442,7 +460,7 @@ class DataInventory(Inventory):
                 site=args.site, dates=args.dates, days=args.days, tiles=args.tiles,
                 products=products, pcov=args.pcov, ptile=args.ptile, fetch=args.fetch, sensors=args.sensors, **kwargs)
             if args.command == 'inventory':
-                inv.print_inv(args.md, compact=args.compact)
+                inv.pprint(md=args.md, compact=args.compact)
             elif args.command == 'process':
                 gippy.Options.SetChunkSize(args.chunksize)
                 inv.process(overwrite=args.overwrite, **kwargs)

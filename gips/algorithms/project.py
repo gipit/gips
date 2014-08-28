@@ -11,6 +11,9 @@ class Project(Algorithm):
     name = 'GIPS Project Utilities'
     __version__ = '1.0.0'
 
+    def inventory(self, **kwargs):
+        self.inv.pprint()
+
     def browse(self, quality=75, **kwargs):
         for date in self.inv.dates:
             for p in self.inv.product_list(date):
@@ -22,11 +25,12 @@ class Project(Algorithm):
 
     @classmethod
     def parser(cls, parser0):
-        subparser = cls.subparser(parser0)
-        kwargs = cls.parser_kwargs(project=True)
+        subparser, kwargs = cls.subparser(parser0, project=True)
 
         parser = subparser.add_parser('browse', help='Create browse imagery', **kwargs)
-        parser0.add_argument('-q', '--quality', help='JPG Quality', default=75)
+        parser.add_argument('-q', '--quality', help='JPG Quality', default=75)
+
+        parser = subparser.add_parser('inventory', help='Print project inventory', **kwargs)
 
         return parser0
 
