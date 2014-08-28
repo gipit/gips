@@ -113,9 +113,9 @@ class Products(object):
         ind = len(basename(files[0]).split('_')) - 3
 
         instances = []
-        for date, fnames in groupby(files, lambda x: dt.strptime(basename(x).split('_')[ind], '%Y%j').date()):
-            for sensor, fnames2 in groupby(fnames, lambda x: basename(x).split('_')[1]):
-                instances.append(cls([f for f in fnames2]))
+        for date, fnames in groupby(sorted(files), lambda x: dt.strptime(basename(x).split('_')[ind], '%Y%j').date()):
+            for sensor, fnames2 in groupby(sorted(fnames), lambda x: basename(x).split('_')[1]):
+                instances.append(cls(list(fnames2))
         return instances
 
 
@@ -328,17 +328,20 @@ class DataInventory(Inventory):
             self.dataclass.process_composites(self, self.composite_products, **kwargs)
             VerboseOut('Completed processing in %s' % (dt.now()-start), 1)
 
-    def project(self, datadir=None, res=None, **kwargs):
+    def project(self, datadir=None, suffix='', res=None, **kwargs):
         """ Create project files for data in inventory """
         self.process(**kwargs)
         start = dt.now()
+
+        if suffix != '':
+            suffix = '_' + suffix
 
         # formulate project directory name
         if res is None:
             res = self.dataclass.Asset._defaultresolution
         sitename = basename(self.site) if self.site else 'tiles'
         if datadir is None:
-            datadir = '%s_%s_%sx%s' % (self.dataclass.name, sitename, res[0], res[1])
+            datadir = '%s_%s_%sx%s%s' % (self.dataclass.name, sitename, res[0], res[1], suffix)
         if not os.path.exists(datadir):
             os.makedirs(datadir)
 
@@ -408,18 +411,18 @@ class DataInventory(Inventory):
         # Processing
         parserp = subparser.add_parser('process', help='Process scenes', parents=parents, formatter_class=dhf)
         group = parserp.add_argument_group('Processing Options')
-        group.add_argument('--suffix', help='Suffix on end of filename (before extension)', default='')
+        #group.add_argument('--suffix', help='Suffix on end of filename (before extension)', default='')
         group.add_argument('--overwrite', help='Overwrite exiting output file(s)', default=False, action='store_true')
         group.add_argument('--chunksize', help='Chunk size in MB', default=512.0)
 
         # Project
         parser = subparser.add_parser('project', help='Create project', parents=parents, formatter_class=dhf)
         group = parser.add_argument_group('Project options')
-        group.add_argument('--suffix', help='Suffix on end of filename (before extension)', default='')
+        group.add_argument('--suffix', help='Suffix on end of project directory', default='')
         group.add_argument('--crop', help='Crop output down to minimum bounding box (if warping)', default=False, action='store_true')
         group.add_argument('--nowarp', help='Mosaic, but do not warp', default=False, action='store_true')
         group.add_argument('--res', nargs=2, help='Resolution of (warped) output rasters', default=None, type=float)
-        group.add_argument('--datadir', help='Directory to save project files (default auto-generated)', default=None)
+        #group.add_argument('--datadir', help='Directory to save project files (default auto-generated)', default=None)
         group.add_argument('--format', help='Format for output file', default="GTiff")
         group.add_argument('--chunksize', help='Chunk size in MB', type=float, default=512.0)
 
@@ -435,10 +438,11 @@ class DataInventory(Inventory):
             cls.Asset.archive(recursive=args.recursive, keep=args.keep)
             exit(1)
 
-        try:
-            suffix = '-' + args.suffix if args.suffix != '' else ''
-        except:
-            suffix = ''
+        #try:
+        #    suffix = '-' + args.suffix if args.suffix != '' else ''
+        #except:
+        #    suffix = ''
+        suffix = ''
         products = {}
         for p in cls._products:
             if p != '':
@@ -466,7 +470,7 @@ class DataInventory(Inventory):
                 inv.process(overwrite=args.overwrite, **kwargs)
             elif args.command == 'project':
                 gippy.Options.SetChunkSize(args.chunksize)
-                projinv = inv.project(datadir=args.datadir, res=args.res, crop=args.crop, nowarp=args.nowarp)
+                projinv = inv.project(suffix=args.suffix, crop=args.crop, nowarp=args.nowarp, res=args.res, **kwargs)
             else:
                 VerboseOut('Command %s not recognized' % cmd, 0)
         except Exception, e:

@@ -84,7 +84,7 @@ class Tiles(object):
                 VerboseOut('Processing products for tile %s: %s' % (tileid, ' '.join(toprocess.keys())), 2)
                 self.tiles[tileid].process(toprocess, **kwargs)
 
-    def project(self, datadir, res=None, crop=False, nowarp=False):
+    def project(self, datadir, res=None, crop=False, nowarp=False, **kwargs):
         """ Create image of final product (reprojected/mosaiced) """
         res = res if res else self.dataclass.Asset._defaultresolution
         if not hasattr(res, "__len__"):
