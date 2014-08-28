@@ -25,9 +25,9 @@ class Algorithm(object):
             command = 'run'
         else:
             command = kwargs['command']
-            VerboseOut('Running %s' % command, 2)
+            #VerboseOut('Running %s' % command, 2)
         exec('self.%s(**kwargs)' % command)
-        VerboseOut('Completed %s in %s' % (command, datetime.now()-start), 2)
+        #VerboseOut('Completed %s in %s' % (command, datetime.now()-start), 2)
         pass
 
     def run(self, **kwargs):
@@ -44,11 +44,13 @@ class Algorithm(object):
         return parser0
 
     @classmethod
-    def subparser(cls, parser0):
+    def subparser(cls, parser0, project=False):
         """ Add subparser to parser and return keywords user to include """
         subparser = parser0.add_subparsers(dest='command')
         parser = argparse.ArgumentParser(add_help=False)
         parser.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2+: debug', default=1, type=int)
+        if project:
+            parser = cls.add_project_parser(parser)
         kwargs = {
             'formatter_class': argparse.ArgumentDefaultsHelpFormatter,
             'parents': [parser],
