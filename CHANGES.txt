@@ -16,6 +16,11 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program. If not, see <http://www.gnu.org/licenses/>
 ################################################################################
+v0.7.0
+- Refactoring of inventory classes and printing
+- Renaming of products to replace underscores (_) with dashes (-) in the product name
+- Addition of gips_project script (print inventory, create browse images)
+
 v0.6.8
 - added Algorithm base class and updated scripts to utilize Algorithm class
 - additional algorithm scripts added (gips_tclass, gips_truth, gips_mask)
