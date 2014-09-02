@@ -182,13 +182,13 @@ class LandsatData(Data):
         'tcap': {'description': 'Tassled cap transformation', 'toa': True},
         #'Indices': {
         'bi':   {'description': 'Brightness Index', 'group': 'Index', 'choices': ['toa']},
-        'ndvi': {'description': 'Normalized Difference Vegetation Index', 'group': 'Index', 'choices': ['toa']},
         'evi':  {'description': 'Enhanced Vegetation Index', 'group': 'Index', 'choices': ['toa']},
         'lswi': {'description': 'Land Surface Water Index', 'group': 'Index', 'choices': ['toa']},
+        'msavi2': {'description': 'Modified Soil-Adjusted Vegetation Index (revised)', 'group': 'Index', 'choices': ['toa']},
         'ndsi': {'description': 'Normalized Difference Snow Index', 'group': 'Index', 'choices': ['toa']},
+        'ndvi': {'description': 'Normalized Difference Vegetation Index', 'group': 'Index', 'choices': ['toa']},
         'ndwi': {'description': 'Normalized Difference Water Index', 'group': 'Index', 'choices': ['toa']},
         'satvi': {'description': 'Soil-Adjusted Total Vegetation Index', 'group': 'Index', 'choices': ['toa']},
-        'msavi2': {'description': 'Modified Soil-Adjusted Vegetation Index (revised)', 'group': 'Index', 'choices': ['toa']},
         #'Tillage Indices': {
         'ndti': {'description': 'Normalized Difference Tillage Index', 'group': 'Tillage', 'choices': ['toa']},
         'crc':  {'description': 'Crop Residue Cover', 'group': 'Tillage', 'choices': ['toa']},
