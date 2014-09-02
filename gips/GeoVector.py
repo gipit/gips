@@ -20,8 +20,8 @@
 
 import os
 import sys
-import ogr
-import osr
+from osgeo import ogr
+from osgeo import osr
 from shapely.wkb import loads
 from shapely.geometry import Point
 import datetime

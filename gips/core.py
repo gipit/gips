@@ -23,7 +23,7 @@ import sys
 import shutil
 import errno
 import argparse
-import ogr
+from osgeo import ogr
 from datetime import datetime
 import glob
 from shapely.wkb import loads
