@@ -339,9 +339,13 @@ class DataInventory(Inventory):
         # formulate project directory name
         if res is None:
             res = self.dataclass.Asset._defaultresolution
+        if res[0] == res[1]:
+            resstr = str(res[0])
+        else:
+            resstr = '%sx%s' % (res[0], res[1])
         sitename = basename(self.site) if self.site else 'tiles'
         if datadir is None:
-            datadir = '%s_%s_%sx%s%s' % (self.dataclass.name, sitename, res[0], res[1], suffix)
+            datadir = '%s_%s_%s%s' % (sitename, resstr, self.dataclass.name, suffix)
         if not os.path.exists(datadir):
             os.makedirs(datadir)
 
