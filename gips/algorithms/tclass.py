@@ -46,7 +46,7 @@ class Tclass(Algorithm):
     def train(self, **kwargs):
         """ Extract training data from data given truth map """
         start = datetime.now()
-        VerboseOut('Extracting training data to form spectral vectors', 2)
+        VerboseOut('Extracting training data to form temporal vectors', 2)
         tinv = ProjectInventory(self.traindir, self.inv.requested_products)
         days = [int(d.strftime('%j')) for d in tinv.dates]
 
@@ -170,7 +170,10 @@ class Tclass(Algorithm):
         classmap = self._classify(classifier, data, gimg[0].NoDataValue())
 
         # Output most recently added
-        fout = os.path.join(self.dout, '%s' % str(days[-1]).zfill(3))
+        if self.series:
+            suffix = 'update'
+        prefix = 'update' if self.series else ''
+        fout = os.path.join(self.dout, '%s%s' % (prefix, str(days[-1]).zfill(3)))
         VerboseOut('Writing classmap to %s' % fout)
         imgout = gippy.GeoImage(fout, gimg, gippy.GDT_Byte, 1)
         imgout.SetNoData(0)
@@ -184,17 +187,16 @@ class Tclass(Algorithm):
 
         if self.series:
             if len(days) == 1:
-                self.classmap_todate = classmap
+                self.classmap_latest = classmap
             else:
                 locs = numpy.where(classmap != 0)
-                self.classmap_todate[locs] = classmap[locs]
-                fout = os.path.join(self.dout, '%s_master' % str(days[-1]).zfill(3))
-                VerboseOut('Writing classmap to %s' % fout)
+                self.classmap_latest[locs] = classmap[locs]
+                fout = os.path.join(self.dout, '%s' % str(days[-1]).zfill(3))
+                VerboseOut('Writing up to date classmap to %s' % fout)
                 imgout = gippy.GeoImage(fout, gimg, gippy.GDT_Byte, 1)
                 imgout.SetNoData(0)
-                if self.colortable != '':
-                    imgout.CopyColorTable(self.colortable)
-                imgout[0].Write(self.classmap_todate)
+                imgout.CopyColorTable(self.timg)
+                imgout[0].Write(self.classmap_latest)
         imgout = None
         VerboseOut('Trained and classified in %s' % (datetime.now() - start), 2)
 
