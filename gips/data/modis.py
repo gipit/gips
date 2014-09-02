@@ -27,6 +27,10 @@ import urllib
 from osgeo import gdal
 from collections import OrderedDict
 
+
+from pdb import set_trace
+
+
 import math
 import numpy as np
 
@@ -303,8 +307,6 @@ class ModisData(Data):
             VerboseOut("productname: %s" % productname, 4)
             VerboseOut("outfname: %s" % outfname, 4)
 
-
-
             ################################################
             # NORMALIZED DIFFERENCE VEGETATION INDEX PRODUCT
 
@@ -395,7 +397,6 @@ class ModisData(Data):
 
                 for k, v in meta.items():
                     imgout.SetMeta(k, str(v))
-
 
 
             ########################
@@ -651,7 +652,6 @@ class ModisData(Data):
                 if totsnowcover == 0 or totsnowfrac == 0:
                     print "no snow or ice: skipping", str(self.date), str(self.id), str(missingassets)
 
-
                 meta['FRACMISSINGCOVERCLEAR'] = fracmissingcoverclear
                 meta['FRACMISSINGCOVERSNOW'] = fracmissingcoversnow
                 meta['FRACCLEARCOVERMISSING'] = fracclearcovermissing
@@ -683,13 +683,6 @@ class ModisData(Data):
 
             #####################
             # TEMPERATURE PRODUCT
-
-            # TODO:
-            # use a missing value that is not zero, e.g. 32767
-            # because 0 is a valid value in the QC mask
-            # OR:
-            # use 1,2 in the QC mask instead of 0,1
-
             if val[0] == "temp":
                 VERSION = "1.0"
                 assets = self._products['temp']['assets']
@@ -752,7 +745,8 @@ class ModisData(Data):
                     basename = tempbands[iband].Basename()
                     platform = basename[:3]
                     platform = platformnames[platform]
-                    dayornight = basename.split()[1]
+ 
+                    dayornight = basename.split()[2]
                     dayornight = dayornight.replace('time', '')
                     assert dayornight in ('day', 'night')
 
@@ -767,8 +761,8 @@ class ModisData(Data):
 
                     if iband == 0:
                         bestmask = newmaskbest.astype('uint16')
-                    else:
-                        bestmask += (math.pow(2, iband)*newmaskbest).astype('uint16')
+
+                    bestmask += (math.pow(2, iband)*newmaskbest).astype('uint16')
 
                     numbad = np.sum(newmaskbad)
                     fracbad = np.sum(newmaskbad)/float(newmaskbad.size)
@@ -811,10 +805,9 @@ class ModisData(Data):
                     metaname = metaname.upper()
                     metanames[metaname] = str(hourmean)
 
-
                 VerboseOut('writing %s' % outfname, 4)
                 imgout = gippy.GeoImage(outfname, tempbands, gippy.GDT_UInt16, 5)
-                imgout.SetNoData(0)
+                imgout.SetNoData(65535)
                 imgout.SetGain(0.02)
 
                 imgout.SetColor('Temperature Daytime Terra', 1)
@@ -831,6 +824,7 @@ class ModisData(Data):
 
                 imgout[4].SetGain(1.0)
                 imgout[4].Write(bestmask)
+
                 # print "imgout[4].Gain()", imgout[4].Gain()
                 # print "imgout[4].Offset()", imgout[4].Offset()
                 # print imgout[4].Stats()
