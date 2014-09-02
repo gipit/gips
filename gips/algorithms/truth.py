@@ -7,8 +7,9 @@ import numpy
 
 import gippy
 from gips.algorithms.core import Algorithm
-from gips.utils import VerboseOut
-
+from gips.utils import VerboseOut, basename
+from sklearn.metrics import confusion_matrix as cmatrix
+from pdb import set_trace
 
 def confusion_matrix(truth, pred, nodata=None):
     """ Caculated confusion matrix and common metrics
@@ -22,7 +23,7 @@ def confusion_matrix(truth, pred, nodata=None):
         valid = numpy.where(pred != nodata)
         truth = truth[valid]
         pred = pred[valid]
-    cm = confusion_matrix(truth, pred).astype('float')
+    cm = cmatrix(truth, pred).astype('float')
     cm_diag = numpy.diag(cm).astype('float')
     rowsums = cm.sum(axis=0)
     colsums = cm.sum(axis=1)
@@ -81,18 +82,102 @@ class Truth(Algorithm):
     name = 'Truth Utilities'
     __version__ = '1.0.0'
 
-    def merge(self, files, output, **kwargs):
+    @classmethod
+    def stats(cls, files, counts=False, **kwargs):
+        """ Print out counts of each class for entire array """
+        fheader = '{:^8}'.format('')
+        header = '{0:^8}'.format('Class')
+        for f in files:
+            fieldwidth = 10
+            if counts:
+                fieldwidth = 20
+                header = header + '{0:^10}'.format('#Pixels')
+            fheader = fheader + ('{0:^%s} ' % fieldwidth).format(basename(f))
+            header = header + '{0:^10} '.format('Scene%')
+
+        data = []
+        numclasses = 255
+        for filename in files:
+            VerboseOut('Calculating class stats for %s' % basename(filename), 2)
+            gimg = gippy.GeoImage(filename)
+            img = gimg[0].Read()
+            totalsz = gimg.Size()
+            nodatasz = len(numpy.where(img == gimg[0].NoDataValue())[0])
+            datasz = totalsz - nodatasz
+            dat = [totalsz, nodatasz, datasz]
+            #numclass = int(numpy.max(img))
+            """
+            if args.vector:
+                #dbftable = zonal.get_dbftable(args.vector)
+                #attrmap = dbftable.create_map('FID',args.field)
+                rvector = zonal.rasterize_vector(args.vector, f, field=args.field)
+                fh_vec = gdal.Open(rvector)
+                imgv = fh_vec.GetRasterBand(1).ReadAsArray()
+                numclass_vec = numpy.max(imgv)
+                totalpix_vec = []
+                for iclass in range(1,numclass_vec+1):
+                    head = head + ' {0:^6}'.format('TS%s'%iclass)
+                    totalpix_vec.append( len(numpy.where(imgv == iclass)[0]) )
+            """
+            for i in range(1, numclasses+1):
+                inds = numpy.where(img == i)
+                num = float(len(inds[0]))
+                dat.append(num)
+                """
+                if args.vector:
+                    img_vec_sub = imgv[inds]
+                    for iTS in range(1, numclass_vec+1):
+                        vinds = numpy.where(img_vec_sub == iTS)
+                        numpix = float(len(vinds[0]))
+                        line = line + ' {ts:^6.1f}'.format(ts=numpix/totalpix_vec[iTS-1]*100)
+                """
+            data.append(dat)
+            gimg = None
+
+        print fheader
+        print header
+        #nodatastr = ['%4.2f' % float(numnodata)/sz*100]
+        #print 'NoData: %4.2f%% of scene' % (float(numnodata)/sz*100)
+        line = '{0:^8}'.format('NoData')
+        for f in range(0, len(files)):
+            if counts:
+                line = line + '{0:<10}'.format(data[f][1])
+            line = line + '{0:^10.2f} '.format(data[f][1]/data[f][0])
+        print line
+        for i in range(1, numclasses+1):
+            totalsum = 0
+            line = '{0:^8}'.format(i)
+            for f in range(0, len(files)):
+                num = data[f][2+i]
+                totalsum = totalsum + num
+                if counts:
+                    line = line + '{0:<10}'.format(int(num))
+                line = line + '{0:^10.2f} '.format(100*num/float(data[f][2]))
+            if totalsum > 0:
+                print line
+
+    @classmethod
+    def merge(cls, files, output, group=None, **kwargs):
         """ Merge multiple truth files into one showing agreement over all """
+        def _group(cls, arr, groups):
+            for row in groups:
+                for n in row[1:]:
+                    arr[arr == n] = row[0]
+            return arr
         VerboseOut('Merging truth files', 2)
         for i, filename in enumerate(files):
             img = gippy.GeoImage(filename)
             if i == 0:
                 imgarr = img[0].Read()
+                if group is not None:
+                    imgarr = cls._group(imgarr, group)
                 imgout = gippy.GeoImage(output, img)
                 imgout.CopyColorTable(img)
                 imgout.SetNoData(0)
             else:
                 imgarr2 = img[0].Read()
+                if group is not None:
+                    imgarr2 = cls._group(imgarr2, group)
                 it = numpy.nditer(imgarr, flags=['multi_index'])
                 while not it.finished:
                     (x, y) = it.multi_index
@@ -104,7 +189,8 @@ class Truth(Algorithm):
         imgout[0].Write(imgarr)
         VerboseOut('Created new truth map %s' % os.path.basename(output), 2)
 
-    def prune(self, truthfile='', samples=10, **kwargs):
+    @classmethod
+    def prune(cls, truthfile='', samples=10, **kwargs):
         """ Prune down a truth image to a max number of samples """
         VerboseOut('Pruning truth file %s' % os.path.basename(truthfile), 2)
         random.seed()
@@ -129,7 +215,7 @@ class Truth(Algorithm):
         gimg_pruned.CopyColorTable(gimg_truth)
         gimg_pruned[0].Write(timg)
 
-    def analyze(self, datadir, truth, **kwargs):
+    def analyze(cls, datadir, truth, **kwargs):
         """ Compare output map(s) with a truth map """
 
         gimg_truth = gippy.GeoImage(truth)
@@ -168,21 +254,28 @@ class Truth(Algorithm):
         # Add a subparser and get keywords to add to commands
         subparser, kwargs = cls.subparser(parser0)
 
-        h = 'Merge multiple truth maps into single map of agreement'
+        h = 'Merge multiple truth maps and/or multiple values into single map of agreement'
         parser = subparser.add_parser('merge', help=h, **kwargs)
         parser.add_argument('files', help='List of truth files', nargs='+')
         parser.add_argument('-o', '--output', help='Output file', required=True)
+        parser.add_argument('-g', '--group', nargs='*', action='append', default=None, type=int)
 
         h = 'Prune truth to S samples per class'
         parser = subparser.add_parser('prune', help=h, **kwargs)
         parser.add_argument('truthfile', help='Truth map to prune')
         parser.add_argument('-s', '--samples', help='Number of samples (in 1K units) to extract', default=10, type=int)
 
-        # Results
         h = 'Compare truth maps output map(s)'
         parser = subparser.add_parser('analyze', help=h, **kwargs)
         parser.add_argument('-d', '--datadir', help='Input data directory of classmaps', required=True)
         parser.add_argument('-t', '--truth', help='Truth image (not pruned)', required=True)
+
+        h = 'Print stats for each class in classification map'
+        parser = subparser.add_parser('stats', help=h, **kwargs)
+        parser.add_argument('files', help='List of truth files', nargs='+')
+        parser.add_argument('--counts', help='Include total pixel count', default=False, action='store_true')
+        #parser0.add_argument('-v','--vector',help='Count pixels in each class for provided shapefile training data')
+        #parser0.add_argument('-f','--field', help='The field in vector file to use as training set', default='FID')
 
         return parser0
 
