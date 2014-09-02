@@ -82,7 +82,7 @@ class MerraAsset(Asset):
             'url': 'http://goldsmr2.sci.gsfc.nasa.gov:80/opendap/MERRA/MAT1NXSLV.5.2.0',
             'source': 'MERRA%s.prod.assim.tavg1_2d_slv_Nx.%04d%02d%02d.hdf',
             'startdate': datetime.date(1979, 1, 11),
-            'latency': -45
+            'latency': 60
         },
         'T2M': {
             'description': 'Temperature at 2 m above the displacement height',
@@ -90,7 +90,7 @@ class MerraAsset(Asset):
             'url': 'http://goldsmr2.sci.gsfc.nasa.gov:80/opendap/MERRA/MAT1NXSLV.5.2.0',
             'source': 'MERRA%s.prod.assim.tavg1_2d_slv_Nx.%04d%02d%02d.hdf',
             'startdate': datetime.date(1979, 1, 11),
-            'latency': -45
+            'latency': 60
         },
         'T10M': {
             'description': 'Temperature at 10 m above the displacement height',
@@ -98,7 +98,7 @@ class MerraAsset(Asset):
             'url': 'http://goldsmr2.sci.gsfc.nasa.gov:80/opendap/MERRA/MAT1NXSLV.5.2.0',
             'source': 'MERRA%s.prod.assim.tavg1_2d_slv_Nx.%04d%02d%02d.hdf',
             'startdate': datetime.date(1979, 1, 11),
-            'latency': -45
+            'latency': 60
         },
         'PRECTOT': {
             'description': 'Total Precipitation (kg m-2 s-1)',
@@ -108,7 +108,7 @@ class MerraAsset(Asset):
             # MERRA300.prod.simul.tavg1_2d_mld_Nx.20140103.hdf
             'source': 'MERRA%s.prod.simul.tavg1_2d_mld_Nx.%04d%02d%02d.hdf',
             'startdate': datetime.date(1980, 1, 1),
-            'latency': -45        
+            'latency': 60
         }
     }
 
@@ -151,32 +151,9 @@ class MerraAsset(Asset):
 
     def datafiles(self):
         """ Get list of datafiles from asset (if archive file) """
+        datafiles = [self.filename]
+        return datafiles
 
-        print "self.filename", self.filename
-
-        # try:
-        #     datafiles = File2List(indexfile)
-        # except:
-        #     datafiles = []
-
-
-    # def datafiles(self):
-
-    #     indexfile = self.filename + '.index'
-
-    #     # TODO: get File2List to handle missing file and empty file in the same way
-    #     try:
-    #         datafiles = File2List(indexfile)
-    #     except:
-    #         datafiles = []
-
-    #     if not datafiles:
-    #         gdalfile = gdal.Open(self.filename)
-    #         subdatasets = gdalfile.GetSubDatasets()
-    #         datafiles = [s[0] for s in subdatasets]
-    #         List2File(datafiles, indexfile)
-
-    #     return datafiles
 
     # @classmethod
     # def _filepattern(cls, asset, tile, date):
@@ -204,6 +181,18 @@ class MerraAsset(Asset):
 
     @classmethod
     def fetch(cls, asset, tile, date):
+
+        print date.date() 
+        print cls._assets[asset]['startdate']
+        print datetime.datetime.now() - datetime.timedelta(cls._assets[asset]['latency'])
+
+        if date.date() < cls._assets[asset]['startdate']:
+            print "date is too early"
+            return 3
+
+        if date > datetime.datetime.now() - datetime.timedelta(cls._assets[asset]['latency']):
+            print "date is too recent"
+            return 3
 
         from pydap.client import open_url
         from agspy.utils import raster
@@ -266,33 +255,31 @@ class MerraAsset(Asset):
 
         url = cls._assets[asset]['url']
 
-        if date.year > 2000:
-            ver = '300'
-        elif date.year > 1992:
-            ver = '200'
-        else:
-            ver = '100'
+        possible_vers = ['100','200','300','301']
 
-        source = cls._assets[asset]['source'] % (ver, date.year, date.month, date.day)
-
-        loc = "%s/%04d/%02d/%s" % (url, date.year, date.month, source)
-
-        print "loc", loc
-
-        dataset = open_url(loc)
-
-        print dataset
+        success = False
+        for ver in possible_vers:
+            source = cls._assets[asset]['source'] % (ver, date.year, date.month, date.day)
+            loc = "%s/%04d/%02d/%s" % (url, date.year, date.month, source)
+            print "loc", loc
+            try:
+                dataset = open_url(loc)
+            except:
+                print "skipping"
+                continue
+            else:
+                success = True
+                print "dataset", dataset
+                break
+        if not success:
+            raise Exception('Unavailable MERRA version')
 
         keys = dataset.keys()
         names = []
         for i, key in enumerate(keys):
             x = dataset[key]
-            # print i, key, x.shape
             if x.shape == (24, 361, 540):
                 names.append(key)        
-
-        # print names
-        # print len(names)
 
         assert asset in names, "asset name is not in SDS list"
 
@@ -341,15 +328,30 @@ class MerraData(Data):
     }
     
 
-    def process(self, products, **kwargs):
+    def getlonlat(self):
+        """ return the center coordinates of the MERRA tile """
+        hcoord = int(self.id[1:3])
+        vcoord = int(self.id[4:])
+        lon = -180. + (hcoord-1)*12. + 6.
+        lat = 90. - vcoord*10. - 5.
+        return lon, lat
 
-        print kwargs
-        print products
+
+    def gmtoffset(self):
+        """ return the approximate difference between local time and GMT """
+        lon = self.getlonlat()[0]
+        houroffset = lon*(12./180.)
+        return houroffset
+
+
+    def process(self, products, **kwargs):
 
         for key, val in products.items():
 
             outfname = os.path.join(self.path, self.basename + '_' + key)
             VerboseOut("outfname: %s" % outfname, 4)
+
+            ####################################################################
 
             if val[0] == "daily_weather":
                 VERSION = "1.0"
@@ -358,7 +360,7 @@ class MerraData(Data):
                 allsds = []
                 missingassets = []
                 availassets = []
-                assetids = []
+                assetids = []   
 
                 for asset in assets:
                     try:
@@ -390,9 +392,16 @@ class MerraData(Data):
                 print prectot.min(), prectot.mean(), prectot.max()
 
 
+            ####################################################################
+
             elif val[0] == "temp_modis":
+
+                print "starting process temp_modis"
+
                 VERSION = "1.0"
                 assets = self._products['temp_modis']['assets']
+
+                print "assets", assets
 
                 allsds = []
                 missingassets = []
@@ -413,13 +422,76 @@ class MerraData(Data):
                     VerboseOut('There are missing assets: %s,%s,%s' % (str(self.date), str(self.id), str(missingassets)), 4)
                     continue
 
+                print "allsds", allsds
                 print "assetids", assetids
                 print "availassets", availassets
                 print "missingassets", missingassets
+
                 for i,sds in enumerate(allsds):
-                    print "i, sds", i,sds
 
+                    print "i, sds", i, sds
 
+                # pull the T2M data
+                t2m = gippy.GeoImage(allsds[1]) 
+                t2mdata = t2m.Read()
+
+                print t2mdata.dtype
+
+                imgout = gippy.GeoImage(outfname, t2m, t2m.DataType(), 4)
+
+                print dir(imgout)
+                print "----"
+                print dir(imgout[0])
+
+                # Aqua AM, Terra AM, Aqua PM, Terra PM
+                localtimes = [1.5, 10.5, 13.5, 22.5]
+                hroffset = self.gmtoffset()
+                print "hroffset", hroffset
+
+                strtimes = ['0130LT', '1030LT', '1330LT', '2230LT']
+
+                # TODO: loop across the scene in latitude
+                # calculate local time for each latitude column
+
+                for itime, localtime in enumerate(localtimes):
+
+                    picktime = localtime - hroffset
+                    pickhour = int(picktime)
+
+                    if pickhour < 0:
+                        # next day local time
+                        pickday = +1 
+                    elif pickhour > 24:
+                        # previous day local time
+                        pickday = -1 
+                    else:
+                        # same day local time
+                        pickday = 0
+
+                    pickidx = pickhour % 24
+
+                    print "localtime", localtime
+                    print "picktime", picktime
+                    print "pickhour", pickhour
+                    print "pickday", pickday
+                    print "pickidx", pickidx
+
+                    # strhr = str(pickidx).zfill(2) + "30GMT"
+                    # print "strhr", strhr
+
+                    obsdate = self.date + datetime.timedelta(pickday)
+                    print "obsdate", obsdate
+
+                    descr = " ".join([strtimes[itime], obsdate.isoformat()])
+
+                    t2m[pickidx].Process(imgout[itime])
+
+                    imgout.SetColor(descr, itime + 1)
+
+                # imgout.SetMeta("OBS_DATE_DAYTIME_TERRA", strdate)
+                # imgout.SetMeta("OBS_DATE_DAYTIME_TERRA", strdate)
+                # imgout.SetMeta("OBS_DATE_DAYTIME_TERRA", strdate)
+                # imgout.SetMeta("OBS_DATE_DAYTIME_TERRA", strdate)
 
 
 def main():
