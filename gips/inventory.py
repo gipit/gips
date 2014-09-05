@@ -208,12 +208,15 @@ class ProjectInventory(Inventory):
         self.products = {}
         files = glob.glob(os.path.join(self.projdir, '*.tif'))
         product_set = set()
-        for dat in Products.discover(files):
-            self.products[dat.date] = dat
-            product_set = product_set.union(dat.products)
-        if not products:
-            products = product_set
-        self.requested_products = products
+        try:
+            for dat in Products.discover(files):
+                self.products[dat.date] = dat
+                product_set = product_set.union(dat.products)
+            if not products:
+                products = product_set
+            self.requested_products = products
+        except:
+            raise Exception("%s does not appear to be a GIPS project directory" % self.projdir)
 
     @property
     def data(self):
@@ -339,9 +342,13 @@ class DataInventory(Inventory):
         # formulate project directory name
         if res is None:
             res = self.dataclass.Asset._defaultresolution
+        if res[0] == res[1]:
+            resstr = str(res[0])
+        else:
+            resstr = '%sx%s' % (res[0], res[1])
         sitename = basename(self.site) if self.site else 'tiles'
         if datadir is None:
-            datadir = '%s_%s_%sx%s%s' % (self.dataclass.name, sitename, res[0], res[1], suffix)
+            datadir = '%s_%s_%s%s' % (sitename, resstr, self.dataclass.name, suffix)
         if not os.path.exists(datadir):
             os.makedirs(datadir)
 

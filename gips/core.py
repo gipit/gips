@@ -23,7 +23,7 @@ import sys
 import shutil
 import errno
 import argparse
-import ogr
+from osgeo import ogr
 from datetime import datetime
 import glob
 from shapely.wkb import loads
@@ -471,10 +471,10 @@ class Data(object):
             self.sensor = asset.sensor
             # products that come automatically with assets
             self.products.update(asset.products)
-        # find all products
-        self.basename = self.id + '_' + self.date.strftime(self.Repository._datedir) + '_' + self.sensor
-        prods = self.discover(os.path.join(self.path, self.basename))
-        self.products.update(prods)
+            # find all products
+            self.basename = self.id + '_' + self.date.strftime(self.Repository._datedir) + '_' + self.sensor
+            prods = self.discover(os.path.join(self.path, self.basename))
+            self.products.update(prods)
         if len(self.assets) == 0:
             raise Exception('no assets')
         #VerboseOut('%s %s: assets and products found' % (tile, date), 5)

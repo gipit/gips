@@ -18,7 +18,7 @@ class Project(Algorithm):
         for date in self.inv.dates:
             for p in self.inv.product_list(date):
                 try:
-                    filename = self.inv[date]
+                    filename = self.inv[date][p]
                     gippy.BrowseImage(self.inv[date].open(p), quality)
                 except:
                     pass
