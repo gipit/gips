@@ -684,7 +684,7 @@ class ModisData(Data):
             #####################
             # TEMPERATURE PRODUCT
             if val[0] == "temp":
-                VERSION = "1.0"
+                VERSION = "1.1"
                 assets = self._products['temp']['assets']
 
                 allsds = []
@@ -743,6 +743,7 @@ class ModisData(Data):
 
                     # get meta name template info
                     basename = tempbands[iband].Basename()
+                    print "basename", basename
                     platform = basename[:3]
                     platform = platformnames[platform]
  
@@ -760,9 +761,9 @@ class ModisData(Data):
                     newmaskbest = ~binmask(qc, 1) & ~binmask(qc, 2)
 
                     if iband == 0:
-                        bestmask = newmaskbest.astype('uint16')
+                        bestmask = np.zeros_like(qc, dtype='uint16')
 
-                    bestmask += (math.pow(2, iband)*newmaskbest).astype('uint16')
+                    bestmask += (math.pow(2, band)*newmaskbest).astype('uint16')
 
                     numbad = np.sum(newmaskbad)
                     fracbad = np.sum(newmaskbad)/float(newmaskbad.size)
