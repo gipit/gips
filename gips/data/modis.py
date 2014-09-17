@@ -392,8 +392,8 @@ class ModisData(Data):
                 
                 #imgout[1].Write(bestmask)
 
-                imgout.SetColor('NDVI', 1)
-                #imgout.SetColor('Best quality', 2)
+                imgout.SetBandName('NDVI', 1)
+                #imgout.SetBandName('Best quality', 2)
 
                 for k, v in meta.items():
                     imgout.SetMeta(k, str(v))
@@ -510,11 +510,11 @@ class ModisData(Data):
                 imgout[4].SetGain(1.0)
                 imgout[4].Write(qcimg)
 
-                imgout.SetColor('NDVI', 1)
-                imgout.SetColor('LSWI', 2)
-                imgout.SetColor('VARI', 3)
-                imgout.SetColor('BRGT', 4)
-                imgout.SetColor('Best quality', 5)
+                imgout.SetBandName('NDVI', 1)
+                imgout.SetName('LSWI', 2)
+                imgout.SetName('VARI', 3)
+                imgout.SetName('BRGT', 4)
+                imgout.SetName('Best quality', 5)
 
                 for k, v in meta.items():
                     imgout.SetMeta(k, str(v))
@@ -674,8 +674,8 @@ class ModisData(Data):
                 imgout[0].Write(coverout)
                 imgout[1].Write(fracout)
 
-                imgout.SetColor('Snow Cover', 1)
-                imgout.SetColor('Fractional Snow Cover', 2)
+                imgout.SetBandName('Snow Cover', 1)
+                imgout.SetBandName('Fractional Snow Cover', 2)
 
                 for k, v in meta.items():
                     imgout.SetMeta(k, str(v))
@@ -684,7 +684,7 @@ class ModisData(Data):
             #####################
             # TEMPERATURE PRODUCT
             if val[0] == "temp":
-                VERSION = "1.0"
+                VERSION = "1.1"
                 assets = self._products['temp']['assets']
 
                 allsds = []
@@ -743,6 +743,7 @@ class ModisData(Data):
 
                     # get meta name template info
                     basename = tempbands[iband].Basename()
+                    print "basename", basename
                     platform = basename[:3]
                     platform = platformnames[platform]
  
@@ -760,9 +761,9 @@ class ModisData(Data):
                     newmaskbest = ~binmask(qc, 1) & ~binmask(qc, 2)
 
                     if iband == 0:
-                        bestmask = newmaskbest.astype('uint16')
+                        bestmask = np.zeros_like(qc, dtype='uint16')
 
-                    bestmask += (math.pow(2, iband)*newmaskbest).astype('uint16')
+                    bestmask += (math.pow(2, band)*newmaskbest).astype('uint16')
 
                     numbad = np.sum(newmaskbad)
                     fracbad = np.sum(newmaskbad)/float(newmaskbad.size)
@@ -810,11 +811,11 @@ class ModisData(Data):
                 imgout.SetNoData(65535)
                 imgout.SetGain(0.02)
 
-                imgout.SetColor('Temperature Daytime Terra', 1)
-                imgout.SetColor('Temperature Nighttime Terra', 2)
-                imgout.SetColor('Temperature Daytime Aqua', 3)
-                imgout.SetColor('Temperature Nighttime Aqua', 4)
-                imgout.SetColor('Temperature Best Quality', 5)
+                imgout.SetBandName('Temperature Daytime Terra', 1)
+                imgout.SetBandName('Temperature Nighttime Terra', 2)
+                imgout.SetBandName('Temperature Daytime Aqua', 3)
+                imgout.SetBandName('Temperature Nighttime Aqua', 4)
+                imgout.SetBandName('Temperature Best Quality', 5)
 
                 for iband, band in enumerate(availbands):
                     tempbands[iband].Process(imgout[band])
