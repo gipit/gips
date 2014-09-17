@@ -111,6 +111,17 @@ if __name__ == "__main__":
             print '%s -> %s: %s' % (os.path.basename(f), os.path.basename(fout), datetime.datetime.now()-start)
 
 """
+    print "GIPS v%s" % gips.__version__
+    print "Libraries:"
+    print "GIPPY v%s" % gippy.__version__
+
+    print "\nAvailable datasets:"
+    for repo in os.path.join(settings.REPOS):
+        if os.path.exists(repo['rootpath']):
+            print '%s: %s' % (repo, repo['rootpath'])
+"""
+
+"""
 create polygon code
     elif args.command == 'create':
         start = datetime.datetime.now()
