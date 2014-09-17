@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 ################################################################################
-#    GIPPY: Geospatial Image Processing library for Python
+#    GIPS: Geospatial Image Processing System
 #
 #    Copyright (C) 2014 Matthew A Hanson
 #
