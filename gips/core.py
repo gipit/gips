@@ -19,8 +19,6 @@
 ################################################################################
 
 import os
-import sys
-import shutil
 import errno
 import argparse
 from osgeo import ogr
@@ -30,12 +28,11 @@ from shapely.wkb import loads
 import tarfile
 import traceback
 import ftplib
-import inspect
 
 import gippy
 import gips
 from gips.utils import VerboseOut, RemoveFiles, File2List, List2File
-from gips.inventory import DataInventory, ProjectInventory
+from gips.inventory import DataInventory
 
 from gips.GeoVector import GeoVector
 
@@ -158,11 +155,11 @@ class Repository(object):
             area = geom.intersection(tgeom).area
             if area != 0:
                 tile = cls.feature2tile(feat)
-                tiles[tile] = (area/geom.area, area/tgeom.area)
+                tiles[tile] = (area / geom.area, area / tgeom.area)
             feat = tlayer.GetNextFeature()
         remove_tiles = []
         for t in tiles:
-            if (tiles[t][0] < pcov/100.0) or (tiles[t][1] < ptile/100.0):
+            if (tiles[t][0] < (pcov / 100.0)) or (tiles[t][1] < (ptile / 100.0)):
                 remove_tiles.append(t)
         for t in remove_tiles:
             tiles.pop(t, None)
@@ -215,7 +212,7 @@ class Asset(object):
         else:
             raise Exception('%s is not a valid tar file' % self.filename)
         path = os.path.dirname(self.filename)
-        indexfile = os.path.join(path, self.filename+'.index')
+        indexfile = os.path.join(path, self.filename + '.index')
         if os.path.exists(indexfile):
             datafiles = File2List(indexfile)
         else:
@@ -280,7 +277,7 @@ class Asset(object):
             ftp.close()
         except Exception, e:
             VerboseOut(traceback.format_exc(), 3)
-            raise Exception("Error downloading")
+            raise Exception("Error downloading: %s" % e)
 
     @classmethod
     def dates(cls, asset, tile, dates, days):
@@ -345,9 +342,9 @@ class Asset(object):
         # Summarize
         if numfiles > 0:
             VerboseOut('%s files (%s links) from %s added to archive in %s' %
-                      (numfiles, numlinks, os.path.abspath(path), datetime.now()-start))
+                      (numfiles, numlinks, os.path.abspath(path), datetime.now() - start))
         if numfiles != len(fnames):
-            VerboseOut('%s files not added to archive' % (len(fnames)-numfiles))
+            VerboseOut('%s files not added to archive' % (len(fnames) - numfiles))
         return assets
 
     @classmethod
@@ -362,7 +359,7 @@ class Asset(object):
             qname = os.path.join(cls.Repository.qpath(), bname)
             if not os.path.exists(qname):
                 os.link(os.path.abspath(filename), qname)
-            VerboseOut('%s -> quarantine (file error)' % filename, 2)
+            VerboseOut('%s -> quarantine (file error): %s' % (filename, e), 2)
             return (None, 0)
 
         dates = asset.date
@@ -510,14 +507,14 @@ class Data(object):
         badexts = ['.hdr', '.xml', 'gz', '.index']
         products = {}
         for p in cls._products:
-            files = glob.glob(basefilename+'_'+p+cls._pattern)
+            files = glob.glob(basefilename + '_' + p + cls._pattern)
             #if len(files) > 0:
             #    products[p] = files
             for f in files:
                 rootf = os.path.splitext(f)[0]
                 ext = os.path.splitext(f)[1]
                 if ext not in badexts:
-                    products[rootf[len(basefilename)+1:]] = f
+                    products[rootf[len(basefilename) + 1:]] = f
         return products
 
     @classmethod
@@ -542,7 +539,7 @@ class Data(object):
                 for d in asset_dates:
                     if not cls.Asset.discover(t, d, a):
                         try:
-                            status = cls.Asset.fetch(a, t, d)
+                            cls.Asset.fetch(a, t, d)
                             fetched.append((a, t, d))
                         except:
                             pass
@@ -578,7 +575,8 @@ class Data(object):
                 nargs = product.get('args', None)
                 choices = product.get('choices', None)
                 if choices is not None:
-                    groups[group].add_argument('--%s' % p, help=product['description'], choices=choices, nargs='?', const=[])
+                    groups[group].add_argument('--%s' % p, help=product['description'],
+                                               choices=choices, nargs='?', const=[])
                 elif nargs == '?':
                     groups[group].add_argument('--%s' % p, help=product['description'], nargs=nargs, const=[])
                 elif nargs == '*':
