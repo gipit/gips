@@ -38,7 +38,7 @@ for repo, cfg in settings.REPOS.items():
 for f in glob.glob('gips/algorithms/*.py'):
     try:
         name = os.path.splitext(os.path.basename(f))[0]
-        if name not in ['__init__', 'core.py']:
+        if name not in ['__init__', 'core']:
             script = 'gips_%s = gips.algorithms.%s:main' % (name, name.lower())
             console_scripts.append(script)
     except:
@@ -57,7 +57,7 @@ setup(
     author='Matthew Hanson',
     author_email='mhanson@appliedgeosolutions.com',
     packages=['gips', 'gips.data', 'gips.algorithms'],
-    install_requires=['Py6S>=1.5.0', 'shapely', 'gippy>=1.0.0b3', 'python-dateutil'],
+    install_requires=['Py6S>=1.5.0', 'shapely', 'gippy>=1.0.0b4', 'python-dateutil'],
     scripts=scripts,
     entry_points={'console_scripts': console_scripts},
 )
