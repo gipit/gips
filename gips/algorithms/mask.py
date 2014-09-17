@@ -19,15 +19,10 @@
 ################################################################################
 
 import os
-import argparse
-from datetime import datetime
-import numpy as np
 
 import gippy
 from gips.algorithms.core import Algorithm
 from gips.utils import VerboseOut, basename
-from gips.inventory import ProjectInventory
-from pdb import set_trace
 
 
 class Mask(Algorithm):
@@ -59,10 +54,10 @@ class Mask(Algorithm):
                     VerboseOut('Masking %s' % img.Basename(), 2)
                     if overwrite:
                         img.Process()
-                        imgout.SetMeta('MASKS', meta)
+                        img.SetMeta('MASKS', meta)
                     else:
                         fout = os.path.splitext(img.Filename())[0]
-                        imgout = img.Process(fout+self.suffix)
+                        imgout = img.Process(fout + self.suffix)
                         imgout.SetMeta('MASKS', meta)
                         imgout = None
                 img = None

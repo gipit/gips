@@ -25,8 +25,6 @@ import re
 from datetime import datetime
 import shutil
 import numpy
-from collections import OrderedDict
-from copy import deepcopy
 import traceback
 
 import gippy
@@ -36,7 +34,6 @@ from gips.utils import VerboseOut, RemoveFiles
 import gips.settings as settings
 
 from gips.data.aod import AODData
-from gips.data.modtran import MODTRAN
 
 __version__ = '0.7.0'
 
@@ -138,7 +135,7 @@ class LandsatAsset(Asset):
         self.tile = fname[3:9]
         year = fname[9:13]
         doy = fname[13:16]
-        self.date = datetime.strptime(year+doy, "%Y%j")
+        self.date = datetime.strptime(year + doy, "%Y%j")
         if self.sensor not in self._sensors.keys():
             raise Exception("Sensor %s not supported" % self.sensor)
         # Landsat specific additions
@@ -147,10 +144,10 @@ class LandsatAsset(Asset):
         for i, band in enumerate(smeta['colors']):
             wvlen = smeta['bandlocs'][i]
             self.meta[band] = {
-                'bandnum': i+1,
+                'bandnum': i + 1,
                 'wvlen': wvlen,
-                'wvlen1': wvlen - smeta['bandwidths'][i]/2.0,
-                'wvlen2': wvlen + smeta['bandwidths'][i]/2.0,
+                'wvlen1': wvlen - smeta['bandwidths'][i] / 2.0,
+                'wvlen2': wvlen + smeta['bandwidths'][i] / 2.0,
                 'E': smeta['E'][i],
                 'K1': smeta['K1'][i],
                 'K2': smeta['K2'][i],
@@ -168,31 +165,33 @@ class LandsatData(Data):
     _products = {
         #'Standard': {
         # 'rgb': 'RGB image for viewing (quick processing)',
-        'rad':  {'description': 'Surface-leaving radiance', 'choices': ['toa']},
-        'ref':  {'description': 'Surface reflectance', 'choices': ['toa']},
+        'rad': {'description': 'Surface-leaving radiance', 'choices': ['toa']},
+        'ref': {'description': 'Surface reflectance', 'choices': ['toa']},
         'temp': {'description': 'Brightness (apparent) temperature', 'toa': True},
         'acca': {'description':
-                     ('Automated Cloud Cover Assesment -- 0 to 3 arguments. '
-                      'First is erosion kernel diameter in pixels, '
-                      'second is dilation kernel diameter in pixels, '
-                      'and last is the cloud height in meters. '
-                      'If not specified, the values are 5, 10 and 4000.'),
+                 ('Automated Cloud Cover Assesment -- 0 to 3 arguments. '
+                  'First is erosion kernel diameter in pixels, '
+                  'second is dilation kernel diameter in pixels, '
+                  'and last is the cloud height in meters. '
+                  'If not specified, the values are 5, 10 and 4000.'),
                  'args': '*', 'toa': True},
         'fmask': {'description': 'Fmask cloud cover', 'args': '*', 'toa': True},
         'tcap': {'description': 'Tassled cap transformation', 'toa': True},
         #'Indices': {
-        'bi':   {'description': 'Brightness Index', 'group': 'Index', 'choices': ['toa']},
-        'evi':  {'description': 'Enhanced Vegetation Index', 'group': 'Index', 'choices': ['toa']},
+        'bi': {'description': 'Brightness Index', 'group': 'Index', 'choices': ['toa']},
+        'evi': {'description': 'Enhanced Vegetation Index', 'group': 'Index', 'choices': ['toa']},
         'lswi': {'description': 'Land Surface Water Index', 'group': 'Index', 'choices': ['toa']},
-        'msavi2': {'description': 'Modified Soil-Adjusted Vegetation Index (revised)', 'group': 'Index', 'choices': ['toa']},
+        'msavi2': {'description':
+                   'Modified Soil-Adjusted Vegetation Index (revised)',
+                   'group': 'Index', 'choices': ['toa']},
         'ndsi': {'description': 'Normalized Difference Snow Index', 'group': 'Index', 'choices': ['toa']},
         'ndvi': {'description': 'Normalized Difference Vegetation Index', 'group': 'Index', 'choices': ['toa']},
         'ndwi': {'description': 'Normalized Difference Water Index', 'group': 'Index', 'choices': ['toa']},
         'satvi': {'description': 'Soil-Adjusted Total Vegetation Index', 'group': 'Index', 'choices': ['toa']},
         #'Tillage Indices': {
         'ndti': {'description': 'Normalized Difference Tillage Index', 'group': 'Tillage', 'choices': ['toa']},
-        'crc':  {'description': 'Crop Residue Cover', 'group': 'Tillage', 'choices': ['toa']},
-        'sti':  {'description': 'Standard Tillage Index', 'group': 'Tillage', 'choices': ['toa']},
+        'crc': {'description': 'Crop Residue Cover', 'group': 'Tillage', 'choices': ['toa']},
+        'sti': {'description': 'Standard Tillage Index', 'group': 'Tillage', 'choices': ['toa']},
         'isti': {'description': 'Inverse Standard Tillage Index', 'group': 'Tillage', 'choices': ['toa']},
     }
     _defaultproduct = 'ref'
@@ -255,10 +254,10 @@ class LandsatData(Data):
         for b, out in enumerate(outputs):
             t = out.trans['global_gas'].upward
             Lu = out.atmospheric_intrinsic_radiance
-            Ld = (out.direct_solar_irradiance + out.diffuse_solar_irradiance + out.environmental_irradiance)/numpy.pi
+            Ld = (out.direct_solar_irradiance + out.diffuse_solar_irradiance + out.environmental_irradiance) / numpy.pi
             results[self.assets[''].visbands[b]] = [t, Lu, Ld]
             VerboseOut("{:>6}: {:>8.3f}{:>8.2f}{:>8.2f}".format(self.assets[''].visbands[b], t, Lu, Ld), 2)
-        VerboseOut('Ran atmospheric model in %s' % str(datetime.now()-start), 2)
+        VerboseOut('Ran atmospheric model in %s' % str(datetime.now() - start), 2)
 
         return results
 
@@ -277,10 +276,6 @@ class LandsatData(Data):
             toa = toa and (self._products[val[0]].get('toa', False) or 'toa' in val)
         if not toa:
             start = datetime.now()
-            if self.sensor == 'LC8':
-                numbands = img.NumBands()-2
-            else:
-                numbands = img.NumBands()
             try:
                 atmos = self.SixS()
             except Exception, e:
@@ -301,12 +296,12 @@ class LandsatData(Data):
 
         # create non-atmospherically corrected apparent reflectance and temperature image
         reflimg = gippy.GeoImage(img)
-        theta = numpy.pi * self.metadata['geometry']['solarzenith']/180.0
-        sundist = (1.0 - 0.016728 * numpy.cos(numpy.pi * 0.9856 * (self.metadata['JulianDay']-4.0)/180.0))
+        theta = numpy.pi * self.metadata['geometry']['solarzenith'] / 180.0
+        sundist = (1.0 - 0.016728 * numpy.cos(numpy.pi * 0.9856 * (self.metadata['JulianDay'] - 4.0) / 180.0))
         for col in self.assets[''].visbands:
-            reflimg[col] = img[col] * (1.0/((meta[col]['E'] * numpy.cos(theta)) / (numpy.pi * sundist * sundist)))
+            reflimg[col] = img[col] * (1.0 / ((meta[col]['E'] * numpy.cos(theta)) / (numpy.pi * sundist * sundist)))
         for col in self.assets[''].lwbands:
-            reflimg[col] = (((img[col].pow(-1))*meta[col]['K1']+1).log().pow(-1))*meta[col]['K2'] - 273.15
+            reflimg[col] = (((img[col].pow(-1)) * meta[col]['K1'] + 1).log().pow(-1)) * meta[col]['K2'] - 273.15
 
         # Process standard products
         for key, val in groups['Standard'].items():
@@ -330,7 +325,7 @@ class LandsatData(Data):
                 elif val[0] == 'rad':
                     imgout = gippy.GeoImage(fname, img, gippy.GDT_Int16, len(visbands))
                     for i in range(0, imgout.NumBands()):
-                        imgout.SetBandName(visbands[i], i+1)
+                        imgout.SetBandName(visbands[i], i + 1)
                     imgout.SetNoData(-32768)
                     imgout.SetGain(0.1)
                     if toa:
@@ -338,11 +333,11 @@ class LandsatData(Data):
                             img[col].Process(imgout[col])
                     else:
                         for col in visbands:
-                            ((img[col]-atmos[col][1])/atmos[col][0]).Process(imgout[col])
+                            ((img[col] - atmos[col][1]) / atmos[col][0]).Process(imgout[col])
                 elif val[0] == 'ref':
                     imgout = gippy.GeoImage(fname, img, gippy.GDT_Int16, len(visbands))
                     for i in range(0, imgout.NumBands()):
-                        imgout.SetBandName(visbands[i], i+1)
+                        imgout.SetBandName(visbands[i], i + 1)
                     imgout.SetNoData(-32768)
                     imgout.SetGain(0.0001)
                     if toa:
@@ -359,11 +354,11 @@ class LandsatData(Data):
                     imgout = gippy.LinearTransform(tmpimg, fname, arr)
                     outbands = ['Brightness', 'Greenness', 'Wetness', 'TCT4', 'TCT5', 'TCT6']
                     for i in range(0, imgout.NumBands()):
-                        imgout.SetBandName(outbands[i], i+1)
+                        imgout.SetBandName(outbands[i], i + 1)
                 elif val[0] == 'temp':
                     imgout = gippy.GeoImage(fname, img, gippy.GDT_Int16, len(lwbands))
                     for i in range(0, imgout.NumBands()):
-                        imgout.SetBandName(lwbands[i], i+1)
+                        imgout.SetBandName(lwbands[i], i + 1)
                     imgout.SetNoData(-32768)
                     imgout.SetGain(0.1)
                     for col in lwbands:
@@ -376,13 +371,13 @@ class LandsatData(Data):
                         #    atmos = MODTRAN(meta[col], self.metadata['datetime'], lat, lon)
                         #    e = 0.95
                         #    band = (img[col] - (atmos.output[1] + (1-e) * atmos.output[2])) / (atmos.output[0] * e)
-                        band = (((band.pow(-1))*meta[col]['K1']+1).log().pow(-1))*meta[col]['K2'] - 273.15
+                        band = (((band.pow(-1)) * meta[col]['K1'] + 1).log().pow(-1)) * meta[col]['K2'] - 273.15
                         band.Process(imgout[col])
                 fname = imgout.Filename()
                 imgout.SetMeta(md)
                 imgout = None
                 self.products[key] = fname
-                VerboseOut(' -> %s: processed in %s' % (os.path.basename(fname), datetime.now()-start), 1)
+                VerboseOut(' -> %s: processed in %s' % (os.path.basename(fname), datetime.now() - start), 1)
             except Exception, e:
                 VerboseOut('Error creating product %s for %s: %s' % (key, bname, e), 2)
                 VerboseOut(traceback.format_exc(), 3)
@@ -406,20 +401,20 @@ class LandsatData(Data):
                 self.products.update(prodout)
             # Run atmospherically corrected
             for col in visbands:
-                img[col] = ((img[col]-atmos[col][1])/atmos[col][0]) * (1.0/atmos[col][2])
+                img[col] = ((img[col] - atmos[col][1]) / atmos[col][0]) * (1.0 / atmos[col][2])
             fnames = [os.path.join(self.path, self.basename + '_' + key) for key in indices]
             if len(fnames) > 0:
                 prodarr = dict(zip([indices[p][0] for p in indices.keys()], fnames))
                 prodout = gippy.Indices(img, prodarr, md)
                 self.products.update(prodout)
-            VerboseOut(' -> %s: processed %s in %s' % (self.basename, indices0.keys(), datetime.now()-start), 1)
+            VerboseOut(' -> %s: processed %s in %s' % (self.basename, indices0.keys(), datetime.now() - start), 1)
 
         img = None
         # cleanup directory
         try:
             for bname in self.assets[''].datafiles():
                 if bname[-7:] != 'MTL.txt':
-                    files = glob.glob(os.path.join(self.path, bname)+'*')
+                    files = glob.glob(os.path.join(self.path, bname) + '*')
                     RemoveFiles(files)
             shutil.rmtree(os.path.join(self.path, 'modtran'))
         except:
@@ -456,14 +451,14 @@ class LandsatData(Data):
         text = text.replace('ACQUISITION_DATE', 'DATE_ACQUIRED')
         text = text.replace('SCENE_CENTER_SCAN_TIME', 'SCENE_CENTER_TIME')
         for (ob, nb) in zip(smeta['oldbands'], smeta['bands']):
-            text = re.sub(r'\WLMIN_BAND'+ob, 'RADIANCE_MINIMUM_BAND_'+nb, text)
-            text = re.sub(r'\WLMAX_BAND'+ob, 'RADIANCE_MAXIMUM_BAND_'+nb, text)
-            text = re.sub(r'\WQCALMIN_BAND'+ob, 'QUANTIZE_CAL_MIN_BAND_'+nb, text)
-            text = re.sub(r'\WQCALMAX_BAND'+ob, 'QUANTIZE_CAL_MAX_BAND_'+nb, text)
-            text = re.sub(r'\WBAND'+ob+'_FILE_NAME', 'FILE_NAME_BAND_'+nb, text)
+            text = re.sub(r'\WLMIN_BAND' + ob, 'RADIANCE_MINIMUM_BAND_' + nb, text)
+            text = re.sub(r'\WLMAX_BAND' + ob, 'RADIANCE_MAXIMUM_BAND_' + nb, text)
+            text = re.sub(r'\WQCALMIN_BAND' + ob, 'QUANTIZE_CAL_MIN_BAND_' + nb, text)
+            text = re.sub(r'\WQCALMAX_BAND' + ob, 'QUANTIZE_CAL_MAX_BAND_' + nb, text)
+            text = re.sub(r'\WBAND' + ob + '_FILE_NAME', 'FILE_NAME_BAND_' + nb, text)
         for l in ('LAT', 'LON', 'MAPX', 'MAPY'):
             for c in ('UL', 'UR', 'LL', 'LR'):
-                text = text.replace('PRODUCT_'+c+'_CORNER_'+l, 'CORNER_'+c+'_'+l+'_PRODUCT')
+                text = text.replace('PRODUCT_' + c + '_CORNER_' + l, 'CORNER_' + c + '_' + l + '_PRODUCT')
         text = text.replace('\x00', '')
         # Remove junk
         lines = text.split('\n')
@@ -481,11 +476,9 @@ class LandsatData(Data):
                 float(mtl['CORNER_LL_LAT_PRODUCT']), float(mtl['CORNER_LR_LAT_PRODUCT']))
         lons = (float(mtl['CORNER_UL_LON_PRODUCT']), float(mtl['CORNER_UR_LON_PRODUCT']),
                 float(mtl['CORNER_LL_LON_PRODUCT']), float(mtl['CORNER_LR_LON_PRODUCT']))
-        lat = (min(lats) + max(lats))/2.0
-        lon = (min(lons) + max(lons))/2.0
+        lat = (min(lats) + max(lats)) / 2.0
+        lon = (min(lons) + max(lons)) / 2.0
         dt = datetime.strptime(mtl['DATE_ACQUIRED'] + ' ' + mtl['SCENE_CENTER_TIME'][:-2], '%Y-%m-%d %H:%M:%S.%f')
-        seconds = (dt.second + dt.microsecond/1000000.)/3600.
-        dectime = dt.hour + dt.minute/60.0 + seconds
         try:
             clouds = float(mtl['CLOUD_COVER'])
         except:
@@ -496,14 +489,14 @@ class LandsatData(Data):
         offset = []
         dynrange = []
         for i, b in enumerate(smeta['bands']):
-            minval = int(float(mtl['QUANTIZE_CAL_MIN_BAND_'+b]))
-            maxval = int(float(mtl['QUANTIZE_CAL_MAX_BAND_'+b]))
-            minrad = float(mtl['RADIANCE_MINIMUM_BAND_'+b])
-            maxrad = float(mtl['RADIANCE_MAXIMUM_BAND_'+b])
-            gain.append((maxrad-minrad)/(maxval-minval))
+            minval = int(float(mtl['QUANTIZE_CAL_MIN_BAND_' + b]))
+            maxval = int(float(mtl['QUANTIZE_CAL_MAX_BAND_' + b]))
+            minrad = float(mtl['RADIANCE_MINIMUM_BAND_' + b])
+            maxrad = float(mtl['RADIANCE_MAXIMUM_BAND_' + b])
+            gain.append((maxrad - minrad) / (maxval - minval))
             offset.append(minrad)
             dynrange.append((minval, maxval))
-            filenames.append(mtl['FILE_NAME_BAND_'+b].strip('\"'))
+            filenames.append(mtl['FILE_NAME_BAND_' + b].strip('\"'))
 
         _geometry = {
             'solarzenith': (90.0 - float(mtl['SUN_ELEVATION'])),
@@ -552,7 +545,7 @@ class LandsatData(Data):
         # Geometry used for calculating incident irradiance
         colors = self.assets['']._sensors[self.sensor]['colors']
         for bi in range(0, len(self.metadata['filenames'])):
-            image.SetBandName(colors[bi], bi+1)
+            image.SetBandName(colors[bi], bi + 1)
             # need to do this or can we index correctly?
             band = image[bi]
             band.SetGain(self.metadata['gain'][bi])

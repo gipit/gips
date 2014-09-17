@@ -19,7 +19,7 @@
 ################################################################################
 
 import argparse
-from datetime import datetime
+#from datetime import datetime
 import traceback
 
 import gippy
@@ -38,7 +38,7 @@ class Algorithm(object):
 
     def run_command(self, **kwargs):
         """ Calls "run" function, or "command" if algorithm uses subparser """
-        start = datetime.now()
+        #start = datetime.now()
         if 'command' not in kwargs:
             command = 'run'
         else:

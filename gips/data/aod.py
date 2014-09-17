@@ -21,7 +21,6 @@
 import os
 import datetime
 import gdal
-import ftplib
 import numpy
 import glob
 
@@ -60,7 +59,7 @@ class AODRepository(Repository):
         for year in os.listdir(cls.path()):
             days = os.listdir(os.path.join(cls.path(), year))
             for day in days:
-                dates.append(datetime.datetime.strptime(year+day, '%Y%j').date())
+                dates.append(datetime.datetime.strptime(year + day, '%Y%j').date())
         return dates
 
     @classmethod
@@ -97,7 +96,7 @@ class AODAsset(Asset):
         self.tile = ''
         year = bname[10:14]
         doy = bname[14:17]
-        self.date = datetime.datetime.strptime(year+doy, "%Y%j").date()
+        self.date = datetime.datetime.strptime(year + doy, "%Y%j").date()
         self.sensor = bname[:3]
         #datafiles = self.datafiles()
         prefix = 'HDF4_EOS:EOS_GRID:"'
@@ -115,9 +114,9 @@ class AODAsset(Asset):
             List2File(datafiles, indexfile)
         return datafiles
 
-    @classmethod
-    def archive(cls, path='.', recursive=False, keep=False):
-        assets = super(AODAsset, cls).archive(path, recursive, keep)
+    #@classmethod
+    #def archive(cls, path='.', recursive=False, keep=False):
+        #assets = super(AODAsset, cls).archive(path, recursive, keep)
         # this creates new LTA files every archiving
         #dates = [a.date for a in assets]
         #for date in set(dates):
@@ -162,20 +161,19 @@ class AODData(Data):
             path = os.path.join(cpath, 'ltad')
             # Calculate AOT long-term multi-year averages (lta) for given day
             if product == 'ltad':
-                for day in range(inventory.start_day, inventory.end_day+1):
+                for day in range(inventory.start_day, inventory.end_day + 1):
                     dates = [d for d in inventory.dates if int(d.strftime('%j')) == day]
                     filenames = [inventory[d].tiles[''].products['aod'] for d in dates]
                     fout = path + '%s.tif' % str(day).zfill(3)
-                    imgout = cls.process_mean(filenames, fout)
+                    cls.process_mean(filenames, fout)
             # Calculate single average per pixel (all days and years)
             if product == 'lta':
-                filenames = glob.glob(path+'*.tif')
+                filenames = glob.glob(path + '*.tif')
                 if len(filenames) > 0:
                     fout = os.path.join(cls.Asset.Repository.cpath(), 'lta.tif')
-                    imgout = cls.process_mean(filenames, fout)
+                    cls.process_mean(filenames, fout)
                 else:
                     raise Exception('No daily LTA files exist!')
-            imgout = None
 
     @classmethod
     def process_mean(cls, filenames, fout):
@@ -190,7 +188,7 @@ class AODData(Data):
             for band in range(0, img.NumBands()):
                 data = img[band].Read()
                 mask = img[band].DataMask()
-                var = numpy.multiply(numpy.power(data-meanimg, 2), mask)
+                var = numpy.multiply(numpy.power(data - meanimg, 2), mask)
                 if band == 0:
                     totalvar = var
                     counts = mask
@@ -202,8 +200,8 @@ class AODData(Data):
             inds = numpy.where(counts != 0)
             totalvar[inds] = numpy.divide(totalvar[inds], counts[inds])
             imgout[1].Write(totalvar)
-            t = datetime.datetime.now()-start
-            VerboseOut('%s: mean + variance for %s files processed in %s' % (os.path.basename(fout), len(filenames), t))
+            t = datetime.datetime.now() - start
+            VerboseOut('%s: mean/var for %s files processed in %s' % (os.path.basename(fout), len(filenames), t))
         return imgout
 
     @classmethod
@@ -232,12 +230,13 @@ class AODData(Data):
     def get_aod(cls, lat, lon, date, fetch=True):
         pixx = int(numpy.round(float(lon) + 179.5))
         pixy = int(numpy.round(89.5 - float(lat)))
-        roi = gippy.iRect(pixx-1, pixy-1, 3, 3)
+        roi = gippy.iRect(pixx - 1, pixy - 1, 3, 3)
 
         # try reading actual data file first
         try:
+            # this is just for fetching the data
             dat = cls.inventory(tile='', dates=date.strftime('%Y-%j'), fetch=fetch, products=['aod'])
-            img = gippy.GeoImage(self.products['aod'])
+            img = gippy.GeoImage(cls.products['aod'])
             vals = img[0].Read(roi).squeeze()
             img = None
             # TODO - do this automagically in swig wrapper
@@ -247,7 +246,7 @@ class AODData(Data):
             if numpy.isnan(aod):
                 aod = numpy.mean(vals[~numpy.isnan(vals)])
                 source = 'MODIS (MOD08_D3) spatial average'
-        except Exception, e:
+        except Exception:
             aod = numpy.nan
 
         var = 0
@@ -268,9 +267,9 @@ class AODData(Data):
             val, var = cls._read_point(filename, roi, nodata)
             var = var if var != 0.0 else val
             if not numpy.isnan(val):
-                aod = val/var
+                aod = val / var
                 totalvar = var
-                norm = 1.0/var
+                norm = 1.0 / var
                 cnt = cnt + 1
             VerboseOut('AOD: LTA-Daily = %s, %s' % (val, var), 3)
 
@@ -278,17 +277,17 @@ class AODData(Data):
             val, var = cls._read_point(os.path.join(repo.cpath(), 'lta.tif'), roi, nodata)
             var = var if var != 0.0 else val
             if not numpy.isnan(val):
-                aod = aod + val/var
+                aod = aod + val / var
                 totalvar = totalvar + var
-                norm = norm + 1.0/var
+                norm = norm + 1.0 / var
                 cnt = cnt + 1
             VerboseOut('AOD: LTA = %s, %s' % (val, var), 3)
 
             # TODO - adjacent days
 
             # Final AOD estimate
-            aod = aod/norm
-            totalvar = totalvar/cnt
+            aod = aod / norm
+            totalvar = totalvar / cnt
 
         if numpy.isnan(aod):
             aod = 0.17

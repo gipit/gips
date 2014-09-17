@@ -20,7 +20,6 @@
 
 import os
 import datetime
-import glob
 import tarfile
 import copy
 import numpy
@@ -29,7 +28,7 @@ from collections import OrderedDict
 import gippy
 from gips.core import Repository, Asset, Data
 from gips.inventory import DataInventory
-from gips.utils import VerboseOut, File2List, List2File, RemoveFiles
+from gips.utils import File2List, List2File, RemoveFiles
 import gips.settings as settings
 
 
@@ -44,8 +43,8 @@ class SARRepository(Repository):
         """ Get tile designation from a geospatial feature (i.e. a row) """
         fldindex_lat = feature.GetFieldIndex("lat")
         fldindex_lon = feature.GetFieldIndex("lon")
-        lat = int(feature.GetField(fldindex_lat)+0.5)
-        lon = int(feature.GetField(fldindex_lon)-0.5)
+        lat = int(feature.GetField(fldindex_lat) + 0.5)
+        lon = int(feature.GetField(fldindex_lon) - 0.5)
         if lat < 0:
             lat_h = 'S'
         else:
@@ -80,9 +79,9 @@ class SARAsset(Asset):
     _launchdate = {'A': datetime.date(2006, 1, 24), 'J': datetime.date(1992, 2, 11)}
 
     _cycledates = {
-        7:  '20-Oct-06',
-        8:  '05-Dec-06',
-        9:  '20-Jan-07',
+        7: '20-Oct-06',
+        8: '05-Dec-06',
+        9: '20-Jan-07',
         10: '07-Mar-07',
         11: '22-Apr-07',
         12: '07-Jun-07',
@@ -155,7 +154,7 @@ class SARAsset(Asset):
             datefile = os.path.join(path, datefile)
             os.chmod(datefile, 0664)
             # Write ENVI header for date image
-            List2File(meta['envihdr'], datefile+'.hdr')
+            List2File(meta['envihdr'], datefile + '.hdr')
             dateimg = gippy.GeoImage(datefile)
             dateimg.SetNoData(0)
             datevals = numpy.unique(dateimg.Read())
@@ -196,7 +195,7 @@ class SARAsset(Asset):
         lon = [float(hdr[13]), float(hdr[15])]
         lon = [min(lon), max(lon)]
         meta['lon'] = lon
-        meta['res'] = [(lon[1]-lon[0])/(meta['size'][0]-1), (lat[1]-lat[0])/(meta['size'][1]-1)]
+        meta['res'] = [(lon[1] - lon[0]) / (meta['size'][0] - 1), (lat[1] - lat[0]) / (meta['size'][1] - 1)]
         meta['envihdr'] = [
             'ENVI', 'samples = %s' % meta['size'][0], 'lines = %s' % meta['size'][1],
             'bands = 1', 'header offset = 0', 'file type = ENVI Standard', 'data type = 12',
@@ -218,12 +217,12 @@ class SARAsset(Asset):
         for f in files:
             bname = os.path.basename(f)
             if f[-3:] != 'hdr':
-                bandname = bname[len(self.rootname)+1:]
+                bandname = bname[len(self.rootname) + 1:]
                 envihdr = copy.deepcopy(meta['envihdr'])
                 if bandname in ['mask', 'linci']:
                     envihdr[6] = 'data type = 1'
                 envihdr.append('band names={%s}' % bandname)
-                List2File(envihdr, f+'.hdr')
+                List2File(envihdr, f + '.hdr')
             else:
                 bandname = 'hdr'
             datafiles[bandname] = f
@@ -283,7 +282,7 @@ class SARData(Data):
                 imgout = gippy.GeoImage(fname, img, gippy.GDT_Float32)
                 imgout.SetNoData(-32768)
                 for b in range(0, imgout.NumBands()):
-                    imgout.SetColor(img[b].Description(), b+1)
+                    imgout.SetColor(img[b].Description(), b + 1)
                     (img[b].pow(2).log10() * 10 + meta['CF']).Process(imgout[b])
                 self.products['sign'] = imgout.Filename()
                 img = None
@@ -291,12 +290,12 @@ class SARData(Data):
             if val[0] == 'linci':
                 # Note the linci product DOES NOT mask by date
                 os.rename(datafiles['linci'], fname)
-                os.rename(datafiles['linci']+'.hdr', fname+'.hdr')
+                os.rename(datafiles['linci'] + '.hdr', fname + '.hdr')
                 self.products['linci'] = fname
             if val[0] == 'date':
                 # Note the date product DOES NOT mask by date
                 os.rename(datafiles['date'], fname)
-                os.rename(datafiles['date']+'.hdr', fname+'.hdr')
+                os.rename(datafiles['date'] + '.hdr', fname + '.hdr')
                 datafiles['date'] = fname
                 self.products['date'] = fname
 

@@ -18,11 +18,8 @@
 #   along with this program. If not, see <http://www.gnu.org/licenses/>
 ################################################################################
 
-import argparse
-
 import gippy
 from gips.algorithms.core import Algorithm
-from pdb import set_trace
 
 
 class Project(Algorithm):
@@ -36,7 +33,6 @@ class Project(Algorithm):
         for date in self.inv.dates:
             for p in self.inv.product_list(date):
                 try:
-                    filename = self.inv[date][p]
                     gippy.BrowseImage(self.inv[date].open(p), quality)
                 except:
                     pass

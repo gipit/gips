@@ -20,16 +20,12 @@
 
 import os
 import datetime
-import glob
-import tarfile
-import copy
-import numpy
 from collections import OrderedDict
 
 import gippy
 from gips.core import Repository, Asset, Data
 from gips.inventory import DataInventory
-from gips.utils import VerboseOut, File2List, List2File, RemoveFiles
+from gips.utils import RemoveFiles
 import gips.settings as settings
 
 
@@ -45,8 +41,8 @@ class SARAnnualRepository(Repository):
         """ Get tile designation from a geospatial feature (i.e. a row) """
         fldindex_lat = feature.GetFieldIndex("lat")
         fldindex_lon = feature.GetFieldIndex("lon")
-        lat = int(feature.GetField(fldindex_lat)+0.5)
-        lon = int(feature.GetField(fldindex_lon)-0.5)
+        lat = int(feature.GetField(fldindex_lat) + 0.5)
+        lon = int(feature.GetField(fldindex_lon) - 0.5)
         if lat < 0:
             lat_h = 'S'
         else:
@@ -95,7 +91,7 @@ class SARAnnualAsset(Asset):
         for f in files:
             bname = os.path.basename(f)
             if f[-3:] != 'hdr':
-                bandname = bname[len(self.rootname)+1:]
+                bandname = bname[len(self.rootname) + 1:]
                 datafiles[bandname] = f
         return datafiles
 
@@ -127,7 +123,7 @@ class SARAnnualData(Data):
     def process(self, products):
         """ Process all requested products for this tile """
         if len(products) == 0:
-            raise Exception('Tile %s: No products specified' % tile)
+            raise Exception('Tile %s: No products specified' % self.tile)
 
         for key, val in products.items():
             fname = os.path.join(self.path, self.basename + '_' + key)
@@ -142,7 +138,7 @@ class SARAnnualData(Data):
                     imgout = gippy.GeoImage(fname, img, gippy.GDT_Float32)
                     imgout.SetNoData(-32768)
                     for b in range(0, imgout.NumBands()):
-                        imgout.SetColor(img[b].Description(), b+1)
+                        imgout.SetColor(img[b].Description(), b + 1)
                         (img[b].pow(2).log10() * 10 - 83.0).Process(imgout[b])
                     fname = imgout.Filename()
                     img = None
@@ -155,7 +151,7 @@ class SARAnnualData(Data):
                 if 'C' in datafiles:
                     # rename both files to product name
                     os.rename(datafiles['C'], fname)
-                    os.rename(datafiles['C']+'.hdr', fname+'.hdr')
+                    os.rename(datafiles['C'] + '.hdr', fname + '.hdr')
                     img = gippy.GeoImage(fname)
                     img.SetNoData(0)
                     img = None
