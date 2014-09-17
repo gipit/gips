@@ -69,8 +69,8 @@ class Tiles(object):
             norm = float(len(self.tile_coverage)) if self.site is None else 1.0
             for t in self.tiles:
                 if a in self.tiles[t].assets:
-                    cov = cov + (self.tile_coverage[t][0]/norm)
-            asset_coverage[a] = cov*100
+                    cov = cov + (self.tile_coverage[t][0] / norm)
+            asset_coverage[a] = cov * 100
         return asset_coverage
 
     def process(self, overwrite=False, **kwargs):
@@ -100,7 +100,7 @@ class Tiles(object):
                         try:
                             VerboseOut("Creating %s" % os.path.basename(fout))
                             shutil.copy(self.tiles[t].products[p], fout)
-                        except Exception, e:
+                        except Exception:
                             VerboseOut("Problem copying %s" % fout, 2)
                             VerboseOut(traceback.format_exc(), 3)
         else:
@@ -111,10 +111,9 @@ class Tiles(object):
                         filenames = [self.tiles[t].products[product] for t in self.tiles]
                         # TODO - cookiecutter should validate pixels in image.  Throw exception if not
                         if nowarp:
-                            imgout = self._mosaic(filenames, filename, self.site)
+                            self._mosaic(filenames, filename, self.site)
                         else:
-                            imgout = gippy.CookieCutter(filenames, filename, self.site, res[0], res[1], crop)
-                        imgout = None
+                            gippy.CookieCutter(filenames, filename, self.site, res[0], res[1], crop)
                     except:
                         VerboseOut("Problem projecting %s" % filename, 2)
         t = datetime.now() - start
@@ -153,6 +152,7 @@ class Tiles(object):
         mask = None
         cmd = 'gdal_rasterize -at -burn 1 -l %s %s %s' % (vec1.layer.GetName(), vec1.filename, maskname)
         result = commands.getstatusoutput(cmd)
+        VerboseOut(result, 4)
         mask = gippy.GeoImage(maskname)
         imgout.AddMask(mask[0]).Process().ClearMasks()
         vec1 = None
@@ -184,7 +184,7 @@ class Tiles(object):
         #    for p in self.tiles[t].products:
                 #prods.append(p)
         for p in sorted(set(prods)):
-            sys.stdout.write('  '+p)
+            sys.stdout.write('  ' + p)
         sys.stdout.write('\n')
 
     #def print_products(self, dformat='%j'):

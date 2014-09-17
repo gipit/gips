@@ -24,8 +24,6 @@ import glob
 import argparse
 from datetime import datetime as dt
 import traceback
-import textwrap
-from pprint import pprint
 from itertools import groupby
 
 import gippy
@@ -33,7 +31,6 @@ from gips.tiles import Tiles
 from gips.utils import VerboseOut, parse_dates, Colors, basename
 from gips.GeoVector import GeoVector
 from gips.version import __version__
-from pdb import set_trace
 
 
 class Products(object):
@@ -50,8 +47,8 @@ class Products(object):
         for f in filenames:
             parts = basename(f).split('_')
             date = dt.strptime(parts[ind], '%Y%j').date()
-            self.sensor = parts[1+ind]
-            product = parts[2+ind]
+            self.sensor = parts[1 + ind]
+            product = parts[2 + ind]
             # is it a product or a mask
             self.products.add(product)
             self.filenames[product] = f
@@ -189,7 +186,7 @@ class Inventory(object):
         for key in sorted(self.sensors):
             try:
                 desc = self.dataclass.Asset._sensors[key]['description']
-                scode = key+': ' if key != '' else ''
+                scode = key + ': ' if key != '' else ''
             except:
                 desc = ''
                 scode = key
@@ -304,7 +301,7 @@ class DataInventory(Inventory):
                 dat = Tiles(dataclass=dataclass, site=self.site, tiles=self.tiles,
                             date=date, products=self.standard_products, **kwargs)
                 self.data[date] = dat
-            except Exception, e:
+            except Exception:
                 pass
                 #VerboseOut(traceback.format_exc(), 3)
         if len(dates) == 0:
@@ -324,12 +321,12 @@ class DataInventory(Inventory):
                 except:
                     VerboseOut(traceback.format_exc(), 3)
                     pass
-            VerboseOut('Completed processing in %s' % (dt.now()-start), 1)
+            VerboseOut('Completed processing in %s' % (dt.now() - start), 1)
         if len(self.composite_products) > 0:
             start = dt.now()
             VerboseOut('Processing %s files into composites: %s' % (sz, ' '.join(self.composite_products)), 1)
             self.dataclass.process_composites(self, self.composite_products, **kwargs)
-            VerboseOut('Completed processing in %s' % (dt.now()-start), 1)
+            VerboseOut('Completed processing in %s' % (dt.now() - start), 1)
 
     def project(self, datadir=None, suffix='', res=None, **kwargs):
         """ Create project files for data in inventory """
@@ -357,7 +354,7 @@ class DataInventory(Inventory):
         VerboseOut('  Products: %s' % ' '.join(self.standard_products))
         for date in self.dates:
             self.data[date].project(datadir=datadir, res=res, **kwargs)
-        VerboseOut('Completed GIPS project in %s' % (dt.now()-start))
+        VerboseOut('Completed GIPS project in %s' % (dt.now() - start))
         return ProjectInventory(datadir)
 
     def pprint(self, **kwargs):
@@ -377,7 +374,7 @@ class DataInventory(Inventory):
             print Colors.BOLD + '\nTile Coverage'
             print Colors.UNDER + '{:^8}{:>14}{:>14}'.format('Tile', '% Coverage', '% Tile Used') + Colors.OFF
             for t in sorted(self.tiles):
-                print "{:>8}{:>11.1f}%{:>11.1f}%".format(t, self.tiles[t][0]*100, self.tiles[t][1]*100)
+                print "{:>8}{:>11.1f}%{:>11.1f}%".format(t, self.tiles[t][0] * 100, self.tiles[t][1] * 100)
 
     @staticmethod
     def main(cls):
@@ -426,8 +423,8 @@ class DataInventory(Inventory):
         parser = subparser.add_parser('project', help='Create project', parents=parents, formatter_class=dhf)
         group = parser.add_argument_group('Project options')
         group.add_argument('--suffix', help='Suffix on end of project directory', default='')
-        group.add_argument('--crop', help='Crop output down to minimum bounding box (if warping)', default=False, action='store_true')
-        group.add_argument('--nowarp', help='Mosaic, but do not warp', default=False, action='store_true')
+        group.add_argument('--crop', help='Crop down to minimum bounding box', default=False, action='store_true')
+        group.add_argument('--nowarp', help='Mosaic, but do not warp or crop', default=False, action='store_true')
         group.add_argument('--res', nargs=2, help='Resolution of (warped) output rasters', default=None, type=float)
         #group.add_argument('--datadir', help='Directory to save project files (default auto-generated)', default=None)
         group.add_argument('--format', help='Format for output file', default="GTiff")
@@ -461,9 +458,9 @@ class DataInventory(Inventory):
                         key = p
                         for i in val:
                             key = key + '-' + i
-                        products[key+suffix] = [p] + val
+                        products[key + suffix] = [p] + val
                     else:
-                        products[p+'-'+val+suffix] = [p, val]
+                        products[p + '-' + val + suffix] = [p, val]
         kwargs = dict(zip(extra, [eval('args.%s' % a) for a in extra]))
 
         try:
@@ -477,9 +474,9 @@ class DataInventory(Inventory):
                 inv.process(overwrite=args.overwrite, **kwargs)
             elif args.command == 'project':
                 gippy.Options.SetChunkSize(args.chunksize)
-                projinv = inv.project(suffix=args.suffix, crop=args.crop, nowarp=args.nowarp, res=args.res, **kwargs)
+                inv.project(suffix=args.suffix, crop=args.crop, nowarp=args.nowarp, res=args.res, **kwargs)
             else:
-                VerboseOut('Command %s not recognized' % cmd, 0)
+                VerboseOut('Command %s not recognized' % args.command, 0)
         except Exception, e:
             VerboseOut('Error in %s: %s' % (args.command, e))
             VerboseOut(traceback.format_exc(), 4)
