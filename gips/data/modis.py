@@ -320,93 +320,30 @@ class ModisData(Data):
             # NORMALIZED DIFFERENCE VEGETATION INDEX PRODUCT
 
             if val[0] == "ndvi":
-
                 VERSION = "1.0"
                 assets = self._products['ndvi']['assets']
-
-                allsds = []
                 missingassets = []
-                availassets = []
-                assetids = []
 
                 for asset in assets:
                     try:
                         sds = self.assets[asset].datafiles()
                     except Exception,e:
                         missingassets.append(asset)
-                    else:
-                        assetids.append(assets.index(asset))
-                        availassets.append(asset)
-                        allsds.extend(sds)
-
                 if missingassets:
                     VerboseOut('There are missing assets: %s,%s,%s' % (str(self.date), str(self.id), str(missingassets)), 4)
                     continue
-                    # raise Exception, "There are missing assets"
-                    # print message, then continue
 
                 meta = {}
                 meta['AVAILABLE_ASSETS'] = "['MOD09Q1']"
                 meta['VERSION'] = VERSION
 
-                print "assetids", assetids
-                print "availassets", availassets
-                print "missingassets", missingassets
-                for i,sds in enumerate(allsds):
-                    print "i, sds", i,sds
+                refl = gippy.GeoImage(sds)
+                refl.SetBandName("RED", 1)
+                refl.SetBandName("NIR", 2)
+                refl.SetNoData(32767)
 
-                # there should be 3? SDSs, 2 bands and 1 QC layer
-
-                reflsds = [allsds[i] for i in range(2)]
-                qcsds = [allsds[i] for i in range(2,3)]
-
-                metanames = {}
-                metanames['AVAILABLE_ASSETS'] = "['MOD09Q1']"
-                metanames['VERSION'] = VERSION
-
-                refl = gippy.GeoImage(reflsds) 
-                qc = gippy.GeoImage(qcsds) 
-
-                missing = 32767 
-
-                redimg = refl[0].Read()
-                nirimg = refl[1].Read()
-
-                redimg[redimg<0.0] = 0.0
-                nirimg[nirimg<0.0] = 0.0
-
-                ndvi = missing + np.zeros_like(redimg)
-
-                wg = np.where((redimg != missing)&(nirimg != missing)&(redimg+nirimg != 0.0))
-                ndvi[wg] = (nirimg[wg] - redimg[wg])/(nirimg[wg] + redimg[wg])
-
-                print "ndvi" 
-                print len(wg[0])
-                print ndvi.min(), ndvi.max()
-                print ndvi[wg].min(), ndvi[wg].max()
-
-                # create output gippy image
-
-                #this number is how many output bands. Does this need to be uint with qc layer?
-
-                print "dtype", refl.DataType()
-
-                imgout = gippy.GeoImage(outfname, refl, refl.DataType(), 1) 
-
-                imgout.SetNoData(missing)
-                imgout.SetOffset(0.0)
-                imgout.SetGain(0.0001)
-
-                imgout[0].Write(ndvi)
-                
-                #imgout[1].Write(bestmask)
-
-                imgout.SetBandName('NDVI', 1)
-                #imgout.SetBandName('Best quality', 2)
-
-                for k, v in meta.items():
-                    imgout.SetMeta(k, str(v))
-
+                fouts = dict(gippy.Indices(refl, {'ndvi': outfname}, meta))
+                imgout = gippy.GeoImage(fouts['ndvi'])
 
             ########################
             # LAND VEGETATION INDICES PRODUCT
@@ -1013,7 +950,7 @@ class ModisData(Data):
 
 
             # add product to inventory
-            self.products[val[0]] = imgout.filename()
+            self.products[val[0]] = imgout.Filename()
 
 def main():
     DataInventory.main(ModisData)
