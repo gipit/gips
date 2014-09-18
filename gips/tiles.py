@@ -134,6 +134,7 @@ class Tiles(object):
                             gippy.CookieCutter(filenames, filename, self.site, res[0], res[1], crop)
                     except:
                         VerboseOut("Problem projecting %s" % filename, 2)
+                        VerboseOut(traceback.format_exc(), 3)
         t = datetime.now() - start
         VerboseOut('%s: created project files for %s tiles in %s' % (self.date, len(self.tiles), t), 2)
 
