@@ -96,7 +96,7 @@ class Products(object):
         """ Print data products """
         sys.stdout.write(color)
         sys.stdout.write('{:^12}'.format(self.date.strftime(dformat)))
-        sys.stdout.write(' '.join(sorted(self.products)))
+        sys.stdout.write('  '.join(sorted(self.products)))
         if color != '':
             sys.stdout.write(Colors.OFF)
         sys.stdout.write('\n')
