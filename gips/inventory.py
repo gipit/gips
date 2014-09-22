@@ -32,6 +32,7 @@ from gips.tiles import Tiles
 from gips.utils import VerboseOut, parse_dates, Colors, basename
 from gips.GeoVector import GeoVector
 from gips.version import __version__
+from pdb import set_trace
 
 
 class Products(object):
@@ -60,7 +61,7 @@ class Products(object):
         return self.filenames[key]
 
     def __str__(self):
-        return '%s (%s): %s' % (self.date, self.sensor, ' '.join(self.products))
+        return '%s (%s): %s' % (self.date, self.sensor, ' '.join(sorted(self.products)))
 
     @property
     def numfiles(self):
@@ -106,7 +107,6 @@ class Products(object):
         """ Factory function returns instance for every date/sensor in filenames or directory """
         if not isinstance(files, list) and os.path.isdir(os.path.abspath(files)):
             files = glob.glob(os.path.join(files, '*.tif'))
-
         # files will have 3 or 4 parts, so ind is 0 or 1
         ind = len(basename(files[0]).split('_')) - 3
 
