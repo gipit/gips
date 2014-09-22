@@ -25,6 +25,7 @@ import argparse
 from datetime import datetime as dt
 import traceback
 from itertools import groupby
+import numpy
 
 import gippy
 from gips.tiles import Tiles
@@ -95,7 +96,7 @@ class Products(object):
         """ Print data products """
         sys.stdout.write(color)
         sys.stdout.write('{:^12}'.format(self.date.strftime(dformat)))
-        sys.stdout.write(' '.join(self.products))
+        sys.stdout.write(' '.join(sorted(self.products)))
         if color != '':
             sys.stdout.write(Colors.OFF)
         sys.stdout.write('\n')
@@ -223,6 +224,34 @@ class ProjectInventory(Inventory):
     def product_list(self, date):
         """ Intersection of available products for this date and requested products """
         return self.products[date].products.intersection(self.requested_products)
+
+    def new_image(self, filename, dtype=gippy.GDT_Byte, numbands=1, nodata=None):
+        """ Create new image with the same template as the files in project """
+        img = gippy.GeoImage(self.data[self.dates[0]].open(self.requested_products[0]))
+        imgout = gippy.GeoImage(filename, img, dtype, numbands)
+        img = None
+        if nodata is not None:
+            imgout.SetNoData(nodata)
+        return imgout
+
+    def get_data(self, dates):
+        """ Read all files as time series, stacking all products """
+        # TODO - change to absolute dates
+        days = numpy.array([int(d.strftime('%j')) for d in dates])
+
+        imgarr = []
+        for p in self.requested_products:
+            gimg = self.get_timeseries(p, dates=dates)
+            # TODO - move numpy.squeeze into swig interface file?
+            arr = numpy.squeeze(gimg.TimeSeries(days.astype('float64')))
+            arr[arr == gimg[0].NoDataValue()] = numpy.nan
+
+            if len(days) == 1:
+                dims = arr.shape
+                arr = arr.reshape(1, dims[0], dims[1])
+            imgarr.append(arr)
+        data = numpy.vstack(tuple(imgarr))
+        return data
 
     def get_timeseries(self, product='', dates=None):
         """ Read all files as time series """
