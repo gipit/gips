@@ -38,7 +38,7 @@ class Mask(Algorithm):
         for date in self.inv.dates:
             VerboseOut('Masking files from %s' % date)
             available_masks = self.inv[date].masks(pmask)
-            for p in self.inv[date].products:
+            for p in self.inv.product_list(date):
                 # don't mask any masks
                 if p in available_masks:
                     continue
