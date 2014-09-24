@@ -25,7 +25,7 @@ from collections import OrderedDict
 import gippy
 from gips.core import Repository, Asset, Data
 from gips.inventory import DataInventory
-from gips.utils import RemoveFiles
+from gips.utils import RemoveFiles, VerboseOut
 import gips.settings as settings
 
 
@@ -127,8 +127,14 @@ class SARAnnualData(Data):
 
         for key, val in products.items():
             fname = os.path.join(self.path, self.basename + '_' + key)
+            # Verify that asset exists
+            asset = self._products[val[0]]['assets']
+            try:
+                datafiles = self.assets[asset].extract()
+            except:
+                VerboseOut("Asset %s doesn't exist for tile %s" % (asset, self.id), 3)
+                continue
             if val[0] == 'sign':
-                datafiles = self.assets['MOS'].extract()
                 bands = [datafiles[b] for b in ["sl_HH", "sl_HV"] if b in datafiles]
                 if len(bands) > 0:
                     img = gippy.GeoImage(bands)
@@ -147,7 +153,6 @@ class SARAnnualData(Data):
                         if key != 'hdr':
                             RemoveFiles([f], ['.hdr', '.aux.xml'])
             if val[0] == 'fnf':
-                datafiles = self.assets['FNF'].extract()
                 if 'C' in datafiles:
                     # rename both files to product name
                     os.rename(datafiles['C'], fname)
