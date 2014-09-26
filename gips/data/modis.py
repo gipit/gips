@@ -18,19 +18,11 @@
 #   along with this program. If not, see <http://www.gnu.org/licenses/>
 ################################################################################
 
-import sys
 import os
 import re
-import time
 import datetime
 import urllib
 from osgeo import gdal
-from collections import OrderedDict
-
-
-from pdb import set_trace
-
-
 import math
 import numpy as np
 
@@ -39,13 +31,14 @@ from gips.core import Repository, Asset, Data
 from gips.inventory import DataInventory
 from gips.utils import File2List, List2File, VerboseOut
 import gips.settings as settings
+from pdb import set_trace
 
-count=0
+
 def binmask(arr, bit):
     """ Return boolean array indicating which elements as binary have a 1 in
         a specified bit position. Input is Numpy array.
     """
-    return arr & (1 << (bit-1)) == (1 << (bit-1))
+    return arr & (1 << (bit - 1)) == (1 << (bit - 1))
 
 
 class ModisRepository(Repository):
@@ -61,8 +54,7 @@ class ModisRepository(Repository):
         fldindex_v = feature.GetFieldIndex("v")
         h = str(int(feature.GetField(fldindex_h))).zfill(2)
         v = str(int(feature.GetField(fldindex_v))).zfill(2)
-        tile = "h%sv%s" % (h, v)
-        return tile
+        return "h%sv%s" % (h, v)
 
     # @classmethod
     # def find_dates(cls, tile):
@@ -83,23 +75,6 @@ class ModisAsset(Asset):
         'MCD': {'description': 'Combined'}
     }
 
-    _asset_layers = {
-        'MOD11': {
-            '0': 'LST_Day_1km',
-            '1': 'QC_Day',
-            '2': 'Day_view_time',
-            '3': 'Day_view_angl',
-            '4': 'LST_Night_1km',
-            '5': 'QC_Night',
-            '6': 'Night_view_time',
-            '7': 'Night_view_angl',
-            '8': 'Emis_31',
-            '9': 'Emis_32',
-            '10': 'Clear_day_cov',
-            '11': 'Clear_night_cov',
-        }
-    }
-
     _assets = {
         'MCD43A4': {
             'pattern': 'MCD43A4*hdf',
@@ -112,6 +87,12 @@ class ModisAsset(Asset):
             'url': 'http://e4ftl01.cr.usgs.gov/MOTA/MCD43A2.005',
             'startdate': datetime.date(2000, 2, 18),
             'latency': -15
+        },
+        'MOD09Q1': {
+            'pattern': 'MOD09Q1*hdf',
+            'url': 'http://e4ftl01.cr.usgs.gov/MOLT/MOD09Q1.005/',
+            'startdate': datetime.date(2000, 2, 18),
+            'latency': -7,
         },
         'MOD10A1': {
             'pattern': 'MOD10A1*hdf',
@@ -129,40 +110,23 @@ class ModisAsset(Asset):
             'pattern': 'MOD11A1*hdf',
             'url': 'http://e4ftl01.cr.usgs.gov/MOLT/MOD11A1.005',
             'startdate': datetime.date(2000, 3, 5),
-            'latency': -1,
-            'layers': _asset_layers['MOD11']
+            'latency': -1
         },
         'MYD11A1': {
             'pattern': 'MYD11A1*hdf',
             'url': 'http://e4ftl01.cr.usgs.gov/MOLA/MYD11A1.005',
             'startdate': datetime.date(2002, 7, 8),
-            'latency': -1,
-            'layers': _asset_layers['MOD11'] 
+            'latency': -1
         },
         'MOD11A2': {
             'pattern': 'MOD11A2*hdf',
             'url': 'http://e4ftl01.cr.usgs.gov/MOLT/MOD11A2.005',
             'startdate': datetime.date(2000, 3, 5),
-            'latency': -7,
-            'layers': _asset_layers['MOD11']
+            'latency': -7
         },
-        'MOD09Q1': {
-            'pattern': 'MOD09Q1*hdf',
-            'url': 'http://e4ftl01.cr.usgs.gov/MOLT/MOD09Q1.005/',
-            'startdate': datetime.date(2000, 2, 18),
-            'latency': -7,
-        }
-
     }
 
-    # Not used anywhere
-    _launchdate = {
-        'MOD': datetime.date(1999, 12, 1),
-        'MYD': datetime.date(2002, 5, 1),
-        'MCD': None
-    }
-
-    # Should this be specified on a per asset basis?
+    # Should this be specified on a per asset basis? (in which case retrieve from asset)
     _defaultresolution = [926.625433138333392, -926.625433139166944]
 
     def __init__(self, filename):
@@ -175,221 +139,130 @@ class ModisAsset(Asset):
         year = bname[9:13]
         doy = bname[13:16]
 
-        self.date = datetime.datetime.strptime(year+doy, "%Y%j").date()
+        self.date = datetime.datetime.strptime(year + doy, "%Y%j").date()
         self.sensor = bname[:3]
-
-        datafiles = self.datafiles()
-
-    def datafiles(self):
-
-        indexfile = self.filename + '.index'
-
-        # TODO: get File2List to handle missing file and empty file in the same way
-        try:
-            datafiles = File2List(indexfile)
-        except:
-            datafiles = []
-
-        if not datafiles:
-            gdalfile = gdal.Open(self.filename)
-            subdatasets = gdalfile.GetSubDatasets()
-            datafiles = [s[0] for s in subdatasets]
-            List2File(datafiles, indexfile)
-
-        return datafiles
-
-    @classmethod
-    def _filepattern(cls, asset, tile, date):
-        year, month, day = date.timetuple()[:3]
-        doy = date.timetuple()[7]
-        pattern = ''.join(['(', asset, '.A', str(year), str(doy).zfill(3), '.', tile, '.005.\d{13}.hdf)'])
-        return pattern
-
-
-    @classmethod
-    def _remote_subdirs(cls, asset, tile, date):
-        year, month, day = date.timetuple()[:3]
-        httploc = cls._assets[asset]['url']
-        mainurl = ''.join([httploc, '/', str(year), '.', '%02d' % month, '.', '%02d' % day])
-        return mainurl
-
 
     @classmethod
     def fetch(cls, asset, tile, date):
         VerboseOut('%s: fetch tile %s for %s' % (asset, tile, date), 3)
 
         if date.date() < cls._assets[asset]['startdate']:
-            print "date is too early"
-            return 3
+            raise Exception("date earlier than %s" % cls._assets[asset]['startdate'])
+        latest_date = datetime.datetime.now() - datetime.timedelta(cls._assets[asset]['latency'])
+        if date > latest_date:
+            raise Exception("date is too recent (after %s)" % latest_date)
 
-        if date > datetime.datetime.now() - datetime.timedelta(cls._assets[asset]['latency']):
-            print "date is too recent"
-            return 3
-
-        pattern = cls._filepattern(asset, tile, date)
-        mainurl = cls._remote_subdirs(asset, tile, date)
-
-        VerboseOut('%s: mainurl %s, pattern %s' % (asset, mainurl, pattern), 4)
-
+        year, month, day = date.timetuple()[:3]
+        mainurl = '%s/%s.%02d.%02d' % (cls._assets[asset]['url'], str(year), month, day)
         try:
-            VerboseOut('opening listing', 1)
             listing = urllib.urlopen(mainurl).readlines()
-        except Exception, e:
-            listing = None
-            VerboseOut('unable to access %s' % mainurl, 1)
-            # sys.exit()
-            return 2
+        except Exception:
+            raise Exception("Unable to access %s" % mainurl)
 
+        pattern = '(%s.A%s%s.%s.005.\d{13}.hdf)' % (asset, str(year), str(date.timetuple()[7]).zfill(3), tile)
         cpattern = re.compile(pattern)
-        name = None
         success = False
-
-        outdir = cls.Repository.spath()
-        # outdir = os.path.join(cls.Repository.spath(), asset)
-        # if not os.path.exists(outdir):
-        #     os.mkdir(outdir)
 
         for item in listing:
             if cpattern.search(item):
                 if 'xml' in item:
                     continue
                 name = cpattern.findall(item)[0]
-                VerboseOut('found %s in %s' % (name, item.strip()), 4)
                 url = ''.join([mainurl, '/', name])
-                VerboseOut('the url is %s' % url, 4)
-                outpath = os.path.join(outdir, name)
-                try:                        
+                outpath = os.path.join(cls.Repository.spath(), name)
+                try:
                     urllib.urlretrieve(url, outpath)
-                except Exception, e:
-                    VerboseOut('unable to retrieve %s from %s' % (name, url), 4)
+                except Exception:
+                    raise Exception('Unable to retrieve %s from %s' % (name, url))
                 else:
-                    VerboseOut('retrieved %s' % name, 4)
+                    VerboseOut('Retrieved %s' % name, 2)
                     success = True
 
         if not success:
-            VerboseOut('did not find a match for %s in listing of %s' % (pattern, mainurl), 4)
-            return 1
-        else:
-            return 0
+            raise Exception('Unable to find remote match for %s at %s' % (pattern, mainurl))
+
 
 class ModisData(Data):
     """ A tile of data (all assets and products) """
     name = 'Modis'
     Asset = ModisAsset
-    _pattern = '*.tif' 
+    _pattern = '*.tif'
     _products = {
-        'temp': {
-            'description': 'Surface temperature data',
-            'assets': ['MOD11A1', 'MYD11A1']
+        # MCD Products
+        'indices': {
+            'description': 'Land indices based',
+            'assets': ['MCD43A4', 'MCD43A2'],
+            'group': "Nadir BRDF-Adjusted 16-day"
         },
-        'tempweekly': {
-            'description': 'Surface temperature data 8day',
-            'assets': ['MOD11A2']
-        },
+        # Daily
         'snow': {
             'description': 'Snow and ice cover data',
-            'assets': ['MOD10A1', 'MYD10A1']
+            'assets': ['MOD10A1', 'MYD10A1'],
+            'group': 'Terra/Aqua Daily'
         },
-        'indices': {
-            'description': 'Land indices',
-            'assets': ['MCD43A4', 'MCD43A2']
+        'temp': {
+            'description': 'Surface temperature data',
+            'assets': ['MOD11A1', 'MYD11A1'],
+            'group': 'Terra/Aqua Daily'
         },
-        'ndvi': {
-            'description': 'Normalized Difference Vegetation Index',
-            'assets': ['MOD09Q1']
+        # Misc
+        'ndvi8': {
+            'description': 'Normalized Difference Vegetation Index: 250m',
+            'assets': ['MOD09Q1'],
+            'group': 'Terra 8-day'
         },
+        'temp8': {
+            'description': 'Surface temperature: 1km',
+            'assets': ['MOD11A2'],
+            'group': 'Terra 8-day'
+        },
+
     }
-    
+
     def process(self, products, **kwargs):
+        """ Process all products """
 
-        VerboseOut(kwargs, 3)
-        VerboseOut(products, 3)
-
-        platformnames = {'MOD':'Terra', 'MYD':'Aqua'}
+        bname = '_'.join(self.basename.split('_')[:-1] + ['MOD'])
 
         for key, val in products.items():
+            start = datetime.datetime.now()
+            fname = os.path.join(self.path, bname + '_' + key)
 
-            productname = '_'.join(self.basename.split('_')[:-1] + ['MOD'])
-            outfname = os.path.join(self.path, productname + '_' + key)        
+            # Check for asset availability
+            assets = self._products[val[0]]['assets']
+            missingassets = []
+            availassets = []
+            allsds = []
 
-            VerboseOut("self.path: %s" % self.path, 4)
-            VerboseOut("productname: %s" % productname, 4)
-            VerboseOut("outfname: %s" % outfname, 4)
+            for asset in assets:
+                try:
+                    sds = self.assets[asset].datafiles()
+                except Exception:
+                    missingassets.append(asset)
+                else:
+                    availassets.append(asset)
+                    allsds.extend(sds)
+            if not availassets:
+                VerboseOut('There are no available assets (%s) on %s for tile %s'
+                           % (str(missingassets), str(self.date), str(self.id), ), 3)
+                continue
 
-            ################################################
-            # NORMALIZED DIFFERENCE VEGETATION INDEX PRODUCT
+            meta = {}
+            meta['AVAILABLE_ASSETS'] = ' '.join(availassets)
 
-            if val[0] == "ndvi":
-                VERSION = "1.0"
-                assets = self._products['ndvi']['assets']
-                missingassets = []
-
-                for asset in assets:
-                    try:
-                        sds = self.assets[asset].datafiles()
-                    except Exception,e:
-                        missingassets.append(asset)
-                if missingassets:
-                    VerboseOut('There are missing assets: %s,%s,%s' % (str(self.date), str(self.id), str(missingassets)), 4)
-                    continue
-
-                meta = {}
-                meta['AVAILABLE_ASSETS'] = "['MOD09Q1']"
-                meta['VERSION'] = VERSION
-
-                refl = gippy.GeoImage(sds)
-                refl.SetBandName("RED", 1)
-                refl.SetBandName("NIR", 2)
-                refl.SetNoData(32767)
-
-                fouts = dict(gippy.Indices(refl, {'ndvi': outfname}, meta))
-                imgout = gippy.GeoImage(fouts['ndvi'])
-
-            ########################
             # LAND VEGETATION INDICES PRODUCT
             if val[0] == "indices":
                 VERSION = "1.0"
-                assets = self._products['indices']['assets']
-
-                allsds = []
-                missingassets = []
-                availassets = []
-                assetids = []
-
-                for asset in assets:
-                    try:
-                        sds = self.assets[asset].datafiles()
-                    except Exception,e:
-                        missingassets.append(asset)
-                    else:
-                        assetids.append(assets.index(asset))
-                        availassets.append(asset)
-                        allsds.extend(sds)
-
-
-                if missingassets:
-                    print "missing"
-                    VerboseOut('There are missing assets: %s,%s,%s' % (str(self.date), str(self.id), str(missingassets)), 4)
-                    continue
-                    # raise Exception, "There are missing assets"
-                    # print message, then continue
-
-
-                print "assetids", assetids
-                print "availassets", availassets
-                print "missingassets", missingassets
-                for i,sds in enumerate(allsds):
-                    print "i, sds", i,sds
+                meta['VERSION'] = VERSION
 
                 # there should be 11 SDSs, 7 bands and 4 QC layers
-
                 reflsds = [allsds[i] for i in range(7)]
-                qcsds = [allsds[i] for i in range(7,11)]
+                qcsds = [allsds[i] for i in range(7, 11)]
 
-                refl = gippy.GeoImage(reflsds) 
-                qc = gippy.GeoImage(qcsds) 
+                refl = gippy.GeoImage(reflsds)
+                qc = gippy.GeoImage(qcsds)
 
-                missing = 32767 
+                missing = 32767
 
                 redimg = refl[0].Read()
                 nirimg = refl[1].Read()
@@ -397,40 +270,36 @@ class ModisData(Data):
                 grnimg = refl[3].Read()
                 mirimg = refl[5].Read()
                 swir2img = refl[6].Read()
-                
+
                 qcimg = qc[0].Read()
                 qcimg = qcimg.astype(np.int16)
-                qcimg[qcimg==255] = missing
+                qcimg[qcimg == 255] = missing
 
-                redimg[redimg<0.0] = 0.0
-                nirimg[nirimg<0.0] = 0.0
-                bluimg[bluimg<0.0] = 0.0
-                grnimg[grnimg<0.0] = 0.0
-                mirimg[mirimg<0.0] = 0.0
-                swir2img[swir2img<0.0] = 0.0
-                
-                meta = {}
-                meta['AVAILABLE_ASSETS'] = "['MCD43A4', 'MCD43A2']"
-                meta['VERSION'] = VERSION
+                redimg[redimg < 0.0] = 0.0
+                nirimg[nirimg < 0.0] = 0.0
+                bluimg[bluimg < 0.0] = 0.0
+                grnimg[grnimg < 0.0] = 0.0
+                mirimg[mirimg < 0.0] = 0.0
+                swir2img[swir2img < 0.0] = 0.0
 
                 ndvi = missing + np.zeros_like(redimg)
-                wg = np.where((redimg != missing)&(nirimg != missing)&(redimg+nirimg != 0.0))
-                ndvi[wg] = (nirimg[wg] - redimg[wg])/(nirimg[wg] + redimg[wg])
-                print "ndvi" 
+                wg = np.where((redimg != missing) & (nirimg != missing) & (redimg + nirimg != 0.0))
+                ndvi[wg] = (nirimg[wg] - redimg[wg]) / (nirimg[wg] + redimg[wg])
+                print "ndvi"
                 print len(wg[0])
                 print ndvi.min(), ndvi.max()
                 print ndvi[wg].min(), ndvi[wg].max()
 
                 lswi = missing + np.zeros_like(redimg)
-                wg = np.where((nirimg != missing)&(mirimg != missing)&(nirimg+mirimg != 0.0))
-                lswi[wg] = (nirimg[wg] - mirimg[wg])/(nirimg[wg] + mirimg[wg])
+                wg = np.where((nirimg != missing) & (mirimg != missing) & (nirimg + mirimg != 0.0))
+                lswi[wg] = (nirimg[wg] - mirimg[wg]) / (nirimg[wg] + mirimg[wg])
                 print "lswi"
                 print len(wg[0])
                 print lswi.min(), lswi.max()
                 print lswi[wg].min(), lswi[wg].max()
 
                 vari = missing + np.zeros_like(redimg)
-                wg = np.where((grnimg != missing)&(redimg != missing)&(bluimg != missing)&(grnimg+redimg-bluimg != 0.0))
+                wg = np.where((grnimg != missing) & (redimg != missing) & (bluimg != missing) & (grnimg + redimg - bluimg != 0.0))
                 vari[wg] = (grnimg[wg] - redimg[wg]) / (grnimg[wg] + redimg[wg] - bluimg[wg])
                 print "vari"
                 print len(wg[0])
@@ -454,7 +323,7 @@ class ModisData(Data):
                 print satvi[wg].min(), satvi[wg].max()
 
                 # create output gippy image
-                imgout = gippy.GeoImage(outfname, refl, gippy.GDT_Int16, 6)
+                imgout = gippy.GeoImage(fname, refl, gippy.GDT_Int16, 6)
 
                 imgout.SetNoData(missing)
                 imgout.SetOffset(0.0)
@@ -469,54 +338,22 @@ class ModisData(Data):
                 imgout[5].SetGain(1.0)
                 imgout[5].Write(qcimg)
 
-                imgout.SetColor('NDVI', 1)
-                imgout.SetColor('LSWI', 2)
-                imgout.SetColor('VARI', 3)
-                imgout.SetColor('BRGT', 4)
-                imgout.SetColor('SATVI', 5)
-                imgout.SetColor('Best quality', 6)
+                imgout.SetBandName('NDVI', 1)
+                imgout.SetBandName('LSWI', 2)
+                imgout.SetBandName('VARI', 3)
+                imgout.SetBandName('BRGT', 4)
+                imgout.SetBandName('SATVI', 5)
+                imgout.SetBandName('Best quality', 6)
 
-                for k, v in meta.items():
-                    imgout.SetMeta(k, str(v))
+                imgout.SetMeta(meta)
 
-
-            ########################
             # SNOW/ICE COVER PRODUCT
-            ########################
-
             if val[0] == "snow":
                 VERSION = "1.0"
-                assets = self._products['snow']['assets']
-
-                allsds = []
-                missingassets = []
-                availassets = []
-                assetids = []
-
-                for asset in assets:
-                    try:
-                        sds = self.assets[asset].datafiles()
-                    except Exception,e:
-                        missingassets.append(asset)
-                    else:
-                        assetids.append(assets.index(asset))
-                        availassets.append(asset)
-                        allsds.extend(sds)
-
-                # print "assetids", assetids
-                # print "availassets", availassets
-                # print "missingassets", missingassets
-                # for i,sds in enumerate(allsds):
-                #     print "i, sds", i,sds
-
-                if not availassets:
-                    VerboseOut('Both assets are missing: %s,%s,%s' % (str(self.date), str(self.id), str(missingassets)), 4)
-                    continue
-                    # raise Exception, "Both assets are missing"
-
+                meta['VERSION'] = VERSION
 
                 if not missingassets:
-                    availbands = [0,1]
+                    availbands = [0, 1]
                     snowsds = [allsds[0], allsds[3], allsds[4], allsds[7]]
                 elif missingassets[0] == 'MYD10A1':
                     availbands = [0]
@@ -527,23 +364,20 @@ class ModisData(Data):
                 else:
                     raise
 
-                img = gippy.GeoImage(snowsds) # read only
-
-                meta = {}
-                meta['AVAILABLE_ASSETS'] = str(availassets)
-                meta['VERSION'] = VERSION
+                img = gippy.GeoImage(snowsds)
 
                 # there are two snow bands
                 for iband, band in enumerate(availbands):
 
                     # get the data values for both bands
-                    cover = img[2*iband].Read()
-                    frac = img[2*iband+1].Read()
+                    cover = img[2 * iband].Read()
+                    frac = img[2 * iband + 1].Read()
 
                     # check out frac
-                    wbad1 = np.where((frac==200)|(frac==201)|(frac==211)|(frac==250)|(frac==254)|(frac==255))
-                    wsurface1 = np.where((frac==225)|(frac==237)|(frac==239))
-                    wvalid1 = np.where((frac>=0)&(frac<=100))
+                    wbad1 = np.where((frac == 200) | (frac == 201) | (frac == 211) |
+                                     (frac == 250) | (frac == 254) | (frac == 255))
+                    wsurface1 = np.where((frac == 225) | (frac == 237) | (frac == 239))
+                    wvalid1 = np.where((frac >= 0) & (frac <= 100))
 
                     nbad1 = len(wbad1[0])
                     nsurface1 = len(wsurface1[0])
@@ -551,9 +385,10 @@ class ModisData(Data):
                     assert nbad1 + nsurface1 + nvalid1 == frac.size, "frac contains invalid values"
 
                     # check out cover
-                    wbad2 = np.where((cover==0)|(cover==1)|(cover==11)|(cover==50)|(cover==254)|(cover==255))
-                    wsurface2 = np.where((cover==25)|(cover==37)|(cover==39))
-                    wvalid2 = np.where((cover==100)|(cover==200))
+                    wbad2 = np.where((cover == 0) | (cover == 1) | (cover == 11) |
+                                     (cover == 50) | (cover == 254) | (cover == 255))
+                    wsurface2 = np.where((cover == 25) | (cover == 37) | (cover == 39))
+                    wvalid2 = np.where((cover == 100) | (cover == 200))
 
                     nbad2 = len(wbad2[0])
                     nsurface2 = len(wsurface2[0])
@@ -571,43 +406,38 @@ class ModisData(Data):
                     coverout[wsurface2] = 0
                     coverout[wbad2] = 127
 
-                    if len(availbands)==2:
-                        if iband==0:
+                    if len(availbands) == 2:
+                        if iband == 0:
                             fracout1 = np.copy(fracout)
                             coverout1 = np.copy(coverout)
                         else:
                             # both the current and previous are valid
-                            w = np.where((fracout != 127)&(fracout1 != 127))
+                            w = np.where((fracout != 127) & (fracout1 != 127))
                             fracout[w] = np.mean(np.array([fracout[w], fracout1[w]]), axis=0).astype('uint8')
-                            # print "averaged this many values", len(w[0])
 
                             # the current is not valid but previous is valid
-                            w = np.where((fracout == 127)&(fracout1 != 127))
+                            w = np.where((fracout == 127) & (fracout1 != 127))
                             fracout[w] = fracout1[w]
-                            # print "replaced this many values", len(w[0])
 
                             # both the current and previous are valid
-                            w = np.where((coverout != 127)&(coverout1 != 127))
+                            w = np.where((coverout != 127) & (coverout1 != 127))
                             coverout[w] = np.mean(np.array([coverout[w], coverout1[w]]), axis=0).astype('uint8')
-                            # print "averaged this many values", len(w[0])
 
                             # the current is not valid but previous is valid
-                            w = np.where((coverout == 127)&(coverout1 != 127))
+                            w = np.where((coverout == 127) & (coverout1 != 127))
                             coverout[w] = coverout1[w]
-                            # print "replaced this many values", len(w[0])
 
-
-                fracmissingcoverclear = np.sum((fracout==127)&(coverout==0))
-                fracmissingcoversnow = np.sum((fracout==127)&(coverout==100))
-                fracclearcovermissing = np.sum((fracout==0)&(coverout==127))
-                fracclearcoversnow = np.sum((fracout==0)&(coverout==100))
-                fracsnowcovermissing = np.sum((fracout>0)&(fracout<=100)&(coverout==127))
-                fracsnowcoverclear = np.sum((fracout>0)&(fracout<=100)&(coverout==0))
-                fracmostlycoverclear = np.sum((fracout>50)&(fracout<=100)&(coverout==0))
-                totsnowfrac = int(0.01*np.sum(fracout[fracout<=100]))
-                totsnowcover = int(0.01*np.sum(coverout[coverout<=100]))
-                numvalidfrac = np.sum(fracout!=127)
-                numvalidcover = np.sum(coverout!=127)
+                fracmissingcoverclear = np.sum((fracout == 127) & (coverout == 0))
+                fracmissingcoversnow = np.sum((fracout == 127) & (coverout == 100))
+                fracclearcovermissing = np.sum((fracout == 0) & (coverout == 127))
+                fracclearcoversnow = np.sum((fracout == 0) & (coverout == 100))
+                fracsnowcovermissing = np.sum((fracout > 0) & (fracout <= 100) & (coverout == 127))
+                fracsnowcoverclear = np.sum((fracout > 0) & (fracout <= 100) & (coverout == 0))
+                #fracmostlycoverclear = np.sum((fracout > 50) & (fracout <= 100) & (coverout == 0))
+                totsnowfrac = int(0.01 * np.sum(fracout[fracout <= 100]))
+                totsnowcover = int(0.01 * np.sum(coverout[coverout <= 100]))
+                numvalidfrac = np.sum(fracout != 127)
+                numvalidcover = np.sum(coverout != 127)
 
                 if totsnowcover == 0 or totsnowfrac == 0:
                     print "no snow or ice: skipping", str(self.date), str(self.id), str(missingassets)
@@ -618,102 +448,71 @@ class ModisData(Data):
                 meta['FRACCLEARCOVERSNOW'] = fracclearcoversnow
                 meta['FRACSNOWCOVERMISSING'] = fracsnowcovermissing
                 meta['FRACSNOWCOVERCLEAR'] = fracsnowcoverclear
-                meta['FRACMOSTLYCOVERCLEAR'] = np.sum((fracout>50)&(fracout<=100)&(coverout==0))
+                meta['FRACMOSTLYCOVERCLEAR'] = np.sum((fracout > 50) & (fracout <= 100) & (coverout == 0))
                 meta['TOTSNOWFRAC'] = totsnowfrac
                 meta['TOTSNOWCOVER'] = totsnowcover
                 meta['NUMVALIDFRAC'] = numvalidfrac
                 meta['NUMVALIDCOVER'] = numvalidcover
 
                 # create output gippy image
-                imgout = gippy.GeoImage(outfname, img, gippy.GDT_Byte, 2)
-
+                imgout = gippy.GeoImage(fname, img, gippy.GDT_Byte, 2)
                 imgout.SetNoData(127)
                 imgout.SetOffset(0.0)
                 imgout.SetGain(1.0)
+                imgout.SetBandName('Snow Cover', 1)
+                imgout.SetBandName('Fractional Snow Cover', 2)
+                imgout.SetMeta(meta)
 
                 imgout[0].Write(coverout)
                 imgout[1].Write(fracout)
 
-                imgout.SetBandName('Snow Cover', 1)
-                imgout.SetBandName('Fractional Snow Cover', 2)
-
-                for k, v in meta.items():
-                    imgout.SetMeta(k, str(v))
-
-
-            #####################
             # TEMPERATURE PRODUCT (DAILY)
-
-            # TODO:
-            # use a missing value that is not zero, e.g. 32767
-            # because 0 is a valid value in the QC mask
-            # OR:
-            # use 1,2 in the QC mask instead of 0,1
-
+            # TODO: # use a missing value that is not zero, e.g. 32767 because 0 is a valid value in the QC mask
+            #  or use 1,2 in the QC mask instead of 0,1
             if val[0] == "temp":
                 VERSION = "1.1"
-                assets = self._products['temp']['assets']
-
-                allsds = []
-                missingassets = []
-                availassets = []
-                assetids = []
-
-                for asset in assets:
-                    try:
-                        sds = self.assets[asset].datafiles()
-                    except Exception,e:
-                        missingassets.append(asset)
-                    else:
-                        assetids.append(assets.index(asset))
-                        availassets.append(asset)
-                        allsds.extend(sds)
-
-                # print "assetids", assetids
-                # print "availassets", availassets
-                # print "missingassets", missingassets
-                # for i,sds in enumerate(allsds):
-                #     print "i, sds", i,sds
-
-                if not availassets:
-                    VerboseOut('Both assets are missing: %s,%s,%s' % (str(self.date), str(self.id), str(missingassets)), 4)
-                    continue
+                meta['VERSION'] = VERSION
 
                 if not missingassets:
-                    availbands = [0,1,2,3]
-                    tempsds = [allsds[0], allsds[4], allsds[12], allsds[16]]                    
+                    availbands = [0, 1, 2, 3]
+                    tempsds = [allsds[0], allsds[4], allsds[12], allsds[16]]
                     qcsds = [allsds[1], allsds[5], allsds[13], allsds[17]]
                     hoursds = [allsds[2], allsds[6], allsds[14], allsds[18]]
                 elif missingassets[0] == 'MYD11A1':
-                    availbands = [0,1]
-                    tempsds = [allsds[0], allsds[4]]                    
+                    availbands = [0, 1]
+                    tempsds = [allsds[0], allsds[4]]
                     qcsds = [allsds[1], allsds[5]]
                     hoursds = [allsds[2], allsds[6]]
                 elif missingassets[0] == 'MOD11A1':
-                    availbands = [2,3]
-                    tempsds = [allsds[0], allsds[4]]                    
+                    availbands = [2, 3]
+                    tempsds = [allsds[0], allsds[4]]
                     qcsds = [allsds[1], allsds[5]]
                     hoursds = [allsds[2], allsds[6]]
                 else:
                     raise
 
-                tempbands = gippy.GeoImage(tempsds) # read only
-                qcbands = gippy.GeoImage(qcsds) # read only
-                hourbands = gippy.GeoImage(hoursds) # read only
+                tempbands = gippy.GeoImage(tempsds)
+                qcbands = gippy.GeoImage(qcsds)
+                hourbands = gippy.GeoImage(hoursds)
 
-                metanames = {}
-                metanames['AVAILABLE_ASSETS'] = str(availassets)
-                metanames['VERSION'] = VERSION
+                imgout = gippy.GeoImage(fname, tempbands, gippy.GDT_UInt16, 5)
+                imgout.SetNoData(65535)
+                imgout.SetGain(0.02)
+
+                imgout.SetBandName('Temperature Daytime Terra', 1)
+                imgout.SetBandName('Temperature Nighttime Terra', 2)
+                imgout.SetBandName('Temperature Daytime Aqua', 3)
+                imgout.SetBandName('Temperature Nighttime Aqua', 4)
+                imgout.SetBandName('Temperature Best Quality', 5)
 
                 # there are four temperature bands
                 for iband, band in enumerate(availbands):
-
                     # get meta name template info
                     basename = tempbands[iband].Basename()
                     print "basename", basename
                     platform = basename[:3]
-                    platform = platformnames[platform]
- 
+                    platform = self.Asset._sensors[platform]
+
                     dayornight = basename.split()[2]
                     dayornight = dayornight.replace('time', '')
                     assert dayornight in ('day', 'night')
@@ -730,227 +529,83 @@ class ModisData(Data):
                     if iband == 0:
                         bestmask = np.zeros_like(qc, dtype='uint16')
 
-                    bestmask += (math.pow(2, band)*newmaskbest).astype('uint16')
+                    bestmask += (math.pow(2, band) * newmaskbest).astype('uint16')
 
                     numbad = np.sum(newmaskbad)
-                    fracbad = np.sum(newmaskbad)/float(newmaskbad.size)
+                    #fracbad = np.sum(newmaskbad) / float(newmaskbad.size)
 
                     numgood = np.sum(newmaskgood)
-                    fracgood = np.sum(newmaskgood)/float(newmaskgood.size)
+                    #fracgood = np.sum(newmaskgood) / float(newmaskgood.size)
                     assert numgood == qc.size - numbad
 
                     numbest = np.sum(newmaskbest)
-                    fracbest = np.sum(newmaskbest)/float(newmaskbest.size)
+                    #fracbest = np.sum(newmaskbest) / float(newmaskbest.size)
 
                     metaname = "NUMBAD_%s_%s" % (dayornight, platform)
                     metaname = metaname.upper()
                     # print "metaname", metaname
-                    metanames[metaname] = str(numbad)
+                    meta[metaname] = str(numbad)
 
                     metaname = "NUMGOOD_%s_%s" % (dayornight, platform)
                     metaname = metaname.upper()
                     # print "metaname", metaname
-                    metanames[metaname] = str(numgood)
+                    meta[metaname] = str(numgood)
 
                     metaname = "NUMBEST_%s_%s" % (dayornight, platform)
                     metaname = metaname.upper()
                     # print "metaname", metaname
-                    metanames[metaname] = str(numbest)
+                    meta[metaname] = str(numbest)
 
                     # overpass time
                     hournodatavalue = hourbands[iband].NoDataValue()
                     hour = hourbands[iband].Read()
                     hour = hour[hour != hournodatavalue]
                     try:
-                        hourmin = hour.min()
+                        #hourmin = hour.min()
                         hourmean = hour.mean()
-                        hourmax = hour.max()
+                        #hourmax = hour.max()
                         # print "hour.min(), hour.mean(), hour.max()", hour.min(), hour.mean(), hour.max()
                     except:
                         hourmean = 0
 
                     metaname = "MEANOVERPASSTIME_%s_%s" % (dayornight, platform)
                     metaname = metaname.upper()
-                    metanames[metaname] = str(hourmean)
+                    meta[metaname] = str(hourmean)
 
-                VerboseOut('writing %s' % outfname, 4)
-                imgout = gippy.GeoImage(outfname, tempbands, gippy.GDT_UInt16, 5)
-                imgout.SetNoData(65535)
-                imgout.SetGain(0.02)
-
-                imgout.SetBandName('Temperature Daytime Terra', 1)
-                imgout.SetBandName('Temperature Nighttime Terra', 2)
-                imgout.SetBandName('Temperature Daytime Aqua', 3)
-                imgout.SetBandName('Temperature Nighttime Aqua', 4)
-                imgout.SetBandName('Temperature Best Quality', 5)
-
-                for iband, band in enumerate(availbands):
                     tempbands[iband].Process(imgout[band])
-                    # print "imgout[%d].Gain()" % band, imgout[band].Gain()
-                    # print "imgout[%d].Offset()" % band, imgout[band].Offset()
-                    # print imgout[band].Stats()
 
                 imgout[4].SetGain(1.0)
                 imgout[4].Write(bestmask)
 
-                # print "imgout[4].Gain()", imgout[4].Gain()
-                # print "imgout[4].Offset()", imgout[4].Offset()
-                # print imgout[4].Stats()
+                imgout.SetMeta(meta)
 
-                for k, v in metanames.items():
-                    imgout.SetMeta(k, v)
-
-            #####################
-            # TEMPERATURE PRODUCT (8 DAY)
-
-            # TODO:
-            # use a missing value that is not zero, e.g. 32767
-            # because 0 is a valid value in the QC mask
-            # OR:
-            # use 1,2 in the QC mask instead of 0,1
-	    
-            if val[0] == "tempweekly":
+            # NDVI (8-day) - Terra only
+            if val[0] == "ndvi8":
                 VERSION = "1.0"
-                assets = self._products['tempweekly']['assets']
+                meta['VERSION'] = VERSION
 
-                allsds = []
-                missingassets = []
-                availassets = []
-                assetids = []
+                refl = gippy.GeoImage(allsds)
+                refl.SetBandName("RED", 1)
+                refl.SetBandName("NIR", 2)
+                refl.SetNoData(32767)
 
-                for asset in assets:
-                    try:
-                        sds = self.assets[asset].datafiles()
-                    except Exception,e:
-                        missingassets.append(asset)
-                    else:
-                        assetids.append(assets.index(asset))
-			availassets.append(asset)
-                        allsds.extend(sds)
+                fouts = dict(gippy.Indices(refl, {'ndvi': fname}, meta))
+                imgout = gippy.GeoImage(fouts['ndvi'])
 
-                #print "assetids", assetids
-                #print "availassets", availassets
-                #print "missingassets", missingassets
+            # TEMPERATURE PRODUCT (8-day) - Terray only
+            if val[0] == "temp8":
+                VERSION = "1.0"
+                meta['VERSION'] = VERSION
 
-                #for i,sds in enumerate(allsds):
-                #    print "i, sds", i,sds
-		
-                if missingassets:
-                    VerboseOut('Asset is missing: %s,%s,%s' % (str(self.date), str(self.id), str(missingassets)), 4)
-                    continue
-		
-                metanames = {}
-                metanames['AVAILABLE_ASSETS'] = str(availassets)
-                metanames['VERSION'] = VERSION
-
-		availbands = [0,1]
-                temp_w_sds = [allsds[0], allsds[4]]                    
-                qcsds = [allsds[1], allsds[5]]
-                hoursds = [allsds[2], allsds[6]]
-
-                metanames = {}
-                metanames['AVAILABLE_ASSETS'] = str(availassets)
-                metanames['VERSION'] = VERSION
-                
-		temp_w_bands = gippy.GeoImage(temp_w_sds) # read only
-                qcbands = gippy.GeoImage(qcsds) # read only
-                hourbands = gippy.GeoImage(hoursds) # read only
-
-                # there are four temperature bands
-                for iband, band in enumerate(availbands):
-                    # get meta name template info
-                    basename = temp_w_bands[iband].Basename()
-		    
-                    platform = basename[:3]
-		    platform = platformnames[platform]
-                    dayornight = basename.split()[1]
-                    dayornight = dayornight.replace('time', '')
-                    assert dayornight in ('day', 'night')
-
-                    qc = qcbands[iband].Read()	    
-                    # first two bits are 10 or 11
-                    newmaskbad = binmask(qc, 2)
-                    # first two bits are 00 or 01
-                    newmaskgood = ~binmask(qc, 2)
-                    # first two bits are 00
-                    newmaskbest = ~binmask(qc, 1) & ~binmask(qc, 2)
-
-                    if iband == 0:
-                        bestmask = newmaskbest.astype('uint16')
-			print bestmask[1,1]
-                    else:
-                        bestmask += (math.pow(2, iband)*newmaskbest).astype('uint16')
-
-                    numbad = np.sum(newmaskbad)
-                    fracbad = np.sum(newmaskbad)/float(newmaskbad.size)
-
-                    numgood = np.sum(newmaskgood)
-                    fracgood = np.sum(newmaskgood)/float(newmaskgood.size)
-                    assert numgood == qc.size - numbad
-
-                    numbest = np.sum(newmaskbest)
-                    fracbest = np.sum(newmaskbest)/float(newmaskbest.size)
-
-                    metaname = "NUMBAD_%s_%s" % (dayornight, platform)
-                    metaname = metaname.upper()
-                    # print "metaname", metaname
-                    metanames[metaname] = str(numbad)
-
-                    metaname = "NUMGOOD_%s_%s" % (dayornight, platform)
-                    metaname = metaname.upper()
-                    # print "metaname", metaname
-                    metanames[metaname] = str(numgood)
-
-                    metaname = "NUMBEST_%s_%s" % (dayornight, platform)
-                    metaname = metaname.upper()
-                    # print "metaname", metaname
-                    metanames[metaname] = str(numbest)
-
-                    # overpass time
-                    hournodatavalue = hourbands[iband].NoDataValue()
-                    hour = hourbands[iband].Read()
-                    hour = hour[hour != hournodatavalue]
-                    try:
-                        hourmin = hour.min()
-                        hourmean = hour.mean()
-                        hourmax = hour.max()
-                        # print "hour.min(), hour.mean(), hour.max()", hour.min(), hour.mean(), hour.max()
-                    except:
-                        hourmean = 0
-
-                    metaname = "MEANOVERPASSTIME_%s_%s" % (dayornight, platform)
-                    metaname = metaname.upper()
-                    metanames[metaname] = str(hourmean)
-
-
-                VerboseOut('writing %s' % outfname, 4)
-		print outfname
-                imgout = gippy.GeoImage(outfname, temp_w_bands, gippy.GDT_UInt16, 3)
-                imgout.SetNoData(0)
-                imgout.SetGain(0.02)
-
-                imgout.SetColor('Temperature Daytime Terra', 1)
-                imgout.SetColor('Temperature Nighttime Terra', 2)
-                imgout.SetColor('Temperature Best Quality', 3)
-
-                for iband, band in enumerate(availbands):
-                    temp_w_bands[iband].Process(imgout[band])
-                    # print "imgout[%d].Gain()" % band, imgout[band].Gain()
-                    # print "imgout[%d].Offset()" % band, imgout[band].Offset()
-                    # print imgout[band].Stats()
-
-                imgout[2].SetGain(1.0)
-                imgout[2].Write(bestmask)
-                # print "imgout[4].Gain()", imgout[4].Gain()
-                # print "imgout[4].Offset()", imgout[4].Offset()
-                # print imgout[4].Stats()
-
-                for k, v in metanames.items():
-                    imgout.SetMeta(k, v)
-
+                set_trace()
+                os.symlink(allsds[0], fname + '.tif')
+                set_trace()
+                imgout = gippy.GeoImage(fname)
 
             # add product to inventory
             self.products[val[0]] = imgout.Filename()
+            VerboseOut(' -> %s: processed in %s' % (os.path.basename(fname), datetime.now() - start), 1)
+
 
 def main():
     DataInventory.main(ModisData)
