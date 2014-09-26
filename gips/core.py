@@ -479,9 +479,10 @@ class Data(object):
             self.sensor = asset.sensor
             # products that come automatically with assets
             self.products.update(asset.products)
-            # find all products
-            self.basename = self.id + '_' + self.date.strftime(self.Repository._datedir)  # + '_' + self.sensor
-            prods = self.discover(os.path.join(self.path, self.basename + '_' + self.sensor))
+        self.basename = self.id + '_' + self.date.strftime(self.Repository._datedir)  # + '_' + self.sensor
+        # find all products
+        for sensor in self.Asset._sensors:
+            prods = self.discover(os.path.join(self.path, self.basename + '_' + sensor))
             self.products.update(prods)
         if len(self.assets) == 0:
             raise Exception('no assets')
