@@ -122,6 +122,7 @@ class SARAnnualData(Data):
 
     def process(self, products):
         """ Process all requested products for this tile """
+        self.basename = self.basename + '_' + self.sensor
         if len(products) == 0:
             raise Exception('Tile %s: No products specified' % self.tile)
 

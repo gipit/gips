@@ -261,6 +261,7 @@ class SARData(Data):
 
     def process(self, products, **kwargs):
         """ Make sure all products have been pre-processed """
+        self.basename = self.basename + '_' + self.sensor
         if len(products) == 0:
             raise Exception('Tile %s: No products specified' % self.tile)
         # extract all data from archive

@@ -346,6 +346,8 @@ class MerraData(Data):
 
     def process(self, products, **kwargs):
 
+        self.basename = self.basename + '_' + self.sensor
+
         for key, val in products.items():
 
             outfname = os.path.join(self.path, self.basename + '_' + key)

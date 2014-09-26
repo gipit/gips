@@ -223,11 +223,10 @@ class ModisData(Data):
     def process(self, products, **kwargs):
         """ Process all products """
 
-        bname = '_'.join(self.basename.split('_')[:-1] + ['MOD'])
+        fname = os.path.join(self.path, self.basename)
 
         for key, val in products.items():
             start = datetime.datetime.now()
-            fname = os.path.join(self.path, bname + '_' + key)
 
             # Check for asset availability
             assets = self._products[val[0]]['assets']
@@ -255,6 +254,7 @@ class ModisData(Data):
             if val[0] == "indices":
                 VERSION = "1.0"
                 meta['VERSION'] = VERSION
+                fname = '%s_%s_%s' % (fname, 'MCD', key)
 
                 # there should be 11 SDSs, 7 bands and 4 QC layers
                 reflsds = [allsds[i] for i in range(7)]
@@ -352,6 +352,7 @@ class ModisData(Data):
             if val[0] == "snow":
                 VERSION = "1.0"
                 meta['VERSION'] = VERSION
+                fname = '%s_%s_%s' % (fname, 'MCD', key)
 
                 if not missingassets:
                     availbands = [0, 1]
@@ -473,6 +474,7 @@ class ModisData(Data):
             if val[0] == "temp":
                 VERSION = "1.1"
                 meta['VERSION'] = VERSION
+                fname = '%s_%s_%s' % (fname, 'MOD-MYD', key)
 
                 if not missingassets:
                     availbands = [0, 1, 2, 3]
@@ -584,6 +586,7 @@ class ModisData(Data):
             if val[0] == "ndvi8":
                 VERSION = "1.0"
                 meta['VERSION'] = VERSION
+                fname = '%s_%s_%s' % (fname, 'MOD', key)
 
                 refl = gippy.GeoImage(allsds)
                 refl.SetBandName("RED", 1)
@@ -597,6 +600,7 @@ class ModisData(Data):
             if val[0] == "temp8":
                 VERSION = "1.0"
                 meta['VERSION'] = VERSION
+                fname = '%s_%s_%s' % (fname, 'MOD', key)
 
                 set_trace()
                 os.symlink(allsds[0], fname + '.tif')

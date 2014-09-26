@@ -469,7 +469,8 @@ class Data(object):
         self.date = date
         self.assets = {}
         self.products = {}
-        # TODO - We could have multiple sensors !!!
+        # TODO - There could have multiple sensors (per asset)
+        #  use this only when there is one sensor possible for a given date
         self.sensor = ''
         # find all assets
         for asset in self.Asset.discover(tile, date):
@@ -479,8 +480,8 @@ class Data(object):
             # products that come automatically with assets
             self.products.update(asset.products)
             # find all products
-            self.basename = self.id + '_' + self.date.strftime(self.Repository._datedir) + '_' + self.sensor
-            prods = self.discover(os.path.join(self.path, self.basename))
+            self.basename = self.id + '_' + self.date.strftime(self.Repository._datedir)  # + '_' + self.sensor
+            prods = self.discover(os.path.join(self.path, self.basename + '_' + self.sensor))
             self.products.update(prods)
         if len(self.assets) == 0:
             raise Exception('no assets')
