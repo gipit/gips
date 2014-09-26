@@ -408,8 +408,7 @@ class DataInventory(Inventory):
     @staticmethod
     def main(cls):
         dhf = argparse.ArgumentDefaultsHelpFormatter
-        parser0 = argparse.ArgumentParser(description='GIPS %s Data Utility v%s' % (cls.name, __version__),
-                                          formatter_class=argparse.RawTextHelpFormatter)
+        parser0 = argparse.ArgumentParser(description='GIPS %s Data Utility v%s' % (cls.name, __version__))
         subparser = parser0.add_subparsers(dest='command')
 
         # Archive
@@ -418,7 +417,7 @@ class DataInventory(Inventory):
         parser.add_argument('--recursive', help='Iterate through subdirectories', default=False, action='store_true')
         parser.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2: debug', default=1, type=int)
 
-        invparser = argparse.ArgumentParser(add_help=False, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        invparser = argparse.ArgumentParser(add_help=False, formatter_class=dhf)
         group = invparser.add_argument_group('inventory arguments')
         group.add_argument('-s', '--site', help='Vector file for region of interest', default=None)
         group.add_argument('-t', '--tiles', nargs='*', help='Tile designations', default=None)
