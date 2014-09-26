@@ -128,7 +128,7 @@ class ModisAsset(Asset):
     }
 
     # Should this be specified on a per asset basis? (in which case retrieve from asset)
-    _defaultresolution = [926.625433138333392, -926.625433139166944]
+    _defaultresolution = [926.625433138333392, 926.625433139166944]
 
     def __init__(self, filename):
         """ Inspect a single file and get some metadata """
@@ -596,20 +596,18 @@ class ModisData(Data):
                 fouts = dict(gippy.Indices(refl, {'ndvi': fname}, meta))
                 imgout = gippy.GeoImage(fouts['ndvi'])
 
-            # TEMPERATURE PRODUCT (8-day) - Terray only
+            # TEMPERATURE PRODUCT (8-day) - Terra only
             if val[0] == "temp8":
                 VERSION = "1.0"
                 meta['VERSION'] = VERSION
-                fname = '%s_%s_%s' % (fname, 'MOD', key)
+                fname = '%s_%s_%s.tif' % (fname, 'MOD', key)
 
-                set_trace()
-                os.symlink(allsds[0], fname + '.tif')
-                set_trace()
+                os.symlink(allsds[0], fname)
                 imgout = gippy.GeoImage(fname)
 
             # add product to inventory
             self.products[val[0]] = imgout.Filename()
-            VerboseOut(' -> %s: processed in %s' % (os.path.basename(fname), datetime.now() - start), 1)
+            VerboseOut(' -> %s: processed in %s' % (os.path.basename(fname), datetime.datetime.now() - start), 1)
 
 
 def main():
