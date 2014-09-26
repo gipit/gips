@@ -460,6 +460,7 @@ class Data(object):
         self.date = date
         self.assets = {}
         self.products = {}
+        # TODO - We could have multiple sensors !!!
         self.sensor = ''
         # find all assets
         for asset in self.Asset.discover(tile, date):
@@ -559,7 +560,7 @@ class Data(object):
 
     @classmethod
     def arg_parser(cls):
-        parser = argparse.ArgumentParser(add_help=False, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        parser = argparse.ArgumentParser(add_help=False)
         groups = {}
         for p in cls._products.values():
             group = p.get('group', 'Standard')
