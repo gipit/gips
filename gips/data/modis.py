@@ -22,16 +22,14 @@ import os
 import re
 import datetime
 import urllib
-from osgeo import gdal
 import math
 import numpy as np
 
 import gippy
 from gips.core import Repository, Asset, Data
 from gips.inventory import DataInventory
-from gips.utils import File2List, List2File, VerboseOut
+from gips.utils import VerboseOut
 import gips.settings as settings
-from pdb import set_trace
 
 
 def binmask(arr, bit):
@@ -191,8 +189,13 @@ class ModisData(Data):
     _products = {
         # MCD Products
         'indices': {
-            'description': 'Land indices based',
-            'assets': ['MCD43A4', 'MCD43A2'],
+            'description': 'Land indices',
+            'assets': ['MCD43A4'],
+            'group': "Nadir BRDF-Adjusted 16-day"
+        },
+        'quality': {
+            'description': 'MCD Product Quality',
+            'assets': ['MCD43A2'],
             'group': "Nadir BRDF-Adjusted 16-day"
         },
         # Daily
@@ -250,18 +253,18 @@ class ModisData(Data):
             meta = {}
             meta['AVAILABLE_ASSETS'] = ' '.join(availassets)
 
+            if val[0] == "quality":
+                fname = '%s_%s_%s.tif' % (fname, 'MCD', key)
+                os.symlink(allsds[0], fname)
+                imgout = gippy.GeoImage(fname)
+
             # LAND VEGETATION INDICES PRODUCT
             if val[0] == "indices":
                 VERSION = "1.0"
                 meta['VERSION'] = VERSION
                 fname = '%s_%s_%s' % (fname, 'MCD', key)
 
-                # there should be 11 SDSs, 7 bands and 4 QC layers
-                reflsds = [allsds[i] for i in range(7)]
-                qcsds = [allsds[i] for i in range(7, 11)]
-
-                refl = gippy.GeoImage(reflsds)
-                qc = gippy.GeoImage(qcsds)
+                refl = gippy.GeoImage(allsds)
 
                 missing = 32767
 
@@ -271,10 +274,6 @@ class ModisData(Data):
                 grnimg = refl[3].Read()
                 mirimg = refl[5].Read()
                 swir2img = refl[6].Read()
-
-                qcimg = qc[0].Read()
-                qcimg = qcimg.astype(np.int16)
-                qcimg[qcimg == 255] = missing
 
                 redimg[redimg < 0.0] = 0.0
                 nirimg[nirimg < 0.0] = 0.0
@@ -324,7 +323,7 @@ class ModisData(Data):
                 print satvi[wg].min(), satvi[wg].max()
 
                 # create output gippy image
-                imgout = gippy.GeoImage(fname, refl, gippy.GDT_Int16, 6)
+                imgout = gippy.GeoImage(fname, refl, gippy.GDT_Int16, 5)
 
                 imgout.SetNoData(missing)
                 imgout.SetOffset(0.0)
@@ -337,14 +336,12 @@ class ModisData(Data):
                 imgout[4].Write(satvi)
 
                 imgout[5].SetGain(1.0)
-                imgout[5].Write(qcimg)
 
                 imgout.SetBandName('NDVI', 1)
                 imgout.SetBandName('LSWI', 2)
                 imgout.SetBandName('VARI', 3)
                 imgout.SetBandName('BRGT', 4)
                 imgout.SetBandName('SATVI', 5)
-                imgout.SetBandName('Best quality', 6)
 
                 imgout.SetMeta(meta)
 
@@ -598,10 +595,7 @@ class ModisData(Data):
 
             # TEMPERATURE PRODUCT (8-day) - Terra only
             if val[0] == "temp8":
-                VERSION = "1.0"
-                meta['VERSION'] = VERSION
                 fname = '%s_%s_%s.tif' % (fname, 'MOD', key)
-
                 os.symlink(allsds[0], fname)
                 imgout = gippy.GeoImage(fname)
 
