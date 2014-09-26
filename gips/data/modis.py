@@ -72,7 +72,8 @@ class ModisAsset(Asset):
     _sensors = {
         'MOD': {'description': 'Terra'},
         'MYD': {'description': 'Aqua'},
-        'MCD': {'description': 'Combined'}
+        'MCD': {'description': 'Aqua/Terra Combined'},
+        'MOD-MYD': {'description': 'Aqua/Terra together'}
     }
 
     _assets = {
