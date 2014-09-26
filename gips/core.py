@@ -21,7 +21,7 @@
 import os
 import errno
 import argparse
-from osgeo import ogr
+from osgeo import gdal, ogr
 from datetime import datetime
 import glob
 from shapely.wkb import loads
@@ -207,18 +207,27 @@ class Asset(object):
     ##########################################################################
     def datafiles(self):
         """ Get list of datafiles from asset (if archive file) """
-        if tarfile.is_tarfile(self.filename):
-            tfile = tarfile.open(self.filename)
-        else:
-            raise Exception('%s is not a valid tar file' % self.filename)
         path = os.path.dirname(self.filename)
         indexfile = os.path.join(path, self.filename + '.index')
         if os.path.exists(indexfile):
             datafiles = File2List(indexfile)
-        else:
-            tfile = tarfile.open(self.filename)
-            datafiles = tfile.getnames()
-            List2File(datafiles, indexfile)
+            if len(datafiles) > 0:
+                return datafiles
+
+        try:
+            if tarfile.is_tarfile(self.filename):
+                tfile = tarfile.open(self.filename)
+                tfile = tarfile.open(self.filename)
+                datafiles = tfile.getnames()
+            else:
+                # Try subdatasets
+                fh = gdal.Open(self.filename)
+                sds = fh.GetSubDatasets()
+                datafiles = [s[0] for s in sds]
+        except:
+            raise Exception('Unable to get datafiles from %s' % self.filename)
+
+        List2File(datafiles, indexfile)
         return datafiles
 
     def extract(self, filenames=[]):
@@ -542,8 +551,8 @@ class Data(object):
                         try:
                             cls.Asset.fetch(a, t, d)
                             fetched.append((a, t, d))
-                        except:
-                            pass
+                        except Exception, e:
+                            VerboseOut('Problem fetching asset: %s' % e, 3)
         return fetched
 
     @classmethod
