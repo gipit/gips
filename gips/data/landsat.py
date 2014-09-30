@@ -454,7 +454,8 @@ class LandsatData(Data):
             if len(fnames) > 0:
                 prodarr = dict(zip([indices_toa[p][0] for p in indices_toa.keys()], fnames))
                 prodout = gippy.Indices(reflimg, prodarr, md)
-                self.products.update(prodout)
+                for key in prodout:
+                    self.products.update({key + '-toa': prodout[key]})
             # Run atmospherically corrected
             fnames = [os.path.join(self.path, self.basename + '_' + key) for key in indices]
             if len(fnames) > 0:
@@ -464,7 +465,6 @@ class LandsatData(Data):
                 prodout = gippy.Indices(img, prodarr, md)
                 self.products.update(prodout)
             VerboseOut(' -> %s: processed %s in %s' % (self.basename, indices0.keys(), datetime.now() - start), 1)
-
         img = None
         # cleanup directory
         try:
