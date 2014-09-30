@@ -19,6 +19,7 @@
 ################################################################################
 
 import os
+import sys
 import errno
 import argparse
 from osgeo import gdal, ogr
@@ -418,10 +419,12 @@ class Asset(object):
 class Data(object):
     """ Collection of assets/products for one tile and date """
     name = 'Data'
+    version = '0.0.0'
     Asset = Asset
 
     _pattern = '*.tif'
     _products = {}
+    _productgroups = {}
 
     def meta(self):
         """ Retrieve metadata for this tile """
@@ -558,44 +561,49 @@ class Data(object):
         return fetched
 
     @classmethod
-    def products2groups(cls, products):
-        """ Convert product list to groupings """
-        groups = {}
-        for p, val in cls._products.items():
-            group = val.get('group', 'Standard')
-            groups[group] = {}
-        for p, val in products.items():
-            group = cls._products[val[0]].get('group', 'Standard')
-            groups[group][p] = val
+    def product_groups(cls):
+        """ Return dict of groups and products in each one """
+        groups = cls._productgroups
+        groups['Standard'] = []
+        grouped_products = [x for sublist in cls._productgroups.values() for x in sublist]
+        for p in cls._products:
+            if p not in grouped_products:
+                groups['Standard'].append(p)
         return groups
 
     @classmethod
-    def arg_parser(cls):
-        parser = argparse.ArgumentParser(add_help=False)
+    def products2groups(cls, products):
+        """ Convert product list to groupings """
+        p2g = {}
         groups = {}
-        for p in cls._products.values():
-            group = p.get('group', 'Standard')
-            if group == 'Standard' and p.get('composite'):
-                group = 'Composites'
-            if group not in groups:
-                groups[group] = parser.add_argument_group('%s product arguments' % group)
-        for p, product in cls._products.items():
-            if p != '':
-                group = product.get('group', 'Standard')
-                if group == 'Standard' and product.get('composite'):
-                    group = 'Composites'
-                nargs = product.get('args', None)
-                choices = product.get('choices', None)
-                if choices is not None:
-                    groups[group].add_argument('--%s' % p, help=product['description'],
-                                               choices=choices, nargs='?', const=[])
-                elif nargs == '?':
-                    groups[group].add_argument('--%s' % p, help=product['description'], nargs=nargs, const=[])
-                elif nargs == '*':
-                    groups[group].add_argument('--%s' % p, help=product['description'], nargs=nargs)
-                else:
-                    groups[group].add_argument('--%s' % p, help=product['description'], action='store_true')
-        return parser
+        allgroups = cls.product_groups()
+        for g in allgroups:
+            groups[g] = {}
+            for p in allgroups[g]:
+                p2g[p] = g
+        #from pdb import set_trace
+        #set_trace()
+        for p, val in products.items():
+            g = p2g[val[0]]
+            groups[g][p] = val
+        return groups
+
+    @classmethod
+    def print_products(cls):
+        print "\n%s Products v%s" % (cls.name, cls.version)
+        #products = cls.products2groups(cls._products)
+        print "Optional arguments (listed below each product) specified by appending '-' argument to product (e.g., ref-toa) "
+        groups = cls.product_groups()
+        for group in groups:
+            print '\n%s Products' % group
+            for p in sorted(groups[group]):
+                h = cls._products[p]['description']
+                sys.stdout.write('   {:<12}{:<40}\n'.format(p, h))
+                if 'arguments' in cls._products[p]:
+                    #sys.stdout.write('{:>12}'.format('options'))
+                    args = [['', a] for a in cls._products[p]['arguments']]
+                    for a in args:
+                        sys.stdout.write('{:>12}     {:<40}\n'.format(a[0], a[1]))
 
     @classmethod
     def extra_arguments(cls):

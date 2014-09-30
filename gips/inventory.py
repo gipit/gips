@@ -285,17 +285,9 @@ class DataInventory(Inventory):
         self._temporal_extent(dates, days)
         self.data = {}
 
-        # Ensure product list if dictionary of products + arguments
-        prod_dict = {}
-        if isinstance(products, list):
-            prod_dict = dict([p, [p]] for p in products)
-        else:
-            prod_dict = products
-
-        # if no products specified and only 1 product available, use it
-        if len(prod_dict) == 0 and len(dataclass._products) == 1:
-            p = dataclass._products.keys()[0]
-            prod_dict = {p: [p]}
+        if products is None:
+            products = dataclass._products
+        prod_dict = dict([p, p.split('-')] for p in products)
 
         # seperate out standard (each tile processed) and composite products (using inventory)
         self.standard_products = {}
@@ -417,7 +409,7 @@ class DataInventory(Inventory):
         parser.add_argument('--recursive', help='Iterate through subdirectories', default=False, action='store_true')
         parser.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2: debug', default=1, type=int)
 
-        invparser = argparse.ArgumentParser(add_help=False, formatter_class=dhf)
+        invparser = argparse.ArgumentParser(add_help=False, formatter_class=dhf, epilog='TEST')
         group = invparser.add_argument_group('inventory arguments')
         group.add_argument('-s', '--site', help='Vector file for region of interest', default=None)
         group.add_argument('-t', '--tiles', nargs='*', help='Tile designations', default=None)
@@ -428,12 +420,15 @@ class DataInventory(Inventory):
         group.add_argument('--%tile', dest='ptile', help='Threshold of %% tile used', default=0, type=int)
         group.add_argument('--fetch', help='Fetch any missing data (if supported)', default=False, action='store_true')
         group.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2: debug', default=1, type=int)
+        group.add_argument('-p', '--products', help='Requested Products (call products command to list)', nargs='*')
         extra = []
         for arg, kwargs in cls.extra_arguments().items():
             extra.append(kwargs['dest'])
             group.add_argument(arg, **kwargs)
 
-        parents = [invparser, cls.arg_parser()]
+        parents = [invparser, ]
+
+        parser = subparser.add_parser('products', help='List available products')
 
         # Inventory
         parser = subparser.add_parser('inventory', help='Get Inventory', parents=parents, formatter_class=dhf)
@@ -443,6 +438,7 @@ class DataInventory(Inventory):
         # Processing
         parserp = subparser.add_parser('process', help='Process scenes', parents=parents, formatter_class=dhf)
         group = parserp.add_argument_group('Processing Options')
+        # Useful option for debugging, not for general users
         #group.add_argument('--suffix', help='Suffix on end of filename (before extension)', default='')
         group.add_argument('--overwrite', help='Overwrite exiting output file(s)', default=False, action='store_true')
         group.add_argument('--chunksize', help='Chunk size in MB', default=512.0)
@@ -460,41 +456,26 @@ class DataInventory(Inventory):
 
         args = parser0.parse_args()
 
+        VerboseOut('GIPS %s command line utility v%s' % (cls.name, __version__), 1)
+
+        if args.command == 'products':
+            cls.print_products()
+            exit(1)
+
         gippy.Options.SetVerbose(args.verbose)
         if 'format' in args:
             gippy.Options.SetDefaultFormat(args.format)
-
-        VerboseOut('GIPS %s command line utility v%s' % (cls.name, __version__), 1)
 
         if args.command == 'archive':
             cls.Asset.archive(recursive=args.recursive, keep=args.keep)
             exit(1)
 
-        #try:
-        #    suffix = '-' + args.suffix if args.suffix != '' else ''
-        #except:
-        #    suffix = ''
-        suffix = ''
-        products = {}
-        for p in cls._products:
-            if p != '':
-                val = eval('args.%s' % p)
-                if val not in [None, False]:
-                    if val is True:
-                        products[p] = [p]
-                    elif isinstance(val, list):
-                        key = p
-                        for i in val:
-                            key = key + '-' + i
-                        products[key + suffix] = [p] + val
-                    else:
-                        products[p + '-' + val + suffix] = [p, val]
         kwargs = dict(zip(extra, [eval('args.%s' % a) for a in extra]))
 
         try:
             inv = cls.inventory(
-                site=args.site, dates=args.dates, days=args.days, tiles=args.tiles,
-                products=products, pcov=args.pcov, ptile=args.ptile, fetch=args.fetch, sensors=args.sensors, **kwargs)
+                site=args.site, dates=args.dates, days=args.days, tiles=args.tiles, products=args.products,
+                pcov=args.pcov, ptile=args.ptile, fetch=args.fetch, sensors=args.sensors, **kwargs)
             if args.command == 'inventory':
                 inv.pprint(md=args.md, compact=args.compact)
             elif args.command == 'process':

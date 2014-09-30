@@ -32,10 +32,8 @@ from gips.core import Repository, Asset, Data
 from gips.inventory import DataInventory
 from gips.utils import VerboseOut, RemoveFiles
 import gips.settings as settings
-
 from gips.data.aod import AODData
-
-__version__ = '0.7.0'
+from pdb import set_trace
 
 
 class LandsatRepository(Repository):
@@ -158,43 +156,101 @@ class LandsatAsset(Asset):
 
 class LandsatData(Data):
     name = 'Landsat'
+    version = '0.7.0'
 
     Asset = LandsatAsset
 
     _prodpattern = '*.tif'
-    _products = {
-        #'Standard': {
-        # 'rgb': 'RGB image for viewing (quick processing)',
-        'rad': {'description': 'Surface-leaving radiance', 'choices': ['toa']},
-        'ref': {'description': 'Surface reflectance', 'choices': ['toa']},
-        'temp': {'description': 'Brightness (apparent) temperature', 'toa': True},
-        'acca': {'description':
-                 ('Automated Cloud Cover Assesment -- 0 to 3 arguments. '
-                  'First is erosion kernel diameter in pixels, '
-                  'second is dilation kernel diameter in pixels, '
-                  'and last is the cloud height in meters. '
-                  'If not specified, the values are 5, 10 and 4000.'),
-                 'args': '*', 'toa': True},
-        'fmask': {'description': 'Fmask cloud cover', 'args': '*', 'toa': True},
-        'tcap': {'description': 'Tassled cap transformation', 'toa': True},
-        #'Indices': {
-        'bi': {'description': 'Brightness Index', 'group': 'Index', 'choices': ['toa']},
-        'evi': {'description': 'Enhanced Vegetation Index', 'group': 'Index', 'choices': ['toa']},
-        'lswi': {'description': 'Land Surface Water Index', 'group': 'Index', 'choices': ['toa']},
-        'msavi2': {'description':
-                   'Modified Soil-Adjusted Vegetation Index (revised)',
-                   'group': 'Index', 'choices': ['toa']},
-        'ndsi': {'description': 'Normalized Difference Snow Index', 'group': 'Index', 'choices': ['toa']},
-        'ndvi': {'description': 'Normalized Difference Vegetation Index', 'group': 'Index', 'choices': ['toa']},
-        'ndwi': {'description': 'Normalized Difference Water Index', 'group': 'Index', 'choices': ['toa']},
-        'satvi': {'description': 'Soil-Adjusted Total Vegetation Index', 'group': 'Index', 'choices': ['toa']},
-        #'Tillage Indices': {
-        'ndti': {'description': 'Normalized Difference Tillage Index', 'group': 'Tillage', 'choices': ['toa']},
-        'crc': {'description': 'Crop Residue Cover', 'group': 'Tillage', 'choices': ['toa']},
-        'sti': {'description': 'Standard Tillage Index', 'group': 'Tillage', 'choices': ['toa']},
-        'isti': {'description': 'Inverse Standard Tillage Index', 'group': 'Tillage', 'choices': ['toa']},
+    # Group products belong to ('Standard' if not specified)
+    _productgroups = {
+        'Index': ['bi', 'evi', 'lswi', 'msavi2', 'ndsi', 'ndvi', 'ndwi', 'satvi'],
+        'Tillage': ['ndti', 'crc', 'sti', 'isti'],
     }
-    _defaultproduct = 'ref'
+    __toastring = 'toa: use top of the atmosphere reflectance'
+    _products = {
+        #'Standard':
+        'rad': {
+            'description': 'Surface-leaving radiance',
+            'arguments': [__toastring]
+        },
+        'ref': {
+            'description': 'Surface reflectance',
+            'arguments': [__toastring]
+        },
+        'temp': {
+            'description': 'Brightness (apparent) temperature',
+            'toa': True
+        },
+        'acca': {
+            'description': 'Automated Cloud Cover Assessment',
+            'arguments': [
+                'X: erosion kernel diameter in pixels (default: 5)',
+                'Y: dilation kernel diameter in pixels (default: 10)',
+                'Z: cloud height in meters (default: 4000)'
+            ],
+            'nargs': '*',
+            'toa': True
+        },
+        'fmask': {
+            'description': 'Fmask cloud cover',
+            'nargs': '*',
+            'toa': True
+        },
+        'tcap': {
+            'description': 'Tassled cap transformation',
+            'toa': True
+        },
+        #'Indices': {
+        'bi': {
+            'description': 'Brightness Index',
+            'arguments': [__toastring]
+        },
+        'evi': {
+            'description': 'Enhanced Vegetation Index',
+            'arguments': [__toastring]
+        },
+        'lswi': {
+            'description': 'Land Surface Water Index',
+            'arguments': [__toastring]
+        },
+        'msavi2': {
+            'description': 'Modified Soil-Adjusted Vegetation Index (revised)',
+            'arguments': [__toastring]
+        },
+        'ndsi': {
+            'description': 'Normalized Difference Snow Index',
+            'arguments': [__toastring]
+        },
+        'ndvi': {
+            'description': 'Normalized Difference Vegetation Index',
+            'arguments': [__toastring]
+        },
+        'ndwi': {
+            'description': 'Normalized Difference Water Index',
+            'arguments': [__toastring]
+        },
+        'satvi': {
+            'description': 'Soil-Adjusted Total Vegetation Index',
+            'arguments': [__toastring]
+        },
+        #'Tillage Indices': {
+        'ndti': {
+            'description': 'Normalized Difference Tillage Index',
+            'arguments': [__toastring]
+        },
+        'crc': {
+            'description': 'Crop Residue Cover',
+            'arguments': [__toastring]
+        },
+        'sti': {
+            'description': 'Standard Tillage Index',
+            'arguments': [__toastring]
+        },
+        'isti': {
+            'description': 'Inverse Standard Tillage Index',
+            'arguments': [__toastring]
+        },
+    }
 
     def SixS(self):
         from gips.utils import atmospheric_model
@@ -280,7 +336,7 @@ class LandsatData(Data):
             try:
                 atmos = self.SixS()
             except Exception, e:
-                VerboseOut('Problem running atmospheric model', 2)
+                raise Exception('Problem running atmospheric model: %s' % e)
                 VerboseOut(traceback.format_exc(), 3)
 
         # Break down by group
@@ -524,7 +580,7 @@ class LandsatData(Data):
     @classmethod
     def meta_dict(cls):
         meta = super(LandsatData, cls).meta_dict()
-        meta['GIPS-landsat Version'] = __version__
+        meta['GIPS-landsat Version'] = cls.version
         return meta
 
     def _readraw(self):
