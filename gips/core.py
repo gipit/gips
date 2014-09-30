@@ -21,7 +21,6 @@
 import os
 import sys
 import errno
-import argparse
 from osgeo import gdal, ogr
 from datetime import datetime
 import glob
@@ -32,7 +31,7 @@ import ftplib
 
 import gippy
 import gips
-from gips.utils import VerboseOut, RemoveFiles, File2List, List2File
+from gips.utils import VerboseOut, RemoveFiles, File2List, List2File, Colors
 from gips.inventory import DataInventory
 
 from gips.GeoVector import GeoVector
@@ -590,12 +589,13 @@ class Data(object):
 
     @classmethod
     def print_products(cls):
-        print "\n%s Products v%s" % (cls.name, cls.version)
+        print Colors.BOLD + "\n%s Products v%s" % (cls.name, cls.version) + Colors.OFF
         #products = cls.products2groups(cls._products)
-        print "Optional arguments (listed below each product) specified by appending '-' argument to product (e.g., ref-toa) "
+        print "Optional qualifiers listed below each product." + Colors.OFF
+        print "Specify qualifiers by appending '-option' to product (e.g., ref-toa)" + Colors.OFF
         groups = cls.product_groups()
         for group in groups:
-            print '\n%s Products' % group
+            print Colors.BOLD + '\n%s Products' % group + Colors.OFF
             for p in sorted(groups[group]):
                 h = cls._products[p]['description']
                 sys.stdout.write('   {:<12}{:<40}\n'.format(p, h))

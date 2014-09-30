@@ -32,7 +32,6 @@ from gips.tiles import Tiles
 from gips.utils import VerboseOut, parse_dates, Colors, basename
 from gips.GeoVector import GeoVector
 from gips.version import __version__
-from pdb import set_trace
 
 
 class Products(object):
