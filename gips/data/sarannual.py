@@ -99,6 +99,7 @@ class SARAnnualAsset(Asset):
 class SARAnnualData(Data):
     """ Tile of data """
     name = 'SARAnnual'
+    version = '0.9.0'
     Asset = SARAnnualAsset
 
     _pattern = '*'

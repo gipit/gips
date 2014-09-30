@@ -85,6 +85,7 @@ class CDLAsset(Asset):
 class CDLData(Data):
     """ A tile (CONUS State) of CDL """
     name = 'CDL'
+    version = '0.9.0'
     Asset = CDLAsset
     _products = {
         'cdl': {'description': 'Crop Data Layer'}

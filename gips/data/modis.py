@@ -184,41 +184,41 @@ class ModisAsset(Asset):
 class ModisData(Data):
     """ A tile of data (all assets and products) """
     name = 'Modis'
+    version = '0.9.0'
     Asset = ModisAsset
     _pattern = '*.tif'
+    _productgroups = {
+        "Nadir BRDF-Adjusted 16-day": ['indices', 'quality'],
+        "Terra/Aqua Daily": ['snow', 'temp'],
+        "Terra 8-day": ['ndvi8', 'temp8'],
+    }
     _products = {
         # MCD Products
         'indices': {
             'description': 'Land indices',
             'assets': ['MCD43A4'],
-            'group': "Nadir BRDF-Adjusted 16-day"
         },
         'quality': {
             'description': 'MCD Product Quality',
             'assets': ['MCD43A2'],
-            'group': "Nadir BRDF-Adjusted 16-day"
         },
         # Daily
         'snow': {
             'description': 'Snow and ice cover data',
             'assets': ['MOD10A1', 'MYD10A1'],
-            'group': 'Terra/Aqua Daily'
         },
         'temp': {
             'description': 'Surface temperature data',
             'assets': ['MOD11A1', 'MYD11A1'],
-            'group': 'Terra/Aqua Daily'
         },
         # Misc
         'ndvi8': {
             'description': 'Normalized Difference Vegetation Index: 250m',
             'assets': ['MOD09Q1'],
-            'group': 'Terra 8-day'
         },
         'temp8': {
             'description': 'Surface temperature: 1km',
             'assets': ['MOD11A2'],
-            'group': 'Terra 8-day'
         },
 
     }

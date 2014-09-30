@@ -33,7 +33,6 @@ from gips.inventory import DataInventory
 from gips.utils import VerboseOut, RemoveFiles
 import gips.settings as settings
 from gips.data.aod import AODData
-from pdb import set_trace
 
 
 class LandsatRepository(Repository):
@@ -156,7 +155,7 @@ class LandsatAsset(Asset):
 
 class LandsatData(Data):
     name = 'Landsat'
-    version = '0.7.0'
+    version = '0.9.0'
 
     Asset = LandsatAsset
 

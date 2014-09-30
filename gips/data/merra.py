@@ -314,6 +314,7 @@ class MerraAsset(Asset):
 class MerraData(Data):
     """ A tile of data (all assets and products) """
     name = 'Merra'
+    version = '0.9.0'
     Asset = MerraAsset
     _pattern = '*.tif' 
     _products = {

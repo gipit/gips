@@ -125,6 +125,7 @@ class AODAsset(Asset):
 
 class AODData(Data):
     name = 'Globally Gridded Atmospheric Data'
+    version = '0.9.0'
     Asset = AODAsset
 
     _products = {

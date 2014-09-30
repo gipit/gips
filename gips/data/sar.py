@@ -232,6 +232,7 @@ class SARAsset(Asset):
 class SARData(Data):
     """ Assets and products for a tile and date """
     name = 'SAR'
+    version = '0.9.0'
     Asset = SARAsset
 
     _pattern = '*'
