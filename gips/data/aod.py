@@ -235,7 +235,7 @@ class AODData(Data):
         # try reading actual data file first
         try:
             # this is just for fetching the data
-            dat = cls.inventory(tile='', dates=date.strftime('%Y-%j'), fetch=fetch, products=['aod'])
+            cls.inventory(tile='', dates=date.strftime('%Y-%j'), fetch=fetch, products=['aod'])
             img = gippy.GeoImage(cls.products['aod'])
             vals = img[0].Read(roi).squeeze()
             img = None
@@ -290,8 +290,7 @@ class AODData(Data):
             totalvar = totalvar / cnt
 
         if numpy.isnan(aod):
-            aod = 0.17
-            source = 'default'
+            raise Exception("Could not retrieve AOD")
 
         VerboseOut('AOD: Source = %s Value = %s' % (source, aod), 2)
         return (source, aod)
