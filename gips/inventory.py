@@ -455,7 +455,7 @@ class DataInventory(Inventory):
 
         args = parser0.parse_args()
 
-        VerboseOut('GIPS %s command line utility v%s' % (cls.name, __version__), 1)
+        VerboseOut(Colors.BOLD + 'GIPS %s command line utility v%s' % (cls.name, __version__) + Colors.OFF, 1)
 
         if args.command == 'products':
             cls.print_products()

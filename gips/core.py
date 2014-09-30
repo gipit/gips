@@ -590,20 +590,24 @@ class Data(object):
     @classmethod
     def print_products(cls):
         print Colors.BOLD + "\n%s Products v%s" % (cls.name, cls.version) + Colors.OFF
-        #products = cls.products2groups(cls._products)
-        print "Optional qualifiers listed below each product." + Colors.OFF
-        print "Specify qualifiers by appending '-option' to product (e.g., ref-toa)" + Colors.OFF
         groups = cls.product_groups()
+        opts = False
+        txt = ""
         for group in groups:
-            print Colors.BOLD + '\n%s Products' % group + Colors.OFF
+            txt = txt + Colors.BOLD + '\n%s Products\n' % group + Colors.OFF
             for p in sorted(groups[group]):
                 h = cls._products[p]['description']
-                sys.stdout.write('   {:<12}{:<40}\n'.format(p, h))
+                txt = txt + '   {:<12}{:<40}\n'.format(p, h)
                 if 'arguments' in cls._products[p]:
+                    opts = True
                     #sys.stdout.write('{:>12}'.format('options'))
                     args = [['', a] for a in cls._products[p]['arguments']]
                     for a in args:
-                        sys.stdout.write('{:>12}     {:<40}\n'.format(a[0], a[1]))
+                        txt = txt + '{:>12}     {:<40}\n'.format(a[0], a[1])
+        if opts:
+            print "  Optional qualifiers listed below each product."
+            print "  Specify by appending '-option' to product (e.g., ref-toa)"
+        sys.stdout.write(txt)
 
     @classmethod
     def extra_arguments(cls):
