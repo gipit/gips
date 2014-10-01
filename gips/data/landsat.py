@@ -390,6 +390,8 @@ class LandsatData(Data):
                     else:
                         for col in visbands:
                             ((img[col] - atmos[col][1]) / atmos[col][0]).Process(imgout[col])
+                    # Mask out any pixel for which any band is nodata
+                    #imgout.ApplyMask(img.DataMask())
                 elif val[0] == 'ref':
                     imgout = gippy.GeoImage(fname, img, gippy.GDT_Int16, len(visbands))
                     for i in range(0, imgout.NumBands()):
@@ -402,10 +404,11 @@ class LandsatData(Data):
                     else:
                         for c in visbands:
                             (((img[c] - atmos[c][1]) / atmos[c][0]) * (1.0 / atmos[c][2])).Process(imgout[c])
+                    # Mask out any pixel for which any band is nodata
+                    #imgout.ApplyMask(img.DataMask())
                 elif val[0] == 'tcap':
                     tmpimg = gippy.GeoImage(reflimg)
                     tmpimg.PruneBands(['BLUE', 'GREEN', 'RED', 'NIR', 'SWIR1', 'SWIR2'])
-                    tmpimg.SetBandName('SWIR2', 6)     # work-around
                     arr = numpy.array(self.Asset._sensors[self.sensor]['tcap']).astype('float32')
                     imgout = gippy.LinearTransform(tmpimg, fname, arr)
                     outbands = ['Brightness', 'Greenness', 'Wetness', 'TCT4', 'TCT5', 'TCT6']
