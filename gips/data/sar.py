@@ -284,7 +284,7 @@ class SARData(Data):
                 imgout = gippy.GeoImage(fname, img, gippy.GDT_Float32)
                 imgout.SetNoData(-32768)
                 for b in range(0, imgout.NumBands()):
-                    imgout.SetColor(img[b].Description(), b + 1)
+                    imgout.SetBandName(img[b].Description(), b + 1)
                     (img[b].pow(2).log10() * 10 + meta['CF']).Process(imgout[b])
                 self.products['sign'] = imgout.Filename()
                 img = None

@@ -489,7 +489,7 @@ class MerraData(Data):
 
                     t2m[pickidx].Process(imgout[itime])
 
-                    imgout.SetColor(descr, itime + 1)
+                    imgout.SetBandName(descr, itime + 1)
 
                 # imgout.SetMeta("OBS_DATE_DAYTIME_TERRA", strdate)
                 # imgout.SetMeta("OBS_DATE_DAYTIME_TERRA", strdate)

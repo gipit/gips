@@ -146,7 +146,7 @@ class SARAnnualData(Data):
                     imgout = gippy.GeoImage(fname, img, gippy.GDT_Float32)
                     imgout.SetNoData(-32768)
                     for b in range(0, imgout.NumBands()):
-                        imgout.SetColor(img[b].Description(), b + 1)
+                        imgout.SetBandName(img[b].Description(), b + 1)
                         (img[b].pow(2).log10() * 10 - 83.0).Process(imgout[b])
                     fname = imgout.Filename()
                     img = None
