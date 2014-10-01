@@ -1,5 +1,5 @@
 
-    **GIPS**: Geospatial Image Processing and Inventory Framework
+    **GIPS**: Geospatial Image Processing System
 
     Copyright (C) 2014 Matthew A Hanson
 

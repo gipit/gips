@@ -1,5 +1,5 @@
 ################################################################################
-#    GIPS: Geospatial Image Processing and Inventory Framework
+#    GIPS: Geospatial Image Processing System
 #
 #    Copyright (C) 2014 Matthew A Hanson
 #
@@ -21,6 +21,21 @@ v0.7.0
 - Renaming of products to replace underscores (_) with dashes (-) in the product name
 - Addition of gips_project script (print inventory, create browse images)
 - Changed naming convention of project directories to shapefile_resolution_datasetname
+- misc fixes/improvements to argument parsing and verbose output
+- refactored argument parsing of products, now use -p switch rather than individual product switches
+- added 'products' sub-command to get listing of available products
+
+landsat:
+- fixed bug with TOA indices generating wrong values
+
+AOD:
+- throw error if unable to retrieve AOD estimate
+
+SARannual
+- fixed bug when processing product for multiple tiles and asset doesn't exist for some tiles
+
+MODIS
+- Refactored code and implemented product naming convention
 
 v0.6.8
 - added Algorithm base class and updated scripts to utilize Algorithm class
