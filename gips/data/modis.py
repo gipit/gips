@@ -250,7 +250,7 @@ class ModisData(Data):
                            % (str(missingassets), str(self.date), str(self.id), ), 3)
                 continue
 
-            meta = {}
+            meta = self.meta_dict()
             meta['AVAILABLE_ASSETS'] = ' '.join(availassets)
 
             if val[0] == "quality":
@@ -342,8 +342,6 @@ class ModisData(Data):
                 imgout.SetBandName('VARI', 3)
                 imgout.SetBandName('BRGT', 4)
                 imgout.SetBandName('SATVI', 5)
-
-                imgout.SetMeta(meta)
 
             # SNOW/ICE COVER PRODUCT
             if val[0] == "snow":
@@ -460,7 +458,6 @@ class ModisData(Data):
                 imgout.SetGain(1.0)
                 imgout.SetBandName('Snow Cover', 1)
                 imgout.SetBandName('Fractional Snow Cover', 2)
-                imgout.SetMeta(meta)
 
                 imgout[0].Write(coverout)
                 imgout[1].Write(fracout)
@@ -577,8 +574,6 @@ class ModisData(Data):
                 imgout[4].SetGain(1.0)
                 imgout[4].Write(bestmask)
 
-                imgout.SetMeta(meta)
-
             # NDVI (8-day) - Terra only
             if val[0] == "ndvi8":
                 VERSION = "1.0"
@@ -598,6 +593,10 @@ class ModisData(Data):
                 fname = '%s_%s_%s.tif' % (fname, 'MOD', key)
                 os.symlink(allsds[0], fname)
                 imgout = gippy.GeoImage(fname)
+
+            # set metadata
+            meta = {k: str(v) for k, v in meta.iteritems()}
+            imgout.SetMeta(meta)
 
             # add product to inventory
             self.products[val[0]] = imgout.Filename()
