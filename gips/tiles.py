@@ -131,7 +131,8 @@ class Tiles(object):
                         if nowarp:
                             self._mosaic(filenames, filename, self.site)
                         else:
-                            gippy.CookieCutter(filenames, filename, self.site, res[0], res[1], crop)
+                            imgout = gippy.CookieCutter(filenames, filename, self.site, res[0], res[1], crop)
+                            #self.crop2vector(imgout, GeoVector(self.site))
                     except:
                         VerboseOut("Problem projecting %s" % filename, 2)
                         VerboseOut(traceback.format_exc(), 3)
@@ -143,11 +144,11 @@ class Tiles(object):
         img = gippy.GeoImage(infiles[0])
         nd = img[0].NoDataValue()
         srs = img.Projection()
-        img = None
         for f in range(1, len(infiles)):
-            img = gippy.GeoImage(infiles[f])
-            if img.Projection() != srs:
+            _img = gippy.GeoImage(infiles[f])
+            if _img.Projection() != srs:
                 raise Exception("Input files have non-matching projections and must be warped")
+            _img = None
         # transform vector to image projection
         vector = GeoVector(vectorfile)
         vsrs = vector.proj()
@@ -155,30 +156,41 @@ class Tiles(object):
         geom = transform_shape(vector.union(), vsrs, srs)
         extent = geom.bounds
         ullr = "%f %f %f %f" % (extent[0], extent[3], extent[2], extent[1])
-        # run command
+
+        # run merge command
         nodatastr = '-n %s -a_nodata %s -init %s' % (nd, nd, nd)
         cmd = 'gdal_merge.py -o %s -ul_lr %s %s %s' % (outfile, ullr, nodatastr, " ".join(infiles))
         result = commands.getstatusoutput(cmd)
-        imgout = gippy.GeoImage(outfile)
+        VerboseOut('%s: %s' % (cmd, result), 4)
+        imgout = gippy.GeoImage(outfile, True)
         for b in range(0, img.NumBands()):
             imgout[b].CopyMeta(img[b])
-        # warp and rasterize vector
-        vec1 = vector.transform(srs)
-        vec1name = vec1.filename
+        img = None
+        return self.crop2vector(imgout, vector)
+
+    def crop2vector(self, img, vector):
+        """ Crop a GeoImage down to a vector """
+        start = datetime.now()
+        # transform vector to srs of image
+        srs = img.Projection()
+        vec_t = vector.transform(srs)
+        vecname = vec_t.filename
+        # rasterize the vector
         td = tempfile.mkdtemp()
-        mask = gippy.GeoImage(os.path.join(td, vector.layer.GetName()), imgout, gippy.GDT_Byte, 1)
+        mask = gippy.GeoImage(os.path.join(td, vector.layer.GetName()), img, gippy.GDT_Byte, 1)
         maskname = mask.Filename()
         mask = None
-        cmd = 'gdal_rasterize -at -burn 1 -l %s %s %s' % (vec1.layer.GetName(), vec1.filename, maskname)
+        cmd = 'gdal_rasterize -at -burn 1 -l %s %s %s' % (vec_t.layer.GetName(), vecname, maskname)
         result = commands.getstatusoutput(cmd)
-        VerboseOut(result, 4)
+        VerboseOut('%s: %s' % (cmd, result), 4)
         mask = gippy.GeoImage(maskname)
-        imgout.AddMask(mask[0]).Process().ClearMasks()
-        vec1 = None
+        img.AddMask(mask[0]).Process().ClearMasks()
+        vec_t = None
         mask = None
         shutil.rmtree(os.path.dirname(maskname))
-        shutil.rmtree(os.path.dirname(vec1name))
-        return imgout
+        shutil.rmtree(os.path.dirname(vecname))
+        VerboseOut('Cropped to vector in %s' % (datetime.now() - start))
+        return img
 
     def pprint_header(self):
         header = Colors.BOLD + Colors.UNDER + '{:^12}'.format('DATE')
