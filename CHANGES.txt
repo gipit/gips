@@ -24,6 +24,7 @@ v0.7.0
 - misc fixes/improvements to argument parsing and verbose output
 - refactored argument parsing of products, now use -p switch rather than individual product switches
 - added 'products' sub-command to get listing of available products
+- fixed creation of mosaics without warping
 
 landsat:
 - fixed bug with TOA indices generating wrong values
