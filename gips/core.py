@@ -400,9 +400,9 @@ class Asset(object):
                         #shutil.move(os.path.abspath(f),newfilename)
                         VerboseOut(bname + ' -> ' + newfilename, 2)
                         numlinks = numlinks + 1
-                    except:
+                    except Exception, e:
                         VerboseOut(traceback.format_exc(), 3)
-                        VerboseOut('%s: probem adding to archive' % filename)
+                        raise Exception('Problem adding %s to archive: %s' % (filename, e))
             else:
                 VerboseOut('%s already in archive' % filename, 2)
         if otherversions and numlinks == 0:
