@@ -16,6 +16,11 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program. If not, see <http://www.gnu.org/licenses/>
 ################################################################################
+v0.7.1
+
+MODIS
+- fixed segfault in indices and cleaned up extraneous printing
+
 v0.7.0
 - Refactoring of inventory classes and printing
 - Renaming of products to replace underscores (_) with dashes (-) in the product name

@@ -285,42 +285,22 @@ class ModisData(Data):
                 ndvi = missing + np.zeros_like(redimg)
                 wg = np.where((redimg != missing) & (nirimg != missing) & (redimg + nirimg != 0.0))
                 ndvi[wg] = (nirimg[wg] - redimg[wg]) / (nirimg[wg] + redimg[wg])
-                print "ndvi"
-                print len(wg[0])
-                print ndvi.min(), ndvi.max()
-                print ndvi[wg].min(), ndvi[wg].max()
 
                 lswi = missing + np.zeros_like(redimg)
                 wg = np.where((nirimg != missing) & (mirimg != missing) & (nirimg + mirimg != 0.0))
                 lswi[wg] = (nirimg[wg] - mirimg[wg]) / (nirimg[wg] + mirimg[wg])
-                print "lswi"
-                print len(wg[0])
-                print lswi.min(), lswi.max()
-                print lswi[wg].min(), lswi[wg].max()
 
                 vari = missing + np.zeros_like(redimg)
                 wg = np.where((grnimg != missing) & (redimg != missing) & (bluimg != missing) & (grnimg + redimg - bluimg != 0.0))
                 vari[wg] = (grnimg[wg] - redimg[wg]) / (grnimg[wg] + redimg[wg] - bluimg[wg])
-                print "vari"
-                print len(wg[0])
-                print vari.min(), vari.max()
-                print vari[wg].min(), vari[wg].max()
 
                 brgt = missing + np.zeros_like(redimg)
                 wg = np.where((nirimg != missing)&(redimg != missing)&(bluimg != missing)&(grnimg != missing))
                 brgt[wg] = 0.3*bluimg[wg] + 0.3*redimg[wg] + 0.1*nirimg[wg] + 0.3*grnimg[wg]
-                print "brgt"
-                print len(wg[0])
-                print brgt.min(), brgt.max()
-                print brgt[wg].min(), brgt[wg].max()
 
                 satvi = missing + np.zeros_like(redimg)
                 wg = np.where((redimg != missing)&(mirimg != missing)&(swir2img != missing)&(((mirimg + redimg + 0.5)*swir2img) != 0.0))
                 satvi[wg] = (((mirimg[wg] - redimg[wg])/(mirimg[wg] + redimg[wg] + 0.5))*1.5) - (swir2img[wg] / 2.0)
-                print "satvi"
-                print len(wg[0])
-                print satvi.min(), satvi.max()
-                print satvi[wg].min(), satvi[wg].max()
 
                 # create output gippy image
                 imgout = gippy.GeoImage(fname, refl, gippy.GDT_Int16, 5)
@@ -334,8 +314,6 @@ class ModisData(Data):
                 imgout[2].Write(vari)
                 imgout[3].Write(brgt)
                 imgout[4].Write(satvi)
-
-                imgout[5].SetGain(1.0)
 
                 imgout.SetBandName('NDVI', 1)
                 imgout.SetBandName('LSWI', 2)
