@@ -117,7 +117,7 @@ class Tiles(object):
                     if not os.path.exists(fout):
                         try:
                             VerboseOut("Creating %s" % os.path.basename(fout))
-                            shutil.copy(self.tiles[t].products[p], fout)
+                            gippy.GeoImage(self.tiles[t].products[p]).Process(fout)
                         except Exception:
                             VerboseOut("Problem copying %s" % fout, 2)
                             VerboseOut(traceback.format_exc(), 3)
