@@ -124,8 +124,8 @@ class Tiles(object):
         if self.site is None:
             for t in self.tiles:
                 tiledir = '%s%s' % (t, datadir)
-                if not os.path.exists(datadir):
-                    os.makedirs(datadir)
+                if not os.path.exists(tiledir):
+                    os.makedirs(tiledir)
                 for p in self.requested_products:
                     sensor = self.which_sensor(p)
                     fout = os.path.join(tiledir, t + '_' + bname + ('_%s_%s.tif' % (sensor, p)))

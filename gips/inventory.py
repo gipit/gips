@@ -399,7 +399,7 @@ class DataInventory(Inventory):
         sitename = basename(self.site) if self.site else ''
         if datadir is None:
             datadir = '%s_%s_%s%s' % (sitename, resstr, self.dataclass.name, suffix)
-        if not os.path.exists(datadir):
+        if not os.path.exists(datadir) and self.site is not None:
             os.makedirs(datadir)
 
         VerboseOut('Creating GIPS project %s' % datadir)
@@ -408,7 +408,8 @@ class DataInventory(Inventory):
         for date in self.dates:
             self.data[date].project(datadir=datadir, res=res, **kwargs)
         VerboseOut('Completed GIPS project in %s' % (dt.now() - start))
-        return ProjectInventory(datadir)
+        if self.site is not None:
+            return ProjectInventory(datadir)
 
     def pprint(self, **kwargs):
         """ Print inventory """
