@@ -53,7 +53,7 @@ class Products(object):
                 self.sensors[product] = parts[1 + ind]
                 self.filenames[product] = f
             except:
-                pass
+                VerboseOut('Bad filename: %s' % f)
         self.date = date
 
     def __getitem__(self, key):
@@ -117,15 +117,26 @@ class Products(object):
         sys.stdout.write('\n')
 
     @classmethod
-    def discover(cls, files):
+    def discover(cls, files0):
         """ Factory function returns instance for every date in 'files' (filenames or directory) """
-        if not isinstance(files, list) and os.path.isdir(os.path.abspath(files)):
-            files = glob.glob(os.path.join(files, '*.tif'))
-        # files will have 3 or 4 parts, so ind is 0 or 1
-        ind = len(basename(files[0]).split('_')) - 3
+        if not isinstance(files0, list) and os.path.isdir(os.path.abspath(files0)):
+            files0 = glob.glob(os.path.join(files0, '*.tif'))
 
+        # Check files for 3 or 4 parts and a valid date
+        files = []
+        for f in files0:
+            parts = basename(f).split('_')
+            if len(parts) == 3 or len(parts) == 4:
+                try:
+                    dt.strptime(parts[len(parts) - 3], '%Y%j')
+                except:
+                    continue
+                files.append(f)
+
+        # files will have 3 or 4 parts, so ind is 0 or 1
+        sind = len(basename(files[0]).split('_')) - 3
         instances = []
-        for date, fnames in groupby(sorted(files), lambda x: dt.strptime(basename(x).split('_')[ind], '%Y%j').date()):
+        for date, fnames in groupby(sorted(files), lambda x: dt.strptime(basename(x).split('_')[sind], '%Y%j').date()):
             #for sensor, fnames2 in groupby(sorted(fnames), lambda x: basename(x).split('_')[1]):
             instances.append(cls(list(fnames)))
         return instances
