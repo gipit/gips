@@ -71,7 +71,7 @@ class Products(object):
     @property
     def products(self):
         """ List of products """
-        return sorted(self.filenames.keys())
+        return set(sorted(self.filenames.keys()))
 
     @property
     def sensor_set(self):
