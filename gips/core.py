@@ -33,7 +33,6 @@ import gippy
 import gips
 from gips.utils import VerboseOut, RemoveFiles, File2List, List2File, Colors
 from gips.inventory import DataInventory
-
 from gips.GeoVector import GeoVector
 
 
@@ -316,12 +315,6 @@ class Asset(object):
                 found.append(cls(files[0]))
         return found
 
-    # TODO - not sure if this is needed
-    @classmethod
-    def sensor_names(cls):
-        """ All possible sensor names """
-        return sorted([s['description'] for s in cls._sensors.values()])
-
     @classmethod
     def archive(cls, path='.', recursive=False, keep=False):
         """ Move assets from directory to archive location """
@@ -469,32 +462,34 @@ class Data(object):
         self.path = self.Repository.path(tile, date)
         self.id = tile
         self.date = date
-        self.assets = {}
-        self.products = {}
-        # TODO - There could have multiple sensors (per asset)
-        #  use this only when there is one sensor possible for a given date
-        self.sensor = ''
+        self.assets = {}                # dict of asset name: Asset instance
+        self.products = {}              # dict of product name: filename
+        self.sensors = {}               # dict of asset/product: sensor
         # find all assets
         for asset in self.Asset.discover(tile, date):
             self.assets[asset.asset] = asset
-            # sensor and basename assumes same value every time ?
-            self.sensor = asset.sensor
             # products that come automatically with assets
             self.products.update(asset.products)
-        self.basename = self.id + '_' + self.date.strftime(self.Repository._datedir)  # + '_' + self.sensor
+            self.sensors[asset.asset] = asset.sensor
+            self.sensors.update({p: asset.sensor for p in asset.products})
+        self.basename = self.id + '_' + self.date.strftime(self.Repository._datedir)
         # find all products
         for sensor in self.Asset._sensors:
             prods = self.discover(os.path.join(self.path, self.basename + '_' + sensor))
-            self.products.update(prods)
+            if len(prods) > 0:
+                self.products.update(prods)
+                self.sensors.update({p: sensor for p in prods})
         if len(self.assets) == 0:
             raise Exception('no assets')
-        #VerboseOut('%s %s: assets and products found' % (tile, date), 5)
-        #VerboseOut(self.assets, 5)
-        #VerboseOut(self.products, 5)
 
     @property
     def Repository(self):
         return self.Asset.Repository
+
+    @property
+    def sensor_set(self):
+        """ Return list of sensors used """
+        return set(self.sensors.values())
 
     def open(self, product=''):
         if len(self.products) == 0:
@@ -580,8 +575,6 @@ class Data(object):
             groups[g] = {}
             for p in allgroups[g]:
                 p2g[p] = g
-        #from pdb import set_trace
-        #set_trace()
         for p, val in products.items():
             g = p2g[val[0]]
             groups[g][p] = val

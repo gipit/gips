@@ -34,11 +34,10 @@ import tempfile
 class Tiles(object):
     """ Collection of tiles for a single date and sensor """
 
-    def __init__(self, dataclass, site=None, tiles=None, date=None,
-                 products=None, sensors=None, **kwargs):
+    def __init__(self, dataclass, site=None, tiles=None, date=None, products=None, sensors=None, **kwargs):
         """ Locate data matching vector location (or tiles) and date
-        self.tile_coverage - dictionary of tile id and % coverage with site
-        self.tiles - dictionary of tile id and a Tile instance
+        self.tile_coverage      dict of tile id: %coverage with site
+        self.tiles              dict of tile id: tile instance
         """
         self.dataclass = dataclass
         self.site = site
@@ -63,17 +62,30 @@ class Tiles(object):
         for t in self.tile_coverage.keys():
             try:
                 tile = dataclass(t, self.date)
-                # Custom filter based on dataclass
                 good = tile.filter(**kwargs)
-                if good and tile.sensor in sensors:
+                # TODO - fix custom filter based on dataclass...sensor should pass to 'dataclass'
+                if good:  # and tile.sensor in sensors:
                     self.tiles[t] = tile
-                # TODO - check all tiles - should be same sensor?
-                self.sensor = tile.sensor
+                # assume same
             except:
                 #VerboseOut(traceback.format_exc(), 5)
                 continue
         if len(self.tiles) == 0:
             raise Exception('No valid data found')
+
+    @property
+    def sensor_set(self):
+        """ Return list of sensors used in all the tiles """
+        s = set()
+        for t in self.tiles:
+            s.update(self.tiles[t].sensor_set)
+        return s
+
+    def which_sensor(self, key):
+        """ Get sensor code used for provided asset or product key """
+        for t in self.tiles:
+            if key in self.tiles[t].sensors:
+                return self.tiles[t].sensors[key]
 
     @property
     def numfiles(self):
@@ -131,8 +143,7 @@ class Tiles(object):
                         if nowarp:
                             self._mosaic(filenames, filename, self.site)
                         else:
-                            imgout = gippy.CookieCutter(filenames, filename, self.site, res[0], res[1], crop)
-                            #self.crop2vector(imgout, GeoVector(self.site))
+                            gippy.CookieCutter(filenames, filename, self.site, res[0], res[1], crop)
                     except:
                         VerboseOut("Problem projecting %s" % filename, 2)
                         VerboseOut(traceback.format_exc(), 3)
@@ -198,13 +209,22 @@ class Tiles(object):
             header = header + ('{:^10}'.format(a if a != '' else 'Coverage'))
         return header + '{:^10}'.format('Products') + Colors.OFF
 
-    def pprint(self, dformat='%j', color=''):
+    def pprint(self, dformat='%j', colors=None):
         """ Print coverage for each and every asset """
         #assets = [a for a in self.dataclass.Asset._assets]
         sys.stdout.write('{:^12}'.format(self.date.strftime(dformat)))
         asset_coverage = self.coverage()
         for a in sorted(asset_coverage):
-            sys.stdout.write(color + '  {:>4.1f}%   '.format(asset_coverage[a]) + Colors.OFF)
+            color = ['', '']
+            if colors is not None:
+                s = self.which_sensor(a)
+                if s is not None:
+                    color = [colors[s], Colors.OFF]
+            cov = asset_coverage[a]
+            if cov > 0:
+                sys.stdout.write(color[0] + '  {:>4.1f}%   '.format(cov) + color[1])
+            else:
+                sys.stdout.write('          ')
         products = [p for t in self.tiles for p in self.tiles[t].products]
         prods = []
         for p in set(products):
@@ -215,7 +235,8 @@ class Tiles(object):
         #    for p in self.tiles[t].products:
                 #prods.append(p)
         for p in sorted(set(prods)):
-            sys.stdout.write('  ' + p)
+            color = colors[self.which_sensor(p)]
+            sys.stdout.write('  ' + color + p + Colors.OFF)
         sys.stdout.write('\n')
 
     #def print_products(self, dformat='%j'):

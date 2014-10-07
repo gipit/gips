@@ -35,24 +35,25 @@ from gips.version import __version__
 
 
 class Products(object):
-    """ Collection of products (files) for a single date and sensor """
+    """ Collection of products (files) for a single date """
 
     def __init__(self, filenames):
-        """ Create products with these filenames (should all be same date/sensor) """
-        # TODO - check that all dates and sensors are the same for all filenames
+        """ Create products with these filenames (should all be same date) """
+        # TODO - check that all dates are the same for all filenames
         if not isinstance(filenames, list):
             raise TypeError('requires list (of filenames)')
-        self.filenames = {}
-        self.products = set()
+        self.filenames = {}         # dict of product: filenames
+        self.sensors = {}           # dict of product: sensor
         ind = len(os.path.basename(filenames[0]).split('_')) - 3
         for f in filenames:
-            parts = basename(f).split('_')
-            date = dt.strptime(parts[ind], '%Y%j').date()
-            self.sensor = parts[1 + ind]
-            product = parts[2 + ind]
-            # is it a product or a mask
-            self.products.add(product)
-            self.filenames[product] = f
+            try:
+                parts = basename(f).split('_')
+                date = dt.strptime(parts[ind], '%Y%j').date()
+                product = parts[2 + ind]
+                self.sensors[product] = parts[1 + ind]
+                self.filenames[product] = f
+            except:
+                pass
         self.date = date
 
     def __getitem__(self, key):
@@ -60,18 +61,31 @@ class Products(object):
         return self.filenames[key]
 
     def __str__(self):
-        return '%s (%s): %s' % (self.date, self.sensor, ' '.join(sorted(self.products)))
+        """ Return list of products """
+        return '%s: %s' % (self.date, ' '.join(self.products))
 
     @property
     def numfiles(self):
         return len(self.filenames)
 
     @property
+    def products(self):
+        """ List of products """
+        return sorted(self.filenames.keys())
+
+    @property
+    def sensor_set(self):
+        """ List of sensors used by products """
+        return set(self.sensors.values())
+
+    @property
     def doy(self):
         """ Day of year """
         return self.date.strftime('%j')
 
+    # TODO - make general product_filter function
     def masks(self, patterns=None):
+        """ List all products that are masks """
         if not patterns:
             patterns = ['acca', 'fmask', 'mask']
         m = []
@@ -92,18 +106,19 @@ class Products(object):
     def pprint_header(self):
         return Colors.BOLD + Colors.UNDER + '{:^12}'.format('DATE') + '{:^10}'.format('Products') + Colors.OFF
 
-    def pprint(self, dformat='%j', color=''):
+    def pprint(self, dformat='%j', colors=None):
         """ Print data products """
-        sys.stdout.write(color)
         sys.stdout.write('{:^12}'.format(self.date.strftime(dformat)))
-        sys.stdout.write('  '.join(sorted(self.products)))
-        if color != '':
-            sys.stdout.write(Colors.OFF)
+        if colors is None:
+            sys.stdout.write('  '.join(sorted(self.products)))
+        else:
+            for p in sorted(self.products):
+                sys.stdout.write(colors[self.sensors[p]] + p + Colors.OFF + '  ')
         sys.stdout.write('\n')
 
     @classmethod
     def discover(cls, files):
-        """ Factory function returns instance for every date/sensor in filenames or directory """
+        """ Factory function returns instance for every date in 'files' (filenames or directory) """
         if not isinstance(files, list) and os.path.isdir(os.path.abspath(files)):
             files = glob.glob(os.path.join(files, '*.tif'))
         # files will have 3 or 4 parts, so ind is 0 or 1
@@ -111,8 +126,8 @@ class Products(object):
 
         instances = []
         for date, fnames in groupby(sorted(files), lambda x: dt.strptime(basename(x).split('_')[ind], '%Y%j').date()):
-            for sensor, fnames2 in groupby(sorted(fnames), lambda x: basename(x).split('_')[1]):
-                instances.append(cls(list(fnames2)))
+            #for sensor, fnames2 in groupby(sorted(fnames), lambda x: basename(x).split('_')[1]):
+            instances.append(cls(list(fnames)))
         return instances
 
 
@@ -120,27 +135,24 @@ class Inventory(object):
     """ Base class for inventories """
     _colors = [Colors.PURPLE, Colors.RED, Colors.GREEN, Colors.BLUE]
 
-    # TODO - add code for managing site(?) and common printing
-
     def __init__(self):
         pass
 
     def __getitem__(self, date):
         """ Indexing operator for class """
-        # TODO - assumes single sensor for a date
         return self.data[date]
+
+    @property
+    def sensor_set(self):
+        sset = set()
+        for date in self.dates:
+            sset.update(self.data[date].sensor_set)
+        return sorted(sset)
 
     @property
     def dates(self):
         """ Get sorted list of dates """
         return sorted(self.data.keys())
-
-    @property
-    def sensors(self):
-        sensors = {}
-        for i, s in enumerate(sorted(set([self.data[d].sensor for d in self.data.keys()]))):
-            sensors[s] = {'color': self._colors[i]}
-        return sensors
 
     @property
     def numfiles(self):
@@ -162,20 +174,24 @@ class Inventory(object):
             days = (1, 366)
         self.start_day, self.end_day = (int(days[0]), int(days[1]))
 
+    def color(self, sensor):
+        """ Return color for sensor """
+        return self._colors[list(self.sensor_set).index(sensor)]
+
     def pprint(self, md=False, compact=False):
         print self.data[self.data.keys()[0]].pprint_header()
         dformat = '%m-%d' if md else '%j'
         oldyear = 0
         formatstr = '\n{:<12}' if compact else '{:<12}\n'
+        colors = {k: self.color(k) for k in self.sensor_set}
         for date in self.dates:
-            scode = self.data[date].sensor
             if date.year != oldyear:
                 sys.stdout.write(Colors.BOLD + formatstr.format(date.year) + Colors.OFF)
             if compact:
                 dstr = ('{:^%s}' % (7 if md else 4)).format(date.strftime(dformat))
-                sys.stdout.write(self.sensors[scode]['color'] + dstr + Colors.OFF)
+                sys.stdout.write(dstr)
             else:
-                self.data[date].pprint(dformat, color=self.sensors[scode]['color'])
+                self.data[date].pprint(dformat, colors)
             oldyear = date.year
         if self.numfiles != 0:
             VerboseOut("\n\n%s files on %s dates" % (self.numfiles, len(self.dates)), 1)
@@ -183,14 +199,14 @@ class Inventory(object):
 
     def print_legend(self):
         print Colors.BOLD + '\nSENSORS' + Colors.OFF
-        for key in sorted(self.sensors):
+        for key in sorted(self.sensor_set):
             try:
                 desc = self.dataclass.Asset._sensors[key]['description']
                 scode = key + ': ' if key != '' else ''
             except:
                 desc = ''
                 scode = key
-            print self.sensors[key]['color'] + '%s%s' % (scode, desc) + Colors.OFF
+            print self.color(key) + '%s%s' % (scode, desc) + Colors.OFF
 
 
 class ProjectInventory(Inventory):
@@ -205,13 +221,16 @@ class ProjectInventory(Inventory):
         self.products = {}
         files = glob.glob(os.path.join(self.projdir, '*.tif'))
         product_set = set()
+        sensor_set = set()
         try:
             for dat in Products.discover(files):
                 self.products[dat.date] = dat
                 product_set = product_set.union(dat.products)
+                sensor_set = sensor_set.union(dat.sensors)
             if not products:
                 products = product_set
             self.requested_products = products
+            self.sensors = sensor_set
         except:
             raise Exception("%s does not appear to be a GIPS project directory" % self.projdir)
 
@@ -263,8 +282,7 @@ class ProjectInventory(Inventory):
 
 
 class DataInventory(Inventory):
-    """ Manager class for data inventories """
-    _colors = [Colors.PURPLE, Colors.RED, Colors.GREEN, Colors.BLUE]
+    """ Manager class for data inventories (collection of Tiles class) """
 
     def __init__(self, dataclass, site=None, tiles=None, dates=None, days=None, products=[], fetch=False, **kwargs):
         self.dataclass = dataclass
@@ -326,6 +344,10 @@ class DataInventory(Inventory):
                 #VerboseOut(traceback.format_exc(), 3)
         if len(dates) == 0:
             raise Exception("No matching files in inventory!")
+
+    @property
+    def sensor_set(self):
+        return sorted(self.dataclass.Asset._sensors.keys())
 
     def process(self, **kwargs):
         """ Process data in inventory """
@@ -408,7 +430,7 @@ class DataInventory(Inventory):
         parser.add_argument('--recursive', help='Iterate through subdirectories', default=False, action='store_true')
         parser.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2: debug', default=1, type=int)
 
-        invparser = argparse.ArgumentParser(add_help=False, formatter_class=dhf, epilog='TEST')
+        invparser = argparse.ArgumentParser(add_help=False, formatter_class=dhf)
         group = invparser.add_argument_group('inventory arguments')
         group.add_argument('-s', '--site', help='Vector file for region of interest', default=None)
         group.add_argument('-t', '--tiles', nargs='*', help='Tile designations', default=None)
