@@ -320,7 +320,7 @@ class LandsatData(Data):
         """ Make sure all products have been processed """
         start = datetime.now()
         bname = os.path.basename(self.assets[''].filename)
-        self.basename = self.basename + '_' + self.sensor
+        self.basename = self.basename + '_' + self.sensor_set[0]
         try:
             img = self._readraw()
         except Exception, e:
