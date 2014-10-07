@@ -121,11 +121,14 @@ class Tiles(object):
             res = [res, res]
         start = datetime.now()
         bname = self.date.strftime('%Y%j')
-        sensor = self.sensor if self.sensor != '' else ''
         if self.site is None:
             for t in self.tiles:
+                tiledir = '%s%s' % (t, datadir)
+                if not os.path.exists(datadir):
+                    os.makedirs(datadir)
                 for p in self.requested_products:
-                    fout = os.path.join(datadir, t + '_' + bname + ('_%s_%s.tif' % (sensor, p)))
+                    sensor = self.which_sensor(p)
+                    fout = os.path.join(tiledir, t + '_' + bname + ('_%s_%s.tif' % (sensor, p)))
                     if not os.path.exists(fout):
                         try:
                             VerboseOut("Creating %s" % os.path.basename(fout))
@@ -135,6 +138,7 @@ class Tiles(object):
                             VerboseOut(traceback.format_exc(), 3)
         else:
             for product in self.requested_products:
+                sensor = self.which_sensor(product)
                 filename = os.path.join(datadir, bname + ('_%s_%s.tif' % (sensor, product)))
                 if not os.path.exists(filename):
                     try:

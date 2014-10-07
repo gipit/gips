@@ -396,7 +396,7 @@ class DataInventory(Inventory):
             resstr = str(res[0])
         else:
             resstr = '%sx%s' % (res[0], res[1])
-        sitename = basename(self.site) if self.site else 'tiles'
+        sitename = basename(self.site) if self.site else ''
         if datadir is None:
             datadir = '%s_%s_%s%s' % (sitename, resstr, self.dataclass.name, suffix)
         if not os.path.exists(datadir):
