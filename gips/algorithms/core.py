@@ -24,7 +24,7 @@ import traceback
 
 import gippy
 import gips
-from gips.utils import VerboseOut
+from gips.utils import VerboseOut, Colors
 from gips.inventory import ProjectInventory
 
 
@@ -54,7 +54,7 @@ class Algorithm(object):
     @classmethod
     def info(cls):
         """ Name and versions of algorithm and GIPS library """
-        return 'GIPS (v%s): %s (v%s)' % (gips.__version__, cls.name, cls.__version__)
+        return Colors.BOLD + 'GIPS (v%s): %s (v%s)' % (gips.__version__, cls.name, cls.__version__) + Colors.OFF
 
     @classmethod
     def parser(cls, parser0):

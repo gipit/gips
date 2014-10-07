@@ -51,13 +51,14 @@ class Mask(Algorithm):
                     img.AddMask(self.inv[date].open(mask)[0])
                     meta = meta + basename(self.inv[date][mask]) + ' '
                 if meta != '':
-                    VerboseOut('Masking %s' % img.Basename(), 2)
                     if overwrite:
+                        VerboseOut('  %s' % (img.Basename()), 2)
                         img.Process()
                         img.SetMeta('MASKS', meta)
                     else:
-                        fout = os.path.splitext(img.Filename())[0]
-                        imgout = img.Process(fout + self.suffix)
+                        fout = os.path.splitext(img.Filename())[0] + self.suffix
+                        VerboseOut('  %s -> %s' % (img.Basename(), basename(fout)), 2)
+                        imgout = img.Process(fout)
                         imgout.SetMeta('MASKS', meta)
                         imgout = None
                 img = None
