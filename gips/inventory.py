@@ -76,7 +76,7 @@ class Products(object):
     @property
     def sensor_set(self):
         """ List of sensors used by products """
-        return set(self.sensors.values())
+        return list(set(self.sensors.values()))
 
     @property
     def doy(self):

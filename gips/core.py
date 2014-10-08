@@ -489,7 +489,7 @@ class Data(object):
     @property
     def sensor_set(self):
         """ Return list of sensors used """
-        return set(self.sensors.values())
+        return list(set(self.sensors.values()))
 
     def open(self, product=''):
         if len(self.products) == 0:

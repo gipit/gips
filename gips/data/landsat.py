@@ -284,12 +284,13 @@ class LandsatData(Data):
 
         # Used for testing
         #filter_function = True
-        if self.sensor != 'LC8':
-            if self.sensor == 'LT5':
+        sensor = self.sensor_set[0]
+        if sensor != 'LC8':
+            if sensor == 'LT5':
                 func = SixSHelpers.Wavelengths.run_landsat_tm
-            elif self.sensor == 'LE7':
+            elif sensor == 'LE7':
                 func = SixSHelpers.Wavelengths.run_landsat_etm
-            elif self.sensor == 'LC8':
+            elif sensor == 'LC8':
                 func = SixSHelpers.Wavelengths.run_landsat_oli
             stdout = sys.stdout
             sys.stdout = open(os.devnull, 'w')
@@ -320,6 +321,7 @@ class LandsatData(Data):
         """ Make sure all products have been processed """
         start = datetime.now()
         bname = os.path.basename(self.assets[''].filename)
+
         self.basename = self.basename + '_' + self.sensor_set[0]
         try:
             img = self._readraw()
@@ -409,7 +411,7 @@ class LandsatData(Data):
                 elif val[0] == 'tcap':
                     tmpimg = gippy.GeoImage(reflimg)
                     tmpimg.PruneBands(['BLUE', 'GREEN', 'RED', 'NIR', 'SWIR1', 'SWIR2'])
-                    arr = numpy.array(self.Asset._sensors[self.sensor]['tcap']).astype('float32')
+                    arr = numpy.array(self.Asset._sensors[self.sensor_set[0]]['tcap']).astype('float32')
                     imgout = gippy.LinearTransform(tmpimg, fname, arr)
                     outbands = ['Brightness', 'Greenness', 'Wetness', 'TCT4', 'TCT5', 'TCT6']
                     for i in range(0, imgout.NumBands()):
@@ -503,7 +505,7 @@ class LandsatData(Data):
         except IOError as e:
             raise Exception('({})'.format(e))
 
-        smeta = self.assets['']._sensors[self.sensor]
+        smeta = self.assets['']._sensors[self.sensor_set[0]]
 
         # Process MTL text - replace old metadata tags with new
         # NOTE This is not comprehensive, there may be others
@@ -602,7 +604,7 @@ class LandsatData(Data):
         #    image.SetMeta(key,str(val))
 
         # Geometry used for calculating incident irradiance
-        colors = self.assets['']._sensors[self.sensor]['colors']
+        colors = self.assets['']._sensors[self.sensor_set[0]]['colors']
         for bi in range(0, len(self.metadata['filenames'])):
             image.SetBandName(colors[bi], bi + 1)
             # need to do this or can we index correctly?

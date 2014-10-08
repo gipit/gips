@@ -79,7 +79,7 @@ class Tiles(object):
         s = set()
         for t in self.tiles:
             s.update(self.tiles[t].sensor_set)
-        return s
+        return list(s)
 
     def which_sensor(self, key):
         """ Get sensor code used for provided asset or product key """
