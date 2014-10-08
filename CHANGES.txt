@@ -17,6 +17,9 @@
 #   along with this program. If not, see <http://www.gnu.org/licenses/>
 ################################################################################
 v0.7.1
+- Better handling of sensors for data where there can be multiple sensors on a single day
+- Project with tiles (no shapefile) now creates directories for each tile id
+- Project inventories (gips_project inventory) doesn't fail if directory has extraneous files
 
 MODIS
 - fixed segfault in indices and cleaned up extraneous printing
