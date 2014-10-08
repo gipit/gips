@@ -262,7 +262,8 @@ class SARData(Data):
 
     def process(self, products, **kwargs):
         """ Make sure all products have been pre-processed """
-        self.basename = self.basename + '_' + self.sensor
+        sensor = self.sensor_set[0]
+        self.basename = self.basename + '_' + sensor
         if len(products) == 0:
             raise Exception('Tile %s: No products specified' % self.tile)
         # extract all data from archive
@@ -278,7 +279,7 @@ class SARData(Data):
                 img.AddMask(mask[0] == 255)
                 # apply date mask
                 dateimg = gippy.GeoImage(datafiles['date'], False)
-                dateday = (self.date - SARAsset._launchdate[self.sensor[0]]).days
+                dateday = (self.date - SARAsset._launchdate[sensor[0]]).days
                 img.AddMask(dateimg[0] == dateday)
                 #imgout = gippy.SigmaNought(img, fname, meta['CF'])
                 imgout = gippy.GeoImage(fname, img, gippy.GDT_Float32)
