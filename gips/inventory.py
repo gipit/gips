@@ -78,6 +78,10 @@ class Products(object):
         """ List of sensors used by products """
         return list(set(self.sensors.values()))
 
+    def which_sensor(self, key):
+        """ Return which sensor used for provided product key """
+        return self.sensors[key]
+
     @property
     def doy(self):
         """ Day of year """
@@ -199,7 +203,8 @@ class Inventory(object):
             if date.year != oldyear:
                 sys.stdout.write(Colors.BOLD + formatstr.format(date.year) + Colors.OFF)
             if compact:
-                dstr = ('{:^%s}' % (7 if md else 4)).format(date.strftime(dformat))
+                color = self.color(self.data[date].sensor_set[0])
+                dstr = color + ('{:^%s}' % (7 if md else 4)).format(date.strftime(dformat)) + Colors.OFF
                 sys.stdout.write(dstr)
             else:
                 self.data[date].pprint(dformat, colors)
@@ -471,19 +476,16 @@ class DataInventory(Inventory):
         # Processing
         parserp = subparser.add_parser('process', help='Process scenes', parents=parents, formatter_class=dhf)
         group = parserp.add_argument_group('Processing Options')
-        # Useful option for debugging, not for general users
-        #group.add_argument('--suffix', help='Suffix on end of filename (before extension)', default='')
         group.add_argument('--overwrite', help='Overwrite exiting output file(s)', default=False, action='store_true')
         group.add_argument('--chunksize', help='Chunk size in MB', default=512.0)
 
         # Project
         parser = subparser.add_parser('project', help='Create project', parents=parents, formatter_class=dhf)
         group = parser.add_argument_group('Project options')
-        group.add_argument('--suffix', help='Suffix on end of project directory', default='')
+        group.add_argument('--res', nargs=2, help='Resolution of (warped) output rasters', default=None, type=float)
         group.add_argument('--crop', help='Crop down to minimum bounding box', default=False, action='store_true')
         group.add_argument('--nowarp', help='Mosaic, but do not warp or crop', default=False, action='store_true')
-        group.add_argument('--res', nargs=2, help='Resolution of (warped) output rasters', default=None, type=float)
-        #group.add_argument('--datadir', help='Directory to save project files (default auto-generated)', default=None)
+        group.add_argument('--suffix', help='Suffix on end of project directory', default='')
         group.add_argument('--format', help='Format for output file', default="GTiff")
         group.add_argument('--chunksize', help='Chunk size in MB', type=float, default=512.0)
 
@@ -495,9 +497,12 @@ class DataInventory(Inventory):
             cls.print_products()
             exit(1)
 
+        # Set GIPPY options
         gippy.Options.SetVerbose(args.verbose)
         if 'format' in args:
             gippy.Options.SetDefaultFormat(args.format)
+        if 'chunksize' in args:
+            gippy.Options.SetChunkSize(args.chunksize)
 
         if args.command == 'archive':
             cls.Asset.archive(recursive=args.recursive, keep=args.keep)
@@ -512,10 +517,8 @@ class DataInventory(Inventory):
             if args.command == 'inventory':
                 inv.pprint(md=args.md, compact=args.compact)
             elif args.command == 'process':
-                gippy.Options.SetChunkSize(args.chunksize)
                 inv.process(overwrite=args.overwrite, **kwargs)
             elif args.command == 'project':
-                gippy.Options.SetChunkSize(args.chunksize)
                 inv.project(suffix=args.suffix, crop=args.crop, nowarp=args.nowarp, res=args.res, **kwargs)
             else:
                 VerboseOut('Command %s not recognized' % args.command, 0)
