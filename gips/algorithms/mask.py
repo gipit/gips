@@ -30,7 +30,7 @@ class Mask(Algorithm):
     __version__ = '1.0.0'
     suffix = '-masked'
 
-    def run(self, fmask='', pmask='', overwrite=False, **kwargs):
+    def run(self, fmask='', pmask='', original=False, overwrite=False, **kwargs):
         if fmask == '' and pmask == '':
             raise Exception('No masks supplied!')
         if fmask != '':
@@ -51,16 +51,17 @@ class Mask(Algorithm):
                     img.AddMask(self.inv[date].open(mask)[0])
                     meta = meta + basename(self.inv[date][mask]) + ' '
                 if meta != '':
-                    if overwrite:
+                    if original:
                         VerboseOut('  %s' % (img.Basename()), 2)
                         img.Process()
                         img.SetMeta('MASKS', meta)
                     else:
-                        fout = os.path.splitext(img.Filename())[0] + self.suffix
-                        VerboseOut('  %s -> %s' % (img.Basename(), basename(fout)), 2)
-                        imgout = img.Process(fout)
-                        imgout.SetMeta('MASKS', meta)
-                        imgout = None
+                        fout = os.path.splitext(img.Filename())[0] + self.suffix + '.tif'
+                        if not os.path.exists(fout) or overwrite:
+                            VerboseOut('  %s -> %s' % (img.Basename(), basename(fout)), 2)
+                            imgout = img.Process(fout)
+                            imgout.SetMeta('MASKS', meta)
+                            imgout = None
                 img = None
         mask_file = None
 
@@ -69,7 +70,10 @@ class Mask(Algorithm):
         cls.add_project_parser(parser0)
         parser0.add_argument('--fmask', help='Mask files with this file (of matching dimensions)', default='')
         parser0.add_argument('--pmask', help='Mask files with this product', nargs='*', default=[])
-        parser0.add_argument('--overwrite', help='Overwrite existing files', default=False, action='store_true')
+        h = 'Write mask to original image instead of creating new image'
+        parser0.add_argument('--original', help=h, default=False, action='store_true')
+        h = 'Overwrite existing files when creating new'
+        parser0.add_argument('--overwrite', help=h, default=False, action='store_true')
         #parser.add_argument('-i', '--invert', help='Invert mask (0->1, 1->0)', default=False, action='store_true')
         #parser.add_argument('--value', help='Mask == val', default=1)
         return parser0
