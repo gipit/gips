@@ -561,7 +561,7 @@ class ModisData(Data):
                 refl = gippy.GeoImage(allsds)
                 refl.SetBandName("RED", 1)
                 refl.SetBandName("NIR", 2)
-                refl.SetNoData(32767)
+                refl.SetNoData(-28762)
 
                 fouts = dict(gippy.Indices(refl, {'ndvi': fname}, meta))
                 imgout = gippy.GeoImage(fouts['ndvi'])
