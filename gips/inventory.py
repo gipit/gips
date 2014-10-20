@@ -26,6 +26,7 @@ from datetime import datetime as dt
 import traceback
 from itertools import groupby
 import numpy
+from copy import deepcopy
 
 import gippy
 from gips.tiles import Tiles
@@ -157,6 +158,14 @@ class Inventory(object):
         """ Indexing operator for class """
         return self.data[date]
 
+    def get_subset(self, dates):
+        """ Return subset of inventory """
+        inv = deepcopy(self)
+        for d in inv.dates:
+            if d not in dates:
+                del inv.data[d]
+        return inv
+
     @property
     def sensor_set(self):
         sset = set()
@@ -268,18 +277,21 @@ class ProjectInventory(Inventory):
             imgout.SetNoData(nodata)
         return imgout
 
-    def get_data(self, dates):
+    def data_size(self):
+        img = gippy.GeoImage(self.data[self.dates[0]].open(self.requested_products[0]))
+        sz = (len(self.requested_products), img.YSize(), img.XSize())
+        return sz
+
+    def get_data(self, dates, chunk=0):
         """ Read all files as time series, stacking all products """
         # TODO - change to absolute dates
         days = numpy.array([int(d.strftime('%j')) for d in dates])
-
         imgarr = []
         for p in self.requested_products:
             gimg = self.get_timeseries(p, dates=dates)
             # TODO - move numpy.squeeze into swig interface file?
-            arr = numpy.squeeze(gimg.TimeSeries(days.astype('float64')))
+            arr = numpy.squeeze(gimg.TimeSeries(days.astype('float64'), chunk))
             arr[arr == gimg[0].NoDataValue()] = numpy.nan
-
             if len(days) == 1:
                 dims = arr.shape
                 arr = arr.reshape(1, dims[0], dims[1])
