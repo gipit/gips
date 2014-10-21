@@ -231,7 +231,7 @@ class AODData(Data):
     def get_aod(cls, lat, lon, date, fetch=True):
         pixx = int(numpy.round(float(lon) + 179.5))
         pixy = int(numpy.round(89.5 - float(lat)))
-        roi = gippy.iRect(pixx - 1, pixy - 1, 3, 3)
+        roi = gippy.Recti(pixx - 1, pixy - 1, 3, 3)
 
         # try reading actual data file first
         try:
