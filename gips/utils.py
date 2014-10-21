@@ -204,11 +204,11 @@ def map_reduce(datasz, readfunc, func, nchunks=100, nproc=2):
     """ Chunk up data read from readfunc, apply func, then reassemble into output array """
     chunks = chunk_data(datasz, nchunks=nchunks)
     pool = multiprocessing.Pool(nproc, initializer=_mr_init, initargs=(readfunc, func))
-    data_parts = pool.map(_mr_worker_3d_to_2d, chunks)
+    dataparts = pool.map(_mr_worker_3d_to_2d, chunks)
     # reassemble data
     dataout = numpy.zeros((datasz[1], datasz[2]))
     for i, ch in enumerate(chunks):
-        dataout[ch.y0():ch.y1(), ch.x0():ch.x1()] = data_parts[i]
+        dataout[ch[1]:ch[1] + ch[3], ch[0]:ch[0] + ch[2]] = dataparts[i]
     return dataout
 
 
