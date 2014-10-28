@@ -124,7 +124,7 @@ class AODAsset(Asset):
 
 
 class AODData(Data):
-    name = 'Globally Gridded Atmospheric Data'
+    name = 'MODAOD'
     version = '0.9.0'
     Asset = AODAsset
 
@@ -236,13 +236,13 @@ class AODData(Data):
         # try reading actual data file first
         try:
             # this is just for fetching the data
-            cls.inventory(tile='', dates=date.strftime('%Y-%j'), fetch=fetch, products=['aod'])
-            img = gippy.GeoImage(cls.products['aod'])
+            inv = cls.inventory(dates=date.strftime('%Y-%j'), fetch=fetch, products=['aod'])
+            img = gippy.GeoImage(inv[date].tiles[''].products['aod'])
             vals = img[0].Read(roi).squeeze()
-            img = None
             # TODO - do this automagically in swig wrapper
             vals[numpy.where(vals == img[0].NoDataValue())] = numpy.nan
             aod = vals[1, 1]
+            img = None
             source = 'MODIS (MOD08_D3)'
             if numpy.isnan(aod):
                 aod = numpy.mean(vals[~numpy.isnan(vals)])
