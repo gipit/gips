@@ -20,10 +20,15 @@ v0.7.1
 - Better handling of sensors for data where there can be multiple sensors on a single day
 - Project with tiles (no shapefile) now creates directories for each tile id
 - Project inventories (gips_project inventory) doesn't fail if directory has extraneous files
+- datadir option added back allowing saving of files into specified directory
 
 New functionality
 - 'gips_project stack' for creating stacks of products in a GIPS project directory
 - added mapreduce functionality for multiprocessing
+- added 'nomosaic' option to project, which will keep the data as tiles (but still warp)
+
+AOD
+- fixed retrieval of Aerosol Optical Depth from MOD08 data
 
 MODIS
 - fixed segfault in indices and cleaned up extraneous printing

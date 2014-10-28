@@ -312,7 +312,7 @@ class ProjectInventory(Inventory):
 class DataInventory(Inventory):
     """ Manager class for data inventories (collection of Tiles class) """
 
-    def __init__(self, dataclass, site=None, tiles=None, dates=None, days=None, products=[], fetch=False, **kwargs):
+    def __init__(self, dataclass, site=None, tiles=None, dates=None, days=None, products=None, fetch=False, **kwargs):
         self.dataclass = dataclass
         Repository = dataclass.Asset.Repository
 
@@ -331,9 +331,9 @@ class DataInventory(Inventory):
         self.data = {}
 
         if products is None:
-            products = dataclass._products
+            products = dataclass._products.keys()
         prod_dict = dict([p, p.split('-')] for p in products)
-
+        
         # seperate out standard (each tile processed) and composite products (using inventory)
         self.standard_products = {}
         self.composite_products = {}
@@ -353,6 +353,7 @@ class DataInventory(Inventory):
         # get all potential matching dates for tiles
         dates = []
         for t in self.tiles:
+
             try:
                 for date in Repository.find_dates(t):
                     day = int(date.strftime('%j'))
@@ -398,34 +399,35 @@ class DataInventory(Inventory):
             self.dataclass.process_composites(self, self.composite_products, **kwargs)
             VerboseOut('Completed processing in %s' % (dt.now() - start), 1)
 
-    def project(self, datadir=None, suffix='', res=None, **kwargs):
+    def project(self, datadir=None, suffix='', res=None, nomosaic=False, **kwargs):
         """ Create project files for data in inventory """
         self.process(**kwargs)
         start = dt.now()
 
-        if suffix != '':
-            suffix = '_' + suffix
-
-        # formulate project directory name
+        sitename = 'tiles' if self.site is None else basename(self.site)
         if res is None:
+            # TODO - determined as min of all Assets
             res = self.dataclass.Asset._defaultresolution
-        if res[0] == res[1]:
-            resstr = str(res[0])
-        else:
-            resstr = '%sx%s' % (res[0], res[1])
-        sitename = basename(self.site) if self.site else ''
+
+        suffix = '' if suffix is None else '_' + suffix
         if datadir is None:
+            # formulate project directory name
+            if res[0] == res[1]:
+                resstr = str(res[0])
+            else:
+                resstr = '%sx%s' % (res[0], res[1])
             datadir = '%s_%s_%s%s' % (sitename, resstr, self.dataclass.name, suffix)
-        if not os.path.exists(datadir) and self.site is not None:
-            os.makedirs(datadir)
+        if self.site is None or nomosaic:
+            datadir = os.path.join(datadir, "TILEID")
 
         VerboseOut('Creating GIPS project %s' % datadir)
         VerboseOut('  Dates: %s' % self.datestr)
         VerboseOut('  Products: %s' % ' '.join(self.standard_products))
-        for date in self.dates:
-            self.data[date].project(datadir=datadir, res=res, **kwargs)
+
+        [self.data[d].project(datadir=datadir, res=res, nomosaic=nomosaic, **kwargs) for d in self.dates]
+
         VerboseOut('Completed GIPS project in %s' % (dt.now() - start))
-        if self.site is not None:
+        if not nomosaic:
             return ProjectInventory(datadir)
 
     def pprint(self, **kwargs):
@@ -496,8 +498,10 @@ class DataInventory(Inventory):
         group = parser.add_argument_group('Project options')
         group.add_argument('--res', nargs=2, help='Resolution of (warped) output rasters', default=None, type=float)
         group.add_argument('--crop', help='Crop down to minimum bounding box', default=False, action='store_true')
-        group.add_argument('--nowarp', help='Mosaic, but do not warp or crop', default=False, action='store_true')
-        group.add_argument('--suffix', help='Suffix on end of project directory', default='')
+        group.add_argument('--nowarp', help='Do not warp (or crop)', default=False, action='store_true')
+        group.add_argument('--nomosaic', help='Do not mosaic (keep as tiles)', default=False, action='store_true')
+        group.add_argument('--datadir', help='Directory to store output', default=None)
+        group.add_argument('--suffix', help='Suffix on end of project directory', default=None)
         group.add_argument('--format', help='Format for output file', default="GTiff")
         group.add_argument('--chunksize', help='Chunk size in MB', type=float, default=512.0)
 
@@ -531,7 +535,8 @@ class DataInventory(Inventory):
             elif args.command == 'process':
                 inv.process(overwrite=args.overwrite, **kwargs)
             elif args.command == 'project':
-                inv.project(suffix=args.suffix, crop=args.crop, nowarp=args.nowarp, res=args.res, **kwargs)
+                inv.project(datadir=args.datadir, suffix=args.suffix, res=args.res,
+                            crop=args.crop, nowarp=args.nowarp, nomosaic=args.nomosaic, **kwargs)
             else:
                 VerboseOut('Command %s not recognized' % args.command, 0)
         except Exception, e:

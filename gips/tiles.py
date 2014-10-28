@@ -114,42 +114,56 @@ class Tiles(object):
                 VerboseOut('Processing products for tile %s: %s' % (tileid, ' '.join(toprocess.keys())), 2)
                 self.tiles[tileid].process(toprocess, **kwargs)
 
-    def project(self, datadir, res=None, crop=False, nowarp=False, **kwargs):
+    def project(self, datadir, res, crop=False, nowarp=False, nomosaic=False, **kwargs):
         """ Create image of final product (reprojected/mosaiced) """
-        res = res if res else self.dataclass.Asset._defaultresolution
-        if not hasattr(res, "__len__"):
-            res = [res, res]
         start = datetime.now()
         bname = self.date.strftime('%Y%j')
+
         if self.site is None:
+            nomosaic = True
+            nowarp = True
+        if not hasattr(res, "__len__"):
+            res = [res, res]
+
+        if nomosaic:
+            # Tile project
+            # TODO - allow hard and soft link options
             for t in self.tiles:
-                tiledir = '%s%s' % (t, datadir)
+                tiledir = datadir.replace('TILEID', t)
                 if not os.path.exists(tiledir):
                     os.makedirs(tiledir)
                 for p in self.requested_products:
                     sensor = self.which_sensor(p)
+                    filename = self.tiles[t].products[p]
                     fout = os.path.join(tiledir, t + '_' + bname + ('_%s_%s.tif' % (sensor, p)))
                     if not os.path.exists(fout):
                         try:
                             VerboseOut("Creating %s" % os.path.basename(fout))
-                            gippy.GeoImage(self.tiles[t].products[p]).Process(fout)
+                            if nowarp:
+                                gippy.GeoImage(filename).Process(fout)
+                            else:
+                                # Warp each tile
+                                gippy.CookieCutter([filename], fout, self.site, res[0], res[1], crop)
                         except Exception:
-                            VerboseOut("Problem copying %s" % fout, 2)
+                            VerboseOut("Problem creating %s" % fout, 2)
                             VerboseOut(traceback.format_exc(), 3)
         else:
+            # Shapefile project
+            if not os.path.exists(datadir):
+                os.makedirs(datadir)
             for product in self.requested_products:
                 sensor = self.which_sensor(product)
-                filename = os.path.join(datadir, bname + ('_%s_%s.tif' % (sensor, product)))
-                if not os.path.exists(filename):
+                fout = os.path.join(datadir, bname + ('_%s_%s.tif' % (sensor, product)))
+                if not os.path.exists(fout):
                     try:
                         filenames = [self.tiles[t].products[product] for t in self.tiles]
                         # TODO - cookiecutter should validate pixels in image.  Throw exception if not
                         if nowarp:
-                            self._mosaic(filenames, filename, self.site)
+                            self._mosaic(filenames, fout, self.site)
                         else:
-                            gippy.CookieCutter(filenames, filename, self.site, res[0], res[1], crop)
+                            gippy.CookieCutter(filenames, fout, self.site, res[0], res[1], crop)
                     except:
-                        VerboseOut("Problem projecting %s" % filename, 2)
+                        VerboseOut("Problem projecting %s" % fout, 2)
                         VerboseOut(traceback.format_exc(), 3)
         t = datetime.now() - start
         VerboseOut('%s: created project files for %s tiles in %s' % (self.date, len(self.tiles), t), 2)
