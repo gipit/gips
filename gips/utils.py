@@ -182,21 +182,13 @@ def _mr_init(_readfunc, _func):
     func = _func
 
 
-#def _worker_2d_to_1d(chunk):
-#    """ Apply a function to a piece of the 2-D datain array and return 1-D output """
-#    dat = data[chunk[0]:chunk[1], :]
-#    valid = numpy.all(~numpy.isnan(dat), axis=1)
-#    chunk = numpy.zeros(dat.shape[0])
-#    chunk[valid] = func(dat[valid, :])
-#    return chunk
-
-
 def _mr_worker_3d_to_2d(chunk):
     """ Reduces multiple band image (bands x rows x cols) to single band image (rows x cols) """
     data = readfunc(gippy.Recti(chunk[0], chunk[1], chunk[2], chunk[3]))
     valid = numpy.all(~numpy.isnan(data), axis=0)
     output = numpy.zeros((data.shape[1], data.shape[2]))
     output[valid] = func(data[:, valid])
+    data = None
     return output
 
 
