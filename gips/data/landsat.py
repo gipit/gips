@@ -361,6 +361,8 @@ class LandsatData(Data):
         for col in self.assets[''].lwbands:
             reflimg[col] = (((img[col].pow(-1)) * meta[col]['K1'] + 1).log().pow(-1)) * meta[col]['K2'] - 273.15
 
+        newproducts = {}
+
         # Process standard products
         for key, val in groups['Standard'].items():
             start = datetime.now()
@@ -437,7 +439,7 @@ class LandsatData(Data):
                 fname = imgout.Filename()
                 imgout.SetMeta(md)
                 imgout = None
-                self.products[key] = fname
+                newproducts[key] = fname
                 VerboseOut(' -> %s: processed in %s' % (os.path.basename(fname), datetime.now() - start), 1)
             except Exception, e:
                 VerboseOut('Error creating product %s for %s: %s' % (key, bname, e), 2)
@@ -460,7 +462,7 @@ class LandsatData(Data):
                 prodarr = dict(zip([indices_toa[p][0] for p in indices_toa.keys()], fnames))
                 prodout = gippy.Indices(reflimg, prodarr, md)
                 for key in prodout:
-                    self.products.update({key + '-toa': prodout[key]})
+                    newproducts.update({key + '-toa': prodout[key]})
             # Run atmospherically corrected
             fnames = [os.path.join(self.path, self.basename + '_' + key) for key in indices]
             if len(fnames) > 0:
@@ -468,9 +470,15 @@ class LandsatData(Data):
                     img[col] = ((img[col] - atmos[col][1]) / atmos[col][0]) * (1.0 / atmos[col][2])
                 prodarr = dict(zip([indices[p][0] for p in indices.keys()], fnames))
                 prodout = gippy.Indices(img, prodarr, md)
-                self.products.update(prodout)
+                newproducts.update(prodout)
             VerboseOut(' -> %s: processed %s in %s' % (self.basename, indices0.keys(), datetime.now() - start), 1)
         img = None
+
+        # Add sensor lookup for all products
+        self.products.update(newproducts)
+        for key in newproducts:
+            self.sensors[key] = self.sensor_set[0]
+
         # cleanup directory
         try:
             for bname in self.assets[''].datafiles():
