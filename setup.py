@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 ################################################################################
-#    GIPPY: Geospatial Image Processing library for Python
+#    GIPS: Geospatial Image Processing System
 #
-#    Copyright (C) 2014 Matthew A Hanson
+#    AUTHOR: Matthew Hanson
+#    EMAIL:  mhanson@ags.io
+#
+#    Copyright (C) 2014 Applied Geosolutions
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -55,7 +58,7 @@ setup(
     version=__version__,
     description='Geospatial Image Processing System',
     author='Matthew Hanson',
-    author_email='mhanson@appliedgeosolutions.com',
+    author_email='mhanson@ags.io',
     packages=['gips', 'gips.data', 'gips.algorithms'],
     install_requires=['Py6S>=1.5.0', 'shapely', 'gippy>=1.0.0', 'python-dateutil'],
     scripts=scripts,

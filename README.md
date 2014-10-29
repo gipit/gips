@@ -1,7 +1,10 @@
 
     **GIPS**: Geospatial Image Processing System
 
-    Copyright (C) 2014 Matthew A Hanson
+    AUTHOR: Matthew Hanson
+    EMAIL:  mhanson@ags.io
+
+    Copyright (C) 2014 Applied Geosolutions
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -15,6 +18,14 @@
 
    You should have received a copy of the GNU General Public License
    along with this program. If not, see <http://www.gnu.org/licenses/>
+
+# Authors
+
+The following have been authors or contributers to GIPS
+
+Matthew Hanson
+Bobby Braswell
+
 
 # GIPS Installation
 
