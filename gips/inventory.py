@@ -427,8 +427,9 @@ class DataInventory(Inventory):
         [self.data[d].project(datadir=datadir, res=res, nomosaic=nomosaic, **kwargs) for d in self.dates]
 
         VerboseOut('Completed GIPS project in %s' % (dt.now() - start))
-        if not nomosaic:
-            return ProjectInventory(datadir)
+        if not nomosaic and self.site is not None:
+            inv = ProjectInventory(datadir)
+            inv.pprint()
 
     def pprint(self, **kwargs):
         """ Print inventory """
