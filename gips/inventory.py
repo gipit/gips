@@ -336,11 +336,13 @@ class DataInventory(Inventory):
         if products is None:
             products = dataclass._products.keys()
         prod_dict = dict([p, p.split('-')] for p in products)
-        
+
         # seperate out standard (each tile processed) and composite products (using inventory)
         self.standard_products = {}
         self.composite_products = {}
         for p, val in prod_dict.items():
+            if val[0] not in self.dataclass._products:
+                raise Exception('Invalid product %s' % val[0])
             if self.dataclass._products[val[0]].get('composite', False):
                 self.composite_products[p] = val
             else:
