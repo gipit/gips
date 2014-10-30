@@ -35,7 +35,7 @@ AOD
 - fixed retrieval of Aerosol Optical Depth from MOD08 data
 
 LANDSAT
-- products added: dn (digital numbers)
+- products added: dn (digital numbers), volref (volumetric reflectance of water)
 
 MODIS
 - fixed segfault in indices and cleaned up extraneous printing
