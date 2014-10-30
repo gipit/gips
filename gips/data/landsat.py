@@ -520,10 +520,11 @@ class LandsatData(Data):
 
         # cleanup directory
         try:
-            for bname in self.assets[''].datafiles():
-                if bname[-7:] != 'MTL.txt':
-                    files = glob.glob(os.path.join(self.path, bname) + '*')
-                    RemoveFiles(files)
+            # Not needed, reading directly from tar.gz
+            #for bname in self.assets[''].datafiles():
+            #    if bname[-7:] != 'MTL.txt':
+            #        files = glob.glob(os.path.join(self.path, bname) + '*')
+            #        RemoveFiles(files)
             shutil.rmtree(os.path.join(self.path, 'modtran'))
         except:
             #VerboseOut(traceback.format_exc(), 4)
@@ -641,7 +642,9 @@ class LandsatData(Data):
         self.meta()
 
         # Extract all files
-        datafiles = self.assets[''].extract(self.metadata['filenames'])
+        #datafiles = self.assets[''].extract(self.metadata['filenames'])
+        # Use tar.gz directly using GDAL's virtual filesystem
+        datafiles = [os.path.join('/vsitar/' + self.assets[''].filename, f) for f in self.metadata['filenames']]
 
         image = gippy.GeoImage(datafiles)
         image.SetNoData(0)

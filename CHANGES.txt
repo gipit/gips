@@ -36,6 +36,7 @@ AOD
 
 LANDSAT
 - products added: dn (digital numbers), volref (volumetric reflectance of water)
+- Files read directly from tar.gz (rather than extracting) using GDAL's virtual filesystem
 
 MODIS
 - fixed segfault in indices and cleaned up extraneous printing
