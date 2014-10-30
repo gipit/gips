@@ -202,6 +202,10 @@ class LandsatData(Data):
             'description': 'Tassled cap transformation',
             'toa': True
         },
+        'dn': {
+            'description': 'Raw digital numbers',
+            'toa': True
+        },
         #'Indices': {
         'bi': {
             'description': 'Brightness Index',
@@ -439,6 +443,11 @@ class LandsatData(Data):
                         #    band = (img[col] - (atmos.output[1] + (1-e) * atmos.output[2])) / (atmos.output[0] * e)
                         band = (((band.pow(-1)) * meta[col]['K1'] + 1).log().pow(-1)) * meta[col]['K2'] - 273.15
                         band.Process(imgout[col])
+                elif val[0] == 'dn':
+                    rawimg = gippy.GeoImage(img)
+                    rawimg.SetGain(1.0)
+                    rawimg.SetOffset(0.0)
+                    imgout = rawimg.Process(fname)
                 fname = imgout.Filename()
                 imgout.SetMeta(md)
                 imgout = None
