@@ -206,6 +206,10 @@ class LandsatData(Data):
             'description': 'Raw digital numbers',
             'toa': True
         },
+        'volref': {
+            'description': 'Volumetric water reflectance (valid for water only)',
+            'arguments': [__toastring]
+        },
         #'Indices': {
         'bi': {
             'description': 'Brightness Index',
@@ -448,6 +452,29 @@ class LandsatData(Data):
                     rawimg.SetGain(1.0)
                     rawimg.SetOffset(0.0)
                     imgout = rawimg.Process(fname)
+                elif val[0] == 'volref':
+                    bands = visbands
+                    bands.remove("SWIR1")
+                    imgout = gippy.GeoImage(fname, reflimg, gippy.GDT_Int16, len(bands))
+                    imgout.SetNoData(-32768)
+                    imgout.SetGain(0.0001)
+                    r = 0.54    # Water-air reflection
+                    p = 0.03    # Internal Fresnel reflectance
+                    pp = 0.54   # Water-air Fresnel reflectance
+                    n = 1.34    # Refractive index of water
+                    Q = 1.0     # Downwelled irradiance / upwelled radiance
+                    A = ((1 - p) * (1 - pp)) / (n * n)
+                    srband = reflimg['SWIR1'].Read()
+                    nodatainds = srband == reflimg['SWIR1'].NoDataValue()
+                    for i, band in enumerate(bands):
+                        imgout.SetBandName(band, i + 1)
+                        bimg = reflimg[band].Read()
+                        diffimg = bimg - srband
+                        diffimg = diffimg / (A + r * Q * diffimg)
+                        diffimg[bimg == reflimg[band].NoDataValue()] = imgout[band].NoDataValue()
+                        diffimg[nodatainds] = imgout[band].NoDataValue()
+                        imgout[band].Write(diffimg)
+
                 fname = imgout.Filename()
                 imgout.SetMeta(md)
                 imgout = None
