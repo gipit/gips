@@ -247,7 +247,7 @@ class AODData(Data):
             aod = vals[1, 1]
             img = None
             source = 'MODIS (MOD08_D3)'
-            if numpy.isnan(aod):
+            if numpy.isnan(aod) and numpy.any(~numpy.isnan(vals)):
                 aod = numpy.mean(vals[~numpy.isnan(vals)])
                 source = 'MODIS (MOD08_D3) spatial average'
         except Exception:
