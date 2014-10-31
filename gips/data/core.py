@@ -208,14 +208,13 @@ class Asset(object):
     # Child classes should not generally have to override anything below here
     ##########################################################################
     def datafiles(self):
-        """ Get list of datafiles from asset (if archive file) """
+        """ Get list of datafiles from asset (if tar or hdf file) """
         path = os.path.dirname(self.filename)
         indexfile = os.path.join(path, self.filename + '.index')
         if os.path.exists(indexfile):
             datafiles = File2List(indexfile)
             if len(datafiles) > 0:
                 return datafiles
-
         try:
             if tarfile.is_tarfile(self.filename):
                 tfile = tarfile.open(self.filename)
@@ -265,6 +264,7 @@ class Asset(object):
         url = cls._assets[asset].get('url', '')
         if url == '':
             raise Exception("%s: URL not defined for asset %s" % (cls.__name__, asset))
+
         ftpurl = url.split('/')[0]
         ftpdir = url[len(ftpurl):]
 
@@ -273,10 +273,7 @@ class Asset(object):
             ftp.login('anonymous', gips.settings.EMAIL)
             pth = os.path.join(ftpdir, date.strftime('%Y'), date.strftime('%j'))
             ftp.set_pasv(True)
-            try:
-                ftp.cwd(pth)
-            except Exception, e:
-                raise Exception("Error downloading")
+            ftp.cwd(pth)
 
             filenames = []
             ftp.retrlines('LIST', filenames.append)
@@ -289,6 +286,17 @@ class Asset(object):
         except Exception, e:
             VerboseOut(traceback.format_exc(), 3)
             raise Exception("Error downloading: %s" % e)
+
+    @classmethod
+    def available(cls, asset, date):
+        """ Check availability of an asset for given date """
+        date1 = cls._assets[asset]['startdate']
+        date2 = cls._assets[asset]['enddate']
+        if date2 is None:
+            date2 = datetime.now() - datetime.timedelta(cls._asssets[asset]['latency'])
+        if date < date1 or date > date2:
+            return False
+        return True
 
     @classmethod
     def dates(cls, asset, tile, dates, days):
@@ -504,6 +512,26 @@ class Data(object):
             return gippy.GeoImage(fname)
         except:
             raise Exception('%s problem reading' % product)
+
+    def available(self, product):
+        """ Check availability of product (and required assets) for this date """
+        assets = self._products[product]['assets']
+        missing = []
+        avail = []
+        filenames = []
+        for asset in assets:
+            try:
+                fnames = self.assets[asset].datafiles()
+            except Exception:
+                missing.append(asset)
+            else:
+                avail.append(asset)
+                filenames.extend(fnames)
+        if not avail:
+            VerboseOut('There are no available assets (%s) on %s for tile %s'
+                       % (str(missingassets), str(self.date), str(self.id), ), 3)
+            return None
+        return filenames
 
     ##########################################################################
     # Class methods

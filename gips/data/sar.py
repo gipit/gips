@@ -29,7 +29,7 @@ import numpy
 from collections import OrderedDict
 
 import gippy
-from gips.core import Repository, Asset, Data
+from gips.data.core import Repository, Asset, Data
 from gips.inventory import DataInventory
 from gips.utils import File2List, List2File, RemoveFiles
 import gips.settings as settings

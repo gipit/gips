@@ -26,7 +26,7 @@ import glob
 from datetime import datetime
 from csv import DictReader
 
-from gips.core import Repository, Asset, Data
+from gips.data.core import Repository, Asset, Data
 from gips.inventory import DataInventory
 import gips.settings as settings
 
