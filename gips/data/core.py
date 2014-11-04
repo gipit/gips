@@ -34,6 +34,8 @@ import ftplib
 
 import gippy
 import gips
+from gips.core import SpatialExtent, TemporalExtent
+from gips.tiles import Files
 from gips.utils import VerboseOut, RemoveFiles, File2List, List2File, Colors
 from gips.inventory import DataInventory
 from gips.GeoVector import GeoVector
@@ -137,7 +139,7 @@ class Repository(object):
         return tiles
 
     @classmethod
-    def vector2tiles(cls, vector, pcov=0.0, ptile=0.0, **kwargs):
+    def vector2tiles(cls, vector, pcov=0.0, ptile=0.0):
         """ Return matching tiles and coverage % for provided vector """
         start = datetime.now()
         import osr
@@ -419,7 +421,7 @@ class Asset(object):
     #    return os.path.basename(self.filename)
 
 
-class Data(object):
+class Data(Files):
     """ Collection of assets/products for one tile and date """
     name = 'Data'
     version = '0.0.0'
@@ -474,44 +476,34 @@ class Data(object):
         self.id = tile
         self.date = date
         self.assets = {}                # dict of asset name: Asset instance
-        self.products = {}              # dict of product name: filename
+        self.filenames = {}             # dict of product: filename
         self.sensors = {}               # dict of asset/product: sensor
         # find all assets
         for asset in self.Asset.discover(tile, date):
             self.assets[asset.asset] = asset
             # products that come automatically with assets
-            self.products.update(asset.products)
+            self.update(asset.products)
             self.sensors[asset.asset] = asset.sensor
-            self.sensors.update({p: asset.sensor for p in asset.products})
         self.basename = self.id + '_' + self.date.strftime(self.Repository._datedir)
+
+        # This will be a single date
+        self.update(Files.discover(self.path)[0])
+
         # find all products
+        """
         for sensor in self.Asset._sensors:
-            prods = self.discover(os.path.join(self.path, self.basename + '_' + sensor))
-            if len(prods) > 0:
-                self.products.update(prods)
-                self.sensors.update({p: sensor for p in prods})
+            for p in self._products:
+                files = glob.glob(os.path.join(self.path, self.basename + '_' + sensor + '_' + p + self._pattern))
+                for f in files:
+                    if os.path.splitext(f)[1] not in ['.hdr', '.xml', 'gz', '.index']:
+                        self.filenames[(sensor, p)] = f
+        """
         if len(self.assets) == 0:
             raise Exception('no assets')
 
     @property
     def Repository(self):
         return self.Asset.Repository
-
-    @property
-    def sensor_set(self):
-        """ Return list of sensors used """
-        return list(set(self.sensors.values()))
-
-    def open(self, product=''):
-        if len(self.products) == 0:
-            raise Exception("No products available to open!")
-        if product == '':
-            product = self.products.keys()[0]
-        fname = self.products[product]
-        try:
-            return gippy.GeoImage(fname)
-        except:
-            raise Exception('%s problem reading' % product)
 
     def available(self, product):
         """ Check availability of product (and required assets) for this date """
@@ -529,7 +521,7 @@ class Data(object):
                 filenames.extend(fnames)
         if not avail:
             VerboseOut('There are no available assets (%s) on %s for tile %s'
-                       % (str(missingassets), str(self.date), str(self.id), ), 3)
+                       % (str(missing), str(self.date), str(self.id), ), 3)
             return None
         return filenames
 
@@ -539,23 +531,6 @@ class Data(object):
     @classmethod
     def inventory(cls, **kwargs):
         return DataInventory(cls, **kwargs)
-
-    # TODO - factory function of Tiles ?
-    @classmethod
-    def discover(cls, basefilename):
-        """ Find products in path """
-        badexts = ['.hdr', '.xml', 'gz', '.index']
-        products = {}
-        for p in cls._products:
-            files = glob.glob(basefilename + '_' + p + cls._pattern)
-            #if len(files) > 0:
-            #    products[p] = files
-            for f in files:
-                rootf = os.path.splitext(f)[0]
-                ext = os.path.splitext(f)[1]
-                if ext not in badexts:
-                    products[rootf[len(basefilename) + 1:]] = f
-        return products
 
     @classmethod
     def products2assets(cls, products):
