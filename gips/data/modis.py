@@ -477,23 +477,20 @@ class ModisData(Data):
                 imgout.SetNoData(65535)
                 imgout.SetGain(0.02)
 
-                imgout.SetBandName('Temperature Daytime Terra', 1)
-                imgout.SetBandName('Temperature Nighttime Terra', 2)
-                imgout.SetBandName('Temperature Daytime Aqua', 3)
-                imgout.SetBandName('Temperature Nighttime Aqua', 4)
-                imgout.SetBandName('Temperature Best Quality', 5)
+
 
                 # there are four temperature bands
                 for iband, band in enumerate(availbands):
                     # get meta name template info
                     basename = tempbands[iband].Basename()
-                    print "basename", basename
-                    platform = basename[:3]
-                    platform = self.Asset._sensors[platform]
+                    platform = self.Asset._sensors[basename[:3]]['description']
 
-                    dayornight = basename.split()[2]
-                    dayornight = dayornight.replace('time', '')
-                    assert dayornight in ('day', 'night')
+                    if basename.find('daytime'):
+                        dayornight = 'day'
+                    elif basename.find('nighttime'):
+                        dayornight = 'night'
+                    else:
+                        raise Exception('%s appears to be an invalid MODIS temperature project' % basename)
 
                     qc = qcbands[iband].Read()
 
@@ -554,6 +551,11 @@ class ModisData(Data):
 
                 imgout[4].SetGain(1.0)
                 imgout[4].Write(bestmask)
+                imgout.SetBandName('Temperature Daytime Terra', 1)
+                imgout.SetBandName('Temperature Nighttime Terra', 2)
+                imgout.SetBandName('Temperature Daytime Aqua', 3)
+                imgout.SetBandName('Temperature Nighttime Aqua', 4)
+                imgout.SetBandName('Temperature Best Quality', 5)
 
             # NDVI (8-day) - Terra only
             if val[0] == "ndvi8":
