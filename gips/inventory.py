@@ -27,127 +27,14 @@ import glob
 import argparse
 from datetime import datetime as dt
 import traceback
-from itertools import groupby
 import numpy
 from copy import deepcopy
 
 import gippy
-from gips.tiles import Tiles
+from gips.tiles import Files, Tiles
 from gips.utils import VerboseOut, parse_dates, Colors, basename
 from gips.GeoVector import GeoVector
 from gips.version import __version__
-
-
-class Products(object):
-    """ Collection of products (files) for a single date """
-
-    def __init__(self, filenames):
-        """ Create products with these filenames (should all be same date) """
-        # TODO - check that all dates are the same for all filenames
-        if not isinstance(filenames, list):
-            raise TypeError('requires list (of filenames)')
-        self.filenames = {}         # dict of product: filenames
-        self.sensors = {}           # dict of product: sensor
-        ind = len(os.path.basename(filenames[0]).split('_')) - 3
-        for f in filenames:
-            try:
-                parts = basename(f).split('_')
-                date = dt.strptime(parts[ind], '%Y%j').date()
-                product = parts[2 + ind]
-                self.sensors[product] = parts[1 + ind]
-                self.filenames[product] = f
-            except:
-                VerboseOut('Bad filename: %s' % f)
-        self.date = date
-
-    def __getitem__(self, key):
-        """ Return filename for product or (product, sensor) """
-        return self.filenames[key]
-
-    def __str__(self):
-        """ Return list of products """
-        return '%s: %s' % (self.date, ' '.join(self.products))
-
-    @property
-    def numfiles(self):
-        return len(self.filenames)
-
-    @property
-    def products(self):
-        """ List of products """
-        return set(sorted(self.filenames.keys()))
-
-    @property
-    def sensor_set(self):
-        """ List of sensors used by products """
-        return list(set(self.sensors.values()))
-
-    def which_sensor(self, key):
-        """ Return which sensor used for provided product key """
-        return self.sensors[key]
-
-    @property
-    def doy(self):
-        """ Day of year """
-        return self.date.strftime('%j')
-
-    # TODO - make general product_filter function
-    def masks(self, patterns=None):
-        """ List all products that are masks """
-        if not patterns:
-            patterns = ['acca', 'fmask', 'mask']
-        m = []
-        for p in self.products:
-            if any(pattern in p for pattern in patterns):
-                m.append(p)
-        return m
-
-    def open(self, product='', update=False):
-        """ Open and return GeoImage """
-        # TODO - assumes single sensor
-        fname = self[product]
-        if os.path.exists(fname):
-            return gippy.GeoImage(fname, update)
-        else:
-            raise Exception('%s product does not exist' % product)
-
-    def pprint_header(self):
-        return Colors.BOLD + Colors.UNDER + '{:^12}'.format('DATE') + '{:^10}'.format('Products') + Colors.OFF
-
-    def pprint(self, dformat='%j', colors=None):
-        """ Print data products """
-        sys.stdout.write('{:^12}'.format(self.date.strftime(dformat)))
-        if colors is None:
-            sys.stdout.write('  '.join(sorted(self.products)))
-        else:
-            for p in sorted(self.products):
-                sys.stdout.write(colors[self.sensors[p]] + p + Colors.OFF + '  ')
-        sys.stdout.write('\n')
-
-    @classmethod
-    def discover(cls, files0):
-        """ Factory function returns instance for every date in 'files' (filenames or directory) """
-        if not isinstance(files0, list) and os.path.isdir(os.path.abspath(files0)):
-            files0 = glob.glob(os.path.join(files0, '*.tif'))
-
-        # Check files for 3 or 4 parts and a valid date
-        files = []
-        for f in files0:
-            parts = basename(f).split('_')
-            if len(parts) == 3 or len(parts) == 4:
-                try:
-                    dt.strptime(parts[len(parts) - 3], '%Y%j')
-                except:
-                    continue
-                files.append(f)
-
-        # files will have 3 or 4 parts, so ind is 0 or 1
-        sind = len(basename(files[0]).split('_')) - 3
-        instances = []
-        for date, fnames in groupby(sorted(files), lambda x: dt.strptime(basename(x).split('_')[sind], '%Y%j').date()):
-            #for sensor, fnames2 in groupby(sorted(fnames), lambda x: basename(x).split('_')[1]):
-            instances.append(cls(list(fnames)))
-        return instances
 
 
 class Inventory(object):
@@ -190,17 +77,6 @@ class Inventory(object):
     def datestr(self):
         return '%s dates (%s - %s)' % (len(self.dates), self.dates[0], self.dates[-1])
 
-    def _temporal_extent(self, dates, days):
-        """ Temporal extent (define self.dates and self.days) """
-        if dates is None:
-            dates = '1984,2050'
-        self.start_date, self.end_date = parse_dates(dates)
-        if days:
-            days = days.split(',')
-        else:
-            days = (1, 366)
-        self.start_day, self.end_day = (int(days[0]), int(days[1]))
-
     def color(self, sensor):
         """ Return color for sensor """
         return self._colors[list(self.sensor_set).index(sensor)]
@@ -238,7 +114,7 @@ class Inventory(object):
 
 
 class ProjectInventory(Inventory):
-    """ Inventory of project directory (collection of Products class) """
+    """ Inventory of project directory (collection of Files class) """
 
     def __init__(self, projdir='', products=[]):
         """ Create inventory of a GIPS project directory """
@@ -251,15 +127,17 @@ class ProjectInventory(Inventory):
         product_set = set()
         sensor_set = set()
         try:
-            for dat in Products.discover(files):
+            for dat in Files.discover(files):
                 self.products[dat.date] = dat
-                product_set = product_set.union(dat.products)
-                sensor_set = sensor_set.union(dat.sensors)
+                product_set = product_set.union(dat.product_set)
+                sensor_set = sensor_set.union(dat.sensor_set)
+
             if not products:
                 products = product_set
             self.requested_products = products
             self.sensors = sensor_set
         except:
+            VerboseOut(traceback.format_exc(), 4)
             raise Exception("%s does not appear to be a GIPS project directory" % self.projdir)
 
     @property
@@ -316,10 +194,24 @@ class DataInventory(Inventory):
     """ Manager class for data inventories (collection of Tiles class) """
 
     def __init__(self, dataclass, site=None, tiles=None, dates=None, days=None, products=None, fetch=False, **kwargs):
+        """ Create a new inventory
+        :dataclass: The Data class to use (e.g., LandsatData, ModisData)
+        :site: The site shapefile
+        :tiles: List of tile ids
+        :dates: tuple of begin and end date
+        :days: tuple of begin and end day of year
+        :products: List of products of interest
+        :fetch: bool indicated if missing data should be downloaded
+        """
         self.dataclass = dataclass
+        self.site = site
         Repository = dataclass.Asset.Repository
 
+        self.data = Tiles.discover(dataclass, site, tiles, dates, days, products, fetch, **kwargs)
+
         self.site = site
+
+
         # default to all tiles
         if tiles is None and self.site is None:
             tiles = Repository.find_tiles()
@@ -449,6 +341,7 @@ class DataInventory(Inventory):
         super(DataInventory, self).pprint(**kwargs)
 
     def print_tile_coverage(self):
+        """ Print tile coverage info """
         if self.site is not None:
             print Colors.BOLD + '\nTile Coverage'
             print Colors.UNDER + '{:^8}{:>14}{:>14}'.format('Tile', '% Coverage', '% Tile Used') + Colors.OFF
@@ -457,6 +350,7 @@ class DataInventory(Inventory):
 
     @staticmethod
     def main(cls):
+        """ Command line intrepreter """
         dhf = argparse.ArgumentDefaultsHelpFormatter
         parser0 = argparse.ArgumentParser(description='GIPS %s Data Utility v%s' % (cls.name, __version__))
         subparser = parser0.add_subparsers(dest='command')

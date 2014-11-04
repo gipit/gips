@@ -26,43 +26,177 @@ import os
 from datetime import datetime
 import traceback
 import shutil
+from glob import glob
+from itertools import groupby
 
 import gippy
-from gips.utils import VerboseOut, Colors
+from gips.core import SpatialExtent, TemporalExtent
+from gips.utils import VerboseOut, Colors, basename
 from gips.GeoVector import GeoVector
 import commands
 import tempfile
 
 
-class Tiles(object):
-    """ Collection of tiles for a single date and sensor """
+class Files(object):
+    """ Collection of geospatial imagery files for single date and spatial region """
 
-    def __init__(self, dataclass, site=None, tiles=None, date=None, products=None, sensors=None, **kwargs):
+    def __init__(self, filenames=None):
+        """ filenames naming convention: 'date_sensor_product' or 'tileid_date_sensor_product' """
+        self.filenames = {}
+        self.sensors = {}
+        self.date = None
+        self.AddFiles(filenames)
+
+    def __getitem__(self, key):
+        """ Get filename for product key """
+        if type(key) == tuple:
+            return self.filenames[key]
+        else:
+            return self.filenames[(self.sensor_set[0], key)]
+
+    def __str__(self):
+        """ Text representation """
+        return '%s: %s' % (self.date, ' '.join(self.product_set))
+
+    @property
+    def doy(self):
+        return self.date.strftime('%j')
+
+    @property
+    def numfiles(self):
+        return len(self.filenames)
+
+    @property
+    def path(self):
+        """ Get path to where files are stored (assuming same path for all) """
+        # TODO - is same path for all a safe assumption?
+        return os.path.abspath(self.filenames.values()[0])
+
+    @property
+    def sensor_set(self):
+        """ Return list of sensors used """
+        return list(set(sorted(self.sensors.values())))
+
+    @property
+    def products(self):
+        """ Get list of products """
+        return sorted([k[1] for k in self.filenames.keys()])
+
+    @property
+    def product_set(self):
+        """ Return list of products available """
+        return list(set(self.products))
+
+    def AddFiles(self, filenames):
+        """ Add filenames to existing filenames """
+        for f in filenames:
+            bname = basename(f)
+            parts = bname.split('_')
+            if len(parts) < 3 or len(parts) > 4:
+                raise Exception('%s does not follow naming convention' % f)
+            offset = 1 if len(parts) == 4 else 0
+            if self.date is None:
+                self.date = datetime.strptime(parts[0 + offset], '%Y%j').date()
+            else:
+                date = datetime.strptime(parts[0 + offset], '%Y%j').date()
+                if date != self.date:
+                    raise Exception('Mismatched dates: %s' % ' '.join(filenames))
+            sensor = parts[1 + offset]
+            product = parts[2 + offset]
+            self.filenames[(sensor, product)] = f
+            # TODO - currently assumes single sensor for each product
+            self.sensors[product] = sensor
+
+    def update(self, files):
+        """ Merge files instance into this instance """
+        if files.numfiles > 0:
+            self.AddFiles(files.filenames)
+
+    def open(self, product, sensor=None, update=False):
+        """ Open and return a GeoImage """
+        if sensor is None:
+            sensor = self.sensors[product]
+        fname = self.filenames[(sensor, product)]
+        if os.path.exists(fname):
+            return gippy.GeoImage(fname)
+        else:
+            raise Exception('%s_%s product does not exist' % (sensor, product))
+
+    # TODO - make general product_filter function
+    def masks(self, patterns=None):
+        """ List all products that are masks """
+        if not patterns:
+            patterns = ['acca', 'fmask', 'mask']
+        m = []
+        for p in self.products:
+            if any(pattern in p for pattern in patterns):
+                m.append(p)
+        return m
+
+    def pprint_header(self):
+        """ Print product inventory header """
+        return Colors.BOLD + Colors.UNDER + '{:^12}'.format('DATE') + '{:^10}'.format('Products') + Colors.OFF
+
+    def pprint(self, dformat='%j', colors=None):
+        """ Print product inventory """
+        sys.stdout.write('{:^12}'.format(self.date.strftime(dformat)))
+        if colors is None:
+            sys.stdout.write('  '.join(sorted(self.products)))
+        else:
+            for p in sorted(self.products):
+                sys.stdout.write(colors[self.sensors[p]] + p + Colors.OFF + '  ')
+        sys.stdout.write('\n')
+
+    @classmethod
+    def discover(cls, files0):
+        """ Factory function returns instance for every date in 'files' (filenames or directory) """
+        if not isinstance(files0, list) and os.path.isdir(os.path.abspath(files0)):
+            files0 = glob(os.path.join(files0, '*.tif'))
+
+        # Check files for 3 or 4 parts and a valid date
+        files = []
+        for f in files0:
+            parts = basename(f).split('_')
+            if len(parts) == 3 or len(parts) == 4:
+                try:
+                    datetime.strptime(parts[len(parts) - 3], '%Y%j')
+                except:
+                    continue
+                files.append(f)
+
+        # files will have 3 or 4 parts, so sind is 0 or 1
+        sind = len(basename(files[0]).split('_')) - 3
+        instances = []
+        func = lambda x: datetime.strptime(basename(x).split('_')[sind], '%Y%j').date()
+        for date, fnames in groupby(sorted(files), func):
+            instances.append(cls(list(fnames)))
+        return instances
+
+
+class Tiles(object):
+    """ Collection of files for single date and multiple regions (tiles) """
+
+    def __init__(self, dataclass, spatial=None, temporal=None, date=None, products=None, **kwargs):
         """ Locate data matching vector location (or tiles) and date
-        self.tile_coverage      dict of tile id: %coverage with site
+        self.coverage      dict of tile id: %coverage with site
         self.tiles              dict of tile id: tile instance
         """
         self.dataclass = dataclass
-        self.site = site
-        # Calculate spatial extent
-        if isinstance(tiles, list):
-            tiles = dict((t, 1) for t in tiles)
-        self.tile_coverage = tiles
-        #if tiles is not None:
-        #    self.tile_coverage = dict((t, 1) for t in tiles)
-        #elif site is not None:
-        #    self.tile_coverage = self.Repository.vector2tiles(GeoVector(site), **kwargs)
-        #else:
-        #    self.tile_coverage = dict((t, (1, 1)) for t in self.Repository.find_tiles())
+
+        if spatial is None:
+            spatial = SpatialExtent()
+        self.spatial = spatial
+        if temporal is None:
+            temporal = TemporalExtent()
+        self.temporal = temporal
+
         self.date = date
         self.requested_products = products
-        if sensors is None:
-            sensors = dataclass.Asset._sensors.keys()
 
         # For each tile locate files/products
-        VerboseOut('%s: searching %s tiles for products and assets' % (self.date, len(self.tile_coverage)), 4)
+        VerboseOut('%s: searching %s tiles for products and assets' % (self.date, len(self.coverage)), 4)
         self.tiles = {}
-        for t in self.tile_coverage.keys():
+        for t in self.coverage.keys():
             try:
                 tile = dataclass(t, self.date)
                 good = tile.filter(**kwargs)
@@ -71,14 +205,54 @@ class Tiles(object):
                     self.tiles[t] = tile
                 # assume same
             except:
-                #VerboseOut(traceback.format_exc(), 5)
                 continue
         if len(self.tiles) == 0:
             raise Exception('No valid data found')
 
+    @classmethod
+    def discover(cls, dataclass, spatial=None, temporal=None, products=None, fetch=False, **kwargs):
+        """ Factory function, create tile class for each date for this dataclass """
+        repo = dataclass.Asset.Repository
+
+        #if sensors is None:
+        #    sensors = dataclass.Asset._sensors.keys()
+
+        if spatial is None:
+            spatial = SpatialExtent()
+        if temporal is None:
+            temporal = TemporalExtent()
+
+        # Parsing products
+        if products is None:
+            products = dataclass._products.keys()
+        products = {p: p.split('-') for p in products}
+        standard_products = {}
+        composite_products = {}
+        for p, val in products.items():
+            if val[0] not in dataclass._products:
+                raise Exception('Invalid product %s' % val[0])
+            if dataclass._products[val[0]].get('composite', False):
+                composite_products[p] = val
+            else:
+                standard_products[p] = val
+
+        if fetch:
+            try:
+                dataclass.fetch([val[0] for val in products.values()], tiles, temporal.dates, temporal.days)
+            except Exception, e:
+                raise Exception('Trouble downloading: %s' % e)
+
+        instances = {}
+        for date in list(sorted(set(dates))):
+            try:
+                instances[date] = cls(dataclass, site, tiles, date, products)
+            except:
+                continue
+        return instances
+
     @property
     def sensor_set(self):
-        """ Return list of sensors used in all the tiles """
+        """ Return list of sensors used in all tiles """
         s = set()
         for t in self.tiles:
             s.update(self.tiles[t].sensor_set)
@@ -99,10 +273,10 @@ class Tiles(object):
         asset_coverage = {}
         for a in self.dataclass.Asset._assets:
             cov = 0.0
-            norm = float(len(self.tile_coverage)) if self.site is None else 1.0
+            norm = float(len(self.coverage)) if self.site is None else 1.0
             for t in self.tiles:
                 if a in self.tiles[t].assets:
-                    cov = cov + (self.tile_coverage[t][0] / norm)
+                    cov = cov + (self.coverage[t][0] / norm)
             asset_coverage[a] = cov * 100
         return asset_coverage
 
