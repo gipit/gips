@@ -132,35 +132,6 @@ def atmospheric_model(doy, lat):
     return model
 
 
-def _parse_date(dstring, last=False):
-    """ Parses string of YYYY or YYYY-MM or YYYY-MM-DD or YYYY-DOY and returns date object """
-    d = dstring.split('-')
-    if len(d) == 2 and len(d[1]) == 3:
-        dttmp = datetime.datetime(int(d[0]), 1, 1) + datetime.timedelta(days=int(d[1]) - 1)
-        d[1] = dttmp.month
-        d.append(dttmp.day)
-    if (not last):
-        if (len(d) == 1):
-            d.append('1')
-        if (len(d) == 2):
-            d.append('1')
-    else:
-        if (len(d) == 1):
-            d.append('12')
-        if (len(d) == 2):
-            d.append(calendar.monthrange(int(d[0]), int(d[1]))[1])
-    return datetime.date(int(d[0]), int(d[1]), int(d[2]))
-
-
-def parse_dates(dstring):
-    """ Parses string of 1 or 2 dates separated by a comma.  Valid formats: YYYY, YYYY-MM, YYYY-MM-DD, YYYY-DOY """
-    try:
-        (d1, d2) = dstring.replace(',', ' ').split()
-        return (_parse_date(d1), _parse_date(d2, True))
-    except:
-        return (_parse_date(dstring), _parse_date(dstring, True))
-
-
 def chunk_data(datasz, nchunks=100):
     """ Create chunks given input data size """
     if len(datasz) == 3:
@@ -218,5 +189,3 @@ def map_reduce(datasz, readfunc, func, nchunks=100, nproc=2):
 #classmap = shmarray.create_copy(classmap)
 #tmp = numpy.ctypeslib.as_ctypes(classmap)
 #cmap = sharedctypes.Array(tmp._type_, tmp, lock=False)
-
-
