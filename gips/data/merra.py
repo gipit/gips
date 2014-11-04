@@ -21,30 +21,13 @@
 #   along with this program. If not, see <http://www.gnu.org/licenses/>
 ################################################################################
 
-import sys
 import os
-import re
-import time
 import datetime
-import urllib
-from osgeo import gdal
-from collections import OrderedDict
-
-import math
-import numpy as np
-
 import gippy
-from gips.core import Repository, Asset, Data
+from gips.data.core import Repository, Asset, Data
 from gips.inventory import DataInventory
-from gips.utils import File2List, List2File, VerboseOut
+from gips.utils import VerboseOut, basename
 import gips.settings as settings
-
-
-def binmask(arr, bit):
-    """ Return boolean array indicating which elements as binary have a 1 in
-        a specified bit position. Input is Numpy array.
-    """
-    return arr & (1 << (bit-1)) == (1 << (bit-1))
 
 
 class MerraRepository(Repository):
@@ -69,14 +52,16 @@ class MerraAsset(Asset):
 
     _sensors = {
         # there is not a MERRA sensor. These are product groups
-        'MAT1NXSLV': {'description': 'MERRA IAU 2d atmospheric single-level diagnostics'},
-        'MST1NXMLD': {'description': 'MERRA-Land 2d land surface diagnostics'},
-        'MAI1NXINT': {'description': 'MERRA IAU 2d Vertical integrals'}
+        'MAT1NXSLV': {
+            'description': 'MERRA IAU 2d atmospheric single-level diagnostics'
+        },
+        'MST1NXMLD': {
+            'description': 'MERRA-Land 2d land surface diagnostics'
+        },
+        'MAI1NXINT': {
+            'description': 'MERRA IAU 2d Vertical integrals'
+        }
     }
-
-    # _asset_layers = {
-    #     'MAT1NXSLV': {}
-    # }
 
     _assets = {
         'TS': {
@@ -115,10 +100,6 @@ class MerraAsset(Asset):
         }
     }
 
-    # Not used anywhere
-    _launchdate = {
-    }
-
     # Should this be specified on a per asset basis?
     _defaultresolution = (0.666666666666667, -0.50)
 
@@ -126,13 +107,8 @@ class MerraAsset(Asset):
         """ Inspect a single file and get some metadata """
         super(MerraAsset, self).__init__(filename)
 
-        bname = os.path.basename(filename)
-        bname = os.path.splitext(bname)[0]
+        bname = basename(filename)
 
-        print
-        print "init"
-
-        print "bname", bname
         parts = bname.split('_')
         print "parts", parts
 
@@ -143,20 +119,7 @@ class MerraAsset(Asset):
         self.tile = parts[3]
         year = parts[4]
         doy = parts[5]
-
-        print "self.sensor, self.asset, self.tile, year, doy:", self.sensor, self.asset, self.tile, year, doy
-        print
-
-        self.date = datetime.datetime.strptime(year+doy, "%Y%j").date()
-
-        datafiles = self.datafiles()
-
-
-    def datafiles(self):
-        """ Get list of datafiles from asset (if archive file) """
-        datafiles = [self.filename]
-        return datafiles
-
+        self.date = datetime.datetime.strptime(year + doy, "%Y%j").date()
 
     # @classmethod
     # def _filepattern(cls, asset, tile, date):
@@ -181,90 +144,54 @@ class MerraAsset(Asset):
     #     print "mainurl", mainurl
     #     return mainurl
 
-
     @classmethod
     def fetch(cls, asset, tile, date):
+        url = cls._assets[asset].get('url', '')
+        if url == '':
+            raise Exception("%s: URL not defined for asset %s" % (cls.__name__, asset))
 
-        print date.date() 
-        print cls._assets[asset]['startdate']
-        print datetime.datetime.now() - datetime.timedelta(cls._assets[asset]['latency'])
-
-        if date.date() < cls._assets[asset]['startdate']:
-            print "date is too early"
-            return 3
-
-        if date > datetime.datetime.now() - datetime.timedelta(cls._assets[asset]['latency']):
-            print "date is too recent"
-            return 3
+        if not cls.available(asset, date):
+            raise Exception('Data not available for %s' % date)
 
         from pydap.client import open_url
         from agspy.utils import raster
 
         VerboseOut('%s: fetch tile %s for %s' % (asset, tile, date), 3)
 
-        outdir = cls.Repository.spath()
-
         tilesvector = cls.Repository.tiles_vector()
 
-        print "asset", asset
-        print "tile", tile
-        print "date", date
-        print "outdir", outdir
-
+        # Find the bounds of the tile requested
         for fid in tilesvector.get_fids():
             feature = tilesvector.get_feature(fid)
             if feature['tileid'] == tile:
                 break
-
         bounds = eval(feature['bounds'])
-        print "bounds", bounds
         x0 = bounds[0]
         y0 = bounds[1]
-
         y1 = bounds[3]
-
         RES = (0.666666666666667, 0.50)
         ORIG = (-180., -90.)
-
         dx = 12.0
         dy = 10.0
-
-        nx = int(round(dx/RES[0]))
-        ny = int(round(dy/RES[1]))
+        nx = int(round(dx / RES[0]))
+        ny = int(round(dy / RES[1]))
 
         # verify bounds
         h = int(tile[1:3])
         v = int(tile[4:6])
-
-        print h, v
-        x0_alt = ORIG[0] + dx*(h - 1)
-        y0_alt = ORIG[1] + dy*(18 - v)
-
-        print "x0, y0", x0, y0
-        print "x0_alt, y0_alt", x0_alt, y0_alt
+        x0_alt = ORIG[0] + dx * (h - 1)
+        y0_alt = ORIG[1] + dy * (18 - v)
         assert x0 == x0_alt
         assert y0 == y0_alt
-
-
-        ix0 = int(round((x0 - ORIG[0])/RES[0]))
-        iy0 = int(round((y0 - ORIG[1])/RES[1]))
+        ix0 = int(round((x0 - ORIG[0]) / RES[0]))
+        iy0 = int(round((y0 - ORIG[1]) / RES[1]))
         ix1 = ix0 + nx
         iy1 = iy0 + ny
 
-        print "x0, y0", x0, y0
-        print "nx, ny", nx, ny
-        print "ix0, iy0", ix0, iy0
-        print "ix1, iy1", ix1, iy1
-
-        url = cls._assets[asset]['url']
-
-        possible_vers = ['100','200','300','301']
-
         success = False
-        for ver in possible_vers:
-            source = cls._assets[asset]['source'] % (ver, date.year, date.month, date.day)
-            loc = "%s/%04d/%02d/%s" % (url, date.year, date.month, source)
-            print "loc", loc
+        for ver in ['100', '200', '300', '301']:
+            pattern = cls._assets[asset]['source'] % (ver, date.year, date.month, date.day)
+            loc = "%s/%04d/%02d/%s" % (url, date.year, date.month, pattern)
             try:
                 dataset = open_url(loc)
             except:
@@ -282,10 +209,11 @@ class MerraAsset(Asset):
         for i, key in enumerate(keys):
             x = dataset[key]
             if x.shape == (24, 361, 540):
-                names.append(key)        
+                names.append(key)
 
         assert asset in names, "asset name is not in SDS list"
 
+        # Save data to file
         data = dataset[asset][:, iy0:iy1, ix0:ix1].astype('float32')
         data = data[:,::-1,:]
 
@@ -298,8 +226,7 @@ class MerraAsset(Asset):
 
         description = cls._assets[asset]['description']
 
-        meta = {'ASSET':asset, 'TILE':tile, 'DATE':str(date.date()),
-            'DESCRIPTION':description, 'SOURCE':loc}
+        meta = {'ASSET': asset, 'TILE': tile, 'DATE': str(date.date()), 'DESCRIPTION': description, 'SOURCE': loc}
 
         names = ['%02d30GMT' % i for i in range(24)]
 
@@ -307,11 +234,10 @@ class MerraAsset(Asset):
 
         print "asset, tile, date.year, doy", asset, tile, date.year, doy
         outfilename = "MERRA_MAT1NXSLV_%s_%s_%4d_%s.tif" % (asset, tile, date.year, doy)
-        outpath = os.path.join(outdir, outfilename)
+        outpath = os.path.join(cls.Repository.spath(), outfilename)
 
         print "Writing to", outpath
         raster.write_raster(outpath, data, proj, geo, meta, bandnames=names)
-
 
 
 class MerraData(Data):
@@ -319,7 +245,7 @@ class MerraData(Data):
     name = 'Merra'
     version = '0.9.0'
     Asset = MerraAsset
-    _pattern = '*.tif' 
+
     _products = {
         'temp_modis': {
             'description': 'Air temperature data',
@@ -327,26 +253,23 @@ class MerraData(Data):
         },
         'daily_weather': {
             'description': 'Climate forcing data, e.g. for DNDC',
-            'assets': ['T2M', 'PRECTOT']        
+            'assets': ['T2M', 'PRECTOT']
         }
     }
-    
 
     def getlonlat(self):
         """ return the center coordinates of the MERRA tile """
         hcoord = int(self.id[1:3])
         vcoord = int(self.id[4:])
-        lon = -180. + (hcoord-1)*12. + 6.
-        lat = 90. - vcoord*10. - 5.
+        lon = -180. + (hcoord - 1) * 12. + 6.
+        lat = 90. - vcoord * 10. - 5.
         return lon, lat
-
 
     def gmtoffset(self):
         """ return the approximate difference between local time and GMT """
         lon = self.getlonlat()[0]
-        houroffset = lon*(12./180.)
+        houroffset = lon * (12. / 180.)
         return houroffset
-
 
     def process(self, products, **kwargs):
 
@@ -366,12 +289,12 @@ class MerraData(Data):
                 allsds = []
                 missingassets = []
                 availassets = []
-                assetids = []   
+                assetids = []
 
                 for asset in assets:
                     try:
                         sds = self.assets[asset].datafiles()
-                    except Exception,e:
+                    except Exception, e:
                         missingassets.append(asset)
                     else:
                         assetids.append(assets.index(asset))
