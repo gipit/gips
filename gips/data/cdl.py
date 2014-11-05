@@ -111,3 +111,7 @@ class CDLData(Data):
 
 def main():
     DataInventory.main(CDLData)
+
+
+def test():
+    CDLData.test()

@@ -170,3 +170,7 @@ class SARAnnualData(Data):
 
 def main():
     DataInventory.main(SARAnnualData)
+
+
+def test():
+    SARAnnualData.test()

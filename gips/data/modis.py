@@ -586,3 +586,7 @@ class ModisData(Data):
 
 def main():
     DataInventory.main(ModisData)
+
+
+def test():
+    ModisData.test()

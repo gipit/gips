@@ -425,3 +425,7 @@ class MerraData(Data):
 
 def main():
     DataInventory.main(MerraData)
+
+
+def test():
+    MerraData.test()

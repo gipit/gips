@@ -314,3 +314,7 @@ class SARData(Data):
 
 def main():
     DataInventory.main(SARData)
+
+
+def test():
+    SARData.test()

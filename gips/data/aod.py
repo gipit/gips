@@ -302,3 +302,7 @@ class AODData(Data):
 
 def main():
     DataInventory.main(AODData)
+
+
+def test():
+    AODData.test()
