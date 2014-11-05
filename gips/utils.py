@@ -25,9 +25,12 @@ import os
 import errno
 import gippy
 import datetime
-import calendar
 import multiprocessing
 import numpy
+import tempfile
+import commands
+import shutil
+from gips.GeoVector import GeoVector
 
 
 class Colors():
@@ -176,6 +179,62 @@ def map_reduce(datasz, readfunc, func, nchunks=100, nproc=2):
     for i, ch in enumerate(chunks):
         dataout[ch[1]:ch[1] + ch[3], ch[0]:ch[0] + ch[2]] = dataparts[i]
     return dataout
+
+
+def crop2vector(img, vector):
+    """ Crop a GeoImage down to a vector - only used by mosaic """
+    # TODO - incorporate into GIPPY?
+    start = datetime.now()
+    # transform vector to srs of image
+    srs = img.Projection()
+    vec_t = vector.transform(srs)
+    vecname = vec_t.filename
+    # rasterize the vector
+    td = tempfile.mkdtemp()
+    mask = gippy.GeoImage(os.path.join(td, vector.layer.GetName()), img, gippy.GDT_Byte, 1)
+    maskname = mask.Filename()
+    mask = None
+    cmd = 'gdal_rasterize -at -burn 1 -l %s %s %s' % (vec_t.layer.GetName(), vecname, maskname)
+    result = commands.getstatusoutput(cmd)
+    VerboseOut('%s: %s' % (cmd, result), 4)
+    mask = gippy.GeoImage(maskname)
+    img.AddMask(mask[0]).Process().ClearMasks()
+    vec_t = None
+    mask = None
+    shutil.rmtree(os.path.dirname(maskname))
+    shutil.rmtree(os.path.dirname(vecname))
+    VerboseOut('Cropped to vector in %s' % (datetime.now() - start), 3)
+    return img
+
+
+def mosaic(infiles, outfile, vectorfile):
+    """ Mosaic multiple files together, but do not warp """
+    img = gippy.GeoImage(infiles[0])
+    nd = img[0].NoDataValue()
+    srs = img.Projection()
+    for f in range(1, len(infiles)):
+        _img = gippy.GeoImage(infiles[f])
+        if _img.Projection() != srs:
+            raise Exception("Input files have non-matching projections and must be warped")
+        _img = None
+    # transform vector to image projection
+    vector = GeoVector(vectorfile)
+    vsrs = vector.proj()
+    from gips.GeoVector import transform_shape
+    geom = transform_shape(vector.union(), vsrs, srs)
+    extent = geom.bounds
+    ullr = "%f %f %f %f" % (extent[0], extent[3], extent[2], extent[1])
+
+    # run merge command
+    nodatastr = '-n %s -a_nodata %s -init %s' % (nd, nd, nd)
+    cmd = 'gdal_merge.py -o %s -ul_lr %s %s %s' % (outfile, ullr, nodatastr, " ".join(infiles))
+    result = commands.getstatusoutput(cmd)
+    VerboseOut('%s: %s' % (cmd, result), 4)
+    imgout = gippy.GeoImage(outfile, True)
+    for b in range(0, img.NumBands()):
+        imgout[b].CopyMeta(img[b])
+    img = None
+    return crop2vector(imgout, vector)
 
 
 # old code utilizing shared memory array
