@@ -28,22 +28,52 @@ from gips.utils import Colors
 from gips.GeoVector import GeoVector
 
 
+class DataNotFoundException(Exception):
+    """ Error thrown when data is not found """
+    pass
+
+
+class Products(object):
+    """ Collection of product names and options """
+    # TODO - move Products to dataclass specific class in data.core?
+    def __init__(self, dataclass, products=None):
+        """ Create product object """
+        products = products if products is not None else dataclass._products.keys()
+        self.products = {p: p.split('-') for p in products}
+        self.standard = {}
+        self.composite = {}
+        for p, val in self.products.items():
+            if val[0] not in dataclass._products:
+                raise Exception('Invalid product %s' % val[0])
+            if dataclass._products[val[0]].get('composite', False):
+                self.composite[p] = val
+            else:
+                self.standard[p] = val
+
+    @property
+    def requested(self):
+        """ Return list of requested products """
+        return [val[0] for val in self.products.values()]
+
+    def __str__(self):
+        return ' '.join(self.products.keys())
+
+
 class SpatialExtent(object):
     """ Description of spatial extent """
 
     def __init__(self, dataclass, site=None, tiles=None, pcov=0.0, ptile=0.0):
         """ Create spatial extent object """
-        repo = dataclass.Asset.Repository
-        self.dataclass = dataclass
+        self.repo = dataclass.Asset.Repository
 
         # Spatial extent
         if tiles is None and site is None:
-            tiles = repo.find_tiles()
+            tiles = self.repo.find_tiles()
         if tiles is not None:
             # if tiles only provided, coverage of each is 100%
             tiles = {t: (1, 1) for t in tiles}
         elif tiles is None and site is not None:
-            tiles = repo.vector2tiles(GeoVector(site), pcov, ptile)
+            tiles = self.repo.vector2tiles(GeoVector(site), pcov, ptile)
 
         self.site = site
         self.coverage = tiles
@@ -52,6 +82,14 @@ class SpatialExtent(object):
     def tiles(self):
         return self.coverage.keys()
 
+    @property
+    def available_dates(self):
+        """ Get list of all dates for these tiles """
+        dates = []
+        for t in self.tiles:
+            dates.extend(self.repo.find_dates(t))
+        return dates
+
     def print_tile_coverage(self):
         """ Print tile coverage info """
         if self.site is not None:
@@ -59,6 +97,12 @@ class SpatialExtent(object):
             print Colors.UNDER + '{:^8}{:>14}{:>14}'.format('Tile', '% Coverage', '% Tile Used') + Colors.OFF
             for t in sorted(self.coverage):
                 print "{:>8}{:>11.1f}%{:>11.1f}%".format(t, self.coverage[t][0] * 100, self.coverage[t][1] * 100)
+
+    def __str__(self):
+        return '%s: %s' % (self.site, ' '.join(self.tiles))
+
+    def __len__(self):
+        return len(self.coverage)
 
 
 class TemporalExtent(object):
@@ -78,14 +122,17 @@ class TemporalExtent(object):
             dates = (self._parse_date(d1), self._parse_date(d2, True))
         except:
             dates = (self._parse_date(dates), self._parse_date(dates, True))
-        self.dates = dates
-        self.days = days
+        self.datebounds = dates
+        self.daybounds = days
+        self.datearray = []
         #self.dates = [d for t in tiles for d in repo.find_dates(t) if datecheck(d) and daycheck(d)]
 
     def prune_dates(self, dates):
-        datecheck = lambda d: self.dates[0] <= d <= self.dates[1]
-        daycheck = lambda d: self.days[0] <= int(d.strftime('%j')) <= self.days[1]
-        return [d for d in dates if datecheck(d) and daycheck(d)]
+        """ Prune down given list of dates to those that meet temporal extent """
+        dates = list(set(dates))
+        datecheck = lambda d: self.datebounds[0] <= d <= self.datebounds[1]
+        daycheck = lambda d: self.daybounds[0] <= int(d.strftime('%j')) <= self.daybounds[1]
+        return sorted([d for d in dates if datecheck(d) and daycheck(d)])
 
     @classmethod
     def _parse_date(cls, dstring, last=False):
@@ -106,3 +153,6 @@ class TemporalExtent(object):
             if (len(d) == 2):
                 d.append(calendar.monthrange(int(d[0]), int(d[1]))[1])
         return datetime.date(int(d[0]), int(d[1]), int(d[2]))
+
+    def __str__(self):
+        return '%s - %s (days %s-%s)' % (self.datebounds[0], self.datebounds[1], self.daybounds[0], self.daybounds[1])
