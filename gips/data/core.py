@@ -34,7 +34,7 @@ import ftplib
 
 import gippy
 import gips
-from gips.core import SpatialExtent, TemporalExtent
+from gips.core import DataNotFoundException
 from gips.tiles import Files
 from gips.utils import VerboseOut, RemoveFiles, File2List, List2File, Colors
 from gips.inventory import DataInventory
@@ -83,7 +83,7 @@ class Repository(object):
         """ Get list of dates available in repository for a tile """
         tdir = cls.path(tile=tile)
         if os.path.exists(tdir):
-            return [datetime.strptime(os.path.basename(d), cls._datedir).date() for d in os.listdir(tdir)]
+            return sorted([datetime.strptime(os.path.basename(d), cls._datedir).date() for d in os.listdir(tdir)])
         else:
             return []
 
@@ -472,7 +472,6 @@ class Data(Files):
     ##########################################################################
     def __init__(self, tile, date):
         """ Find all data and assets for this tile and date """
-        self.path = self.Repository.path(tile, date)
         self.id = tile
         self.date = date
         self.assets = {}                # dict of asset name: Asset instance
@@ -482,24 +481,14 @@ class Data(Files):
         for asset in self.Asset.discover(tile, date):
             self.assets[asset.asset] = asset
             # products that come automatically with assets
-            self.update(asset.products)
+            self.filenames.update({(asset.sensor, p): val for p, val in asset.products.items()})
             self.sensors[asset.asset] = asset.sensor
-        self.basename = self.id + '_' + self.date.strftime(self.Repository._datedir)
 
-        # This will be a single date
-        self.update(Files.discover(self.path)[0])
-
-        # find all products
-        """
-        for sensor in self.Asset._sensors:
-            for p in self._products:
-                files = glob.glob(os.path.join(self.path, self.basename + '_' + sensor + '_' + p + self._pattern))
-                for f in files:
-                    if os.path.splitext(f)[1] not in ['.hdr', '.xml', 'gz', '.index']:
-                        self.filenames[(sensor, p)] = f
-        """
         if len(self.assets) == 0:
-            raise Exception('no assets')
+            raise DataNotFoundException('%s: No assets or products for %s on %s' % (self.name, tile, date))
+
+        self.basename = self.id + '_' + self.date.strftime(self.Repository._datedir)
+        self.AddFiles(glob.glob(os.path.join(self.Repository.path(tile, date), self._pattern)))
 
     @property
     def Repository(self):

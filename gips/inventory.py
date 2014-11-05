@@ -31,9 +31,9 @@ import numpy
 from copy import deepcopy
 
 import gippy
+from gips.core import SpatialExtent, TemporalExtent, Products
 from gips.tiles import Files, Tiles
-from gips.utils import VerboseOut, parse_dates, Colors, basename
-from gips.GeoVector import GeoVector
+from gips.utils import VerboseOut, Colors, basename
 from gips.version import __version__
 
 
@@ -71,7 +71,7 @@ class Inventory(object):
     @property
     def numfiles(self):
         """ Total number of files in inventory """
-        return sum([d.numfiles for d in self.data.values()])
+        return sum([len(dat) for dat in self.data.values()])
 
     @property
     def datestr(self):
@@ -82,6 +82,7 @@ class Inventory(object):
         return self._colors[list(self.sensor_set).index(sensor)]
 
     def pprint(self, md=False, compact=False):
+        print self.spatial.print_tile_coverage()
         print self.data[self.data.keys()[0]].pprint_header()
         dformat = '%m-%d' if md else '%j'
         oldyear = 0
@@ -193,7 +194,8 @@ class ProjectInventory(Inventory):
 class DataInventory(Inventory):
     """ Manager class for data inventories (collection of Tiles class) """
 
-    def __init__(self, dataclass, site=None, tiles=None, dates=None, days=None, products=None, fetch=False, **kwargs):
+    def __init__(self, dataclass, site=None, tiles=None, dates=None, days=None,
+                 products=None, fetch=False, pcov=0.0, ptile=0.0, **kwargs):
         """ Create a new inventory
         :dataclass: The Data class to use (e.g., LandsatData, ModisData)
         :site: The site shapefile
@@ -204,71 +206,29 @@ class DataInventory(Inventory):
         :fetch: bool indicated if missing data should be downloaded
         """
         self.dataclass = dataclass
-        self.site = site
         Repository = dataclass.Asset.Repository
 
-        self.data = Tiles.discover(dataclass, site, tiles, dates, days, products, fetch, **kwargs)
+        self.spatial = SpatialExtent(dataclass, site, tiles, pcov, ptile)
+        self.temporal = TemporalExtent(dates, days)
+        self.products = Products(dataclass, products)
 
-        self.site = site
-
-
-        # default to all tiles
-        if tiles is None and self.site is None:
-            tiles = Repository.find_tiles()
-        # if tiles provided, make coverage all 100%
-        if tiles is not None:
-            self.tiles = {}
-            for t in tiles:
-                self.tiles[t] = (1, 1)
-        elif tiles is None and self.site is not None:
-            self.tiles = Repository.vector2tiles(GeoVector(self.site), **kwargs)
-        self._temporal_extent(dates, days)
-        self.data = {}
-
-        if products is None:
-            products = dataclass._products.keys()
-        prod_dict = dict([p, p.split('-')] for p in products)
-
-        # seperate out standard (each tile processed) and composite products (using inventory)
-        self.standard_products = {}
-        self.composite_products = {}
-        for p, val in prod_dict.items():
-            if val[0] not in self.dataclass._products:
-                raise Exception('Invalid product %s' % val[0])
-            if self.dataclass._products[val[0]].get('composite', False):
-                self.composite_products[p] = val
-            else:
-                self.standard_products[p] = val
         if fetch:
-            products = [val[0] for val in prod_dict.values()]
             try:
-                dataclass.fetch(products, self.tiles, (self.start_date, self.end_date), (self.start_day, self.end_day))
-            except:
-                VerboseOut(traceback.format_exc(), 3)
+                dataclass.fetch(self.products.requested, self.spatial.tiles, self.temporal.dates, self.temporal.days)
+            except Exception:
+                raise Exception('DataInventory: Error downloading')
             dataclass.Asset.archive(Repository.spath())
 
-        # get all potential matching dates for tiles
-        dates = []
-        for t in self.tiles:
-
+        self.data = {}
+        for date in self.temporal.prune_dates(self.spatial.available_dates):
             try:
-                for date in Repository.find_dates(t):
-                    day = int(date.strftime('%j'))
-                    if (self.start_date <= date <= self.end_date) and (self.start_day <= day <= self.end_day):
-                        if date not in dates:
-                            dates.append(date)
-            except:
-                VerboseOut(traceback.format_exc(), 3)
-
-        for date in sorted(dates):
-            try:
-                dat = Tiles(dataclass=dataclass, site=self.site, tiles=self.tiles,
-                            date=date, products=self.standard_products, **kwargs)
+                dat = Tiles(dataclass, self.spatial, date, self.products, **kwargs)
                 self.data[date] = dat
             except Exception:
-                pass
-                #VerboseOut(traceback.format_exc(), 3)
-        if len(dates) == 0:
+                # No tiles for this date!
+                raise Exception('DataInventory: Error accessing tiles in %s repository' % dataclass.name)
+
+        if len(self.data) == 0:
             raise Exception("No matching files in inventory!")
 
     @property
@@ -330,23 +290,14 @@ class DataInventory(Inventory):
 
     def pprint(self, **kwargs):
         """ Print inventory """
-        self.print_tile_coverage()
         print
-        if self.site is not None:
-            print Colors.BOLD + 'Asset Coverage for site %s' % basename(self.site) + Colors.OFF
+        if self.spatial.site is not None:
+            print Colors.BOLD + 'Asset Coverage for site %s' % basename(self.spatial.site) + Colors.OFF
         else:
             print Colors.BOLD + 'Asset Holdings' + Colors.OFF
         # Header
         #datestr = ' Month/Day' if md else ' Day of Year'
         super(DataInventory, self).pprint(**kwargs)
-
-    def print_tile_coverage(self):
-        """ Print tile coverage info """
-        if self.site is not None:
-            print Colors.BOLD + '\nTile Coverage'
-            print Colors.UNDER + '{:^8}{:>14}{:>14}'.format('Tile', '% Coverage', '% Tile Used') + Colors.OFF
-            for t in sorted(self.tiles):
-                print "{:>8}{:>11.1f}%{:>11.1f}%".format(t, self.tiles[t][0] * 100, self.tiles[t][1] * 100)
 
     @staticmethod
     def main(cls):
@@ -407,7 +358,7 @@ class DataInventory(Inventory):
 
         args = parser0.parse_args()
 
-        VerboseOut(Colors.BOLD + 'GIPS %s command line utility v%s' % (cls.name, __version__) + Colors.OFF, 1)
+        VerboseOut(Colors.BOLD + 'GIPS %s utility v%s' % (cls.name, __version__) + Colors.OFF, 1)
 
         if args.command == 'products':
             cls.print_products()
