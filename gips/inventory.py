@@ -23,7 +23,6 @@
 
 import sys
 import os
-import glob
 import argparse
 from datetime import datetime as dt
 import traceback
@@ -31,10 +30,10 @@ import numpy
 from copy import deepcopy
 
 import gippy
-from gips.core import SpatialExtent, TemporalExtent, Products
-from gips.tiles import Files, Tiles
+from gips import __version__, SpatialExtent, TemporalExtent, Products
+from gips.tiles import Tiles
 from gips.utils import VerboseOut, Colors, basename
-from gips.version import __version__
+from gips.data.core import Data
 
 
 class Inventory(object):
@@ -82,7 +81,6 @@ class Inventory(object):
         return self._colors[list(self.sensor_set).index(sensor)]
 
     def pprint(self, md=False, compact=False):
-        print self.spatial.print_tile_coverage()
         print self.data[self.data.keys()[0]].pprint_header()
         dformat = '%m-%d' if md else '%j'
         oldyear = 0
@@ -115,7 +113,7 @@ class Inventory(object):
 
 
 class ProjectInventory(Inventory):
-    """ Inventory of project directory (collection of Files class) """
+    """ Inventory of project directory (collection of Data class) """
 
     def __init__(self, projdir='', products=[]):
         """ Create inventory of a GIPS project directory """
@@ -123,32 +121,27 @@ class ProjectInventory(Inventory):
         if not os.path.exists(self.projdir):
             raise Exception('Directory %s does not exist!' % self.projdir)
 
-        self.products = {}
-        files = glob.glob(os.path.join(self.projdir, '*.tif'))
+        self.data = {}
         product_set = set()
         sensor_set = set()
         try:
-            for dat in Files.discover(files):
-                self.products[dat.date] = dat
+            for dat in Data.discover(self.projdir):
+                self.data[dat.date] = dat
+                # All products and sensors used across all dates
                 product_set = product_set.union(dat.product_set)
                 sensor_set = sensor_set.union(dat.sensor_set)
 
             if not products:
-                products = product_set
+                products = list(product_set)
             self.requested_products = products
             self.sensors = sensor_set
         except:
             VerboseOut(traceback.format_exc(), 4)
             raise Exception("%s does not appear to be a GIPS project directory" % self.projdir)
 
-    @property
-    def data(self):
-        """ alias used by base class to self.products """
-        return self.products
-
-    def product_list(self, date):
-        """ Intersection of available products for this date and requested products """
-        return self.products[date].products.intersection(self.requested_products)
+    #def product_list(self, date):
+    #    """ Intersection of available products for this date and requested products """
+    #    return self.data[date].products.intersection(self.requested_products)
 
     def new_image(self, filename, dtype=gippy.GDT_Byte, numbands=1, nodata=None):
         """ Create new image with the same template as the files in project """
@@ -208,13 +201,16 @@ class DataInventory(Inventory):
         self.dataclass = dataclass
         Repository = dataclass.Asset.Repository
 
-        self.spatial = SpatialExtent(dataclass, site, tiles, pcov, ptile)
-        self.temporal = TemporalExtent(dates, days)
-        self.products = Products(dataclass, products)
+        try:
+            self.spatial = SpatialExtent(dataclass, site, tiles, pcov, ptile)
+            self.temporal = TemporalExtent(dates, days)
+            self.products = Products(dataclass, products)
+        except Exception, e:
+            raise Exception('Illformed parameters: %s' % e)
 
         if fetch:
             try:
-                dataclass.fetch(self.products.requested, self.spatial.tiles, self.temporal.dates, self.temporal.days)
+                dataclass.fetch(self.products.products, self.spatial.tiles, self.temporal.dates, self.temporal.days)
             except Exception:
                 raise Exception('DataInventory: Error downloading')
             dataclass.Asset.archive(Repository.spath())
@@ -224,8 +220,11 @@ class DataInventory(Inventory):
             try:
                 dat = Tiles(dataclass, self.spatial, date, self.products, **kwargs)
                 self.data[date] = dat
-            except Exception:
+            except Exception, e:
                 # No tiles for this date!
+                print traceback.format_exc()
+                import pdb
+                pdb.set_trace()
                 raise Exception('DataInventory: Error accessing tiles in %s repository' % dataclass.name)
 
         if len(self.data) == 0:
@@ -237,12 +236,12 @@ class DataInventory(Inventory):
 
     def process(self, **kwargs):
         """ Process data in inventory """
-        if len(self.standard_products) + len(self.composite_products) == 0:
+        if len(self.products.standard) + len(self.products.composite) == 0:
             raise Exception('No products specified!')
         sz = self.numfiles
-        if len(self.standard_products) > 0:
+        if len(self.products.standard) > 0:
             start = dt.now()
-            VerboseOut('Processing %s files: %s' % (sz, ' '.join(self.standard_products)), 1)
+            VerboseOut('Processing %s files: %s' % (sz, ' '.join(self.products.standard)), 1)
             for date in self.dates:
                 try:
                     self.data[date].process(**kwargs)
@@ -250,10 +249,10 @@ class DataInventory(Inventory):
                     VerboseOut(traceback.format_exc(), 3)
                     pass
             VerboseOut('Completed processing in %s' % (dt.now() - start), 1)
-        if len(self.composite_products) > 0:
+        if len(self.products.composite) > 0:
             start = dt.now()
-            VerboseOut('Processing %s files into composites: %s' % (sz, ' '.join(self.composite_products)), 1)
-            self.dataclass.process_composites(self, self.composite_products, **kwargs)
+            VerboseOut('Processing %s files into composites: %s' % (sz, ' '.join(self.products.composite)), 1)
+            self.dataclass.process_composites(self, self.products.composite, **kwargs)
             VerboseOut('Completed processing in %s' % (dt.now() - start), 1)
 
     def project(self, datadir=None, suffix='', res=None, nomosaic=False, **kwargs):
@@ -261,7 +260,7 @@ class DataInventory(Inventory):
         self.process(**kwargs)
         start = dt.now()
 
-        sitename = 'tiles' if self.site is None else basename(self.site)
+        sitename = 'tiles' if self.spatial.site is None else basename(self.spatial.site)
         if res is None:
             # TODO - determined as min of all Assets
             res = self.dataclass.Asset._defaultresolution
@@ -274,25 +273,28 @@ class DataInventory(Inventory):
             else:
                 resstr = '%sx%s' % (res[0], res[1])
             datadir = '%s_%s_%s%s' % (sitename, resstr, self.dataclass.name, suffix)
-        if self.site is None or nomosaic:
+        if self.spatial.site is None or nomosaic:
             datadir = os.path.join(datadir, "TILEID")
 
         VerboseOut('Creating GIPS project %s' % datadir)
         VerboseOut('  Dates: %s' % self.datestr)
-        VerboseOut('  Products: %s' % ' '.join(self.standard_products))
+        VerboseOut('  Products: %s' % ' '.join(self.products.standard))
 
         [self.data[d].project(datadir=datadir, res=res, nomosaic=nomosaic, **kwargs) for d in self.dates]
 
         VerboseOut('Completed GIPS project in %s' % (dt.now() - start))
-        if not nomosaic and self.site is not None:
+        if not nomosaic and self.spatial.site is not None:
             inv = ProjectInventory(datadir)
             inv.pprint()
+            return inv
 
     def pprint(self, **kwargs):
         """ Print inventory """
         print
         if self.spatial.site is not None:
             print Colors.BOLD + 'Asset Coverage for site %s' % basename(self.spatial.site) + Colors.OFF
+            self.spatial.print_tile_coverage()
+            print
         else:
             print Colors.BOLD + 'Asset Holdings' + Colors.OFF
         # Header

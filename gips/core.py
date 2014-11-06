@@ -24,13 +24,8 @@
 import datetime
 import calendar
 
+from gips import GeoVector
 from gips.utils import Colors
-from gips.GeoVector import GeoVector
-
-
-class DataNotFoundException(Exception):
-    """ Error thrown when data is not found """
-    pass
 
 
 class Products(object):
@@ -39,10 +34,10 @@ class Products(object):
     def __init__(self, dataclass, products=None):
         """ Create product object """
         products = products if products is not None else dataclass._products.keys()
-        self.products = {p: p.split('-') for p in products}
+        self.requested = {p: p.split('-') for p in products}
         self.standard = {}
         self.composite = {}
-        for p, val in self.products.items():
+        for p, val in self.requested.items():
             if val[0] not in dataclass._products:
                 raise Exception('Invalid product %s' % val[0])
             if dataclass._products[val[0]].get('composite', False):
@@ -51,12 +46,17 @@ class Products(object):
                 self.standard[p] = val
 
     @property
-    def requested(self):
+    def products(self):
         """ Return list of requested products """
-        return [val[0] for val in self.products.values()]
+        return sorted(self.requested.keys())
+
+    @property
+    def base(self):
+        """ Return base product name (e.g., ndvi vs ndvi-test or ndvi-toa) """
+        return [val[0] for val in self.requested.values()]
 
     def __str__(self):
-        return ' '.join(self.products.keys())
+        return ' '.join(self.products)
 
 
 class SpatialExtent(object):

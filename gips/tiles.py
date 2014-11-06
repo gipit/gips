@@ -25,153 +25,11 @@ import sys
 import os
 from datetime import datetime
 import traceback
-from glob import glob
-from itertools import groupby
 
 import gippy
-from gips.core import SpatialExtent, TemporalExtent, Products, DataNotFoundException
-from gips.utils import VerboseOut, Colors, basename, mosaic
-
-
-class Files(object):
-    """ Collection of geospatial imagery files for single date and spatial region """
-
-    def __init__(self, filenames=None):
-        """ filenames naming convention: 'date_sensor_product' or 'tileid_date_sensor_product' """
-        self.filenames = {}
-        self.sensors = {}
-        self.date = None
-        self.AddFiles(filenames)
-
-    def __getitem__(self, key):
-        """ Get filename for product key """
-        if type(key) == tuple:
-            return self.filenames[key]
-        else:
-            return self.filenames[(self.sensor_set[0], key)]
-
-    def __str__(self):
-        """ Text representation """
-        return '%s: %s' % (self.date, ' '.join(self.product_set))
-
-    @property
-    def doy(self):
-        return self.date.strftime('%j')
-
-    @property
-    def numfiles(self):
-        return len(self.filenames)
-
-    @property
-    def path(self):
-        """ Get path to where files are stored (assuming same path for all) """
-        # TODO - is same path for all a safe assumption?
-        return os.path.abspath(self.filenames.values()[0])
-
-    @property
-    def sensor_set(self):
-        """ Return list of sensors used """
-        return list(set(sorted(self.sensors.values())))
-
-    @property
-    def products(self):
-        """ Get list of products """
-        return sorted([k[1] for k in self.filenames.keys()])
-
-    @property
-    def product_set(self):
-        """ Return list of products available """
-        return list(set(self.products))
-
-    def AddFiles(self, filenames):
-        """ Add filenames to existing filenames """
-        for f in filenames:
-            bname = basename(f)
-            parts = bname.split('_')
-            if len(parts) < 3 or len(parts) > 4:
-                raise Exception('%s does not follow naming convention' % f)
-            offset = 1 if len(parts) == 4 else 0
-            if self.date is None:
-                self.date = datetime.strptime(parts[0 + offset], '%Y%j').date()
-            else:
-                date = datetime.strptime(parts[0 + offset], '%Y%j').date()
-                if date != self.date:
-                    raise Exception('Mismatched dates: %s' % ' '.join(filenames))
-            sensor = parts[1 + offset]
-            product = parts[2 + offset]
-            self.filenames[(sensor, product)] = f
-            # TODO - currently assumes single sensor for each product
-            self.sensors[product] = sensor
-
-    def update(self, files):
-        """ Merge files dictionary into this instance """
-        if files.numfiles > 0:
-            self.AddFiles(files.filenames)
-
-    def open(self, product, sensor=None, update=False):
-        """ Open and return a GeoImage """
-        if sensor is None:
-            sensor = self.sensors[product]
-        fname = self.filenames[(sensor, product)]
-        if os.path.exists(fname):
-            return gippy.GeoImage(fname)
-        else:
-            raise Exception('%s_%s product does not exist' % (sensor, product))
-
-    # TODO - make general product_filter function
-    def masks(self, patterns=None):
-        """ List all products that are masks """
-        if not patterns:
-            patterns = ['acca', 'fmask', 'mask']
-        m = []
-        for p in self.products:
-            if any(pattern in p for pattern in patterns):
-                m.append(p)
-        return m
-
-    def pprint_header(self):
-        """ Print product inventory header """
-        return Colors.BOLD + Colors.UNDER + '{:^12}'.format('DATE') + '{:^10}'.format('Products') + Colors.OFF
-
-    def pprint(self, dformat='%j', colors=None):
-        """ Print product inventory for this date """
-        sys.stdout.write('{:^12}'.format(self.date.strftime(dformat)))
-        if colors is None:
-            sys.stdout.write('  '.join(sorted(self.products)))
-        else:
-            for p in sorted(self.products):
-                sys.stdout.write(colors[self.sensors[p]] + p + Colors.OFF + '  ')
-        sys.stdout.write('\n')
-
-    """
-    @classmethod
-    def discover(cls, _files):
-        # Factory function returns instance for every date in 'files' (filenames or directory)
-        if not isinstance(_files, list) and os.path.isdir(os.path.abspath(_files)):
-            _files = glob(os.path.join(_files, '*.tif'))
-
-        # Check files for 3 or 4 parts and a valid date
-        files = []
-        for f in _files:
-            parts = basename(f).split('_')
-            if len(parts) == 3 or len(parts) == 4:
-                try:
-                    datetime.strptime(parts[len(parts) - 3], '%Y%j')
-                except:
-                    continue
-                files.append(f)
-
-        if len(files) == 0:
-            raise DataNotFoundException('Files: No valid files given')
-
-        # files will have 3 or 4 parts, so sind is 0 or 1
-        sind = len(basename(files[0]).split('_')) - 3
-        instances = []
-        func = lambda x: datetime.strptime(basename(x).split('_')[sind], '%Y%j').date()
-        for date, fnames in groupby(sorted(files), func):
-            instances.append(cls(list(fnames)))
-        return instances
-    """
+from gips import SpatialExtent, Products
+from gips.exceptions import DataNotFoundException
+from gips.utils import VerboseOut, Colors, mosaic
 
 
 class Tiles(object):
@@ -188,7 +46,6 @@ class Tiles(object):
         self.products = products if products is not None else Products(dataclass)
 
         # For each tile locate files/products
-        VerboseOut('%s: searching %s tiles for products and assets' % (self.date, len(self.spatial)), 4)
         self.tiles = {}
         for t in self.spatial.tiles:
             try:
@@ -198,30 +55,15 @@ class Tiles(object):
                 if good:  # and tile.sensor in sensors:
                     self.tiles[t] = tile
             except DataNotFoundException:   # don't have data for this tile/date
+                #VerboseOut(traceback.format_exc(), 5)
                 pass
             except Exception, e:            # re-raise all other exceptions
+                print traceback.format_exc()
                 raise Exception(e)
 
         if len(self.tiles) == 0:
             raise DataNotFoundException('No tiles found for %s ' % date)
-
-    @classmethod
-    def discover(cls, dataclass, spatial=None, temporal=None, products=None, **kwargs):
-        """ Factory function, create tile class for each date for this dataclass """
-
-        temporal = temporal if temporal is not None else TemporalExtent()
-        instances = {}
-        for date in temporal.prune_dates(spatial.available_dates):
-            try:
-                instances[date] = cls(dataclass, spatial, date, products, **kwargs)
-            except:
-                # No tiles for this date!
-                VerboseOut('No tiles for %s' % date)
-                raise Exception('No tiles for %s' % date)
-                #VerboseOut(traceback.format_exc(), 5)
-                continue
-
-        return instances
+        #VerboseOut('%s: found %s tiles' % (self.date, len(self.tiles)), 4)
 
     def __len__(self):
         return len(self.tiles)
@@ -247,7 +89,7 @@ class Tiles(object):
         """ Determines what products need to be processed for each tile and calls Data.process """
         for tileid, tile in self.tiles.items():
             toprocess = {}
-            for pname, args in self.requested_products.items():
+            for pname, args in self.products.requested.items():
                 if pname not in tile.products or overwrite:
                     toprocess[pname] = args
             if len(toprocess) != 0:
@@ -259,7 +101,7 @@ class Tiles(object):
         start = datetime.now()
         bname = self.date.strftime('%Y%j')
 
-        if self.site is None:
+        if self.spatial.site is None:
             nomosaic = True
             nowarp = True
         if not hasattr(res, "__len__"):
@@ -272,7 +114,7 @@ class Tiles(object):
                 tiledir = datadir.replace('TILEID', t)
                 if not os.path.exists(tiledir):
                     os.makedirs(tiledir)
-                for p in self.requested_products:
+                for p in self.products.products:
                     sensor = self.which_sensor(p)
                     filename = self.tiles[t].products[p]
                     fout = os.path.join(tiledir, t + '_' + bname + ('_%s_%s.tif' % (sensor, p)))
@@ -283,7 +125,7 @@ class Tiles(object):
                                 gippy.GeoImage(filename).Process(fout)
                             else:
                                 # Warp each tile
-                                gippy.CookieCutter([filename], fout, self.site, res[0], res[1], crop)
+                                gippy.CookieCutter([filename], fout, self.spatial.site, res[0], res[1], crop)
                         except Exception:
                             VerboseOut("Problem creating %s" % fout, 2)
                             VerboseOut(traceback.format_exc(), 3)
@@ -291,17 +133,17 @@ class Tiles(object):
             # Shapefile project
             if not os.path.exists(datadir):
                 os.makedirs(datadir)
-            for product in self.requested_products:
+            for product in self.products.products:
                 sensor = self.which_sensor(product)
                 fout = os.path.join(datadir, bname + ('_%s_%s.tif' % (sensor, product)))
                 if not os.path.exists(fout):
                     try:
-                        filenames = [self.tiles[t].products[product] for t in self.tiles]
+                        filenames = [self.tiles[t].filenames[(sensor, product)] for t in self.tiles]
                         # TODO - cookiecutter should validate pixels in image.  Throw exception if not
                         if nowarp:
-                            mosaic(filenames, fout, self.site)
+                            mosaic(filenames, fout, self.spatial.site)
                         else:
-                            gippy.CookieCutter(filenames, fout, self.site, res[0], res[1], crop)
+                            gippy.CookieCutter(filenames, fout, self.spatial.site, res[0], res[1], crop)
                     except:
                         VerboseOut("Problem projecting %s" % fout, 2)
                         VerboseOut(traceback.format_exc(), 3)
@@ -329,9 +171,20 @@ class Tiles(object):
 
     def product_coverage(self):
         """ Calculated % coverage of site for each product """
-        pass
-        #asset_coverage = self.asset_coverage()
-        # loop through products and calculate overlap % for assets
+        coverage = {}
+        for p in self.products.base:
+            assets = self.dataclass.products2assets([p])
+            norm = float(len(self.coverage)) if self.spatial.site is None else 1.0
+            cov = 0.0
+            for t in self.tiles:
+                allassets = True
+                for a in assets:
+                    if a not in self.tiles[t].assets:
+                        allassets = False
+                if allassets:
+                    cov = cov + (self.spatial.coverage[t][0] / norm)
+            coverage[p] = cov * 100
+        return coverage
 
     def pprint(self, dformat='%j', colors=None):
         """ Print coverage for each and every asset """
@@ -350,14 +203,11 @@ class Tiles(object):
             else:
                 sys.stdout.write('          ')
         products = [p for t in self.tiles for p in self.tiles[t].products]
+        # Check product is available for all tiles before reporting as processed
         prods = []
         for p in set(products):
             if products.count(p) == len(self.tiles):
                 prods.append(p)
-        #prods = []
-        #for t in self.tiles:
-        #    for p in self.tiles[t].products:
-                #prods.append(p)
         for p in sorted(set(prods)):
             color = colors[self.which_sensor(p)]
             sys.stdout.write('  ' + color + p + Colors.OFF)

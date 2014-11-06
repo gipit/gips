@@ -27,18 +27,21 @@ import errno
 from osgeo import gdal, ogr
 from datetime import datetime
 import glob
+from itertools import groupby
 from shapely.wkb import loads
 import tarfile
 import traceback
 import ftplib
 
 import gippy
-import gips
-from gips.core import DataNotFoundException
-from gips.tiles import Files
-from gips.utils import VerboseOut, RemoveFiles, File2List, List2File, Colors
-from gips.inventory import DataInventory
-from gips.GeoVector import GeoVector
+from gips import settings, GeoVector, __version__
+from gips.exceptions import DataNotFoundException
+from gips.utils import VerboseOut, RemoveFiles, File2List, List2File, Colors, basename
+
+"""
+The data.core classes are the base classes that are used by individual Data modules.
+For a new dataset create children of Repository, Asset, and Data
+"""
 
 
 class Repository(object):
@@ -117,7 +120,10 @@ class Repository(object):
         else:
             path = os.path.join(cls._rootpath, dirname, dirs)
         if not os.path.exists(path):
-            os.makedirs(path)
+            try:
+                os.makedirs(path)
+            except Exception:
+                raise Exception("Repository: Error making directory %s" % path)
         return path
 
     @classmethod
@@ -129,7 +135,7 @@ class Repository(object):
             VerboseOut('%s: tiles vector %s' % (cls.__name__, fname), 4)
         else:
             try:
-                db = gips.settings.DATABASES['tiles']
+                db = settings.DATABASES['tiles']
                 dbstr = ("PG:dbname=%s host=%s port=%s user=%s password=%s" %
                         (db['NAME'], db['HOST'], db['PORT'], db['USER'], db['PASSWORD']))
                 tiles = GeoVector(dbstr, layer=cls._tiles_vector)
@@ -272,7 +278,7 @@ class Asset(object):
 
         try:
             ftp = ftplib.FTP(ftpurl)
-            ftp.login('anonymous', gips.settings.EMAIL)
+            ftp.login('anonymous', settings.EMAIL)
             pth = os.path.join(ftpdir, date.strftime('%Y'), date.strftime('%j'))
             ftp.set_pasv(True)
             ftp.cwd(pth)
@@ -421,8 +427,8 @@ class Asset(object):
     #    return os.path.basename(self.filename)
 
 
-class Data(Files):
-    """ Collection of assets/products for one tile and date """
+class Data(object):
+    """ Collection of assets/products for single date and spatial region """
     name = 'Data'
     version = '0.0.0'
     Asset = Asset
@@ -433,9 +439,6 @@ class Data(Files):
 
     def meta(self):
         """ Retrieve metadata for this tile """
-        print '%s metadata!' % self.__class__.__name__
-        #meta = self.Asset(filename)
-        # add metadata to dictionary
         return {}
 
     def process(self, products, **kwargs):
@@ -454,9 +457,18 @@ class Data(Files):
     @classmethod
     def meta_dict(cls):
         return {
-            'GIPS Version': gips.__version__,
+            'GIPS Version': __version__,
             'GIPPY Version': gippy.__version__,
         }
+
+    def find_files(self, path):
+        """ Search path for valid files """
+        filenames = glob.glob(os.path.join(path, self._pattern))
+        assetnames = [a.filename for a in self.assets.values()]
+        badexts = ['.index', '.xml']
+        test = lambda x: x not in assetnames and os.path.splitext(f)[1] not in badexts
+        filenames[:] = [f for f in filenames if test(f)]
+        return filenames
 
     ##########################################################################
     # Override these functions if not using a tile/date directory structure
@@ -470,29 +482,68 @@ class Data(Files):
     ##########################################################################
     # Child classes should not generally have to override anything below here
     ##########################################################################
-    def __init__(self, tile, date):
+    def __init__(self, tile=None, date=None, path=None):
         """ Find all data and assets for this tile and date """
         self.id = tile
         self.date = date
+        self.path = ''
+        self.basename = ''
         self.assets = {}                # dict of asset name: Asset instance
-        self.filenames = {}             # dict of product: filename
+        self.filenames = {}             # dict of (sensor, product): filename
         self.sensors = {}               # dict of asset/product: sensor
-        # find all assets
-        for asset in self.Asset.discover(tile, date):
-            self.assets[asset.asset] = asset
-            # products that come automatically with assets
-            self.filenames.update({(asset.sensor, p): val for p, val in asset.products.items()})
-            self.sensors[asset.asset] = asset.sensor
-
-        if len(self.assets) == 0:
-            raise DataNotFoundException('%s: No assets or products for %s on %s' % (self.name, tile, date))
-
-        self.basename = self.id + '_' + self.date.strftime(self.Repository._datedir)
-        self.AddFiles(glob.glob(os.path.join(self.Repository.path(tile, date), self._pattern)))
+        if tile is not None and date is not None:
+            self.path = self.Repository.path(tile, date)
+            self.basename = self.id + '_' + self.date.strftime(self.Repository._datedir)
+            # find all assets
+            for asset in self.Asset.discover(tile, date):
+                self.assets[asset.asset] = asset
+                # products that come automatically with assets
+                self.filenames.update({(asset.sensor, p): val for p, val in asset.products.items()})
+                self.sensors[asset.asset] = asset.sensor
+            # Find products
+            self.ParseAndAddFiles()
+            if len(self.assets) == 0 and len(self.filenames) == 0:
+                raise DataNotFoundException('%s: No assets or products for %s on %s' % (self.name, tile, date))
+        elif path is not None:
+            self.path = path
 
     @property
     def Repository(self):
         return self.Asset.Repository
+
+    def __getitem__(self, key):
+        """ Get filename for product key """
+        if type(key) == tuple:
+            return self.filenames[key]
+        else:
+            return self.filenames[(self.sensor_set[0], key)]
+
+    def __str__(self):
+        """ Text representation """
+        return '%s: %s: %s' % (self.name, self.date, ' '.join(self.product_set))
+
+    def __len__(self):
+        """ Number of products """
+        return len(self.filenames)
+
+    @property
+    def day(self):
+        return self.date.strftime('%j')
+
+    @property
+    def sensor_set(self):
+        """ Return list of sensors used """
+        return list(set(sorted(self.sensors.values())))
+
+    @property
+    def products(self):
+        """ Get list of products """
+        return sorted([k[1] for k in self.filenames.keys()])
+
+    @property
+    def product_set(self):
+        """ Return list of products available """
+        return list(set(self.products))
 
     def available(self, product):
         """ Check availability of product (and required assets) for this date """
@@ -514,11 +565,113 @@ class Data(Files):
             return None
         return filenames
 
+    def ParseAndAddFiles(self, filenames=None):
+        """ Parse and Add filenames to existing filenames """
+        if filenames is None:
+            filenames = self.find_files(self.path)
+        datedir = self.Repository._datedir
+        for f in filenames:
+            bname = basename(f)
+            parts = bname.split('_')
+            if len(parts) < 3 or len(parts) > 4:
+                raise Exception('%s does not follow naming convention' % f)
+            offset = 1 if len(parts) == 4 else 0
+            try:
+                if self.date is None:
+                    # First time through
+                    self.date = datetime.strptime(parts[0 + offset], datedir).date()
+                else:
+                    date = datetime.strptime(parts[0 + offset], datedir).date()
+                    if date != self.date:
+                        raise Exception('Mismatched dates: %s' % ' '.join(filenames))
+                sensor = parts[1 + offset]
+                product = parts[2 + offset]
+                self.AddFile(sensor, product, f)
+            except Exception:
+                # This was just a bad file
+                VerboseOut('Unrecognizable file: %s' % f, 3)
+                pass
+
+    def AddFile(self, sensor, product, filename):
+        """ Add products (dictionary  (sensor, product): filename) to instance """
+        self.filenames[(sensor, product)] = filename
+        # TODO - currently assumes single sensor for each product
+        self.sensors[product] = sensor
+
+    def update(self, files):
+        """ Merge files dictionary into this instance """
+        if files.numfiles > 0:
+            self.AddFiles(files.filenames)
+
+    def open(self, product, sensor=None, update=False):
+        """ Open and return a GeoImage """
+        if sensor is None:
+            sensor = self.sensors[product]
+        fname = self.filenames[(sensor, product)]
+        if os.path.exists(fname):
+            return gippy.GeoImage(fname)
+        else:
+            raise Exception('%s_%s product does not exist' % (sensor, product))
+
+    # TODO - make general product_filter function
+    def masks(self, patterns=None):
+        """ List all products that are masks """
+        if not patterns:
+            patterns = ['acca', 'fmask', 'mask']
+        m = []
+        for p in self.products:
+            if any(pattern in p for pattern in patterns):
+                m.append(p)
+        return m
+
+    def pprint_header(self):
+        """ Print product inventory header """
+        return Colors.BOLD + Colors.UNDER + '{:^12}'.format('DATE') + '{:^10}'.format('Products') + Colors.OFF
+
+    def pprint(self, dformat='%j', colors=None):
+        """ Print product inventory for this date """
+        sys.stdout.write('{:^12}'.format(self.date.strftime(dformat)))
+        if colors is None:
+            sys.stdout.write('  '.join(sorted(self.products)))
+        else:
+            for p in sorted(self.products):
+                sys.stdout.write(colors[self.sensors[p]] + p + Colors.OFF + '  ')
+        sys.stdout.write('\n')
+
     ##########################################################################
     # Class methods
     ##########################################################################
     @classmethod
+    def discover(cls, path):
+        """ Find products in path and return Data object for each date """
+        files0 = glob.glob(os.path.join(path, cls._pattern))
+        files = []
+        datedir = cls.Asset.Repository._datedir
+        for f in files0:
+            parts = basename(f).split('_')
+            if len(parts) == 3 or len(parts) == 4:
+                try:
+                    datetime.strptime(parts[len(parts) - 3], datedir)
+                    files.append(f)
+                except:
+                    pass
+
+        if len(files) == 0:
+            raise DataNotFoundException('Files: No valid files found')
+
+        # Group by date
+        sind = len(basename(files[0]).split('_')) - 3
+        datas = []
+        func = lambda x: datetime.strptime(basename(x).split('_')[sind], datedir).date()
+        for date, fnames in groupby(sorted(files), func):
+            dat = cls(path=path)
+            dat.ParseAndAddFiles(list(fnames))
+            datas.append(dat)
+        return datas
+
+    @classmethod
     def inventory(cls, **kwargs):
+        from gips.inventory import DataInventory
         return DataInventory(cls, **kwargs)
 
     @classmethod
@@ -603,7 +756,45 @@ class Data(Files):
 
     @classmethod
     def test(cls):
-        VerboseOut("%s: running tests" % cls.name)
-        # archive
-        # inventory
-        # process
+        import random
+        VerboseOut(Colors.BOLD + "%s Tests" % cls.name + Colors.OFF)
+        #VerboseOut(Colors.BOLD + "Complete Inventory Test" % cls.name + Colors.OFF)
+        #inv = cls.inventory()
+        # Check for test shapefile
+        test_vectors = glob.glob(os.path.join(cls.Asset.Repository.vpath(), 'test*.shp'))
+        for testv in test_vectors:
+            VerboseOut(Colors.BOLD + "Shapefile Inventory Test using %s" % basename(testv) + Colors.OFF)
+            inv = cls.inventory(site=testv)
+            # Pick random date
+            date = random.choice(inv.dates)
+            inv = cls.inventory(site=testv, dates=date.strftime('%Y-%j'))
+            # Pick random product from those that have coverage
+            pcov = inv[inv.dates[0]].product_coverage()
+            for p, cov in pcov.items():
+                if cov == 0:
+                    del pcov[p]
+            product = random.choice(pcov.keys()) + "-TEST"
+            VerboseOut(Colors.BOLD + "Random product test: %s %s" % (date, product) + Colors.OFF)
+            try:
+                inv = cls.inventory(site=testv, dates=date.strftime('%Y-%j'), products=[product])
+                #inv = cls.inventory(site=testv, dates='1987-282', products=[product])
+                inv.pprint()
+                print Colors.BOLD + "\nProcessing test %s" % product + Colors.OFF
+                inv.process(overwrite=False)
+
+                print Colors.BOLD + "\nProject test" + Colors.OFF
+                inv.project(suffix='TEST')
+
+                print Colors.BOLD + "\nProject test (nomosaic)" + Colors.OFF
+                inv.project(suffix='TEST')
+
+                print Colors.BOLD + "\nProject test (nowarp)" + Colors.OFF
+                inv.project(suffix='TEST-nowarp')
+
+                # Cleanup
+                newfiles = [f for t in inv[inv.dates[0]].tiles for f in inv[inv.dates[0]][t].filenames.values()]
+                RemoveFiles(newfiles, ['hdr', 'xml'])
+                inv = None
+            except:
+                VerboseOut(traceback.format_exc(), 3)
+                raise Exception("Errors running tests")
