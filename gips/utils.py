@@ -30,7 +30,7 @@ import numpy
 import tempfile
 import commands
 import shutil
-from gips.GeoVector import GeoVector
+from gips import GeoVector
 
 
 class Colors():
