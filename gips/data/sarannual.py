@@ -23,7 +23,6 @@
 
 import os
 import datetime
-from collections import OrderedDict
 
 import gippy
 from gips.data.core import Repository, Asset, Data
@@ -106,23 +105,26 @@ class SARAnnualData(Data):
     Asset = SARAnnualAsset
 
     _pattern = '*'
-    _products = OrderedDict([
-        ('sign', {
+    _products = {
+        'sign': {
             'description': 'Sigma nought (radar backscatter coefficient)',
-            'assets': 'MOS',
-        }),
-        ('fnf', {
+            'assets': ['MOS'],
+        },
+        'fnf': {
             'description': 'Forest/NonForest Mask',
-            'assets': 'FNF',
-        })
-    ])
-    _groups = {
-        'Standard': _products.keys(),
+            'assets': ['FNF'],
+        }
     }
 
     def meta(self, tile):
         """ Get metadata for this tile """
         return {'CF': -83.0}
+
+    def find_files(self, path):
+        """ Search path for valid files """
+        filenames = super(SARAnnualData, self).find_files(path)
+        filenames[:] = [f for f in filenames if os.path.splitext(f)[1] != '.hdr']
+        return filenames
 
     def process(self, products):
         """ Process all requested products for this tile """
@@ -133,10 +135,14 @@ class SARAnnualData(Data):
         for key, val in products.items():
             fname = os.path.join(self.path, self.basename + '_' + key)
             # Verify that asset exists
-            asset = self._products[val[0]]['assets']
+            asset = self._products[val[0]]['assets'][0]
             try:
                 datafiles = self.assets[asset].extract()
             except:
+                import traceback
+                print traceback.format_exc()
+                import pdb
+                pdb.set_trace()
                 VerboseOut("Asset %s doesn't exist for tile %s" % (asset, self.id), 3)
                 continue
             if val[0] == 'sign':
@@ -165,7 +171,7 @@ class SARAnnualData(Data):
                     img = gippy.GeoImage(fname)
                     img.SetNoData(0)
                     img = None
-            self.products[key] = fname
+            self.AddFile(self.sensor_set[0], key, fname)
 
 
 def main():

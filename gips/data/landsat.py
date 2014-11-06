@@ -23,11 +23,11 @@
 
 import os
 import sys
-import glob
 import re
 from datetime import datetime
 import shutil
 import numpy
+import glob
 import traceback
 
 import gippy
@@ -262,6 +262,8 @@ class LandsatData(Data):
         },
     }
 
+    extract = False
+
     def SixS(self):
         from gips.utils import atmospheric_model
         from Py6S import SixS, Geometry, AeroProfile, Altitudes, Wavelength, GroundReflectance, AtmosCorr, SixSHelpers
@@ -332,13 +334,12 @@ class LandsatData(Data):
         """ Make sure all products have been processed """
         start = datetime.now()
         bname = os.path.basename(self.assets[''].filename)
-
         self.basename = self.basename + '_' + self.sensor_set[0]
         try:
             img = self._readraw()
         except Exception, e:
             raise Exception('Error reading %s: %s' % (bname, e))
-
+        
         # running atmosphere if any products require it
         toa = True
         for val in products.values():
@@ -372,7 +373,8 @@ class LandsatData(Data):
         for col in self.assets[''].lwbands:
             reflimg[col] = (((img[col].pow(-1)) * meta[col]['K1'] + 1).log().pow(-1)) * meta[col]['K2'] - 273.15
 
-        newproducts = {}
+        # This is landsat, so always just one sensor for a given date
+        sensor = self.sensors['']
 
         # Process standard products
         for key, val in groups['Standard'].items():
@@ -385,13 +387,22 @@ class LandsatData(Data):
                 if val[0] == 'acca':
                     s_azim = self.metadata['geometry']['solarazimuth']
                     s_elev = 90 - self.metadata['geometry']['solarzenith']
-                    erosion = int(val[1]) if len(val) > 1 else 5
-                    dilation = int(val[2]) if len(val) > 2 else 10
-                    cloudheight = int(val[3]) if len(val) > 3 else 4000
+                    try:
+                        erosion = int(val[1]) if len(val) > 1 else 5
+                        dilation = int(val[2]) if len(val) > 2 else 10
+                        cloudheight = int(val[3]) if len(val) > 3 else 4000
+                    except:
+                        erosion = 5
+                        dilation = 10
+                        cloudheight = 4000
                     imgout = gippy.ACCA(reflimg, fname, s_elev, s_azim, erosion, dilation, cloudheight)
                 elif val[0] == 'fmask':
-                    tolerance = int(val[1]) if len(val) > 1 else 3
-                    dilation = int(val[2]) if len(val) > 2 else 5
+                    try:
+                        tolerance = int(val[1]) if len(val) > 1 else 3
+                        dilation = int(val[2]) if len(val) > 2 else 5
+                    except:
+                        tolerance = 3
+                        dilation = 5
                     imgout = gippy.Fmask(reflimg, fname, tolerance, dilation)
                 elif val[0] == 'rad':
                     imgout = gippy.GeoImage(fname, img, gippy.GDT_Int16, len(visbands))
@@ -478,7 +489,7 @@ class LandsatData(Data):
                 fname = imgout.Filename()
                 imgout.SetMeta(md)
                 imgout = None
-                newproducts[key] = fname
+                self.AddFile(sensor, key, fname)
                 VerboseOut(' -> %s: processed in %s' % (os.path.basename(fname), datetime.now() - start), 1)
             except Exception, e:
                 VerboseOut('Error creating product %s for %s: %s' % (key, bname, e), 2)
@@ -500,8 +511,9 @@ class LandsatData(Data):
             if len(fnames) > 0:
                 prodarr = dict(zip([indices_toa[p][0] for p in indices_toa.keys()], fnames))
                 prodout = gippy.Indices(reflimg, prodarr, md)
+                # Indices didn't know that this was the TOA version, so update keys
                 for key in prodout:
-                    newproducts.update({key + '-toa': prodout[key]})
+                    self.AddFile(sensor, key+'-toa', prodout[key])
             # Run atmospherically corrected
             fnames = [os.path.join(self.path, self.basename + '_' + key) for key in indices]
             if len(fnames) > 0:
@@ -509,22 +521,18 @@ class LandsatData(Data):
                     img[col] = ((img[col] - atmos[col][1]) / atmos[col][0]) * (1.0 / atmos[col][2])
                 prodarr = dict(zip([indices[p][0] for p in indices.keys()], fnames))
                 prodout = gippy.Indices(img, prodarr, md)
-                newproducts.update(prodout)
+                [self.AddFile(sensor, key, prodout[key]) for key in prodout]
             VerboseOut(' -> %s: processed %s in %s' % (self.basename, indices0.keys(), datetime.now() - start), 1)
         img = None
-
-        # Add sensor lookup for all products
-        self.products.update(newproducts)
-        for key in newproducts:
-            self.sensors[key] = self.sensor_set[0]
 
         # cleanup directory
         try:
             # Not needed, reading directly from tar.gz
-            #for bname in self.assets[''].datafiles():
-            #    if bname[-7:] != 'MTL.txt':
-            #        files = glob.glob(os.path.join(self.path, bname) + '*')
-            #        RemoveFiles(files)
+            if self.extract:
+                for bname in self.assets[''].datafiles():
+                    if bname[-7:] != 'MTL.txt':
+                        files = glob.glob(os.path.join(self.path, bname) + '*')
+                        RemoveFiles(files)
             shutil.rmtree(os.path.join(self.path, 'modtran'))
         except:
             #VerboseOut(traceback.format_exc(), 4)
@@ -641,10 +649,12 @@ class LandsatData(Data):
         # make sure metadata is loaded
         self.meta()
 
-        # Extract all files
-        #datafiles = self.assets[''].extract(self.metadata['filenames'])
-        # Use tar.gz directly using GDAL's virtual filesystem
-        datafiles = [os.path.join('/vsitar/' + self.assets[''].filename, f) for f in self.metadata['filenames']]
+        if self.extract:
+            # Extract all files
+            datafiles = self.assets[''].extract(self.metadata['filenames'])
+        else:
+            # Use tar.gz directly using GDAL's virtual filesystem
+            datafiles = [os.path.join('/vsitar/' + self.assets[''].filename, f) for f in self.metadata['filenames']]
 
         image = gippy.GeoImage(datafiles)
         image.SetNoData(0)
@@ -682,3 +692,7 @@ class LandsatData(Data):
 
 def main():
     DataInventory.main(LandsatData)
+
+
+def test():
+    LandsatData.test()
