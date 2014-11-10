@@ -24,7 +24,7 @@
 import os
 import errno
 import gippy
-import datetime
+from datetime import datetime
 import multiprocessing
 import numpy
 import tempfile
