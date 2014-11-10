@@ -23,5 +23,5 @@
 from .version import __version__
 import settings
 from GeoVector import GeoVector
-from core import Products, SpatialExtent, TemporalExtent
+from core import RequestedProducts, SpatialExtent, TemporalExtent
 #from inventory import ProjectInventory, DataInventory
