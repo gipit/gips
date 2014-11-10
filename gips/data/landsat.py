@@ -330,8 +330,12 @@ class LandsatData(Data):
 
         return results
 
-    def process(self, products, **kwargs):
+    def process(self, products=None, overwrite=False, **kwargs):
         """ Make sure all products have been processed """
+        products = super(LandsatData, self).process(products, overwrite, **kwargs)
+        if len(products) == 0:
+            return
+
         start = datetime.now()
         bname = os.path.basename(self.assets[''].filename)
         self.basename = self.basename + '_' + self.sensor_set[0]
@@ -339,10 +343,10 @@ class LandsatData(Data):
             img = self._readraw()
         except Exception, e:
             raise Exception('Error reading %s: %s' % (bname, e))
-        
+
         # running atmosphere if any products require it
         toa = True
-        for val in products.values():
+        for val in products.requested.values():
             toa = toa and (self._products[val[0]].get('toa', False) or 'toa' in val)
         if not toa:
             start = datetime.now()
@@ -353,7 +357,7 @@ class LandsatData(Data):
                 VerboseOut(traceback.format_exc(), 3)
 
         # Break down by group
-        groups = self.products2groups(products)
+        groups = products.groups()
 
         meta = self.assets[''].meta
         visbands = self.assets[''].visbands
@@ -507,21 +511,19 @@ class LandsatData(Data):
                 else:
                     indices[key] = val
             # Run TOA
-            fnames = [os.path.join(self.path, self.basename + '_' + key) for key in indices_toa]
-            if len(fnames) > 0:
-                prodarr = dict(zip([indices_toa[p][0] for p in indices_toa.keys()], fnames))
-                prodout = gippy.Indices(reflimg, prodarr, md)
-                # Indices didn't know that this was the TOA version, so update keys
-                for key in prodout:
-                    self.AddFile(sensor, key+'-toa', prodout[key])
+            if len(indices_toa) > 0:
+                fnames = [os.path.join(self.path, self.basename + '_' + key) for key in indices_toa]
+                prodout = gippy.Indices(reflimg, dict(zip([p[0] for p in indices_toa.values()], fnames)), md)
+                prodout = dict(zip(indices_toa.keys(), prodout.values()))
+                [self.AddFile(sensor, key, fname) for key, fname in prodout.items()]
             # Run atmospherically corrected
-            fnames = [os.path.join(self.path, self.basename + '_' + key) for key in indices]
-            if len(fnames) > 0:
+            if len(indices) > 0:
+                fnames = [os.path.join(self.path, self.basename + '_' + key) for key in indices]
                 for col in visbands:
                     img[col] = ((img[col] - atmos[col][1]) / atmos[col][0]) * (1.0 / atmos[col][2])
-                prodarr = dict(zip([indices[p][0] for p in indices.keys()], fnames))
-                prodout = gippy.Indices(img, prodarr, md)
-                [self.AddFile(sensor, key, prodout[key]) for key in prodout]
+                prodout = gippy.Indices(img, dict(zip([p[0] for p in indices.values()], fnames)), md)
+                prodout = dict(zip(indices.keys(), prodout.values()))
+                [self.AddFile(sensor, key, fname) for key, fname in prodout.items()]
             VerboseOut(' -> %s: processed %s in %s' % (self.basename, indices0.keys(), datetime.now() - start), 1)
         img = None
 

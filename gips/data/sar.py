@@ -265,16 +265,18 @@ class SARData(Data):
         filenames[:] = [f for f in filenames if os.path.splitext(f)[1] != '.hdr']
         return filenames
 
-    def process(self, products, **kwargs):
+    def process(self, *args, **kwargs):
         """ Make sure all products have been pre-processed """
+        products = super(SARData, self).process(*args, **kwargs)
+        if len(products) == 0:
+            return
+
         sensor = self.sensor_set[0]
         self.basename = self.basename + '_' + sensor
-        if len(products) == 0:
-            raise Exception('Tile %s: No products specified' % self.tile)
         # extract all data from archive
         datafiles = self.assets[''].extract()
         meta = self.meta()
-        for key, val in products.items():
+        for key, val in products.requested.items():
             fname = os.path.join(self.path, self.basename + '_' + key)
             if val[0] == 'sign':
                 bands = [datafiles[b] for b in ["sl_HH", "sl_HV"] if b in datafiles]

@@ -226,12 +226,15 @@ class ModisData(Data):
 
     }
 
-    def process(self, products, **kwargs):
+    def process(self, *args, **kwargs):
         """ Process all products """
+        products = super(ModisData, self).process(*args, **kwargs)
+        if len(products) == 0:
+            return
 
         fname = os.path.join(self.path, self.basename)
 
-        for key, val in products.items():
+        for key, val in products.requested.items():
             start = datetime.datetime.now()
 
             # Check for asset availability

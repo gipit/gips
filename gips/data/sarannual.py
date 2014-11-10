@@ -126,23 +126,20 @@ class SARAnnualData(Data):
         filenames[:] = [f for f in filenames if os.path.splitext(f)[1] != '.hdr']
         return filenames
 
-    def process(self, products):
+    def process(self, *args, **kwargs):
         """ Process all requested products for this tile """
-        self.basename = self.basename + '_' + self.sensor_set[0]
+        products = super(SARAnnualData, self).process(*args, **kwargs)
         if len(products) == 0:
-            raise Exception('Tile %s: No products specified' % self.tile)
+            return
 
-        for key, val in products.items():
+        self.basename = self.basename + '_' + self.sensor_set[0]
+        for key, val in products.requested.items():
             fname = os.path.join(self.path, self.basename + '_' + key)
             # Verify that asset exists
             asset = self._products[val[0]]['assets'][0]
             try:
                 datafiles = self.assets[asset].extract()
             except:
-                import traceback
-                print traceback.format_exc()
-                import pdb
-                pdb.set_trace()
                 VerboseOut("Asset %s doesn't exist for tile %s" % (asset, self.id), 3)
                 continue
             if val[0] == 'sign':
@@ -160,9 +157,7 @@ class SARAnnualData(Data):
                     fname = imgout.Filename()
                     img = None
                     imgout = None
-                    for key, f in datafiles.items():
-                        if key != 'hdr':
-                            RemoveFiles([f], ['.hdr', '.aux.xml'])
+                    [RemoveFiles([f], ['.hdr', '.aux.xml']) for k, f in datafiles.items() if k != 'hdr']
             if val[0] == 'fnf':
                 if 'C' in datafiles:
                     # rename both files to product name
