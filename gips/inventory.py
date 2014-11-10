@@ -221,9 +221,6 @@ class DataInventory(Inventory):
                 self.data[date] = dat
             except Exception, e:
                 # No tiles for this date!
-                print traceback.format_exc()
-                import pdb
-                pdb.set_trace()
                 raise Exception('DataInventory: Error accessing tiles in %s repository' % dataclass.name)
 
         if len(self.data) == 0:

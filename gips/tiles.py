@@ -127,9 +127,6 @@ class Tiles(object):
                 os.makedirs(datadir)
             for product in self.products.products:
                 sensor = self.which_sensor(product)
-                if sensor is None:
-                    import pdb
-                    pdb.set_trace()
                 fout = os.path.join(datadir, bname + ('_%s_%s.tif' % (sensor, product)))
                 if not os.path.exists(fout):
                     try:
