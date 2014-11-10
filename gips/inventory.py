@@ -30,7 +30,7 @@ import numpy
 from copy import deepcopy
 
 import gippy
-from gips import __version__, SpatialExtent, TemporalExtent, Products
+from gips import __version__, SpatialExtent, TemporalExtent
 from gips.tiles import Tiles
 from gips.utils import VerboseOut, Colors, basename
 from gips.data.core import Data
@@ -195,7 +195,7 @@ class DataInventory(Inventory):
         :tiles: List of tile ids
         :dates: tuple of begin and end date
         :days: tuple of begin and end day of year
-        :products: List of products of interest
+        :products: List of requested products of interest
         :fetch: bool indicated if missing data should be downloaded
         """
         self.dataclass = dataclass
@@ -204,17 +204,16 @@ class DataInventory(Inventory):
         try:
             self.spatial = SpatialExtent(dataclass, site, tiles, pcov, ptile)
             self.temporal = TemporalExtent(dates, days)
-            self.products = Products(dataclass, products)
+            self.products = dataclass.RequestedProducts(products)
         except Exception, e:
             raise Exception('Illformed parameters: %s' % e)
 
         if fetch:
             try:
-                dataclass.fetch(self.products.products, self.spatial.tiles, self.temporal.dates, self.temporal.days)
+                dataclass.fetch(self.products.base, self.spatial.tiles, self.temporal.dates, self.temporal.days)
             except Exception:
                 raise Exception('DataInventory: Error downloading')
             dataclass.Asset.archive(Repository.spath())
-
         self.data = {}
         for date in self.temporal.prune_dates(self.spatial.available_dates):
             try:
@@ -259,7 +258,6 @@ class DataInventory(Inventory):
         """ Create project files for data in inventory """
         self.process(**kwargs)
         start = dt.now()
-
         sitename = 'tiles' if self.spatial.site is None else basename(self.spatial.site)
         if res is None:
             # TODO - determined as min of all Assets

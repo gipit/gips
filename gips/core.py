@@ -28,11 +28,13 @@ from gips import GeoVector
 from gips.utils import Colors
 
 
-class Products(object):
-    """ Collection of product names and options """
+class RequestedProducts(object):
+    """ Collection of requested products and options """
     # TODO - move Products to dataclass specific class in data.core?
+    # TODO - incorporate product groups
     def __init__(self, dataclass, products=None):
         """ Create product object """
+        self.dataclass = dataclass
         products = products if products is not None else dataclass._products.keys()
         self.requested = {p: p.split('-') for p in products}
         self.standard = {}
@@ -47,13 +49,30 @@ class Products(object):
 
     @property
     def products(self):
-        """ Return list of requested products """
+        """ Return list of requested products (e.g., ndvi-toa lswi-TEST acca-5 """
         return sorted(self.requested.keys())
 
     @property
     def base(self):
-        """ Return base product name (e.g., ndvi vs ndvi-test or ndvi-toa) """
+        """ Return base product name (e.g., ndvi, not ndvi-test or ndvi-toa) """
         return [val[0] for val in self.requested.values()]
+
+    def groups(self):
+        """ Convert product list to groupings """
+        p2g = {}
+        groups = {}
+        allgroups = self.dataclass.product_groups()
+        for g in allgroups:
+            groups[g] = {}
+            for p in allgroups[g]:
+                p2g[p] = g
+        for p, val in self.requested.items():
+            g = p2g[val[0]]
+            groups[g][p] = val
+        return groups
+
+    def __len__(self):
+        return len(self.requested)
 
     def __str__(self):
         return ' '.join(self.products)

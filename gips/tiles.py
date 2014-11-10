@@ -27,7 +27,7 @@ from datetime import datetime
 import traceback
 
 import gippy
-from gips import SpatialExtent, Products
+from gips import SpatialExtent
 from gips.exceptions import DataNotFoundException
 from gips.utils import VerboseOut, Colors, mosaic
 
@@ -42,9 +42,8 @@ class Tiles(object):
         """
         self.dataclass = dataclass
         self.spatial = spatial if spatial is not None else SpatialExtent()
+        self.products = products if products is not None else dataclass.RequestedProducts()
         self.date = date
-        self.products = products if products is not None else Products(dataclass)
-
         # For each tile locate files/products
         self.tiles = {}
         for t in self.spatial.tiles:
@@ -87,14 +86,7 @@ class Tiles(object):
 
     def process(self, overwrite=False, **kwargs):
         """ Determines what products need to be processed for each tile and calls Data.process """
-        for tileid, tile in self.tiles.items():
-            toprocess = {}
-            for pname, args in self.products.requested.items():
-                if pname not in tile.products or overwrite:
-                    toprocess[pname] = args
-            if len(toprocess) != 0:
-                VerboseOut('Processing products for tile %s: %s' % (tileid, ' '.join(toprocess.keys())), 2)
-                self.tiles[tileid].process(toprocess, **kwargs)
+        [t.process(products=self.products.products, overwrite=overwrite, **kwargs) for t in self.tiles.values()]
 
     def project(self, datadir, res, crop=False, nowarp=False, nomosaic=False, **kwargs):
         """ Create image of final product (reprojected/mosaiced) """
@@ -116,7 +108,7 @@ class Tiles(object):
                     os.makedirs(tiledir)
                 for p in self.products.products:
                     sensor = self.which_sensor(p)
-                    filename = self.tiles[t].products[p]
+                    filename = self.tiles[t].filenames[(sensor, p)]
                     fout = os.path.join(tiledir, t + '_' + bname + ('_%s_%s.tif' % (sensor, p)))
                     if not os.path.exists(fout):
                         try:
@@ -135,6 +127,9 @@ class Tiles(object):
                 os.makedirs(datadir)
             for product in self.products.products:
                 sensor = self.which_sensor(product)
+                if sensor is None:
+                    import pdb
+                    pdb.set_trace()
                 fout = os.path.join(datadir, bname + ('_%s_%s.tif' % (sensor, product)))
                 if not os.path.exists(fout):
                     try:
@@ -172,7 +167,7 @@ class Tiles(object):
     def product_coverage(self):
         """ Calculated % coverage of site for each product """
         coverage = {}
-        for p in self.products.base:
+        for p in self.dataclass._products.keys():
             assets = self.dataclass.products2assets([p])
             norm = float(len(self.coverage)) if self.spatial.site is None else 1.0
             cov = 0.0

@@ -441,9 +441,16 @@ class Data(object):
         """ Retrieve metadata for this tile """
         return {}
 
-    def process(self, products, **kwargs):
+    def process(self, products=None, overwrite=False, **kwargs):
         """ Make sure all products exist and process if needed """
-        pass
+        # Check to see what needs to be processed
+        if products is None:
+            products = self.RequestedProducts()
+        else:
+            products = self.RequestedProducts([p for p in products if p not in self.products or overwrite])
+        if len(products) > 0:
+            VerboseOut("Processing products for tile %s: %s" % (self.id, products), 2)
+        return products
 
     @classmethod
     def process_composites(cls, inventory, products, **kwargs):
@@ -509,7 +516,13 @@ class Data(object):
 
     @property
     def Repository(self):
+        """ The repository for this class """
         return self.Asset.Repository
+
+    @classmethod
+    def RequestedProducts(cls, *args, **kwargs):
+        from gips.core import RequestedProducts
+        return RequestedProducts(cls, *args, **kwargs)
 
     def __getitem__(self, key):
         """ Get filename for product key """
@@ -574,7 +587,9 @@ class Data(object):
             bname = basename(f)
             parts = bname.split('_')
             if len(parts) < 3 or len(parts) > 4:
-                raise Exception('%s does not follow naming convention' % f)
+                # Skip this file
+                VerboseOut('Unrecognizable file: %s' % f, 3)
+                continue
             offset = 1 if len(parts) == 4 else 0
             try:
                 if self.date is None:
@@ -590,7 +605,7 @@ class Data(object):
             except Exception:
                 # This was just a bad file
                 VerboseOut('Unrecognizable file: %s' % f, 3)
-                pass
+                continue
 
     def AddFile(self, sensor, product, filename):
         """ Add products (dictionary  (sensor, product): filename) to instance """
@@ -773,23 +788,23 @@ class Data(object):
             for p, cov in pcov.items():
                 if cov == 0:
                     del pcov[p]
-            product = random.choice(pcov.keys()) + "-TEST"
-            VerboseOut(Colors.BOLD + "Random product test: %s %s" % (date, product) + Colors.OFF)
+            products = [random.choice(pcov.keys()) + "-TEST"]
+            VerboseOut(Colors.BOLD + "Random product test: %s %s" % (date, ' '.join(products)) + Colors.OFF)
             try:
-                inv = cls.inventory(site=testv, dates=date.strftime('%Y-%j'), products=[product])
+                inv = cls.inventory(site=testv, dates=date.strftime('%Y-%j'), products=products)
                 #inv = cls.inventory(site=testv, dates='1987-282', products=[product])
                 inv.pprint()
-                print Colors.BOLD + "\nProcessing test %s" % product + Colors.OFF
+                print Colors.BOLD + "\nProcessing test %s" % ' '.join(products) + Colors.OFF
                 inv.process(overwrite=False)
 
                 print Colors.BOLD + "\nProject test" + Colors.OFF
                 inv.project(suffix='TEST')
 
                 print Colors.BOLD + "\nProject test (nomosaic)" + Colors.OFF
-                inv.project(suffix='TEST')
+                inv.project(suffix='TEST', nomosaic=True)
 
                 print Colors.BOLD + "\nProject test (nowarp)" + Colors.OFF
-                inv.project(suffix='TEST-nowarp')
+                inv.project(suffix='TEST-nowarp', nowarp=True)
 
                 # Cleanup
                 newfiles = [f for t in inv[inv.dates[0]].tiles for f in inv[inv.dates[0]][t].filenames.values()]
