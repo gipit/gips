@@ -22,6 +22,9 @@
 v0.8.0
 - Refactor of core inventory and tiles for streamlined code reuse
 
+Landsat
+- Added wtemp product (Water temperature, atm corrected with MODTRAN using custom profiles from MERRA data)
+
 MODIS
 - fixed bug in MODIS temperature making them unable to be used in project (multiple identical output band names)
 

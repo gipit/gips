@@ -32,6 +32,7 @@ import traceback
 
 import gippy
 from gips.data.core import Repository, Asset, Data
+from gips.data.modtran import MODTRAN
 from gips.inventory import DataInventory
 from gips.utils import VerboseOut, RemoveFiles
 import gips.settings as settings
@@ -207,8 +208,13 @@ class LandsatData(Data):
             'toa': True
         },
         'volref': {
-            'description': 'Volumetric water reflectance (valid for water only)',
+            'description': 'Volumetric water reflectance - valid for water only',
             'arguments': [__toastring]
+        },
+        'wtemp': {
+            'description': 'Water temperature (atmospherically correct) - valid for water only',
+            # It's not really TOA, but the product code will take care of atm correction itself
+            'toa': True
         },
         #'Indices': {
         'bi': {
@@ -452,14 +458,6 @@ class LandsatData(Data):
                     imgout.SetGain(0.1)
                     for col in lwbands:
                         band = img[col]
-                        #if toa:
-                        #    band = img[col]
-                        #else:
-                        #    lat = self.metadata['geometry']['lat']
-                        #    lon = self.metadata['geometry']['lon']
-                        #    atmos = MODTRAN(meta[col], self.metadata['datetime'], lat, lon)
-                        #    e = 0.95
-                        #    band = (img[col] - (atmos.output[1] + (1-e) * atmos.output[2])) / (atmos.output[0] * e)
                         band = (((band.pow(-1)) * meta[col]['K1'] + 1).log().pow(-1)) * meta[col]['K2'] - 273.15
                         band.Process(imgout[col])
                 elif val[0] == 'dn':
@@ -489,7 +487,22 @@ class LandsatData(Data):
                         diffimg[bimg == reflimg[band].NoDataValue()] = imgout[band].NoDataValue()
                         diffimg[nodatainds] = imgout[band].NoDataValue()
                         imgout[band].Write(diffimg)
-
+                elif val[0] == 'wtemp':
+                    imgout = gippy.GeoImage(fname, img, gippy.GDT_Int16, len(lwbands))
+                    [imgout.SetBandName(lwbands[i], i + 1) for i in range(0, imgout.NumBands())]
+                    imgout.SetNoData(-32768)
+                    imgout.SetGain(0.1)
+                    for col in lwbands:
+                        band = img[col]
+                        m = meta[col]
+                        lat = self.metadata['geometry']['lat']
+                        lon = self.metadata['geometry']['lon']
+                        dt = self.metadata['datetime']
+                        atmos = MODTRAN(m['bandnum'], m['wvlen1'], m['wvlen2'], dt, lat, lon, True)
+                        e = 0.95
+                        band = (img[col] - (atmos.output[1] + (1 - e) * atmos.output[2])) / (atmos.output[0] * e)
+                        band = (((band.pow(-1)) * meta[col]['K1'] + 1).log().pow(-1)) * meta[col]['K2'] - 273.15
+                        band.Process(imgout[col])
                 fname = imgout.Filename()
                 imgout.SetMeta(md)
                 imgout = None
@@ -535,7 +548,7 @@ class LandsatData(Data):
                     if bname[-7:] != 'MTL.txt':
                         files = glob.glob(os.path.join(self.path, bname) + '*')
                         RemoveFiles(files)
-            shutil.rmtree(os.path.join(self.path, 'modtran'))
+            #shutil.rmtree(os.path.join(self.path, 'modtran'))
         except:
             #VerboseOut(traceback.format_exc(), 4)
             pass
