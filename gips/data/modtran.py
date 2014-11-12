@@ -21,9 +21,18 @@
 #   along with this program. If not, see <http://www.gnu.org/licenses/>
 ################################################################################
 
+"""
+Atmospheric module consists of a class for each available atmospheric model.
+Class is initialized with band information (an id, bounding wavelengths, date/time, and location)
+Any info passed in beyond this should be via keywords
+"""
+
+
 import os
 import datetime
 import commands
+import tempfile
+import shutil
 from gips.utils import atmospheric_model, List2File, VerboseOut
 from gips.data.merra import MerraData
 
@@ -47,11 +56,9 @@ class MODTRAN():
         #fout = open('atm.txt','w')
         #fout.write('{:>5}{:>20}{:>20}\n'.format('Band','%T','Radiance'))
 
-        # TODO - Update to use tmp directory
-        if not os.path.exists(self._workdir):
-            os.makedirs(self._workdir)
+        tmpdir = tempfile.mkdtemp()
         pwd = os.getcwd()
-        os.chdir(self._workdir)
+        os.chdir(tmpdir)
 
         # Create link to MODTRAN data dir
         if not os.path.lexists('DATA'):
@@ -67,8 +74,6 @@ class MODTRAN():
             for i in range(0, len(pressure)):
                 c2c1 = self.card2c1(P=pressure[i], T=temp[i], H2O=humidity[i], O3=ozone[i])
                 self.atmprofile.append(c2c1)
-            #from pprint import pprint
-            #pprint(self.atmprofile)
         else:
             self.atmprofile = None
 
@@ -88,6 +93,8 @@ class MODTRAN():
 
         # Change back to original directory
         os.chdir(pwd)
+        # Remove directory
+        shutil.rmtree(tmpdir)
 
     def readoutput(self, bandnum):
         try:
