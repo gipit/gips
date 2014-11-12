@@ -23,6 +23,7 @@
 
 import os
 import datetime
+import time
 from pydap.client import open_url
 import numpy
 
@@ -239,14 +240,14 @@ class MerraData(Data):
         dataset = cls.Asset.opendap_fetch('PROFILE', dtime)
         (x, y) = cls.Asset.lonlat2xy(lon, lat)
 
-        print 'dtime = ', dtime
-        print 'lon, lat ', lon, lat
-        print 'x, y ', x, y
-        time = 2
-        print 'shape = ', dataset['T'].shape
+        # TODO - I know these are hours (0, 6, 12, 18), but it's still an assumption
+        times = [datetime.datetime.combine(dtime.date(), datetime.time(int(d / 60.0))) for d in dataset['TIME'][:]]
+        unixtime = time.mktime(dtime.timetuple())
+        timediff = numpy.array([unixtime - time.mktime(t.timetuple()) for t in times])
+        timeind = numpy.abs(timediff).argmin()
 
-        p = dataset['PS'][time, y, x].squeeze()
-        pthick = dataset['DELP'][time, :, y, x].squeeze()[::-1]
+        p = dataset['PS'][timeind, y, x].squeeze()
+        pthick = dataset['DELP'][timeind, :, y, x].squeeze()[::-1]
         pressure = []
         for pt in pthick:
             pressure.append(p)
@@ -258,10 +259,10 @@ class MerraData(Data):
             # Pa -> mbar
             'pressure': numpy.array(pressure)[inds] / 100.0,
             # Kelvin -> Celsius
-            'temp': dataset['T'][time, :, y, x].squeeze()[::-1][inds] - 273.15,
+            'temp': dataset['T'][timeind, :, y, x].squeeze()[::-1][inds] - 273.15,
             # kg/kg -> g/kg (Mass mixing ratio)
-            'humidity': dataset['QV'][time, :, y, x].squeeze()[::-1][inds] * 1000,
-            'ozone': dataset['O3'][time, :, y, x].squeeze()[::-1][inds] * 1000,
+            'humidity': dataset['QV'][timeind, :, y, x].squeeze()[::-1][inds] * 1000,
+            'ozone': dataset['O3'][timeind, :, y, x].squeeze()[::-1][inds] * 1000,
         }
 
         return data
