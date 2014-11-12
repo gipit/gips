@@ -210,8 +210,11 @@ class DataInventory(Inventory):
 
         if fetch:
             try:
-                dataclass.fetch(self.products.base, self.spatial.tiles, self.temporal.dates, self.temporal.days)
+                dates = self.temporal.datebounds
+                days = self.temporal.daybounds
+                dataclass.fetch(self.products.base, self.spatial.tiles, dates, days)
             except Exception:
+                #VerboseOut(traceback.format_exc(), 3)
                 raise Exception('DataInventory: Error downloading')
             dataclass.Asset.archive(Repository.spath())
         self.data = {}
