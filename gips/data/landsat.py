@@ -32,7 +32,7 @@ import traceback
 
 import gippy
 from gips.data.core import Repository, Asset, Data
-from gips.atmosphere import MODTRAN
+from gips.atmosphere import atmospheric_model, MODTRAN
 from gips.inventory import DataInventory
 from gips.utils import VerboseOut, RemoveFiles
 import gips.settings as settings
@@ -269,7 +269,6 @@ class LandsatData(Data):
     }
 
     def SixS(self):
-        from gips.utils import atmospheric_model
         from Py6S import SixS, Geometry, AeroProfile, Altitudes, Wavelength, GroundReflectance, AtmosCorr, SixSHelpers
         start = datetime.now()
         VerboseOut('Running atmospheric model (6S)', 2)

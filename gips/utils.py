@@ -99,42 +99,6 @@ def basename(str):
     return os.path.splitext(os.path.basename(str))[0]
 
 
-def atmospheric_model(doy, lat):
-    """ Determine atmospheric model
-    1 - Tropical
-    2 - Mid-Latitude Summer
-    3 - Mid-Latitude Winter
-    4 - Sub-Arctic Summer
-    5 - Sub-Arctic Winter
-    6 - US Standard Atmosphere
-    """
-    # Determine season
-    if doy < 121 or doy > 274:
-        if lat < 0:
-            summer = True
-        else:
-            summer = False
-    else:
-        if lat < 0:
-            summer = False
-        else:
-            summer = True
-    # Determine model
-    if abs(lat) <= 15:
-        model = 1
-    elif abs(lat) >= 60:
-        if summer:
-            model = 4
-        else:
-            model = 5
-    else:
-        if summer:
-            model = 2
-        else:
-            model = 3
-    return model
-
-
 def chunk_data(datasz, nchunks=100):
     """ Create chunks given input data size """
     if len(datasz) == 3:
