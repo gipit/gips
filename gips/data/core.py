@@ -183,6 +183,7 @@ class Asset(object):
 
     # Sensors
     _sensors = {
+        # Does the data have multiple sensors possible for each asset? If not, a single sensor may be fine
         '': {'description': ''},
     }
     # dictionary of assets
@@ -272,6 +273,9 @@ class Asset(object):
         url = cls._assets[asset].get('url', '')
         if url == '':
             raise Exception("%s: URL not defined for asset %s" % (cls.__name__, asset))
+
+        # TODO - extend to be base functionatlity called with super().fetch()
+        # TODO - move ftp to separate fetch_ftp function
 
         ftpurl = url.split('/')[0]
         ftpdir = url[len(ftpurl):]
@@ -714,6 +718,7 @@ class Data(object):
                             cls.Asset.fetch(a, t, d)
                             fetched.append((a, t, d))
                         except Exception, e:
+                            VerboseOut(traceback.format_exc(), 4)
                             VerboseOut('Problem fetching asset: %s' % e, 3)
         return fetched
 
