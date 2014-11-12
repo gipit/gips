@@ -46,6 +46,11 @@ REPOS = {
     # Landsat 5, 7, 8
     'landsat': {
         'rootpath': '',
+        # Atmospheric correction
+        '6S': True,
+        'MODTRAN': True,
+        # Extract the files from tar.gz before processing (opposed to accessing directly)
+        'extract': False,
     },
     # MODIS
     'modis': {
