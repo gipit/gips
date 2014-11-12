@@ -80,8 +80,8 @@ class MODTRAN():
 
         # run output and get results
         modout = commands.getstatusoutput('modtran')
-        VerboseOut("MODTRAN Output:", 4)
-        [VerboseOut(m, 4) for m in modout]
+        #VerboseOut("MODTRAN Output:", 4)
+        #[VerboseOut(m, 4) for m in modout]
         self.output = self.readoutput(bandnum)
 
         VerboseOut('MODTRAN Output: %s' % ' '.join([str(s) for s in self.output]), 4)
