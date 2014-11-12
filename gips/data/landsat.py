@@ -548,7 +548,7 @@ class LandsatData(Data):
                     if bname[-7:] != 'MTL.txt':
                         files = glob.glob(os.path.join(self.path, bname) + '*')
                         RemoveFiles(files)
-            #shutil.rmtree(os.path.join(self.path, 'modtran'))
+            shutil.rmtree(os.path.join(self.path, 'modtran'))
         except:
             #VerboseOut(traceback.format_exc(), 4)
             pass
