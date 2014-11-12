@@ -32,7 +32,7 @@ import traceback
 
 import gippy
 from gips.data.core import Repository, Asset, Data
-from gips.data.modtran import MODTRAN
+from gips.atmosphere import MODTRAN
 from gips.inventory import DataInventory
 from gips.utils import VerboseOut, RemoveFiles
 import gips.settings as settings
