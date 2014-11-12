@@ -268,8 +268,6 @@ class LandsatData(Data):
         },
     }
 
-    extract = False
-
     def SixS(self):
         from gips.utils import atmospheric_model
         from Py6S import SixS, Geometry, AeroProfile, Altitudes, Wavelength, GroundReflectance, AtmosCorr, SixSHelpers
@@ -542,8 +540,7 @@ class LandsatData(Data):
 
         # cleanup directory
         try:
-            # Not needed, reading directly from tar.gz
-            if self.extract:
+            if settings.REPOS['landsat']['extract']:
                 for bname in self.assets[''].datafiles():
                     if bname[-7:] != 'MTL.txt':
                         files = glob.glob(os.path.join(self.path, bname) + '*')
@@ -664,7 +661,7 @@ class LandsatData(Data):
         # make sure metadata is loaded
         self.meta()
 
-        if self.extract:
+        if settings.REPOS['landsat']['extract']:
             # Extract all files
             datafiles = self.assets[''].extract(self.metadata['filenames'])
         else:
