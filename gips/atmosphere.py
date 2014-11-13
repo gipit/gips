@@ -28,12 +28,19 @@ Any info passed in beyond this should be via keywords
 """
 
 import os
+import sys
 import datetime
 import commands
 import tempfile
 import shutil
+import numpy
+
 from gips.utils import List2File, VerboseOut
 from gips.data.merra import MerraData
+from gips.data.aod import AODData
+
+
+from Py6S import SixS, Geometry, AeroProfile, Altitudes, Wavelength, GroundReflectance, AtmosCorr, SixSHelpers
 
 
 def atmospheric_model(doy, lat):
@@ -72,10 +79,81 @@ def atmospheric_model(doy, lat):
     return model
 
 
+class SIXS():
+    """ Class for running 6S atmospheric model """
+    # TODO - genericize to move away from landsat specific
+
+    def __init__(self, bandnums, wavelengths, geometry, date_time, sensor=None):
+        """ Run SixS atmospheric model using Py6S """
+        start = datetime.datetime.now()
+        VerboseOut('Running atmospheric model (6S)', 2)
+
+        s = SixS()
+        # Geometry
+        s.geometry = Geometry.User()
+        s.geometry.from_time_and_location(geometry['lat'], geometry['lon'], str(date_time),
+                                          geometry['zenith'], geometry['azimuth'])
+        s.altitudes = Altitudes()
+        s.altitudes.set_target_sea_level()
+        s.altitudes.set_sensor_satellite_level()
+
+        doy = (date_time - datetime.datetime(date_time.year, 1, 1)).days + 1
+        # Atmospheric profile
+        s.atmos_profile = atmospheric_model(doy, geometry['lat'])
+
+        # Aerosols
+        # TODO - dynamically adjust AeroProfile?
+        s.aero_profile = AeroProfile.PredefinedType(AeroProfile.Continental)
+
+        self.aod = AODData.get_aod(geometry['lat'], geometry['lon'], date_time)
+        s.aot550 = self.aod[1]
+
+        # Other settings
+        s.ground_reflectance = GroundReflectance.HomogeneousLambertian(GroundReflectance.GreenVegetation)
+        s.atmos_corr = AtmosCorr.AtmosCorrLambertianFromRadiance(1.0)
+
+        # Used for testing
+        success = False
+        if sensor is not None:
+            if sensor == 'LT5':
+                func = SixSHelpers.Wavelengths.run_landsat_tm
+            elif sensor == 'LE7':
+                func = SixSHelpers.Wavelengths.run_landsat_etm
+            # LC8 doesn't seem to work
+            #elif sensor == 'LC8':
+            #    func = SixSHelpers.Wavelengths.run_landsat_oli
+            stdout = sys.stdout
+            sys.stdout = open(os.devnull, 'w')
+            wvlens, outputs = func(s)
+            sys.stdout = stdout
+            success = True
+        # If that didn't work, then run using wvlen bounds
+        if not success:
+            outputs = []
+            for wv in wavelengths:
+                s.wavelength = Wavelength(wv[0], wv[1])
+                s.run()
+                outputs.append(s.outputs)
+
+        self.results = {}
+        VerboseOut("{:>6} {:>8}{:>8}{:>8}".format('Band', 'T', 'Lu', 'Ld'), 2)
+        for b, out in enumerate(outputs):
+            t = out.trans['global_gas'].upward
+            Lu = out.atmospheric_intrinsic_radiance
+            Ld = (out.direct_solar_irradiance + out.diffuse_solar_irradiance + out.environmental_irradiance) / numpy.pi
+            self.results[bandnums[b]] = [t, Lu, Ld]
+            VerboseOut("{:>6}: {:>8.3f}{:>8.2f}{:>8.2f}".format(bandnums[b], t, Lu, Ld), 2)
+
+        VerboseOut('Ran atmospheric model in %s' % str(datetime.datetime.now() - start), 2)
+
+
 class MODTRAN():
+    """ Class for running MODTRAN atmospheric model """
+    # TODO - allow for multiple bands
+    # TODO - channel integration to move away from using .chn files (tied to landsat bands)
+
     # hard-coded options
     filterfile = True
-    _workdir = 'modtran'
     _datadir = '/usr/local/modtran/DATA'
 
     def __init__(self, bandnum, wvlen1, wvlen2, dtime, lat, lon, profile=False):
@@ -128,6 +206,8 @@ class MODTRAN():
 
         # Change back to original directory
         os.chdir(pwd)
+
+        #print 'MODTRAN dir: ', tmpdir
         # Remove directory
         shutil.rmtree(tmpdir)
 
