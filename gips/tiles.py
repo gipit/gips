@@ -28,7 +28,6 @@ import traceback
 
 import gippy
 from gips import SpatialExtent
-from gips.exceptions import DataNotFoundException
 from gips.utils import VerboseOut, Colors, mosaic
 
 
@@ -49,19 +48,12 @@ class Tiles(object):
         for t in self.spatial.tiles:
             try:
                 tile = dataclass(t, self.date)
-                good = tile.filter(**kwargs)
                 # TODO - fix custom filter based on dataclass...sensor should pass to 'dataclass'
-                if good:  # and tile.sensor in sensors:
+                if tile.valid and tile.filter(**kwargs):  # and tile.sensor in sensors:
                     self.tiles[t] = tile
-            except DataNotFoundException:   # don't have data for this tile/date
-                #VerboseOut(traceback.format_exc(), 5)
-                pass
             except Exception, e:            # re-raise all other exceptions
                 print traceback.format_exc()
                 raise Exception(e)
-
-        if len(self.tiles) == 0:
-            raise DataNotFoundException('No tiles found for %s ' % date)
         #VerboseOut('%s: found %s tiles' % (self.date, len(self.tiles)), 4)
 
     def __len__(self):

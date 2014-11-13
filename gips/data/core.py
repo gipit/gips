@@ -35,7 +35,6 @@ import ftplib
 
 import gippy
 from gips import settings, GeoVector, __version__
-from gips.exceptions import DataNotFoundException
 from gips.utils import VerboseOut, RemoveFiles, File2List, List2File, Colors, basename
 
 """
@@ -462,7 +461,7 @@ class Data(object):
         pass
 
     def filter(self, **kwargs):
-        """ Check if tile passes filter """
+        """ Check if tile passes filter - autofail if there are no assets or products """
         return True
 
     @classmethod
@@ -513,8 +512,6 @@ class Data(object):
                 self.sensors[asset.asset] = asset.sensor
             # Find products
             self.ParseAndAddFiles()
-            if len(self.assets) == 0 and len(self.filenames) == 0:
-                raise DataNotFoundException('%s: No assets or products for %s on %s' % (self.name, tile, date))
         elif path is not None:
             self.path = path
 
@@ -542,6 +539,10 @@ class Data(object):
     def __len__(self):
         """ Number of products """
         return len(self.filenames)
+
+    @property
+    def valid(self):
+        return False if len(self.filenames) == 0 and len(self.assets) == 0 else True
 
     @property
     def day(self):
@@ -675,12 +676,13 @@ class Data(object):
                 except:
                     pass
 
+        datas = []
         if len(files) == 0:
-            raise DataNotFoundException('Files: No valid files found')
+            return datas
 
         # Group by date
         sind = len(basename(files[0]).split('_')) - 3
-        datas = []
+        
         func = lambda x: datetime.strptime(basename(x).split('_')[sind], datedir).date()
         for date, fnames in groupby(sorted(files), func):
             dat = cls(path=path)

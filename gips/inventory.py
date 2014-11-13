@@ -221,9 +221,9 @@ class DataInventory(Inventory):
         for date in self.temporal.prune_dates(self.spatial.available_dates):
             try:
                 dat = Tiles(dataclass, self.spatial, date, self.products, **kwargs)
-                self.data[date] = dat
+                if len(dat) > 0:
+                    self.data[date] = dat
             except Exception, e:
-                # No tiles for this date!
                 raise Exception('DataInventory: Error accessing tiles in %s repository' % dataclass.name)
 
         if len(self.data) == 0:
