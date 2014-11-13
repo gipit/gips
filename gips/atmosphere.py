@@ -38,9 +38,12 @@ import numpy
 from gips.utils import List2File, VerboseOut
 from gips.data.merra import MerraData
 from gips.data.aod import AODData
-
-
 from Py6S import SixS, Geometry, AeroProfile, Altitudes, Wavelength, GroundReflectance, AtmosCorr, SixSHelpers
+
+
+class AtmCorrException(Exception):
+    """ Error thrown if failed atmospheric correction """
+    pass
 
 
 def atmospheric_model(doy, lat):
@@ -113,27 +116,30 @@ class SIXS():
         s.atmos_corr = AtmosCorr.AtmosCorrLambertianFromRadiance(1.0)
 
         # Used for testing
-        success = False
-        if sensor is not None:
-            if sensor == 'LT5':
-                func = SixSHelpers.Wavelengths.run_landsat_tm
-            elif sensor == 'LE7':
-                func = SixSHelpers.Wavelengths.run_landsat_etm
-            # LC8 doesn't seem to work
-            #elif sensor == 'LC8':
-            #    func = SixSHelpers.Wavelengths.run_landsat_oli
-            stdout = sys.stdout
-            sys.stdout = open(os.devnull, 'w')
-            wvlens, outputs = func(s)
-            sys.stdout = stdout
-            success = True
-        # If that didn't work, then run using wvlen bounds
-        if not success:
-            outputs = []
-            for wv in wavelengths:
-                s.wavelength = Wavelength(wv[0], wv[1])
-                s.run()
-                outputs.append(s.outputs)
+        try:
+            success = False
+            if sensor is not None:
+                if sensor == 'LT5':
+                    func = SixSHelpers.Wavelengths.run_landsat_tm
+                elif sensor == 'LE7':
+                    func = SixSHelpers.Wavelengths.run_landsat_etm
+                # LC8 doesn't seem to work
+                #elif sensor == 'LC8':
+                #    func = SixSHelpers.Wavelengths.run_landsat_oli
+                stdout = sys.stdout
+                sys.stdout = open(os.devnull, 'w')
+                wvlens, outputs = func(s)
+                sys.stdout = stdout
+                success = True
+            # If that didn't work, then run using wvlen bounds
+            if not success:
+                outputs = []
+                for wv in wavelengths:
+                    s.wavelength = Wavelength(wv[0], wv[1])
+                    s.run()
+                    outputs.append(s.outputs)
+        except Exception, e:
+            raise AtmCorrException("Error running 6S: %s" % e)
 
         self.results = {}
         VerboseOut("{:>6} {:>8}{:>8}{:>8}".format('Band', 'T', 'Lu', 'Ld'), 2)
@@ -196,11 +202,14 @@ class MODTRAN():
         rootnames = self.addband(bandnum, wvlen1, wvlen2)
         List2File(rootnames, 'mod5root.in')
 
-        # run output and get results
-        modout = commands.getstatusoutput('modtran')
-        #VerboseOut("MODTRAN Output:", 4)
-        #[VerboseOut(m, 4) for m in modout]
-        self.output = self.readoutput(bandnum)
+        try:
+            # run output and get results
+            modout = commands.getstatusoutput('modtran')
+            #VerboseOut("MODTRAN Output:", 4)
+            #[VerboseOut(m, 4) for m in modout]
+            self.output = self.readoutput(bandnum)
+        except:
+            raise Exception("Error running MODTRAN")
 
         VerboseOut('MODTRAN Output: %s' % ' '.join([str(s) for s in self.output]), 4)
 
