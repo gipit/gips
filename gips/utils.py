@@ -116,33 +116,34 @@ def chunk_data(datasz, nchunks=100):
     return chunks
 
 
-def _mr_init(_readfunc, _func):
+def _mr_init(_readfunc, _func, _numbands):
     """ Put functions witin global namespace for each process """
-    global readfunc, func
+    global readfunc, func, numbands
     readfunc = _readfunc
     func = _func
+    numbands = _numbands
 
 
-def _mr_worker_3d_to_2d(chunk):
-    """ Reduces multiple band image (bands x rows x cols) to single band image (rows x cols) """
+def _mr_worker(chunk):
+    """ Reduces multiple band image (inbands x rows x cols) to multiple band image (outbands x rows x cols) """
     data = readfunc(gippy.Recti(chunk[0], chunk[1], chunk[2], chunk[3]))
-    valid = numpy.all(~numpy.isnan(data), axis=0)
-    output = numpy.zeros((data.shape[1], data.shape[2]))
-    output[valid] = func(data[:, valid])
+    valid = numpy.all(~numpy.isnan(data), axis=1)
+    output = numpy.zeros((numbands, data.shape[0], data.shape[1]))
+    output[:, valid] = func(data[:, valid])
     data = None
     return output
 
 
-def map_reduce(datasz, readfunc, func, nchunks=100, nproc=2):
-    """ Chunk up data read from readfunc, apply func, then reassemble into output array """
-    chunks = chunk_data(datasz, nchunks=nchunks)
-    pool = multiprocessing.Pool(nproc, initializer=_mr_init, initargs=(readfunc, func))
-    dataparts = pool.map(_mr_worker_3d_to_2d, chunks)
+def map_reduce(readfunc, func, imgsz, numbands=1, nchunks=100, nproc=2):
+    """ Chunk up data read from readfunc, apply func, then reassemble into a numbands output array """
+    chunks = chunk_data(imgsz, nchunks=nchunks)
+    pool = multiprocessing.Pool(nproc, initializer=_mr_init, initargs=(readfunc, func, numbands))
+    dataparts = pool.map(_mr_worker, chunks)
     # reassemble data
-    dataout = numpy.zeros((datasz[1], datasz[2]))
+    dataout = numpy.zeros((numbands, imgsz[0], imgsz[1]))
     for i, ch in enumerate(chunks):
-        dataout[ch[1]:ch[1] + ch[3], ch[0]:ch[0] + ch[2]] = dataparts[i]
-    return dataout
+        dataout[:, ch[1]:ch[1] + ch[3], ch[0]:ch[0] + ch[2]] = dataparts[i]
+    return dataout.squeeze()
 
 
 def crop2vector(img, vector):

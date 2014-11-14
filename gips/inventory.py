@@ -32,7 +32,7 @@ from copy import deepcopy
 import gippy
 from gips import __version__, SpatialExtent, TemporalExtent
 from gips.tiles import Tiles
-from gips.utils import VerboseOut, Colors, basename
+from gips.utils import VerboseOut, Colors, basename, map_reduce
 from gips.data.core import Data
 
 
@@ -153,16 +153,21 @@ class ProjectInventory(Inventory):
         return imgout
 
     def data_size(self):
+        """ Get 'shape' of inventory: #products x rows x columns """
         img = gippy.GeoImage(self.data[self.dates[0]].open(self.requested_products[0]))
         sz = (len(self.requested_products), img.YSize(), img.XSize())
         return sz
 
-    def get_data(self, dates, chunk=0):
+    def get_data(self, dates=None, products=None, chunk=0):
         """ Read all files as time series, stacking all products """
         # TODO - change to absolute dates
         days = numpy.array([int(d.strftime('%j')) for d in dates])
         imgarr = []
-        for p in self.requested_products:
+        if dates is None:
+            dates = self.dates
+        if products is None:
+            products = self.requested_products
+        for p in products:
             gimg = self.get_timeseries(p, dates=dates)
             # TODO - move numpy.squeeze into swig interface file?
             arr = numpy.squeeze(gimg.TimeSeries(days.astype('float64'), chunk))
@@ -182,6 +187,15 @@ class ProjectInventory(Inventory):
         filenames = [self.data[date][product] for date in dates]
         img = gippy.GeoImage(filenames)
         return img
+
+    def map_reduce(self, func, numbands=1, products=None, readfunc=None, **kwargs):
+        """ Apply func to inventory to generate an image with numdim output bands """
+        if products is None:
+            products = self.requested_products
+        if readfunc is None:
+            readfunc = lambda x: self.get_data(products=products, chunk=x)
+            sz = self.inv.data_size()
+        return map_reduce(readfunc, func, sz[1:2], numbands, **kwargs)
 
 
 class DataInventory(Inventory):
@@ -391,5 +405,5 @@ class DataInventory(Inventory):
             else:
                 VerboseOut('Command %s not recognized' % args.command, 0)
         except Exception, e:
-            VerboseOut('Error in %s: %s' % (args.command, e))
             VerboseOut(traceback.format_exc(), 4)
+            VerboseOut('Error in %s: %s' % (args.command, e))
