@@ -146,7 +146,7 @@ class Tiles(object):
         asset_coverage = {}
         for a in self.dataclass.Asset._assets:
             cov = 0.0
-            norm = float(len(self.coverage)) if self.spatial.site is None else 1.0
+            norm = float(len(self.spatial.coverage)) if self.spatial.site is None else 1.0
             for t in self.tiles:
                 if a in self.tiles[t].assets:
                     cov = cov + (self.spatial.coverage[t][0] / norm)
@@ -158,7 +158,7 @@ class Tiles(object):
         coverage = {}
         for p in self.dataclass._products.keys():
             assets = self.dataclass.products2assets([p])
-            norm = float(len(self.coverage)) if self.spatial.site is None else 1.0
+            norm = float(len(self.spatial.coverage)) if self.spatial.site is None else 1.0
             cov = 0.0
             for t in self.tiles:
                 allassets = True
