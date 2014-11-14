@@ -29,7 +29,7 @@ import math
 import numpy as np
 
 import gippy
-from gips.core import Repository, Asset, Data
+from gips.data.core import Repository, Asset, Data
 from gips.inventory import DataInventory
 from gips.utils import VerboseOut
 import gips.settings as settings
@@ -226,12 +226,15 @@ class ModisData(Data):
 
     }
 
-    def process(self, products, **kwargs):
+    def process(self, *args, **kwargs):
         """ Process all products """
+        products = super(ModisData, self).process(*args, **kwargs)
+        if len(products) == 0:
+            return
 
         fname = os.path.join(self.path, self.basename)
 
-        for key, val in products.items():
+        for key, val in products.requested.items():
             start = datetime.datetime.now()
 
             # Check for asset availability
@@ -239,6 +242,9 @@ class ModisData(Data):
             missingassets = []
             availassets = []
             allsds = []
+
+            # Default sensor for products
+            sensor = 'MCD'
 
             for asset in assets:
                 try:
@@ -257,7 +263,7 @@ class ModisData(Data):
             meta['AVAILABLE_ASSETS'] = ' '.join(availassets)
 
             if val[0] == "quality":
-                fname = '%s_%s_%s.tif' % (fname, 'MCD', key)
+                fname = '%s_%s_%s.tif' % (fname, sensor, key)
                 os.symlink(allsds[0], fname)
                 imgout = gippy.GeoImage(fname)
 
@@ -265,7 +271,8 @@ class ModisData(Data):
             if val[0] == "indices":
                 VERSION = "1.0"
                 meta['VERSION'] = VERSION
-                fname = '%s_%s_%s' % (fname, 'MCD', key)
+                sensor = 'MCD'
+                fname = '%s_%s_%s' % (fname, sensor, key)
 
                 refl = gippy.GeoImage(allsds)
 
@@ -328,7 +335,7 @@ class ModisData(Data):
             if val[0] == "snow":
                 VERSION = "1.0"
                 meta['VERSION'] = VERSION
-                fname = '%s_%s_%s' % (fname, 'MCD', key)
+                fname = '%s_%s_%s' % (fname, sensor, key)
 
                 if not missingassets:
                     availbands = [0, 1]
@@ -449,7 +456,8 @@ class ModisData(Data):
             if val[0] == "temp":
                 VERSION = "1.1"
                 meta['VERSION'] = VERSION
-                fname = '%s_%s_%s' % (fname, 'MOD-MYD', key)
+                sensor = 'MOD-MYD'
+                fname = '%s_%s_%s' % (fname, sensor, key)
 
                 if not missingassets:
                     availbands = [0, 1, 2, 3]
@@ -477,8 +485,11 @@ class ModisData(Data):
                 imgout.SetNoData(65535)
                 imgout.SetGain(0.02)
 
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> develop
                 # there are four temperature bands
                 for iband, band in enumerate(availbands):
                     # get meta name template info
@@ -561,7 +572,8 @@ class ModisData(Data):
             if val[0] == "ndvi8":
                 VERSION = "1.0"
                 meta['VERSION'] = VERSION
-                fname = '%s_%s_%s' % (fname, 'MOD', key)
+                sensor = 'MOD'
+                fname = '%s_%s_%s' % (fname, sensor, key)
 
                 refl = gippy.GeoImage(allsds)
                 refl.SetBandName("RED", 1)
@@ -573,7 +585,8 @@ class ModisData(Data):
 
             # TEMPERATURE PRODUCT (8-day) - Terra only
             if val[0] == "temp8":
-                fname = '%s_%s_%s.tif' % (fname, 'MOD', key)
+                sensor = 'MOD'
+                fname = '%s_%s_%s.tif' % (fname, sensor, key)
                 os.symlink(allsds[0], fname)
                 imgout = gippy.GeoImage(fname)
 
@@ -582,9 +595,13 @@ class ModisData(Data):
             imgout.SetMeta(meta)
 
             # add product to inventory
-            self.products[val[0]] = imgout.Filename()
+            self.AddFile(sensor, key, imgout.Filename())
             VerboseOut(' -> %s: processed in %s' % (os.path.basename(fname), datetime.datetime.now() - start), 1)
 
 
 def main():
     DataInventory.main(ModisData)
+
+
+def test():
+    ModisData.test()

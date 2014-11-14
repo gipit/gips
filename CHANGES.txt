@@ -19,7 +19,11 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program. If not, see <http://www.gnu.org/licenses/>
 ################################################################################
-v0.7.2
+v0.8.0
+- Refactor of core inventory and tiles for streamlined code reuse
+
+Landsat
+- Added wtemp product (Water temperature, atm corrected with MODTRAN using custom profiles from MERRA data)
 
 MODIS
 - fixed bug in MODIS temperature making them unable to be used in project (multiple identical output band names)

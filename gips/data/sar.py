@@ -26,10 +26,9 @@ import datetime
 import tarfile
 import copy
 import numpy
-from collections import OrderedDict
 
 import gippy
-from gips.core import Repository, Asset, Data
+from gips.data.core import Repository, Asset, Data
 from gips.inventory import DataInventory
 from gips.utils import File2List, List2File, RemoveFiles
 import gips.settings as settings
@@ -239,19 +238,16 @@ class SARData(Data):
     Asset = SARAsset
 
     _pattern = '*'
-    _products = OrderedDict([
-        ('sign', {
+    _products = {
+        'sign': {
             'description': 'Sigma nought (radar backscatter coefficient)',
-        }),
-        ('linci', {
+        },
+        'linci': {
             'description': 'Incident angles',
-        }),
-        ('date', {
+        },
+        'date': {
             'description': 'Day of year array',
-        }),
-    ])
-    _groups = {
-        'Standard': _products.keys(),
+        },
     }
 
     def meta(self):
@@ -263,16 +259,24 @@ class SARData(Data):
         files = self.assets[''].extract(filenames=[hdr_bname])
         return self.Asset._meta(files['hdr'])
 
-    def process(self, products, **kwargs):
+    def find_files(self, path):
+        """ Search path for valid files """
+        filenames = super(SARData, self).find_files(path)
+        filenames[:] = [f for f in filenames if os.path.splitext(f)[1] != '.hdr']
+        return filenames
+
+    def process(self, *args, **kwargs):
         """ Make sure all products have been pre-processed """
+        products = super(SARData, self).process(*args, **kwargs)
+        if len(products) == 0:
+            return
+
         sensor = self.sensor_set[0]
         self.basename = self.basename + '_' + sensor
-        if len(products) == 0:
-            raise Exception('Tile %s: No products specified' % self.tile)
         # extract all data from archive
         datafiles = self.assets[''].extract()
         meta = self.meta()
-        for key, val in products.items():
+        for key, val in products.requested.items():
             fname = os.path.join(self.path, self.basename + '_' + key)
             if val[0] == 'sign':
                 bands = [datafiles[b] for b in ["sl_HH", "sl_HV"] if b in datafiles]
@@ -290,27 +294,28 @@ class SARData(Data):
                 for b in range(0, imgout.NumBands()):
                     imgout.SetBandName(img[b].Description(), b + 1)
                     (img[b].pow(2).log10() * 10 + meta['CF']).Process(imgout[b])
-                self.products['sign'] = imgout.Filename()
+                fname = imgout.Filename()
                 img = None
                 imgout = None
             if val[0] == 'linci':
                 # Note the linci product DOES NOT mask by date
                 os.rename(datafiles['linci'], fname)
                 os.rename(datafiles['linci'] + '.hdr', fname + '.hdr')
-                self.products['linci'] = fname
             if val[0] == 'date':
                 # Note the date product DOES NOT mask by date
                 os.rename(datafiles['date'], fname)
                 os.rename(datafiles['date'] + '.hdr', fname + '.hdr')
-                datafiles['date'] = fname
-                self.products['date'] = fname
-
+            self.AddFile(sensor, key, fname)
         # Remove unused files
         # TODO - checking key rather than val[0] (the full product suffix)
-        for key, f in datafiles.items():
-            if key not in self.products and key != 'hdr':
-                RemoveFiles([f], ['.hdr', '.aux.xml'])
+        if 'hdr' in datafiles:
+            del datafiles['hdr']
+        RemoveFiles(datafiles.values(), ['.hdr', '.aux.xml'])
 
 
 def main():
     DataInventory.main(SARData)
+
+
+def test():
+    SARData.test()

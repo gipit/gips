@@ -23,10 +23,9 @@
 
 import os
 import datetime
-from collections import OrderedDict
 
 import gippy
-from gips.core import Repository, Asset, Data
+from gips.data.core import Repository, Asset, Data
 from gips.inventory import DataInventory
 from gips.utils import RemoveFiles, VerboseOut
 import gips.settings as settings
@@ -106,34 +105,38 @@ class SARAnnualData(Data):
     Asset = SARAnnualAsset
 
     _pattern = '*'
-    _products = OrderedDict([
-        ('sign', {
+    _products = {
+        'sign': {
             'description': 'Sigma nought (radar backscatter coefficient)',
-            'assets': 'MOS',
-        }),
-        ('fnf', {
+            'assets': ['MOS'],
+        },
+        'fnf': {
             'description': 'Forest/NonForest Mask',
-            'assets': 'FNF',
-        })
-    ])
-    _groups = {
-        'Standard': _products.keys(),
+            'assets': ['FNF'],
+        }
     }
 
     def meta(self, tile):
         """ Get metadata for this tile """
         return {'CF': -83.0}
 
-    def process(self, products):
-        """ Process all requested products for this tile """
-        self.basename = self.basename + '_' + self.sensor_set[0]
-        if len(products) == 0:
-            raise Exception('Tile %s: No products specified' % self.tile)
+    def find_files(self, path):
+        """ Search path for valid files """
+        filenames = super(SARAnnualData, self).find_files(path)
+        filenames[:] = [f for f in filenames if os.path.splitext(f)[1] != '.hdr']
+        return filenames
 
-        for key, val in products.items():
+    def process(self, *args, **kwargs):
+        """ Process all requested products for this tile """
+        products = super(SARAnnualData, self).process(*args, **kwargs)
+        if len(products) == 0:
+            return
+
+        self.basename = self.basename + '_' + self.sensor_set[0]
+        for key, val in products.requested.items():
             fname = os.path.join(self.path, self.basename + '_' + key)
             # Verify that asset exists
-            asset = self._products[val[0]]['assets']
+            asset = self._products[val[0]]['assets'][0]
             try:
                 datafiles = self.assets[asset].extract()
             except:
@@ -154,9 +157,7 @@ class SARAnnualData(Data):
                     fname = imgout.Filename()
                     img = None
                     imgout = None
-                    for key, f in datafiles.items():
-                        if key != 'hdr':
-                            RemoveFiles([f], ['.hdr', '.aux.xml'])
+                    [RemoveFiles([f], ['.hdr', '.aux.xml']) for k, f in datafiles.items() if k != 'hdr']
             if val[0] == 'fnf':
                 if 'C' in datafiles:
                     # rename both files to product name
@@ -165,8 +166,12 @@ class SARAnnualData(Data):
                     img = gippy.GeoImage(fname)
                     img.SetNoData(0)
                     img = None
-            self.products[key] = fname
+            self.AddFile(self.sensor_set[0], key, fname)
 
 
 def main():
     DataInventory.main(SARAnnualData)
+
+
+def test():
+    SARAnnualData.test()
