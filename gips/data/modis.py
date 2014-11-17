@@ -485,11 +485,6 @@ class ModisData(Data):
                 imgout.SetNoData(65535)
                 imgout.SetGain(0.02)
 
-<<<<<<< HEAD
-
-
-=======
->>>>>>> develop
                 # there are four temperature bands
                 for iband, band in enumerate(availbands):
                     # get meta name template info
