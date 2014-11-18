@@ -206,7 +206,7 @@ class Asset(object):
         # tile designation
         self.tile = ''
         # full date
-        self.date = datetime(1900, 1, 1)
+        self.date = datetime(1858, 1, 1)
         # sensor code (key used in cls.sensors dictionary)
         self.sensor = ''
         # dictionary of existing products in asset {'product name': [filename(s)]}
@@ -508,6 +508,9 @@ class Data(object):
             for asset in self.Asset.discover(tile, date):
                 self.assets[asset.asset] = asset
                 # products that come automatically with assets
+                for p, val in asset.products.items():
+                    self.filenames[(asset.sensor, p)] = val
+                    self.sensors[p] = asset.sensor
                 self.filenames.update({(asset.sensor, p): val for p, val in asset.products.items()})
                 self.sensors[asset.asset] = asset.sensor
             # Find products
@@ -682,7 +685,7 @@ class Data(object):
 
         # Group by date
         sind = len(basename(files[0]).split('_')) - 3
-        
+
         func = lambda x: datetime.strptime(basename(x).split('_')[sind], datedir).date()
         for date, fnames in groupby(sorted(files), func):
             dat = cls(path=path)
