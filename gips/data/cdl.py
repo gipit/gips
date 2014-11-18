@@ -37,18 +37,7 @@ class CDLRepository(Repository):
     _tiles_vector = repo.get('tiles_vector', Repository._tiles_vector)
     _tile_attribute = repo.get('tile_attribute', Repository._tile_attribute)
     _datedir = '%Y'
-
     _defaultresolution = [30.0, 30.0]
-
-    @classmethod
-    def path(cls, tile, date=''):
-        return os.path.join(cls._rootpath, cls._tilesdir, tile)
-
-    @classmethod
-    def find_dates(cls, tile):
-        """ Get list of dates for tile """
-        files = glob.glob(os.path.join(CDLRepository.path(tile), 'CDL*.tif'))
-        return [datetime.strptime(os.path.basename(f)[4:8], '%Y').date() for f in files]
 
 
 class CDLAsset(Asset):
@@ -58,7 +47,7 @@ class CDLAsset(Asset):
     }
     _assets = {
         '': {
-            'pattern': 'CDL*.tif'
+            'pattern': '*.tif'
         }
     }
 
@@ -67,18 +56,11 @@ class CDLAsset(Asset):
         super(CDLAsset, self).__init__(filename)
         # TODO - get tile (state) so we can archive
         bname = os.path.basename(filename)
-        self.date = datetime.strptime(bname[4:8], self.Repository._datedir)
+        try:
+            self.date = datetime.strptime(bname[4:8], self.Repository._datedir)
+        except:
+            self.date = datetime.strptime(bname[13:17], self.Repository._datedir)
         self.products['cdl'] = filename
-
-    # _datedir used inappropriately elsewhere. if it wasn't this could be removed
-    @classmethod
-    def discover(cls, tile, date, asset=''):
-        pattern = os.path.join(cls.Repository.path(tile), 'CDL_%s_*.tif' % date.strftime(cls.Repository._datedir))
-        files = glob.glob(pattern)
-        found = []
-        for f in files:
-            found.append(cls(f))
-        return found
 
     @classmethod
     def archive(cls, path=''):
@@ -95,8 +77,7 @@ class CDLData(Data):
     }
 
     _legend_file = os.path.join(CDLRepository._rootpath, 'CDL_Legend.csv')
-    _legend = [row['ClassName'].lower()
-               for row in DictReader(open(_legend_file))]
+    _legend = [row['ClassName'].lower() for row in DictReader(open(_legend_file))]
 
     @classmethod
     def get_code(cls, cropname):
