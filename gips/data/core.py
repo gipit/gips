@@ -206,7 +206,7 @@ class Asset(object):
         # tile designation
         self.tile = ''
         # full date
-        self.date = datetime(1858, 1, 1)
+        self.date = datetime(1858, 4, 6)
         # sensor code (key used in cls.sensors dictionary)
         self.sensor = ''
         # dictionary of existing products in asset {'product name': [filename(s)]}
