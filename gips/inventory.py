@@ -139,9 +139,9 @@ class ProjectInventory(Inventory):
             VerboseOut(traceback.format_exc(), 4)
             raise Exception("%s does not appear to be a GIPS project directory" % self.projdir)
 
-    #def product_list(self, date):
-    #    """ Intersection of available products for this date and requested products """
-    #    return self.data[date].products.intersection(self.requested_products)
+    def products(self, date):
+        """ Intersection of available products and requested products for this date """
+        return set(self.data[date].products).intersection(set(self.requested_products))
 
     def new_image(self, filename, dtype=gippy.GDT_Byte, numbands=1, nodata=None):
         """ Create new image with the same template as the files in project """
