@@ -29,7 +29,6 @@ import gippy
 from gips.algorithms.core import Algorithm
 from gips.utils import basename
 from datetime import datetime
-from pdb import set_trace
 
 
 class Project(Algorithm):
@@ -59,6 +58,8 @@ class Project(Algorithm):
             imgout.CopyMeta(img)
 
     def plot(self, classes, **kwargs):
+        """ Work in progress """
+        from pdb import set_trace
         classimg = gippy.GeoImage(classes)
         dates = numpy.array([int(datetime.strftime(d, '%Y')) for d in self.inv.dates])
         dateset = set(dates)
