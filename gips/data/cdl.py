@@ -22,7 +22,6 @@
 ################################################################################
 
 import os
-import glob
 from datetime import datetime
 from csv import DictReader
 
