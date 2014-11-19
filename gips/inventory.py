@@ -194,7 +194,7 @@ class ProjectInventory(Inventory):
             products = self.requested_products
         if readfunc is None:
             readfunc = lambda x: self.get_data(products=products, chunk=x)
-            sz = self.inv.data_size()
+        sz = self.inv.data_size()
         return map_reduce(readfunc, func, sz[1:2], numbands, **kwargs)
 
 
