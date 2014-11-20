@@ -151,6 +151,8 @@ class MerraAsset(Asset):
 
         datafiles = self.datafiles()
 
+        self.products['TS'] = filename
+
 
     def datafiles(self):
         """ Get list of datafiles from asset (if archive file) """
@@ -328,6 +330,15 @@ class MerraData(Data):
         'daily_weather': {
             'description': 'Climate forcing data, e.g. for DNDC',
             'assets': ['T2M', 'PRECTOT']        
+ 
+        },
+        'T2M': {
+            'description': 'Temperature at 2 m above the displacement height',
+            'assets': ['T2M']            
+        },
+        'T10M': {
+            'description': 'Temperature at 10 m above the displacement height',
+            'assets': ['T10M']            
         }
     }
     
