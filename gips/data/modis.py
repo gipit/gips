@@ -192,7 +192,7 @@ class ModisData(Data):
     _pattern = '*.tif'
     _productgroups = {
         "Nadir BRDF-Adjusted 16-day": ['indices', 'quality'],
-        "Terra/Aqua Daily": ['snow', 'temp'],
+        "Terra/Aqua Daily": ['snow', 'temp', 'obstime'],
         "Terra 8-day": ['ndvi8', 'temp8'],
     }
     _products = {
@@ -212,6 +212,10 @@ class ModisData(Data):
         },
         'temp': {
             'description': 'Surface temperature data',
+            'assets': ['MOD11A1', 'MYD11A1'],
+        },
+        'obstime': {
+            'description': 'MODIS Terra/Aqua overpass time',
             'assets': ['MOD11A1', 'MYD11A1'],
         },
         # Misc
@@ -324,6 +328,7 @@ class ModisData(Data):
                 imgout.SetBandName('BRGT', 4)
                 imgout.SetBandName('SATVI', 5)
 
+            ###################################################################
             # SNOW/ICE COVER PRODUCT
             if val[0] == "snow":
                 VERSION = "1.0"
@@ -443,9 +448,8 @@ class ModisData(Data):
                 imgout[0].Write(coverout)
                 imgout[1].Write(fracout)
 
+            ###################################################################
             # TEMPERATURE PRODUCT (DAILY)
-            # TODO: # use a missing value that is not zero, e.g. 32767 because 0 is a valid value in the QC mask
-            #  or use 1,2 in the QC mask instead of 0,1
             if val[0] == "temp":
                 VERSION = "1.1"
                 meta['VERSION'] = VERSION
@@ -476,8 +480,6 @@ class ModisData(Data):
                 imgout = gippy.GeoImage(fname, tempbands, gippy.GDT_UInt16, 5)
                 imgout.SetNoData(65535)
                 imgout.SetGain(0.02)
-
-
 
                 # there are four temperature bands
                 for iband, band in enumerate(availbands):
@@ -557,6 +559,53 @@ class ModisData(Data):
                 imgout.SetBandName('Temperature Nighttime Aqua', 4)
                 imgout.SetBandName('Temperature Best Quality', 5)
 
+            ###################################################################
+            # OBSERVATION TIME PRODUCT (DAILY)
+            if val[0] == "obstime":
+                VERSION = "1"
+                meta['VERSION'] = VERSION
+                fname = '%s_%s_%s' % (fname, 'MOD-MYD', key)
+
+                if not missingassets:
+                    availbands = [0, 1, 2, 3]
+                    hoursds = [allsds[2], allsds[6], allsds[14], allsds[18]]
+                elif missingassets[0] == 'MYD11A1':
+                    availbands = [0, 1]
+                    hoursds = [allsds[2], allsds[6]]
+                elif missingassets[0] == 'MOD11A1':
+                    availbands = [2, 3]
+                    hoursds = [allsds[2], allsds[6]]
+                else:
+                    raise
+
+                hourbands = gippy.GeoImage(hoursds)
+
+                imgout = gippy.GeoImage(fname, hourbands, gippy.GDT_Byte, 4)
+                imgout.SetNoData(0)
+                imgout.SetGain(0.1)
+
+                # there are four temperature bands
+                for iband, band in enumerate(availbands):
+                    # get meta name template info
+                    basename = hourbands[iband].Basename()
+                    platform = self.Asset._sensors[basename[:3]]['description']
+
+                    if basename.find('daytime'):
+                        dayornight = 'day'
+                    elif basename.find('nighttime'):
+                        dayornight = 'night'
+                    else:
+                        raise Exception('%s appears to be an invalid MODIS temperature project' % basename)
+
+                    hourbands[iband].Process(imgout[band])
+
+                imgout.SetBandName('Observation Time Daytime Terra', 1)
+                imgout.SetBandName('Observation Time Nighttime Terra', 2)
+                imgout.SetBandName('Observation Time Daytime Aqua', 3)
+                imgout.SetBandName('Observation Time Nighttime Aqua', 4)
+
+
+            ###################################################################
             # NDVI (8-day) - Terra only
             if val[0] == "ndvi8":
                 VERSION = "1.0"
