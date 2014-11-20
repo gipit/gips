@@ -23,131 +23,17 @@
 
 import sys
 import os
-import glob
 import argparse
 from datetime import datetime as dt
 import traceback
-from itertools import groupby
 import numpy
 from copy import deepcopy
 
 import gippy
+from gips import __version__, SpatialExtent, TemporalExtent
 from gips.tiles import Tiles
-from gips.utils import VerboseOut, parse_dates, Colors, basename
-from gips.GeoVector import GeoVector
-from gips.version import __version__
-
-
-class Products(object):
-    """ Collection of products (files) for a single date """
-
-    def __init__(self, filenames):
-        """ Create products with these filenames (should all be same date) """
-        # TODO - check that all dates are the same for all filenames
-        if not isinstance(filenames, list):
-            raise TypeError('requires list (of filenames)')
-        self.filenames = {}         # dict of product: filenames
-        self.sensors = {}           # dict of product: sensor
-        ind = len(os.path.basename(filenames[0]).split('_')) - 3
-        for f in filenames:
-            try:
-                parts = basename(f).split('_')
-                date = dt.strptime(parts[ind], '%Y%j').date()
-                product = parts[2 + ind]
-                self.sensors[product] = parts[1 + ind]
-                self.filenames[product] = f
-            except:
-                VerboseOut('Bad filename: %s' % f)
-        self.date = date
-
-    def __getitem__(self, key):
-        """ Return filename for product or (product, sensor) """
-        return self.filenames[key]
-
-    def __str__(self):
-        """ Return list of products """
-        return '%s: %s' % (self.date, ' '.join(self.products))
-
-    @property
-    def numfiles(self):
-        return len(self.filenames)
-
-    @property
-    def products(self):
-        """ List of products """
-        return set(sorted(self.filenames.keys()))
-
-    @property
-    def sensor_set(self):
-        """ List of sensors used by products """
-        return list(set(self.sensors.values()))
-
-    def which_sensor(self, key):
-        """ Return which sensor used for provided product key """
-        return self.sensors[key]
-
-    @property
-    def doy(self):
-        """ Day of year """
-        return self.date.strftime('%j')
-
-    # TODO - make general product_filter function
-    def masks(self, patterns=None):
-        """ List all products that are masks """
-        if not patterns:
-            patterns = ['acca', 'fmask', 'mask']
-        m = []
-        for p in self.products:
-            if any(pattern in p for pattern in patterns):
-                m.append(p)
-        return m
-
-    def open(self, product='', update=False):
-        """ Open and return GeoImage """
-        # TODO - assumes single sensor
-        fname = self[product]
-        if os.path.exists(fname):
-            return gippy.GeoImage(fname, update)
-        else:
-            raise Exception('%s product does not exist' % product)
-
-    def pprint_header(self):
-        return Colors.BOLD + Colors.UNDER + '{:^12}'.format('DATE') + '{:^10}'.format('Products') + Colors.OFF
-
-    def pprint(self, dformat='%j', colors=None):
-        """ Print data products """
-        sys.stdout.write('{:^12}'.format(self.date.strftime(dformat)))
-        if colors is None:
-            sys.stdout.write('  '.join(sorted(self.products)))
-        else:
-            for p in sorted(self.products):
-                sys.stdout.write(colors[self.sensors[p]] + p + Colors.OFF + '  ')
-        sys.stdout.write('\n')
-
-    @classmethod
-    def discover(cls, files0):
-        """ Factory function returns instance for every date in 'files' (filenames or directory) """
-        if not isinstance(files0, list) and os.path.isdir(os.path.abspath(files0)):
-            files0 = glob.glob(os.path.join(files0, '*.tif'))
-
-        # Check files for 3 or 4 parts and a valid date
-        files = []
-        for f in files0:
-            parts = basename(f).split('_')
-            if len(parts) == 3 or len(parts) == 4:
-                try:
-                    dt.strptime(parts[len(parts) - 3], '%Y%j')
-                except:
-                    continue
-                files.append(f)
-
-        # files will have 3 or 4 parts, so ind is 0 or 1
-        sind = len(basename(files[0]).split('_')) - 3
-        instances = []
-        for date, fnames in groupby(sorted(files), lambda x: dt.strptime(basename(x).split('_')[sind], '%Y%j').date()):
-            #for sensor, fnames2 in groupby(sorted(fnames), lambda x: basename(x).split('_')[1]):
-            instances.append(cls(list(fnames)))
-        return instances
+from gips.utils import VerboseOut, Colors, basename, map_reduce
+from gips.data.core import Data
 
 
 class Inventory(object):
@@ -184,22 +70,11 @@ class Inventory(object):
     @property
     def numfiles(self):
         """ Total number of files in inventory """
-        return sum([d.numfiles for d in self.data.values()])
+        return sum([len(dat) for dat in self.data.values()])
 
     @property
     def datestr(self):
         return '%s dates (%s - %s)' % (len(self.dates), self.dates[0], self.dates[-1])
-
-    def _temporal_extent(self, dates, days):
-        """ Temporal extent (define self.dates and self.days) """
-        if dates is None:
-            dates = '1984,2050'
-        self.start_date, self.end_date = parse_dates(dates)
-        if days:
-            days = days.split(',')
-        else:
-            days = (1, 366)
-        self.start_day, self.end_day = (int(days[0]), int(days[1]))
 
     def color(self, sensor):
         """ Return color for sensor """
@@ -238,7 +113,7 @@ class Inventory(object):
 
 
 class ProjectInventory(Inventory):
-    """ Inventory of project directory (collection of Products class) """
+    """ Inventory of project directory (collection of Data class) """
 
     def __init__(self, projdir='', products=[]):
         """ Create inventory of a GIPS project directory """
@@ -246,30 +121,27 @@ class ProjectInventory(Inventory):
         if not os.path.exists(self.projdir):
             raise Exception('Directory %s does not exist!' % self.projdir)
 
-        self.products = {}
-        files = glob.glob(os.path.join(self.projdir, '*.tif'))
+        self.data = {}
         product_set = set()
         sensor_set = set()
         try:
-            for dat in Products.discover(files):
-                self.products[dat.date] = dat
-                product_set = product_set.union(dat.products)
-                sensor_set = sensor_set.union(dat.sensors)
+            for dat in Data.discover(self.projdir):
+                self.data[dat.date] = dat
+                # All products and sensors used across all dates
+                product_set = product_set.union(dat.product_set)
+                sensor_set = sensor_set.union(dat.sensor_set)
+
             if not products:
-                products = product_set
+                products = list(product_set)
             self.requested_products = products
             self.sensors = sensor_set
         except:
+            VerboseOut(traceback.format_exc(), 4)
             raise Exception("%s does not appear to be a GIPS project directory" % self.projdir)
 
-    @property
-    def data(self):
-        """ alias used by base class to self.products """
-        return self.products
-
-    def product_list(self, date):
-        """ Intersection of available products for this date and requested products """
-        return self.products[date].products.intersection(self.requested_products)
+    def products(self, date):
+        """ Intersection of available products and requested products for this date """
+        return set(self.data[date].products).intersection(set(self.requested_products))
 
     def new_image(self, filename, dtype=gippy.GDT_Byte, numbands=1, nodata=None):
         """ Create new image with the same template as the files in project """
@@ -281,16 +153,21 @@ class ProjectInventory(Inventory):
         return imgout
 
     def data_size(self):
+        """ Get 'shape' of inventory: #products x rows x columns """
         img = gippy.GeoImage(self.data[self.dates[0]].open(self.requested_products[0]))
         sz = (len(self.requested_products), img.YSize(), img.XSize())
         return sz
 
-    def get_data(self, dates, chunk=0):
+    def get_data(self, dates=None, products=None, chunk=0):
         """ Read all files as time series, stacking all products """
         # TODO - change to absolute dates
         days = numpy.array([int(d.strftime('%j')) for d in dates])
         imgarr = []
-        for p in self.requested_products:
+        if dates is None:
+            dates = self.dates
+        if products is None:
+            products = self.requested_products
+        for p in products:
             gimg = self.get_timeseries(p, dates=dates)
             # TODO - move numpy.squeeze into swig interface file?
             arr = numpy.squeeze(gimg.TimeSeries(days.astype('float64'), chunk))
@@ -311,72 +188,59 @@ class ProjectInventory(Inventory):
         img = gippy.GeoImage(filenames)
         return img
 
+    def map_reduce(self, func, numbands=1, products=None, readfunc=None, **kwargs):
+        """ Apply func to inventory to generate an image with numdim output bands """
+        if products is None:
+            products = self.requested_products
+        if readfunc is None:
+            readfunc = lambda x: self.get_data(products=products, chunk=x)
+        sz = self.inv.data_size()
+        return map_reduce(readfunc, func, sz[1:2], numbands, **kwargs)
+
 
 class DataInventory(Inventory):
     """ Manager class for data inventories (collection of Tiles class) """
 
-    def __init__(self, dataclass, site=None, tiles=None, dates=None, days=None, products=None, fetch=False, **kwargs):
+    def __init__(self, dataclass, site=None, tiles=None, dates=None, days=None,
+                 products=None, fetch=False, pcov=0.0, ptile=0.0, **kwargs):
+        """ Create a new inventory
+        :dataclass: The Data class to use (e.g., LandsatData, ModisData)
+        :site: The site shapefile
+        :tiles: List of tile ids
+        :dates: tuple of begin and end date
+        :days: tuple of begin and end day of year
+        :products: List of requested products of interest
+        :fetch: bool indicated if missing data should be downloaded
+        """
         self.dataclass = dataclass
         Repository = dataclass.Asset.Repository
 
-        self.site = site
-        # default to all tiles
-        if tiles is None and self.site is None:
-            tiles = Repository.find_tiles()
-        # if tiles provided, make coverage all 100%
-        if tiles is not None:
-            self.tiles = {}
-            for t in tiles:
-                self.tiles[t] = (1, 1)
-        elif tiles is None and self.site is not None:
-            self.tiles = Repository.vector2tiles(GeoVector(self.site), **kwargs)
-        self._temporal_extent(dates, days)
-        self.data = {}
+        try:
+            self.spatial = SpatialExtent(dataclass, site, tiles, pcov, ptile)
+            self.temporal = TemporalExtent(dates, days)
+            self.products = dataclass.RequestedProducts(products)
+        except Exception, e:
+            raise Exception('Illformed parameters: %s' % e)
 
-        if products is None:
-            products = dataclass._products.keys()
-        prod_dict = dict([p, p.split('-')] for p in products)
-
-        # seperate out standard (each tile processed) and composite products (using inventory)
-        self.standard_products = {}
-        self.composite_products = {}
-        for p, val in prod_dict.items():
-            if val[0] not in self.dataclass._products:
-                raise Exception('Invalid product %s' % val[0])
-            if self.dataclass._products[val[0]].get('composite', False):
-                self.composite_products[p] = val
-            else:
-                self.standard_products[p] = val
         if fetch:
-            products = [val[0] for val in prod_dict.values()]
             try:
-                dataclass.fetch(products, self.tiles, (self.start_date, self.end_date), (self.start_day, self.end_day))
-            except:
-                VerboseOut(traceback.format_exc(), 3)
-            dataclass.Asset.archive(Repository.spath())
-
-        # get all potential matching dates for tiles
-        dates = []
-        for t in self.tiles:
-
-            try:
-                for date in Repository.find_dates(t):
-                    day = int(date.strftime('%j'))
-                    if (self.start_date <= date <= self.end_date) and (self.start_day <= day <= self.end_day):
-                        if date not in dates:
-                            dates.append(date)
-            except:
-                VerboseOut(traceback.format_exc(), 3)
-
-        for date in sorted(dates):
-            try:
-                dat = Tiles(dataclass=dataclass, site=self.site, tiles=self.tiles,
-                            date=date, products=self.standard_products, **kwargs)
-                self.data[date] = dat
+                dates = self.temporal.datebounds
+                days = self.temporal.daybounds
+                dataclass.fetch(self.products.base, self.spatial.tiles, dates, days)
             except Exception:
-                pass
                 #VerboseOut(traceback.format_exc(), 3)
-        if len(dates) == 0:
+                raise Exception('DataInventory: Error downloading')
+            dataclass.Asset.archive(Repository.spath())
+        self.data = {}
+        for date in self.temporal.prune_dates(self.spatial.available_dates):
+            try:
+                dat = Tiles(dataclass, self.spatial, date, self.products, **kwargs)
+                if len(dat) > 0:
+                    self.data[date] = dat
+            except Exception, e:
+                raise Exception('DataInventory: Error accessing tiles in %s repository' % dataclass.name)
+
+        if len(self.data) == 0:
             raise Exception("No matching files in inventory!")
 
     @property
@@ -385,12 +249,12 @@ class DataInventory(Inventory):
 
     def process(self, **kwargs):
         """ Process data in inventory """
-        if len(self.standard_products) + len(self.composite_products) == 0:
+        if len(self.products.standard) + len(self.products.composite) == 0:
             raise Exception('No products specified!')
         sz = self.numfiles
-        if len(self.standard_products) > 0:
+        if len(self.products.standard) > 0:
             start = dt.now()
-            VerboseOut('Processing %s files: %s' % (sz, ' '.join(self.standard_products)), 1)
+            VerboseOut('Processing %s files: %s' % (sz, ' '.join(self.products.standard)), 1)
             for date in self.dates:
                 try:
                     self.data[date].process(**kwargs)
@@ -398,18 +262,17 @@ class DataInventory(Inventory):
                     VerboseOut(traceback.format_exc(), 3)
                     pass
             VerboseOut('Completed processing in %s' % (dt.now() - start), 1)
-        if len(self.composite_products) > 0:
+        if len(self.products.composite) > 0:
             start = dt.now()
-            VerboseOut('Processing %s files into composites: %s' % (sz, ' '.join(self.composite_products)), 1)
-            self.dataclass.process_composites(self, self.composite_products, **kwargs)
+            VerboseOut('Processing %s files into composites: %s' % (sz, ' '.join(self.products.composite)), 1)
+            self.dataclass.process_composites(self, self.products.composite, **kwargs)
             VerboseOut('Completed processing in %s' % (dt.now() - start), 1)
 
     def project(self, datadir=None, suffix='', res=None, nomosaic=False, **kwargs):
         """ Create project files for data in inventory """
         self.process(**kwargs)
         start = dt.now()
-
-        sitename = 'tiles' if self.site is None else basename(self.site)
+        sitename = 'tiles' if self.spatial.site is None else basename(self.spatial.site)
         if res is None:
             # TODO - determined as min of all Assets
             res = self.dataclass.Asset._defaultresolution
@@ -422,41 +285,37 @@ class DataInventory(Inventory):
             else:
                 resstr = '%sx%s' % (res[0], res[1])
             datadir = '%s_%s_%s%s' % (sitename, resstr, self.dataclass.name, suffix)
-        if self.site is None or nomosaic:
+        if self.spatial.site is None or nomosaic:
             datadir = os.path.join(datadir, "TILEID")
 
         VerboseOut('Creating GIPS project %s' % datadir)
         VerboseOut('  Dates: %s' % self.datestr)
-        VerboseOut('  Products: %s' % ' '.join(self.standard_products))
+        VerboseOut('  Products: %s' % ' '.join(self.products.standard))
 
         [self.data[d].project(datadir=datadir, res=res, nomosaic=nomosaic, **kwargs) for d in self.dates]
 
         VerboseOut('Completed GIPS project in %s' % (dt.now() - start))
-        if not nomosaic and self.site is not None:
+        if not nomosaic and self.spatial.site is not None:
             inv = ProjectInventory(datadir)
             inv.pprint()
+            return inv
 
     def pprint(self, **kwargs):
         """ Print inventory """
-        self.print_tile_coverage()
         print
-        if self.site is not None:
-            print Colors.BOLD + 'Asset Coverage for site %s' % basename(self.site) + Colors.OFF
+        if self.spatial.site is not None:
+            print Colors.BOLD + 'Asset Coverage for site %s' % basename(self.spatial.site) + Colors.OFF
+            self.spatial.print_tile_coverage()
+            print
         else:
             print Colors.BOLD + 'Asset Holdings' + Colors.OFF
         # Header
         #datestr = ' Month/Day' if md else ' Day of Year'
         super(DataInventory, self).pprint(**kwargs)
 
-    def print_tile_coverage(self):
-        if self.site is not None:
-            print Colors.BOLD + '\nTile Coverage'
-            print Colors.UNDER + '{:^8}{:>14}{:>14}'.format('Tile', '% Coverage', '% Tile Used') + Colors.OFF
-            for t in sorted(self.tiles):
-                print "{:>8}{:>11.1f}%{:>11.1f}%".format(t, self.tiles[t][0] * 100, self.tiles[t][1] * 100)
-
     @staticmethod
     def main(cls):
+        """ Command line intrepreter """
         dhf = argparse.ArgumentDefaultsHelpFormatter
         parser0 = argparse.ArgumentParser(description='GIPS %s Data Utility v%s' % (cls.name, __version__))
         subparser = parser0.add_subparsers(dest='command')
@@ -513,7 +372,7 @@ class DataInventory(Inventory):
 
         args = parser0.parse_args()
 
-        VerboseOut(Colors.BOLD + 'GIPS %s command line utility v%s' % (cls.name, __version__) + Colors.OFF, 1)
+        VerboseOut(Colors.BOLD + 'GIPS %s utility v%s' % (cls.name, __version__) + Colors.OFF, 1)
 
         if args.command == 'products':
             cls.print_products()
@@ -546,5 +405,5 @@ class DataInventory(Inventory):
             else:
                 VerboseOut('Command %s not recognized' % args.command, 0)
         except Exception, e:
-            VerboseOut('Error in %s: %s' % (args.command, e))
             VerboseOut(traceback.format_exc(), 4)
+            VerboseOut('Error in %s: %s' % (args.command, e))

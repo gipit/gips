@@ -41,12 +41,13 @@ class Mask(Algorithm):
         for date in self.inv.dates:
             VerboseOut('Masking files from %s' % date)
             available_masks = self.inv[date].masks(pmask)
-            for p in self.inv.product_list(date):
+            for p in self.inv.products(date):
                 # don't mask any masks
                 if p in available_masks:
                     continue
                 meta = ''
-                img = self.inv[date].open(p, True)
+                update = True if original else False
+                img = self.inv[date].open(p, update=update)
                 if fmask != '':
                     img.AddMask(mask_file[0])
                     meta = basename(fmask) + ' '

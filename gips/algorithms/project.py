@@ -29,7 +29,6 @@ import gippy
 from gips.algorithms.core import Algorithm
 from gips.utils import basename
 from datetime import datetime
-from pdb import set_trace
 
 
 class Project(Algorithm):
@@ -41,7 +40,7 @@ class Project(Algorithm):
 
     def browse(self, quality=75, **kwargs):
         for date in self.inv.dates:
-            for p in self.inv.product_list(date):
+            for p in self.inv.products(date):
                 try:
                     gippy.BrowseImage(self.inv[date].open(p), quality)
                 except:
@@ -50,7 +49,7 @@ class Project(Algorithm):
     def stack(self, suffix='stack', **kwargs):
         """ Stack products (from single date) into single image file """
         for date in self.inv.dates:
-            filenames = [self.inv[date].filenames[p] for p in self.inv.product_list(date)]
+            filenames = [self.inv[date].filenames[p] for p in self.inv.products(date)]
             img = gippy.GeoImage(filenames)
             bname = basename(filenames[0])
             bname = bname[0:bname.rfind('_', 0)]
@@ -59,6 +58,8 @@ class Project(Algorithm):
             imgout.CopyMeta(img)
 
     def plot(self, classes, **kwargs):
+        """ Work in progress """
+        from pdb import set_trace
         classimg = gippy.GeoImage(classes)
         dates = numpy.array([int(datetime.strftime(d, '%Y')) for d in self.inv.dates])
         dateset = set(dates)

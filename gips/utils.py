@@ -24,10 +24,13 @@
 import os
 import errno
 import gippy
-import datetime
-import calendar
+from datetime import datetime
 import multiprocessing
 import numpy
+import tempfile
+import commands
+import shutil
+from gips import GeoVector
 
 
 class Colors():
@@ -96,71 +99,6 @@ def basename(str):
     return os.path.splitext(os.path.basename(str))[0]
 
 
-def atmospheric_model(doy, lat):
-    """ Determine atmospheric model
-    1 - Tropical
-    2 - Mid-Latitude Summer
-    3 - Mid-Latitude Winter
-    4 - Sub-Arctic Summer
-    5 - Sub-Arctic Winter
-    6 - US Standard Atmosphere
-    """
-    # Determine season
-    if doy < 121 or doy > 274:
-        if lat < 0:
-            summer = True
-        else:
-            summer = False
-    else:
-        if lat < 0:
-            summer = False
-        else:
-            summer = True
-    # Determine model
-    if abs(lat) <= 15:
-        model = 1
-    elif abs(lat) >= 60:
-        if summer:
-            model = 4
-        else:
-            model = 5
-    else:
-        if summer:
-            model = 2
-        else:
-            model = 3
-    return model
-
-
-def _parse_date(dstring, last=False):
-    """ Parses string of YYYY or YYYY-MM or YYYY-MM-DD or YYYY-DOY and returns date object """
-    d = dstring.split('-')
-    if len(d) == 2 and len(d[1]) == 3:
-        dttmp = datetime.datetime(int(d[0]), 1, 1) + datetime.timedelta(days=int(d[1]) - 1)
-        d[1] = dttmp.month
-        d.append(dttmp.day)
-    if (not last):
-        if (len(d) == 1):
-            d.append('1')
-        if (len(d) == 2):
-            d.append('1')
-    else:
-        if (len(d) == 1):
-            d.append('12')
-        if (len(d) == 2):
-            d.append(calendar.monthrange(int(d[0]), int(d[1]))[1])
-    return datetime.date(int(d[0]), int(d[1]), int(d[2]))
-
-
-def parse_dates(dstring):
-    """ Parses string of 1 or 2 dates separated by a comma.  Valid formats: YYYY, YYYY-MM, YYYY-MM-DD, YYYY-DOY """
-    try:
-        (d1, d2) = dstring.replace(',', ' ').split()
-        return (_parse_date(d1), _parse_date(d2, True))
-    except:
-        return (_parse_date(dstring), _parse_date(dstring, True))
-
-
 def chunk_data(datasz, nchunks=100):
     """ Create chunks given input data size """
     if len(datasz) == 3:
@@ -178,33 +116,90 @@ def chunk_data(datasz, nchunks=100):
     return chunks
 
 
-def _mr_init(_readfunc, _func):
+def _mr_init(_readfunc, _func, _numbands):
     """ Put functions witin global namespace for each process """
-    global readfunc, func
+    global readfunc, func, numbands
     readfunc = _readfunc
     func = _func
+    numbands = _numbands
 
 
-def _mr_worker_3d_to_2d(chunk):
-    """ Reduces multiple band image (bands x rows x cols) to single band image (rows x cols) """
+def _mr_worker(chunk):
+    """ Reduces multiple band image (inbands x rows x cols) to multiple band image (outbands x rows x cols) """
     data = readfunc(gippy.Recti(chunk[0], chunk[1], chunk[2], chunk[3]))
-    valid = numpy.all(~numpy.isnan(data), axis=0)
-    output = numpy.zeros((data.shape[1], data.shape[2]))
-    output[valid] = func(data[:, valid])
+    valid = numpy.all(~numpy.isnan(data), axis=1)
+    output = numpy.zeros((numbands, data.shape[0], data.shape[1]))
+    output[:, valid] = func(data[:, valid])
     data = None
     return output
 
 
-def map_reduce(datasz, readfunc, func, nchunks=100, nproc=2):
-    """ Chunk up data read from readfunc, apply func, then reassemble into output array """
-    chunks = chunk_data(datasz, nchunks=nchunks)
-    pool = multiprocessing.Pool(nproc, initializer=_mr_init, initargs=(readfunc, func))
-    dataparts = pool.map(_mr_worker_3d_to_2d, chunks)
+def map_reduce(readfunc, func, imgsz, numbands=1, nchunks=100, nproc=2):
+    """ Chunk up data read from readfunc, apply func, then reassemble into a numbands output array """
+    chunks = chunk_data(imgsz, nchunks=nchunks)
+    pool = multiprocessing.Pool(nproc, initializer=_mr_init, initargs=(readfunc, func, numbands))
+    dataparts = pool.map(_mr_worker, chunks)
     # reassemble data
-    dataout = numpy.zeros((datasz[1], datasz[2]))
+    dataout = numpy.zeros((numbands, imgsz[0], imgsz[1]))
     for i, ch in enumerate(chunks):
-        dataout[ch[1]:ch[1] + ch[3], ch[0]:ch[0] + ch[2]] = dataparts[i]
-    return dataout
+        dataout[:, ch[1]:ch[1] + ch[3], ch[0]:ch[0] + ch[2]] = dataparts[i]
+    return dataout.squeeze()
+
+
+def crop2vector(img, vector):
+    """ Crop a GeoImage down to a vector - only used by mosaic """
+    # TODO - incorporate into GIPPY?
+    start = datetime.now()
+    # transform vector to srs of image
+    srs = img.Projection()
+    vec_t = vector.transform(srs)
+    vecname = vec_t.filename
+    # rasterize the vector
+    td = tempfile.mkdtemp()
+    mask = gippy.GeoImage(os.path.join(td, vector.layer.GetName()), img, gippy.GDT_Byte, 1)
+    maskname = mask.Filename()
+    mask = None
+    cmd = 'gdal_rasterize -at -burn 1 -l %s %s %s' % (vec_t.layer.GetName(), vecname, maskname)
+    result = commands.getstatusoutput(cmd)
+    VerboseOut('%s: %s' % (cmd, result), 4)
+    mask = gippy.GeoImage(maskname)
+    img.AddMask(mask[0]).Process().ClearMasks()
+    vec_t = None
+    mask = None
+    shutil.rmtree(os.path.dirname(maskname))
+    shutil.rmtree(os.path.dirname(vecname))
+    VerboseOut('Cropped to vector in %s' % (datetime.now() - start), 3)
+    return img
+
+
+def mosaic(infiles, outfile, vectorfile):
+    """ Mosaic multiple files together, but do not warp """
+    img = gippy.GeoImage(infiles[0])
+    nd = img[0].NoDataValue()
+    srs = img.Projection()
+    for f in range(1, len(infiles)):
+        _img = gippy.GeoImage(infiles[f])
+        if _img.Projection() != srs:
+            raise Exception("Input files have non-matching projections and must be warped")
+        _img = None
+    # transform vector to image projection
+    vector = GeoVector(vectorfile)
+    vsrs = vector.proj()
+    from gips.GeoVector import transform_shape
+    geom = transform_shape(vector.union(), vsrs, srs)
+    extent = geom.bounds
+    ullr = "%f %f %f %f" % (extent[0], extent[3], extent[2], extent[1])
+
+    # run merge command
+    nodatastr = '-n %s -a_nodata %s -init %s' % (nd, nd, nd)
+    cmd = 'gdal_merge.py -o %s -ul_lr %s %s %s' % (outfile, ullr, nodatastr, " ".join(infiles))
+    result = commands.getstatusoutput(cmd)
+    VerboseOut('%s: %s' % (cmd, result), 4)
+    imgout = gippy.GeoImage(outfile, True)
+    for b in range(0, img.NumBands()):
+        imgout[b].CopyMeta(img[b])
+    img = None
+    return crop2vector(imgout, vector)
 
 
 # old code utilizing shared memory array
@@ -218,5 +213,3 @@ def map_reduce(datasz, readfunc, func, nchunks=100, nproc=2):
 #classmap = shmarray.create_copy(classmap)
 #tmp = numpy.ctypeslib.as_ctypes(classmap)
 #cmap = sharedctypes.Array(tmp._type_, tmp, lock=False)
-
-
