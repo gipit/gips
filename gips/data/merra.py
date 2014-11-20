@@ -66,7 +66,7 @@ class MerraAsset(Asset):
     _assets = {
         'TS': {
             'description': 'Surface skin temperature',
-            'pattern': 'MAT1NXSLV_TS_*.tif',
+            'pattern': 'MMERRA_TS_*.tif',
             'url': 'http://goldsmr2.sci.gsfc.nasa.gov:80/opendap/MERRA/MAT1NXSLV.5.2.0',
             'source': 'MERRA%s.prod.assim.tavg1_2d_slv_Nx.%04d%02d%02d.hdf',
             'startdate': datetime.date(1979, 1, 11),
@@ -75,7 +75,7 @@ class MerraAsset(Asset):
         },
         'T2M': {
             'description': 'Temperature at 2 m above the displacement height',
-            'pattern': 'MAT1NXSLV_T2M_*.tif',
+            'pattern': 'MERRA_T2M_*.tif',
             'url': 'http://goldsmr2.sci.gsfc.nasa.gov:80/opendap/MERRA/MAT1NXSLV.5.2.0',
             'source': 'MERRA%s.prod.assim.tavg1_2d_slv_Nx.%04d%02d%02d.hdf',
             'startdate': datetime.date(1979, 1, 11),
@@ -84,7 +84,7 @@ class MerraAsset(Asset):
         },
         'T10M': {
             'description': 'Temperature at 10 m above the displacement height',
-            'pattern': 'MAT1NXSLV_T10M_*.tif',
+            'pattern': 'MERRA_T10M_*.tif',
             'url': 'http://goldsmr2.sci.gsfc.nasa.gov:80/opendap/MERRA/MAT1NXSLV.5.2.0',
             'source': 'MERRA%s.prod.assim.tavg1_2d_slv_Nx.%04d%02d%02d.hdf',
             'startdate': datetime.date(1979, 1, 11),
@@ -131,7 +131,6 @@ class MerraAsset(Asset):
         self.asset = parts[1]
         self.tile = parts[2]
         self.date = datetime.strptime(parts[3], '%Y%j').date()
-
 
     @classmethod
     def opendap_fetch(cls, asset, date):
@@ -228,15 +227,15 @@ class MerraData(Data):
         },
         'T2M': {
             'description': 'Temperature at 2 m above the displacement height',
-            'assets': ['T2M']            
+            'assets': ['T2M']
         },
         'T10M': {
             'description': 'Temperature at 10 m above the displacement height',
-            'assets': ['T10M']            
+            'assets': ['T10M']
         },
         'TS': {
             'description': 'Surface temperature',
-            'assets': ['TS']            
+            'assets': ['TS']
         }
 
         #'daily_weather': {
