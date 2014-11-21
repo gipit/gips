@@ -100,19 +100,15 @@ def basename(str):
 
 
 def chunk_data(datasz, nchunks=100):
-    """ Create chunks given input data size """
-    if len(datasz) == 3:
-        chaxis = 1
-    else:
-        chaxis = 0
-    chunksz = int(datasz[chaxis] / nchunks)
-    remainder = datasz[chaxis] - chunksz * nchunks
+    """ Create chunks given input data size (Y x X)"""
+    chunksz = int(datasz[0] / nchunks)
+    remainder = datasz[0] - chunksz * nchunks
     chszs = [chunksz] * (nchunks - remainder) + [chunksz + 1] * remainder
     chunks = []
     for ichunk in range(nchunks):
         # This is being inverted because gippy is X x Y, whereas numpy is Y x X
         #chunks.append(gippy.Recti(0, sum(chszs[:ichunk]), datasz[2], chszs[ichunk]))
-        chunks.append([0, sum(chszs[:ichunk]), datasz[2], chszs[ichunk]])
+        chunks.append([0, sum(chszs[:ichunk]), datasz[1], chszs[ichunk]])
     return chunks
 
 
@@ -127,8 +123,8 @@ def _mr_init(_readfunc, _func, _numbands):
 def _mr_worker(chunk):
     """ Reduces multiple band image (inbands x rows x cols) to multiple band image (outbands x rows x cols) """
     data = readfunc(gippy.Recti(chunk[0], chunk[1], chunk[2], chunk[3]))
-    valid = numpy.all(~numpy.isnan(data), axis=1)
-    output = numpy.zeros((numbands, data.shape[0], data.shape[1]))
+    valid = numpy.all(~numpy.isnan(data), axis=0)
+    output = numpy.zeros((numbands, data.shape[1], data.shape[2]))
     output[:, valid] = func(data[:, valid])
     data = None
     return output
