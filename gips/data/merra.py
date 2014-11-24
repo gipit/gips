@@ -66,7 +66,7 @@ class MerraAsset(Asset):
     _assets = {
         'TS': {
             'description': 'Surface skin temperature',
-            'pattern': 'MMERRA_TS_*.tif',
+            'pattern': 'MERRA_TS_*.tif',
             'url': 'http://goldsmr2.sci.gsfc.nasa.gov:80/opendap/MERRA/MAT1NXSLV.5.2.0',
             'source': 'MERRA%s.prod.assim.tavg1_2d_slv_Nx.%04d%02d%02d.hdf',
             'startdate': datetime.date(1979, 1, 11),
@@ -125,13 +125,12 @@ class MerraAsset(Asset):
     def __init__(self, filename):
         """ Inspect a single file and get some metadata """
         super(MerraAsset, self).__init__(filename)
-        self.products[self.asset] = filename
         parts = basename(filename).split('_')
         self.sensor = 'MERRA'
         self.asset = parts[1]
         self.tile = parts[2]
-
-        self.date = datetime.datetime.strptime(parts[3]+parts[4], '%Y%j').date()
+        self.date = datetime.datetime.strptime(parts[3] + parts[4], '%Y%j').date()
+        self.products[self.asset] = filename
 
     @classmethod
     def opendap_fetch(cls, asset, date):
@@ -302,17 +301,14 @@ class MerraData(Data):
         if len(products) == 0:
             return
 
-        print self.basename
-        # self.basename = self.basename + '_' + self.sensor
-
-        for key, val in products.items():
+        self.basename = self.basename + '_' + self.sensor_set[0]
+        for key, val in products.requested.items():
             try:
-                assetfnames = self.available(val[0])
+                assets = self.asset_filenames(val[0])
             except:
+                # Required assets unavailable, continue to next product
                 continue
-
             fout = os.path.join(self.path, self.basename + '_' + key)
-            img = gippy.GeoImage(assetfnames)
 
             ####################################################################
             """
@@ -329,6 +325,8 @@ class MerraData(Data):
             """
             ####################################################################
             if val[0] == "temp":
+                img = gippy.GeoImage(assets[0])
+
                 imgout = gippy.GeoImage(fout, img, img.DataType(), 4)
 
                 # Aqua AM, Terra AM, Aqua PM, Terra PM
@@ -338,8 +336,9 @@ class MerraData(Data):
 
                 # TODO: loop across the scene in latitude
                 # calculate local time for each latitude column
+                print 'localtimes', localtimes
                 for itime, localtime in enumerate(localtimes):
-
+                    print itime
                     picktime = localtime - hroffset
                     pickhour = int(picktime)
 
