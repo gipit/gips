@@ -42,7 +42,7 @@ class CDLRepository(Repository):
 class CDLAsset(Asset):
     Repository = CDLRepository
     _sensors = {
-        '': {'description': 'Crop Data Layer'}
+        'cdl': {'description': 'Crop Data Layer'}
     }
     _assets = {
         '': {
@@ -60,6 +60,7 @@ class CDLAsset(Asset):
         except:
             self.date = datetime.strptime(bname[13:17], self.Repository._datedir)
         self.products['cdl'] = filename
+        self.sensor = 'cdl'
 
     @classmethod
     def archive(cls, path=''):
