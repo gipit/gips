@@ -130,7 +130,8 @@ class MerraAsset(Asset):
         self.sensor = 'MERRA'
         self.asset = parts[1]
         self.tile = parts[2]
-        self.date = datetime.strptime(parts[3], '%Y%j').date()
+
+        self.date = datetime.datetime.strptime(parts[3]+parts[4], '%Y%j').date()
 
     @classmethod
     def opendap_fetch(cls, asset, date):
@@ -301,7 +302,8 @@ class MerraData(Data):
         if len(products) == 0:
             return
 
-        self.basename = self.basename + '_' + self.sensor
+        print self.basename
+        # self.basename = self.basename + '_' + self.sensor
 
         for key, val in products.items():
             try:
