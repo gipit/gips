@@ -233,11 +233,12 @@ class Asset(object):
                 fh = gdal.Open(self.filename)
                 sds = fh.GetSubDatasets()
                 datafiles = [s[0] for s in sds]
+            if len(datafiles) > 0:
+                List2File(datafiles, indexfile)
+                return datafiles
         except:
             raise Exception('Unable to get datafiles from %s' % self.filename)
-
-        List2File(datafiles, indexfile)
-        return datafiles
+        return []
 
     def extract(self, filenames=[]):
         """ Extract filenames from asset (if archive file) """
@@ -471,23 +472,14 @@ class Data(object):
             'GIPPY Version': gippy.__version__,
         }
 
-    def find_files(self, path):
-        """ Search path for valid files """
-        filenames = glob.glob(os.path.join(path, self._pattern))
+    def find_files(self):
+        """ Search path for non-asset files """
+        filenames = glob.glob(os.path.join(self.path, self._pattern))
         assetnames = [a.filename for a in self.assets.values()]
         badexts = ['.index', '.xml']
         test = lambda x: x not in assetnames and os.path.splitext(f)[1] not in badexts
         filenames[:] = [f for f in filenames if test(f)]
         return filenames
-
-    ##########################################################################
-    # Override these functions if not using a tile/date directory structure
-    ##########################################################################
-    #@property
-    #def path(self):
-    #    """ Return repository path to this tile dir """
-    #    return os.path.join(self.Data._rootpath, self.Data._tilesdir,
-    #                        self.id, str(self.date.strftime(self.Data._datedir)))
 
     ##########################################################################
     # Child classes should not generally have to override anything below here
@@ -566,30 +558,10 @@ class Data(object):
         """ Return list of products available """
         return list(set(self.products))
 
-    def available(self, product):
-        """ Check availability of product (and required assets) for this date """
-        assets = self._products[product]['assets']
-        missing = []
-        avail = []
-        filenames = []
-        for asset in assets:
-            try:
-                fnames = self.assets[asset].datafiles()
-            except Exception:
-                missing.append(asset)
-            else:
-                avail.append(asset)
-                filenames.extend(fnames)
-        if not avail:
-            VerboseOut('There are no available assets (%s) on %s for tile %s'
-                       % (str(missing), str(self.date), str(self.id), ), 3)
-            return None
-        return filenames
-
     def ParseAndAddFiles(self, filenames=None):
         """ Parse and Add filenames to existing filenames """
         if filenames is None:
-            filenames = self.find_files(self.path)
+            filenames = self.find_files()
         datedir = self.Repository._datedir
         for f in filenames:
             bname = basename(f)
@@ -621,10 +593,17 @@ class Data(object):
         # TODO - currently assumes single sensor for each product
         self.sensors[product] = sensor
 
-    def update(self, files):
-        """ Merge files dictionary into this instance """
-        if files.numfiles > 0:
-            self.AddFiles(files.filenames)
+    def asset_filenames(self, product):
+        assets = self._products[product]['assets']
+        filenames = []
+        for asset in assets:
+            dfiles = self.assets[asset].datafiles()
+            fnames = [self.assets[asset].filename] if len(dfiles) == 0 else dfiles
+            filenames.extend(fnames)
+        if len(filenames) == 0:
+            VerboseOut('There are no available assets on %s for tile %s' % (str(self.date), str(self.id), ), 3)
+            return None
+        return filenames
 
     def open(self, product, sensor=None, update=False):
         """ Open and return a GeoImage """
@@ -635,6 +614,10 @@ class Data(object):
             return gippy.GeoImage(fname)
         else:
             raise Exception('%s_%s product does not exist' % (sensor, product))
+
+    def open_assets(self, product):
+        """ Open and return a GeoImage of the assets """
+        return gippy.GeoImage(self.asset_filenames(product))
 
     # TODO - make general product_filter function
     def masks(self, patterns=None):
