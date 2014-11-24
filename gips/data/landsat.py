@@ -39,10 +39,7 @@ import gips.settings as settings
 
 class LandsatRepository(Repository):
     """ Singleton (all class methods) to be overridden by child data classes """
-    repo = settings.REPOS['landsat']
-    _rootpath = repo.get('rootpath', Repository._rootpath)
-    _tiles_vector = repo.get('tiles_vector', Repository._tiles_vector)
-    _tile_attribute = repo.get('tile_attribute', Repository._tile_attribute)
+    name = 'landsat'
 
     @classmethod
     def feature2tile(cls, feature):

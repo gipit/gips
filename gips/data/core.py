@@ -45,9 +45,6 @@ For a new dataset create children of Repository, Asset, and Data
 
 class Repository(object):
     """ Singleton (all classmethods) of file locations and sensor tiling system  """
-    _rootpath = ''
-    _tiles_vector = 'tiles.shp'
-    _tile_attribute = 'tile'
     # Format code of date directories in repository
     _datedir = '%Y%j'
 
@@ -60,7 +57,8 @@ class Repository(object):
     @classmethod
     def feature2tile(cls, feature):
         """ Get tile designation from a geospatial feature (i.e. a row) """
-        fldindex = feature.GetFieldIndex(cls._tile_attribute)
+        att_name = cls.repo().get('tile_attribute', 'tile')
+        fldindex = feature.GetFieldIndex(att_name)
         return str(feature.GetField(fldindex))
 
     ##########################################################################
@@ -68,7 +66,7 @@ class Repository(object):
     ##########################################################################
     @classmethod
     def path(cls, tile='', date=''):
-        path = os.path.join(cls._rootpath, cls._tilesdir)
+        path = os.path.join(cls.rootpath(), cls._tilesdir)
         if tile != '':
             path = os.path.join(path, tile)
         if date != '':
@@ -78,7 +76,7 @@ class Repository(object):
     @classmethod
     def find_tiles(cls):
         """ Get list of all available tiles """
-        return os.listdir(os.path.join(cls._rootpath, cls._tilesdir))
+        return os.listdir(os.path.join(cls.rootpath(), cls._tilesdir))
 
     @classmethod
     def find_dates(cls, tile):
@@ -92,6 +90,14 @@ class Repository(object):
     ##########################################################################
     # Child classes should not generally have to override anything below here
     ##########################################################################
+    @classmethod
+    def repo(cls):
+        return settings.REPOS[cls.name]
+
+    @classmethod
+    def rootpath(cls):
+        return cls.repo().get('rootpath', '')
+
     @classmethod
     def cpath(cls, dirs=''):
         """ Composites path """
@@ -115,9 +121,9 @@ class Repository(object):
     @classmethod
     def _path(cls, dirname, dirs=''):
         if dirs == '':
-            path = os.path.join(cls._rootpath, dirname)
+            path = os.path.join(cls.rootpath(), dirname)
         else:
-            path = os.path.join(cls._rootpath, dirname, dirs)
+            path = os.path.join(cls.rootpath(), dirname, dirs)
         if not os.path.exists(path):
             try:
                 os.makedirs(path)
@@ -128,7 +134,8 @@ class Repository(object):
     @classmethod
     def tiles_vector(cls):
         """ Get GeoVector of sensor grid """
-        fname = os.path.join(cls.vpath(), cls._tiles_vector)
+        tv_name = cls.repo().get('tiles_vector', 'tiles.shp')
+        fname = os.path.join(cls.vpath(), tv_name)
         if os.path.isfile(fname):
             tiles = GeoVector(fname)
             VerboseOut('%s: tiles vector %s' % (cls.__name__, fname), 4)
@@ -137,8 +144,8 @@ class Repository(object):
                 db = settings.DATABASES['tiles']
                 dbstr = ("PG:dbname=%s host=%s port=%s user=%s password=%s" %
                         (db['NAME'], db['HOST'], db['PORT'], db['USER'], db['PASSWORD']))
-                tiles = GeoVector(dbstr, layer=cls._tiles_vector)
-                VerboseOut('%s: tiles vector %s' % (cls.__name__, cls._tiles_vector), 4)
+                tiles = GeoVector(dbstr, layer=tv_name)
+                VerboseOut('%s: tiles vector %s' % (cls.__name__, tv_name), 4)
             except:
                 raise Exception('unable to access %s tiles (file or database)' % cls.__name__)
         return tiles

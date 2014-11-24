@@ -31,15 +31,10 @@ import gippy
 from gips.data.core import Repository, Asset, Data
 from gips.inventory import DataInventory
 from gips.utils import File2List, List2File, VerboseOut
-import gips.settings as settings
 
 
 class AODRepository(Repository):
-    repo = settings.REPOS['AOD']
-    _rootpath = repo.get('rootpath', Repository._rootpath)
-    _tiles_vector = repo.get('tiles_vector', Repository._tiles_vector)
-    _tile_attribute = repo.get('tile_attribute', Repository._tile_attribute)
-
+    name = 'AOD'
     _datedir = '%Y%j'
 
     @classmethod

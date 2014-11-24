@@ -32,7 +32,6 @@ import gippy
 from gips.data.core import Repository, Asset, Data
 from gips.inventory import DataInventory
 from gips.utils import VerboseOut
-import gips.settings as settings
 
 
 def binmask(arr, bit):
@@ -43,10 +42,7 @@ def binmask(arr, bit):
 
 
 class ModisRepository(Repository):
-    repo = settings.REPOS['modis']
-    _rootpath = repo.get('rootpath', Repository._rootpath)
-    _tiles_vector = repo.get('tiles_vector', Repository._tiles_vector)
-    _tile_attribute = repo.get('tile_attribute', Repository._tile_attribute)
+    name = 'modis'
 
     @classmethod
     def feature2tile(cls, feature):
@@ -134,7 +130,6 @@ class ModisAsset(Asset):
     def __init__(self, filename):
         """ Inspect a single file and get some metadata """
         super(ModisAsset, self).__init__(filename)
-
         bname = os.path.basename(filename)
         self.asset = bname[0:7]
         self.tile = bname[17:23]

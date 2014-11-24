@@ -31,14 +31,10 @@ import gippy
 from gips.data.core import Repository, Asset, Data
 from gips.inventory import DataInventory
 from gips.utils import File2List, List2File, RemoveFiles
-import gips.settings as settings
 
 
 class SARRepository(Repository):
-    repo = settings.REPOS['SAR']
-    _rootpath = repo.get('rootpath', Repository._rootpath)
-    _tiles_vector = repo.get('tiles_vector', Repository._tiles_vector)
-    _tile_attribute = repo.get('tile_attribute', Repository._tile_attribute)
+    name = 'SAR'
 
     @classmethod
     def feature2tile(cls, feature):

@@ -31,14 +31,10 @@ import gippy
 from gips.data.core import Repository, Asset, Data
 from gips.inventory import DataInventory
 from gips.utils import VerboseOut, basename
-import gips.settings as settings
 
 
 class MerraRepository(Repository):
-    repo = settings.REPOS['merra']
-    _rootpath = repo.get('rootpath', Repository._rootpath)
-    _tiles_vector = repo.get('tiles_vector', Repository._tiles_vector)
-    _tile_attribute = repo.get('tile_attribute', Repository._tile_attribute)
+    name = 'merra'
 
     @classmethod
     def tile_bounds(cls, tile):

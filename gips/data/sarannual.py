@@ -28,14 +28,10 @@ import gippy
 from gips.data.core import Repository, Asset, Data
 from gips.inventory import DataInventory
 from gips.utils import RemoveFiles, VerboseOut
-import gips.settings as settings
 
 
 class SARAnnualRepository(Repository):
-    repo = settings.REPOS['SARannual']
-    _rootpath = repo.get('rootpath', Repository._rootpath)
-    _tiles_vector = repo.get('tiles_vector', Repository._tiles_vector)
-    _tile_attribute = repo.get('tile_attribute', Repository._tile_attribute)
+    name = 'SARannual'
     _datedir = '%Y'
 
     @classmethod

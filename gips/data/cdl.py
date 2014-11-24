@@ -27,14 +27,10 @@ from csv import DictReader
 
 from gips.data.core import Repository, Asset, Data
 from gips.inventory import DataInventory
-import gips.settings as settings
 
 
 class CDLRepository(Repository):
-    repo = settings.REPOS['CDL']
-    _rootpath = repo.get('rootpath', Repository._rootpath)
-    _tiles_vector = repo.get('tiles_vector', Repository._tiles_vector)
-    _tile_attribute = repo.get('tile_attribute', Repository._tile_attribute)
+    name = 'CDL'
     _datedir = '%Y'
     _defaultresolution = [30.0, 30.0]
 
