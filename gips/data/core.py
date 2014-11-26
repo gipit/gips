@@ -48,7 +48,7 @@ class Repository(object):
     # Format code of date directories in repository
     _datedir = '%Y%j'
 
-    _tilesdir = 'tiles'
+    _tdir = 'tiles'
     _cdir = 'composites'
     _qdir = 'quarantine'
     _sdir = 'stage'
@@ -66,7 +66,8 @@ class Repository(object):
     ##########################################################################
     @classmethod
     def path(cls, tile='', date=''):
-        path = os.path.join(cls.rootpath(), cls._tilesdir)
+        """ Get absolute data path for this tile and date """
+        path = os.path.join(cls.rootpath(), cls._tdir)
         if tile != '':
             path = os.path.join(path, tile)
         if date != '':
@@ -76,7 +77,7 @@ class Repository(object):
     @classmethod
     def find_tiles(cls):
         """ Get list of all available tiles """
-        return os.listdir(os.path.join(cls.rootpath(), cls._tilesdir))
+        return os.listdir(os.path.join(cls.rootpath(), cls._tdir))
 
     @classmethod
     def find_dates(cls, tile):
@@ -92,10 +93,12 @@ class Repository(object):
     ##########################################################################
     @classmethod
     def repo(cls):
+        """ Get dictionary of repository settings """
         return settings.REPOS[cls.name]
 
     @classmethod
     def rootpath(cls):
+        """ Root path to repository """
         return cls.repo().get('rootpath', '')
 
     @classmethod
@@ -120,6 +123,7 @@ class Repository(object):
 
     @classmethod
     def _path(cls, dirname, dirs=''):
+        """ Get absolute path name to directory, creating if necessary """
         if dirs == '':
             path = os.path.join(cls.rootpath(), dirname)
         else:
@@ -208,8 +212,6 @@ class Asset(object):
         self.filename = filename
         # the asset code
         self.asset = ''
-        # if filename is archive, index of datafiles in archive...needed?
-        #self.datafiles = []
         # tile designation
         self.tile = ''
         # full date
@@ -223,7 +225,7 @@ class Asset(object):
     # Child classes should not generally have to override anything below here
     ##########################################################################
     def datafiles(self):
-        """ Get list of datafiles from asset (if tar or hdf file) """
+        """ Get list of readable datafiles from asset (multiple filenames if tar or hdf file) """
         path = os.path.dirname(self.filename)
         indexfile = os.path.join(path, self.filename + '.index')
         if os.path.exists(indexfile):
@@ -243,9 +245,10 @@ class Asset(object):
             if len(datafiles) > 0:
                 List2File(datafiles, indexfile)
                 return datafiles
+            else:
+                return [self.filename]
         except:
-            raise Exception('Unable to get datafiles from %s' % self.filename)
-        return []
+            raise Exception('Problem accessing asset(s) in %s' % self.filename)
 
     def extract(self, filenames=[]):
         """ Extract filenames from asset (if archive file) """
@@ -275,60 +278,8 @@ class Asset(object):
     # Class methods
     ##########################################################################
     @classmethod
-    def fetch(cls, asset, tile, date):
-        """ Get this asset for this tile and date """
-        url = cls._assets[asset].get('url', '')
-        if url == '':
-            raise Exception("%s: URL not defined for asset %s" % (cls.__name__, asset))
-
-        # TODO - extend to be base functionatlity called with super().fetch()
-        # TODO - move ftp to separate fetch_ftp function
-
-        ftpurl = url.split('/')[0]
-        ftpdir = url[len(ftpurl):]
-
-        try:
-            ftp = ftplib.FTP(ftpurl)
-            ftp.login('anonymous', settings.EMAIL)
-            pth = os.path.join(ftpdir, date.strftime('%Y'), date.strftime('%j'))
-            ftp.set_pasv(True)
-            ftp.cwd(pth)
-
-            filenames = []
-            ftp.retrlines('LIST', filenames.append)
-
-            for f in ftp.nlst('*'):
-                VerboseOut("Downloading %s" % f, 2)
-                ftp.retrbinary('RETR %s' % f, open(os.path.join(cls.Repository.spath(), f), "wb").write)
-
-            ftp.close()
-        except Exception, e:
-            VerboseOut(traceback.format_exc(), 3)
-            raise Exception("Error downloading: %s" % e)
-
-    @classmethod
-    def available(cls, asset, date):
-        """ Check availability of an asset for given date """
-        date1 = cls._assets[asset]['startdate']
-        date2 = cls._assets[asset]['enddate']
-        if date2 is None:
-            date2 = datetime.now() - datetime.timedelta(cls._asssets[asset]['latency'])
-        if date < date1 or date > date2:
-            return False
-        return True
-
-    @classmethod
-    def dates(cls, asset, tile, dates, days):
-        """ For a given asset get all dates possible (in repo or not) - used for fetch """
-        from dateutil.rrule import rrule, DAILY
-        # default assumes daily regardless of asset or tile
-        datearr = rrule(DAILY, dtstart=dates[0], until=dates[1])
-        dates = [dt for dt in datearr if days[0] <= int(dt.strftime('%j')) <= days[1]]
-        return dates
-
-    @classmethod
     def discover(cls, tile, date, asset=None):
-        """ Factory function returns list of Assets """
+        """ Factory function returns list of Assets for this tile and date """
         tpath = cls.Repository.path(tile, date)
         if asset is not None:
             assets = [asset]
@@ -344,6 +295,79 @@ class Asset(object):
             if len(files) == 1:
                 found.append(cls(files[0]))
         return found
+
+    @classmethod
+    def start_date(cls, asset):
+        """ Get starting date for this asset """
+        return cls._assets[asset].get('startdate', None)
+
+    @classmethod
+    def end_date(cls, asset):
+        """ Get ending date for this asset """
+        edate = cls._assets[asset].get('enddate', None)
+        if edate is None:
+            latency = cls._assets[cls.asset].get('latency', None)
+            edate = datetime.now() - datetime.timedelta(latency)
+        return edate
+
+    @classmethod
+    def available(cls, asset, date):
+        """ Check availability of an asset for given date """
+        date1 = cls._assets[asset].get(['startdate'], None)
+        date2 = cls._assets[asset].get(['enddate'], None)
+        if date2 is None:
+            date2 = datetime.now() - datetime.timedelta(cls._asssets[asset]['latency'])
+        if date1 is None or date2 is None:
+            return False
+        if date < date1 or date > date2:
+            return False
+        return True
+
+    @classmethod
+    def fetch(cls, asset, tile, date):
+        """ Get this asset for this tile and date """
+        url = cls._assets[asset].get('url', '')
+        if url == '':
+            raise Exception("%s: URL not defined for asset %s" % (cls.__name__, asset))
+
+        if not cls.available(asset, date):
+            raise Exception("Requested date (%s) outside of range available for asset" % date)
+
+        VerboseOut('%s: fetch tile %s for %s' % (asset, tile, date), 3)
+        return url
+
+    # TODO - combine this with fetch to get all dates
+    @classmethod
+    def dates(cls, asset, tile, dates, days):
+        """ For a given asset get all dates possible (in repo or not) - used for fetch """
+        from dateutil.rrule import rrule, DAILY
+        # default assumes daily regardless of asset or tile
+        datearr = rrule(DAILY, dtstart=dates[0], until=dates[1])
+        dates = [dt for dt in datearr if days[0] <= int(dt.strftime('%j')) <= days[1]]
+        return dates
+
+    @classmethod
+    def fetch_ftp(cls, url, asset, tile, date):
+        """ Fetch via FTP - currently not used """
+        ftpurl = url.split('/')[0]
+        ftpdir = url[len(ftpurl):]
+        try:
+            ftp = ftplib.FTP(ftpurl)
+            ftp.login('anonymous', settings.EMAIL)
+            pth = os.path.join(ftpdir, date.strftime('%Y'), date.strftime('%j'))
+            ftp.set_pasv(True)
+            ftp.cwd(pth)
+
+            filenames = []
+            ftp.retrlines('LIST', filenames.append)
+
+            for f in ftp.nlst('*'):
+                VerboseOut("Downloading %s" % f, 2)
+                ftp.retrbinary('RETR %s' % f, open(os.path.join(cls.Repository.spath(), f), "wb").write)
+            ftp.close()
+        except Exception, e:
+            VerboseOut(traceback.format_exc(), 3)
+            raise Exception("Error downloading: %s" % e)
 
     @classmethod
     def archive(cls, path='.', recursive=False, keep=False):
@@ -433,9 +457,6 @@ class Asset(object):
         else:
             return (asset, numlinks)
         # should return asset instance
-
-    #def __str__(self):
-    #    return os.path.basename(self.filename)
 
 
 class Data(object):
@@ -604,9 +625,7 @@ class Data(object):
         assets = self._products[product]['assets']
         filenames = []
         for asset in assets:
-            dfiles = self.assets[asset].datafiles()
-            fnames = [self.assets[asset].filename] if len(dfiles) == 0 else dfiles
-            filenames.extend(fnames)
+            filenames.extend(self.assets[asset].datafiles())
         if len(filenames) == 0:
             VerboseOut('There are no available assets on %s for tile %s' % (str(self.date), str(self.id), ), 3)
             return None
@@ -708,6 +727,7 @@ class Data(object):
             for t in tiles:
                 asset_dates = cls.Asset.dates(a, t, dates, days)
                 for d in asset_dates:
+                    # if we don't have it already
                     if not cls.Asset.discover(t, d, a):
                         try:
                             cls.Asset.fetch(a, t, d)
@@ -768,48 +788,3 @@ class Data(object):
     @classmethod
     def extra_arguments(cls):
         return {}
-
-    @classmethod
-    def test(cls):
-        import random
-        VerboseOut(Colors.BOLD + "%s Tests" % cls.name + Colors.OFF)
-        #VerboseOut(Colors.BOLD + "Complete Inventory Test" % cls.name + Colors.OFF)
-        #inv = cls.inventory()
-        # Check for test shapefile
-        test_vectors = glob.glob(os.path.join(cls.Asset.Repository.vpath(), 'test*.shp'))
-        for testv in test_vectors:
-            VerboseOut(Colors.BOLD + "Shapefile Inventory Test using %s" % basename(testv) + Colors.OFF)
-            inv = cls.inventory(site=testv)
-            # Pick random date
-            date = random.choice(inv.dates)
-            inv = cls.inventory(site=testv, dates=date.strftime('%Y-%j'))
-            # Pick random product from those that have coverage
-            pcov = inv[inv.dates[0]].product_coverage()
-            for p, cov in pcov.items():
-                if cov == 0:
-                    del pcov[p]
-            products = [random.choice(pcov.keys()) + "-TEST"]
-            VerboseOut(Colors.BOLD + "Random product test: %s %s" % (date, ' '.join(products)) + Colors.OFF)
-            try:
-                inv = cls.inventory(site=testv, dates=date.strftime('%Y-%j'), products=products)
-                #inv = cls.inventory(site=testv, dates='1987-282', products=[product])
-                inv.pprint()
-                print Colors.BOLD + "\nProcessing test %s" % ' '.join(products) + Colors.OFF
-                inv.process(overwrite=False)
-
-                print Colors.BOLD + "\nProject test" + Colors.OFF
-                inv.project(suffix='TEST')
-
-                print Colors.BOLD + "\nProject test (nomosaic)" + Colors.OFF
-                inv.project(suffix='TEST', nomosaic=True)
-
-                print Colors.BOLD + "\nProject test (nowarp)" + Colors.OFF
-                inv.project(suffix='TEST-nowarp', nowarp=True)
-
-                # Cleanup
-                newfiles = [f for t in inv[inv.dates[0]].tiles for f in inv[inv.dates[0]][t].filenames.values()]
-                RemoveFiles(newfiles, ['hdr', 'xml'])
-                inv = None
-            except:
-                VerboseOut(traceback.format_exc(), 3)
-                raise Exception("Errors running tests")
