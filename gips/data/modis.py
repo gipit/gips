@@ -29,7 +29,7 @@ import math
 import numpy as np
 
 import gippy
-from gips.data.core import Repository, Asset, Data
+from gips.data.core import Repository, Asset, Data, DataTest
 from gips.inventory import DataInventory
 from gips.utils import VerboseOut
 
@@ -141,13 +141,7 @@ class ModisAsset(Asset):
 
     @classmethod
     def fetch(cls, asset, tile, date):
-        VerboseOut('%s: fetch tile %s for %s' % (asset, tile, date), 3)
-
-        if date.date() < cls._assets[asset]['startdate']:
-            raise Exception("date earlier than %s" % cls._assets[asset]['startdate'])
-        latest_date = datetime.datetime.now() - datetime.timedelta(cls._assets[asset]['latency'])
-        if date > latest_date:
-            raise Exception("date is too recent (after %s)" % latest_date)
+        super(ModisAsset, cls).fetch(asset, tile, date)
 
         year, month, day = date.timetuple()[:3]
         mainurl = '%s/%s.%02d.%02d' % (cls._assets[asset]['url'], str(year), month, day)
@@ -644,5 +638,5 @@ def main():
     DataInventory.main(ModisData)
 
 
-def test():
-    ModisData.test()
+class ModisDataTest(DataTest):
+    pass

@@ -161,7 +161,7 @@ class MerraAsset(Asset):
     @classmethod
     def fetch(cls, asset, tile, date):
         """ Get this asset for this tile and date (using OpenDap service) """
-        VerboseOut('%s: fetch tile %s for %s' % (asset, tile, date), 3)
+        super(MerraAsset, cls).fetch(asset, tile, date)
 
         dataset = cls.opendap_fetch(asset, date)
 
