@@ -62,14 +62,21 @@ Some datasets may require 6S to perform atmospheric correction. Follow the instr
     2) untar 6SV-1.1.tar
     $ tar xvf 6SV-1.1.tar
 
-    3) Install fortran compiler
-    $ sudo apt-get install gfortran
+    3) Install fortran compiler and make
+    $ sudo apt-get install gfortran make
 
     3) Edit 6SV1.1/Makefile
         Replace this line:
             FC     = g77 $(FFLAGS)
         with this line:
             FC      = gfortran -std=legacy -ffixed-line-length-none $(FFLAGS)
+
+    4) Compile 6S
+    $ cd 6SV1.1
+    $ make
+
+    5) Install binary to system path
+    $ sudo cp sixsV1.1 /usr/local/bin/sixs
 
 To update GIPS at a later date (will require root privileges)
 
