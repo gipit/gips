@@ -43,7 +43,6 @@ for repo, cfg in settings.REPOS.items():
             requirements.extend(reqs)
         except:
             pass
-        print reqs
 # Algorithms
 for f in glob.glob('gips/algorithms/*.py'):
     try:
@@ -68,9 +67,8 @@ setup(
     author='Matthew Hanson',
     author_email='mhanson@ags.io',
     packages=['gips', 'gips.data', 'gips.algorithms'],
+    # need pydap for merra
     install_requires=requirements.extend(['shapely', 'gippy>=1.0.0', 'python-dateutil']),
     scripts=scripts,
     entry_points={'console_scripts': console_scripts},
 )
-
-print requirements
