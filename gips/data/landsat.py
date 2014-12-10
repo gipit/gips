@@ -36,6 +36,8 @@ from gips.inventory import DataInventory
 from gips.utils import VerboseOut, RemoveFiles
 import gips.settings as settings
 
+requirements = ['Py6S>=1.5.0']
+
 
 class LandsatRepository(Repository):
     """ Singleton (all class methods) to be overridden by child data classes """

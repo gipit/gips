@@ -21,12 +21,20 @@
 ################################################################################
 v0.8.0
 - Refactor of core inventory and tiles for streamlined code reuse
+- Requirements (python libraries) can be specified for each data module
 
 Landsat
 - Added wtemp product (Water temperature, atm corrected with MODTRAN using custom profiles from MERRA data)
 
 MODIS
 - fixed bug in MODIS temperature making them unable to be used in project (multiple identical output band names)
+- addition of obstime product (observation time for MCD derived products)
+
+CDL
+- Updated CDL directory structure to use standard GIPS format (tiledir/datedir)
+
+MERRA
+- Updated merra data module
 
 v0.7.1
 - Better internal handling of sensors for data where there can be multiple sensors on a single day

@@ -32,6 +32,8 @@ from gips.data.core import Repository, Asset, Data
 from gips.inventory import DataInventory
 from gips.utils import VerboseOut, basename
 
+requirements = ['pydap']
+
 
 class MerraRepository(Repository):
     name = 'merra'
