@@ -23,8 +23,8 @@
 
 The following have been authors or contributers to GIPS
 
-Matthew Hanson
-Bobby Braswell
+    Matthew Hanson
+    Bobby Braswell
 
 
 # GIPS Installation
@@ -92,10 +92,3 @@ To update GIPS at a later date (will require root privileges)
         look for GIPS package name
     $ rm -rf /usr/local/lib/python2.7/dist-packages/[GIPS-package-name]
         Then go to step 2 again
-
-## GIPS Development Note
-
-For developing GIPS, it is recommended that you use a python virtual environment 
-This allows multiple users on the same system to independently develop without 
-collisions. If you are in a virtual environment (ve), install or develop will install
-to the ve instead of the system
