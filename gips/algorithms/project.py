@@ -26,6 +26,7 @@ import numpy
 import pandas
 import matplotlib.pyplot as plt
 import gippy
+from gippy.algorithms import BrowseImage
 from gips.algorithms.core import Algorithm
 from gips.utils import basename
 from datetime import datetime
@@ -42,7 +43,7 @@ class Project(Algorithm):
         for date in self.inv.dates:
             for p in self.inv.products(date):
                 try:
-                    gippy.BrowseImage(self.inv[date].open(p), quality)
+                    BrowseImage(self.inv[date].open(p), quality)
                 except:
                     pass
 

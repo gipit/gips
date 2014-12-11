@@ -27,6 +27,7 @@ from datetime import datetime
 import traceback
 
 import gippy
+from gippy.algorithms import CookieCutter
 from gips import SpatialExtent
 from gips.utils import VerboseOut, Colors, mosaic
 
@@ -109,7 +110,7 @@ class Tiles(object):
                                 gippy.GeoImage(filename).Process(fout)
                             else:
                                 # Warp each tile
-                                gippy.CookieCutter([filename], fout, self.spatial.site, res[0], res[1], crop)
+                                CookieCutter([filename], fout, self.spatial.site, res[0], res[1], crop)
                         except Exception:
                             VerboseOut("Problem creating %s" % fout, 2)
                             VerboseOut(traceback.format_exc(), 3)
@@ -127,7 +128,7 @@ class Tiles(object):
                         if nowarp:
                             mosaic(filenames, fout, self.spatial.site)
                         else:
-                            gippy.CookieCutter(filenames, fout, self.spatial.site, res[0], res[1], crop)
+                            CookieCutter(filenames, fout, self.spatial.site, res[0], res[1], crop)
                     except:
                         VerboseOut("Problem projecting %s" % fout, 2)
                         VerboseOut(traceback.format_exc(), 3)

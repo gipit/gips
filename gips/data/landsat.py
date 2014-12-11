@@ -30,6 +30,7 @@ import glob
 import traceback
 
 import gippy
+from gippy.algorithms import ACCA, Fmask, LinearTransform, Indices
 from gips.data.core import Repository, Asset, Data
 from gips.atmosphere import SIXS, MODTRAN
 from gips.inventory import DataInventory
@@ -334,7 +335,7 @@ class LandsatData(Data):
                         erosion = 5
                         dilation = 10
                         cloudheight = 4000
-                    imgout = gippy.ACCA(reflimg, fname, s_elev, s_azim, erosion, dilation, cloudheight)
+                    imgout = ACCA(reflimg, fname, s_elev, s_azim, erosion, dilation, cloudheight)
                 elif val[0] == 'fmask':
                     try:
                         tolerance = int(val[1]) if len(val) > 1 else 3
@@ -342,7 +343,7 @@ class LandsatData(Data):
                     except:
                         tolerance = 3
                         dilation = 5
-                    imgout = gippy.Fmask(reflimg, fname, tolerance, dilation)
+                    imgout = Fmask(reflimg, fname, tolerance, dilation)
                 elif val[0] == 'rad':
                     imgout = gippy.GeoImage(fname, img, gippy.GDT_Int16, len(visbands))
                     for i in range(0, imgout.NumBands()):
@@ -375,7 +376,7 @@ class LandsatData(Data):
                     tmpimg = gippy.GeoImage(reflimg)
                     tmpimg.PruneBands(['BLUE', 'GREEN', 'RED', 'NIR', 'SWIR1', 'SWIR2'])
                     arr = numpy.array(self.Asset._sensors[self.sensor_set[0]]['tcap']).astype('float32')
-                    imgout = gippy.LinearTransform(tmpimg, fname, arr)
+                    imgout = LinearTransform(tmpimg, fname, arr)
                     outbands = ['Brightness', 'Greenness', 'Wetness', 'TCT4', 'TCT5', 'TCT6']
                     for i in range(0, imgout.NumBands()):
                         imgout.SetBandName(outbands[i], i + 1)
@@ -455,7 +456,7 @@ class LandsatData(Data):
             # Run TOA
             if len(indices_toa) > 0:
                 fnames = [os.path.join(self.path, self.basename + '_' + key) for key in indices_toa]
-                prodout = gippy.Indices(reflimg, dict(zip([p[0] for p in indices_toa.values()], fnames)), md)
+                prodout = Indices(reflimg, dict(zip([p[0] for p in indices_toa.values()], fnames)), md)
                 prodout = dict(zip(indices_toa.keys(), prodout.values()))
                 [self.AddFile(sensor, key, fname) for key, fname in prodout.items()]
             # Run atmospherically corrected
@@ -463,7 +464,7 @@ class LandsatData(Data):
                 fnames = [os.path.join(self.path, self.basename + '_' + key) for key in indices]
                 for col in visbands:
                     img[col] = ((img[col] - atm6s.results[col][1]) / atm6s.results[col][0]) * (1.0 / atm6s.results[col][2])
-                prodout = gippy.Indices(img, dict(zip([p[0] for p in indices.values()], fnames)), md)
+                prodout = Indices(img, dict(zip([p[0] for p in indices.values()], fnames)), md)
                 prodout = dict(zip(indices.keys(), prodout.values()))
                 [self.AddFile(sensor, key, fname) for key, fname in prodout.items()]
             VerboseOut(' -> %s: processed %s in %s' % (self.basename, indices0.keys(), datetime.now() - start), 1)
