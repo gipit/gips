@@ -34,7 +34,7 @@ from gippy.algorithms import ACCA, Fmask, LinearTransform, Indices
 from gips.data.core import Repository, Asset, Data
 from gips.atmosphere import SIXS, MODTRAN
 from gips.inventory import DataInventory
-from gips.utils import VerboseOut, RemoveFiles
+from gips.utils import VerboseOut, RemoveFiles, basename
 import gips.settings as settings
 
 requirements = ['Py6S>=1.5.0']
@@ -273,12 +273,15 @@ class LandsatData(Data):
             return
 
         start = datetime.now()
-        bname = os.path.basename(self.assets[''].filename)
+
+        # Add the sensor for this date to the basename
         self.basename = self.basename + '_' + self.sensor_set[0]
+
+        # Read the assets
         try:
             img = self._readraw()
         except Exception, e:
-            raise Exception('Error reading %s: %s' % (bname, e))
+            raise Exception('Error reading %s: %s' % (basename(self.assets[''].filename), e))
 
         meta = self.assets[''].meta
         visbands = self.assets[''].visbands
@@ -299,7 +302,7 @@ class LandsatData(Data):
                 md["AOD Value"] = str(atm6s.aod[1])
             except Exception, e:
                 VerboseOut(traceback.format_exc(), 3)
-                raise Exception('Problem running atmospheric model: %s' % e)
+                raise Exception('Problem running 6S atmospheric model: %s' % e)
 
         # Break down by group
         groups = products.groups()
@@ -369,6 +372,7 @@ class LandsatData(Data):
                             reflimg[c].Process(imgout[c])
                     else:
                         for c in visbands:
+                            print c
                             (((img[c] - atm6s.results[c][1]) / atm6s.results[c][0]) * (1.0 / atm6s.results[c][2])).Process(imgout[c])
                     # Mask out any pixel for which any band is nodata
                     #imgout.ApplyMask(img.DataMask())
@@ -439,7 +443,7 @@ class LandsatData(Data):
                 self.AddFile(sensor, key, fname)
                 VerboseOut(' -> %s: processed in %s' % (os.path.basename(fname), datetime.now() - start), 1)
             except Exception, e:
-                VerboseOut('Error creating product %s for %s: %s' % (key, bname, e), 2)
+                VerboseOut('Error creating product %s for %s: %s' % (key, basename(self.assets[''].filename), e), 2)
                 VerboseOut(traceback.format_exc(), 3)
 
         # Process Indices
