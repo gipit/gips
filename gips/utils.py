@@ -123,15 +123,18 @@ def _mr_init(_rfunc, _pfunc, _wfunc, _numbands):
 
 def _mr_worker(chunk):
     """ Reduces multiple band image (inbands x rows x cols) to multiple band image (outbands x rows x cols) """
-    data = rfunc(gippy.Recti(chunk[0], chunk[1], chunk[2], chunk[3]))
+    ch = gippy.Recti(chunk[0], chunk[1], chunk[2], chunk[3])
+    data = rfunc(ch)
     valid = numpy.all(~numpy.isnan(data), axis=0)
-    output = numpy.zeros((numbands, data.shape[1], data.shape[2]))
+    output = numpy.empty((numbands, data.shape[1], data.shape[2]))
+    output[:] = numpy.nan
     output[:, valid] = pfunc(data[:, valid])
     data = None
     if wfunc is not None:
         wfunc((output, ch))
         return None
-    return output
+    else:
+        return output
 
 
 def map_reduce(imgsz, rfunc, pfunc, wfunc=None, numbands=1, nchunks=100, nproc=2):
@@ -139,7 +142,7 @@ def map_reduce(imgsz, rfunc, pfunc, wfunc=None, numbands=1, nchunks=100, nproc=2
     chunks = chunk_data(imgsz, nchunks=nchunks)
     pool = multiprocessing.Pool(nproc, initializer=_mr_init, initargs=(rfunc, pfunc, wfunc, numbands))
     dataparts = pool.map(_mr_worker, chunks)
-    if wfunc is not None:
+    if wfunc is None:
         # reassemble data
         dataout = numpy.zeros((numbands, imgsz[0], imgsz[1]))
         for i, ch in enumerate(chunks):
