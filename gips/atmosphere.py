@@ -208,10 +208,10 @@ class MODTRAN():
             #VerboseOut("MODTRAN Output:", 4)
             #[VerboseOut(m, 4) for m in modout]
             self.output = self.readoutput(bandnum)
+            VerboseOut('MODTRAN Output: %s' % ' '.join([str(s) for s in self.output]), 4)
         except:
-            raise Exception("Error running MODTRAN")
-
-        VerboseOut('MODTRAN Output: %s' % ' '.join([str(s) for s in self.output]), 4)
+            VerboseOut(modout, 4)
+            raise AtmCorrException("Error running MODTRAN")
 
         # Change back to original directory
         os.chdir(pwd)
