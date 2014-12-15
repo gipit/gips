@@ -372,7 +372,6 @@ class LandsatData(Data):
                             reflimg[c].Process(imgout[c])
                     else:
                         for c in visbands:
-                            print c
                             (((img[c] - atm6s.results[c][1]) / atm6s.results[c][0]) * (1.0 / atm6s.results[c][2])).Process(imgout[c])
                     # Mask out any pixel for which any band is nodata
                     #imgout.ApplyMask(img.DataMask())
