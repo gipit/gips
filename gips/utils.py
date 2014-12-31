@@ -112,22 +112,26 @@ def chunk_data(datasz, nchunks=100):
     return chunks
 
 
-def _mr_init(_rfunc, _pfunc, _wfunc, _numbands):
+def _mr_init(_rfunc, _pfunc, _wfunc, _numbands, _keepnodata=False):
     """ Put functions witin global namespace for each process """
-    global rfunc, pfunc, wfunc, numbands
+    global rfunc, pfunc, wfunc, numbands, keepnodata
     rfunc = _rfunc
     pfunc = _pfunc
     wfunc = _wfunc
     numbands = _numbands
+    keepnodata = _keepnodata
 
 
 def _mr_worker(chunk):
     """ Reduces multiple band image (inbands x rows x cols) to multiple band image (outbands x rows x cols) """
     ch = gippy.Recti(chunk[0], chunk[1], chunk[2], chunk[3])
     data = rfunc(ch)
-    valid = numpy.all(~numpy.isnan(data), axis=0)
     output = numpy.empty((numbands, data.shape[1], data.shape[2]))
     output[:] = numpy.nan
+    if keepnodata:
+        valid = numpy.ones((data.shape[1], data.shape[2]))
+    # Filter out rows that have any NaNs
+    valid = numpy.all(~numpy.isnan(data), axis=0)
     output[:, valid] = pfunc(data[:, valid])
     data = None
     if wfunc is not None:
@@ -137,10 +141,10 @@ def _mr_worker(chunk):
         return output
 
 
-def map_reduce(imgsz, rfunc, pfunc, wfunc=None, numbands=1, nchunks=100, nproc=2):
+def map_reduce(imgsz, rfunc, pfunc, wfunc=None, numbands=1, nchunks=100, nproc=2, keepnodata=False):
     """ Chunk up data read from rfunc, apply pfunc, reassemble into numbands out array or use wfunc to write """
     chunks = chunk_data(imgsz, nchunks=nchunks)
-    pool = multiprocessing.Pool(nproc, initializer=_mr_init, initargs=(rfunc, pfunc, wfunc, numbands))
+    pool = multiprocessing.Pool(nproc, initializer=_mr_init, initargs=(rfunc, pfunc, wfunc, numbands, keepnodata))
     dataparts = pool.map(_mr_worker, chunks)
     if wfunc is None:
         # reassemble data
