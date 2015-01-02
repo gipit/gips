@@ -23,18 +23,56 @@
 
 import numpy
 import multiprocessing
-import gippy
+
+
+def _worker(chunk):
+    """ Worker function (has access to global variables set in _mr_init """
+    # read chunk of data and make sure it is 3-D: BxYxX
+    data = rfunc(chunk)
+    shape = data.shape
+    if len(shape) == 2:
+        data = data.reshape((1, shape[0], shape[1]))
+        shape = data.shape
+
+    # make output array for this chunk
+    output = numpy.empty((outshape[0], shape[1], shape[2]))
+    output[:] = numpy.nan
+
+    # only run on valid pixel signatures unless keepnodata set
+    if keepnodata:
+        valid = numpy.ones((shape[1], shape[2]))
+    else:
+        valid = numpy.all(~numpy.isnan(data), axis=0)
+
+    # run processing function
+    output[:, valid] = pfunc(data[:, valid])
+
+    # write using write function if provided
+    if wfunc is not None:
+        wfunc((output, chunk))
+        return None
+    else:
+        return output
 
 
 class MapReduce(object):
+    """ General purpose class for performing map reduction functions """
 
     def __init__(self, inshape, outshape, rfunc, pfunc, wfunc=None, nchunks=100, nproc=2, keepnodata=False):
+        """ Create multiprocessing pool and run user processing function on parts """
         self.inshape = inshape
         self.outshape = outshape
         self.chunks = self.chunk(inshape, nchunks=nchunks)
         pool = multiprocessing.Pool(nproc, initializer=self._mr_init,
                                     initargs=(inshape, outshape, rfunc, pfunc, wfunc, keepnodata))
-        self.dataparts = pool.map(self._worker, self.chunks)
+        self.dataparts = pool.map(_worker, self.chunks)
+
+    def assemble(self):
+        """ Reassemble output parts into single array """
+        dataout = numpy.empty(self.outshape)
+        for i, ch in enumerate(self.chunks):
+            dataout[:, ch[1]:ch[1] + ch[3], ch[0]:ch[0] + ch[2]] = self.dataparts[i]
+        return dataout.squeeze()
 
     @staticmethod
     def _mr_init(_inshape, _outshape, _rfunc, _pfunc, _wfunc, _keepnodata):
@@ -46,26 +84,6 @@ class MapReduce(object):
         pfunc = _pfunc
         wfunc = _wfunc
         keepnodata = _keepnodata
-
-    @staticmethod
-    def _worker(chunk):
-        """ Worker function (has access to global variables set in _mr_init """
-        ch = gippy.Recti(chunk[0], chunk[1], chunk[2], chunk[3])
-        data = rfunc(ch)
-        shape = data.shape
-        output = numpy.empty((outshape, shape[1], shape[2]))
-        output[:] = numpy.nan
-        if keepnodata:
-            valid = numpy.ones((data.shape[1], data.shape[2]))
-        else:
-            valid = numpy.all(~numpy.isnan(data), axis=0)
-        output[:, valid] = pfunc(data[:, valid])
-        data = None
-        if wfunc is not None:
-            wfunc((output, ch))
-            return None
-        else:
-            return output
 
     @classmethod
     def chunk(cls, shape, nchunks=100):
@@ -80,28 +98,48 @@ class MapReduce(object):
             chunks.append([0, sum(chszs[:ichunk]), shape[2], chszs[ichunk]])
         return chunks
 
-    def assemble(self):
-        """ Reassmble output parts into single array """
-        dataout = numpy.empty(self.outshape)
-        for i, ch in enumerate(self.chunks):
-            dataout[:, ch[1]:ch[1] + ch[3], ch[0]:ch[0] + ch[2]] = self.dataparts[i]
-        return dataout.squeeze()
+    @staticmethod
+    def get_shapes(arrin, numbands):
+        """ Create in and out shapes based on input array and output numbands) """
+        inshape = arrin.shape
+        if len(inshape) == 2:
+            arrin = arrin.reshape((1, inshape))
+            inshape = arrin.shape
+        outshape = (numbands, inshape[1], inshape[2])
+        return (inshape, outshape)
 
 
-def map_reduce_array(arrin, pfunc, numbands=1, nchunks=100, nproc=2):
-    inshape = arrin.shape
-    if len(inshape) == 2:
-        inshape = (1, inshape[0], inshape[1])
-    outshape = (numbands, inshape[1], inshape[2])
+def map_reduce_array(arrin, pfunc, numbands=1, nchunks=100, nproc=2, keepnodata=False):
+    (inshape, outshape) = MapReduce.get_shapes(arrin, numbands)
 
-    def reader(chunk):
-        """ Default reader - read data from global input array """
-        ch = gippy.Recti(chunk[0], chunk[1], chunk[2], chunk[3])
-        data = arrin[:, ch[1]:ch[1] + ch[3], ch[0]:ch[0] + ch[2]]
-        return data
+    # read data from global input array
+    rfunc = lambda chunk: arrin[:, chunk[1]:chunk[1] + chunk[3], chunk[0]:chunk[0] + chunk[2]]
 
-    mr = MapReduce(inshape, outshape, rfunc=reader, pfunc=pfunc, nchunks=nchunks, nproc=nproc)
+    mr = MapReduce(inshape, outshape, rfunc=rfunc, pfunc=pfunc, nchunks=nchunks, nproc=nproc, keepnodata=keepnodata)
     return mr.assemble()
 
 
-#class MapReduceImage(MapReduce):
+def _test_map_reduce_array(arrin, pfunc, numbands=1, nchunks=100, nproc=2, keepnodata=False):
+    """ Test map_reduce_array functions without using multiprocessing """
+
+    (inshape, outshape) = MapReduce.get_shapes(arrin, numbands)
+
+    # read data from global input array
+    rfunc = lambda chunk: arrin[:, chunk[1]:chunk[1] + chunk[3], chunk[0]:chunk[0] + chunk[2]]
+
+    chunks = MapReduce.chunk(inshape, nchunks=nchunks)
+
+    MapReduce._mr_init(inshape, outshape, rfunc, pfunc, None, keepnodata)
+
+    for ch in chunks:
+        _worker(ch)
+
+
+"""
+def map_reduce_GeoImage(img, pfunc, numbands=1, nchunks=100, nproc=2):
+    inshape = (img.NumBands(), img.XSize(), img.YSize())
+    outshape = (numbands, inshape[1], inshape[2])
+
+    def reader(chunk):
+        ch = chunk
+"""
