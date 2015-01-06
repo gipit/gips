@@ -40,7 +40,7 @@ def _worker(chunk):
 
     # only run on valid pixel signatures unless keepnodata set
     if keepnodata:
-        valid = numpy.ones((shape[1], shape[2]))
+        valid = numpy.ones((shape[1], shape[2])).astype('bool')
     else:
         valid = numpy.all(~numpy.isnan(data), axis=0)
 
@@ -85,8 +85,8 @@ class MapReduce(object):
         wfunc = _wfunc
         keepnodata = _keepnodata
 
-    @classmethod
-    def chunk(cls, shape, nchunks=100):
+    @staticmethod
+    def chunk(shape, nchunks=100):
         """ Create chunks given input data size (B x Y x X) """
         chunksz = int(shape[1] / nchunks)
         remainder = shape[1] - chunksz * nchunks
@@ -110,6 +110,7 @@ class MapReduce(object):
 
 
 def map_reduce_array(arrin, pfunc, numbands=1, nchunks=100, nproc=2, keepnodata=False):
+    """ Apply user defined pfunc to a numpy array using multiple processors """
     (inshape, outshape) = MapReduce.get_shapes(arrin, numbands)
 
     # read data from global input array
@@ -131,15 +132,7 @@ def _test_map_reduce_array(arrin, pfunc, numbands=1, nchunks=100, nproc=2, keepn
 
     MapReduce._mr_init(inshape, outshape, rfunc, pfunc, None, keepnodata)
 
+    dataout = numpy.empty(outshape)
     for ch in chunks:
-        _worker(ch)
-
-
-"""
-def map_reduce_GeoImage(img, pfunc, numbands=1, nchunks=100, nproc=2):
-    inshape = (img.NumBands(), img.XSize(), img.YSize())
-    outshape = (numbands, inshape[1], inshape[2])
-
-    def reader(chunk):
-        ch = chunk
-"""
+        dataout[:, ch[1]:ch[1] + ch[3], ch[0]:ch[0] + ch[2]] = _worker(ch)
+    return dataout
