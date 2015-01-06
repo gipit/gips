@@ -81,7 +81,7 @@ class Tiles(object):
         """ Determines what products need to be processed for each tile and calls Data.process """
         [t.process(products=self.products.products, overwrite=overwrite, **kwargs) for t in self.tiles.values()]
 
-    def project(self, datadir, res, crop=False, nowarp=False, interpolate=0, nomosaic=False, **kwargs):
+    def project(self, datadir, res, crop=False, nowarp=False, interpolation=0, nomosaic=False, **kwargs):
         """ Create image of final product (reprojected/mosaiced) """
         start = datetime.now()
         bname = self.date.strftime('%Y%j')
@@ -110,7 +110,7 @@ class Tiles(object):
                                 gippy.GeoImage(filename).Process(fout)
                             else:
                                 # Warp each tile
-                                CookieCutter([filename], fout, self.spatial.site, res[0], res[1], crop, interpolate)
+                                CookieCutter([filename], fout, self.spatial.site, res[0], res[1], crop, interpolation)
                         except Exception:
                             VerboseOut("Problem creating %s" % fout, 2)
                             VerboseOut(traceback.format_exc(), 3)
@@ -128,7 +128,7 @@ class Tiles(object):
                         if nowarp:
                             mosaic(filenames, fout, self.spatial.site)
                         else:
-                            CookieCutter(filenames, fout, self.spatial.site, res[0], res[1], crop, interpolate)
+                            CookieCutter(filenames, fout, self.spatial.site, res[0], res[1], crop, interpolation)
                     except:
                         VerboseOut("Problem projecting %s" % fout, 2)
                         VerboseOut(traceback.format_exc(), 3)

@@ -364,7 +364,7 @@ class DataInventory(Inventory):
         group.add_argument('--res', nargs=2, help='Resolution of (warped) output rasters', default=None, type=float)
         group.add_argument('--crop', help='Crop down to minimum bounding box', default=False, action='store_true')
         group.add_argument('--nowarp', help='Do not warp (or crop)', default=False, action='store_true')
-        group.add_argument('--interpolate', help='Interpolate using: 0-NN, 1-Bilinear, 2-Cubic', default=0)
+        group.add_argument('--interpolation', help='Interpolate using: 0-NN, 1-Bilinear, 2-Cubic', default=0)
         group.add_argument('--nomosaic', help='Do not mosaic (keep as tiles)', default=False, action='store_true')
         group.add_argument('--datadir', help='Directory to store output', default=None)
         group.add_argument('--suffix', help='Suffix on end of project directory', default=None)
@@ -401,8 +401,8 @@ class DataInventory(Inventory):
             elif args.command == 'process':
                 inv.process(overwrite=args.overwrite, **kwargs)
             elif args.command == 'project':
-                inv.project(datadir=args.datadir, suffix=args.suffix, res=args.res,
-                            crop=args.crop, nowarp=args.nowarp, interpolate=args.interpolate, nomosaic=args.nomosaic, **kwargs)
+                inv.project(datadir=args.datadir, suffix=args.suffix, res=args.res, crop=args.crop,
+                            nowarp=args.nowarp, interpolation=args.interpolation, nomosaic=args.nomosaic, **kwargs)
             else:
                 VerboseOut('Command %s not recognized' % args.command, 0)
         except Exception, e:
