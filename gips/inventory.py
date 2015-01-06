@@ -364,7 +364,7 @@ class DataInventory(Inventory):
         group.add_argument('--res', nargs=2, help='Resolution of (warped) output rasters', default=None, type=float)
         group.add_argument('--crop', help='Crop down to minimum bounding box', default=False, action='store_true')
         group.add_argument('--nowarp', help='Do not warp (or crop)', default=False, action='store_true')
-        group.add_argument('--interpolation', help='Interpolate using: 0-NN, 1-Bilinear, 2-Cubic', default=0)
+        group.add_argument('--interpolation', help='Interpolate using: 0-NN, 1-Bilinear, 2-Cubic', default=0, type=int)
         group.add_argument('--nomosaic', help='Do not mosaic (keep as tiles)', default=False, action='store_true')
         group.add_argument('--datadir', help='Directory to store output', default=None)
         group.add_argument('--suffix', help='Suffix on end of project directory', default=None)
