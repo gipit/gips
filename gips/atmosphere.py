@@ -117,28 +117,26 @@ class SIXS():
 
         # Used for testing
         try:
-            success = False
-            if sensor is not None:
-                if sensor == 'LT5':
-                    func = SixSHelpers.Wavelengths.run_landsat_tm
-                elif sensor == 'LE7':
-                    func = SixSHelpers.Wavelengths.run_landsat_etm
+            stdout = sys.stdout
+            funcs = {
+                'LT5': SixSHelpers.Wavelengths.run_landsat_tm,
+                'LT7': SixSHelpers.Wavelengths.run_landsat_etm,
                 # LC8 doesn't seem to work
-                #elif sensor == 'LC8':
-                #    func = SixSHelpers.Wavelengths.run_landsat_oli
-                stdout = sys.stdout
+                #'LC8': SixSHelpers.Wavelengths.run_landsat_oli
+            }
+            if sensor in funcs.keys():
                 sys.stdout = open(os.devnull, 'w')
-                wvlens, outputs = func(s)
+                wvlens, outputs = funcs[sensor](s)
                 sys.stdout = stdout
-                success = True
-            # If that didn't work, then run using wvlen bounds
-            if not success:
+            else:
+                # Use wavelengths
                 outputs = []
                 for wv in wavelengths:
                     s.wavelength = Wavelength(wv[0], wv[1])
                     s.run()
                     outputs.append(s.outputs)
         except Exception, e:
+            sys.stdout = stdout
             raise AtmCorrException("Error running 6S: %s" % e)
 
         self.results = {}
