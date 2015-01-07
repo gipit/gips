@@ -28,6 +28,7 @@ import shutil
 import numpy
 import glob
 import traceback
+from copy import deepcopy
 
 import gippy
 from gippy.algorithms import ACCA, Fmask, LinearTransform, Indices
@@ -389,19 +390,17 @@ class LandsatData(Data):
                         imgout.SetBandName(lwbands[i], i + 1)
                     imgout.SetNoData(-32768)
                     imgout.SetGain(0.1)
-                    for col in lwbands:
-                        band = img[col]
-                        band = (((band.pow(-1)) * meta[col]['K1'] + 1).log().pow(-1)) * meta[col]['K2'] - 273.15
-                        band.Process(imgout[col])
+                    [reflimg[col].Process(imgout[col]) for col in lwbands]
                 elif val[0] == 'dn':
                     rawimg = gippy.GeoImage(img)
                     rawimg.SetGain(1.0)
                     rawimg.SetOffset(0.0)
                     imgout = rawimg.Process(fname)
                 elif val[0] == 'volref':
-                    bands = visbands
+                    bands = deepcopy(visbands)
                     bands.remove("SWIR1")
                     imgout = gippy.GeoImage(fname, reflimg, gippy.GDT_Int16, len(bands))
+                    [imgout.SetBandName(band, i + 1) for i, band in enumerate(bands)]
                     imgout.SetNoData(-32768)
                     imgout.SetGain(0.0001)
                     r = 0.54    # Water-air reflection
@@ -412,8 +411,7 @@ class LandsatData(Data):
                     A = ((1 - p) * (1 - pp)) / (n * n)
                     srband = reflimg['SWIR1'].Read()
                     nodatainds = srband == reflimg['SWIR1'].NoDataValue()
-                    for i, band in enumerate(bands):
-                        imgout.SetBandName(band, i + 1)
+                    for band in bands:
                         bimg = reflimg[band].Read()
                         diffimg = bimg - srband
                         diffimg = diffimg / (A + r * Q * diffimg)
@@ -425,15 +423,16 @@ class LandsatData(Data):
                     [imgout.SetBandName(lwbands[i], i + 1) for i in range(0, imgout.NumBands())]
                     imgout.SetNoData(-32768)
                     imgout.SetGain(0.1)
+                    tmpimg = gippy.GeoImage(img)
                     for col in lwbands:
-                        band = img[col]
+                        band = tmpimg[col]
                         m = meta[col]
                         lat = self.metadata['geometry']['lat']
                         lon = self.metadata['geometry']['lon']
                         dt = self.metadata['datetime']
                         atmos = MODTRAN(m['bandnum'], m['wvlen1'], m['wvlen2'], dt, lat, lon, True)
                         e = 0.95
-                        band = (img[col] - (atmos.output[1] + (1 - e) * atmos.output[2])) / (atmos.output[0] * e)
+                        band = (tmpimg[col] - (atmos.output[1] + (1 - e) * atmos.output[2])) / (atmos.output[0] * e)
                         band = (((band.pow(-1)) * meta[col]['K1'] + 1).log().pow(-1)) * meta[col]['K2'] - 273.15
                         band.Process(imgout[col])
                 fname = imgout.Filename()
