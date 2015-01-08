@@ -116,9 +116,9 @@ class SARAnnualData(Data):
         """ Get metadata for this tile """
         return {'CF': -83.0}
 
-    def find_files(self, path):
+    def find_files(self):
         """ Search path for valid files """
-        filenames = super(SARAnnualData, self).find_files(path)
+        filenames = super(SARAnnualData, self).find_files()
         filenames[:] = [f for f in filenames if os.path.splitext(f)[1] != '.hdr']
         return filenames
 

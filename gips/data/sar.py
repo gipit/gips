@@ -255,9 +255,9 @@ class SARData(Data):
         files = self.assets[''].extract(filenames=[hdr_bname])
         return self.Asset._meta(files['hdr'])
 
-    def find_files(self, path):
+    def find_files(self):
         """ Search path for valid files """
-        filenames = super(SARData, self).find_files(path)
+        filenames = super(SARData, self).find_files()
         filenames[:] = [f for f in filenames if os.path.splitext(f)[1] != '.hdr']
         return filenames
 
