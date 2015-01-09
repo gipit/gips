@@ -154,6 +154,21 @@ def map_reduce(imgsz, rfunc, pfunc, wfunc=None, numbands=1, nchunks=100, nproc=2
         return dataout.squeeze()
 
 
+import time
+from functools import wraps
+
+
+def fn_timer(function):
+    @wraps(function)
+    def function_timer(*args, **kwargs):
+        t0 = time.time()
+        result = function(*args, **kwargs)
+        t1 = time.time()
+        print "%s time: %s seconds" % (function.func_name, str(t1 - t0))
+        return result
+    return function_timer
+
+
 def crop2vector(img, vector):
     """ Crop a GeoImage down to a vector - only used by mosaic """
     # TODO - incorporate into GIPPY?
