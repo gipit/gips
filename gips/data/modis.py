@@ -638,5 +638,5 @@ def main():
     DataInventory.main(ModisData)
 
 
-class ModisDataTest(DataTest):
-    pass
+def test():
+    ModisData.test()
