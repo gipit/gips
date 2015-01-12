@@ -29,7 +29,7 @@ import math
 import numpy as np
 
 import gippy
-from gips.data.core import Repository, Asset, Data, DataTest
+from gips.data.core import Repository, Asset, Data
 from gips.inventory import DataInventory
 from gips.utils import VerboseOut
 
