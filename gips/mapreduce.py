@@ -58,14 +58,20 @@ def _worker(chunk):
 class MapReduce(object):
     """ General purpose class for performing map reduction functions """
 
-    def __init__(self, inshape, outshape, rfunc, pfunc, wfunc=None, nchunks=100, nproc=2, keepnodata=False):
-        """ Create multiprocessing pool and run user processing function on parts """
+    def __init__(self, inshape, outshape, rfunc, pfunc, wfunc=None, nproc=2, keepnodata=False):
+        """ Create multiprocessing pool """
         self.inshape = inshape
         self.outshape = outshape
-        self.chunks = self.chunk(inshape, nchunks=nchunks)
-        pool = multiprocessing.Pool(nproc, initializer=self._mr_init,
-                                    initargs=(inshape, outshape, rfunc, pfunc, wfunc, keepnodata))
-        self.dataparts = pool.map(_worker, self.chunks)
+        self.pool = multiprocessing.Pool(nproc, initializer=self._mr_init,
+                                         initargs=(inshape, outshape, rfunc, pfunc, wfunc, keepnodata))
+
+    def run(self, nchunks=100, chunks=None):
+        """ Run the multiprocessing pool """
+        if chunks is None:
+            self.chunks = self.chunk(self.inshape, nchunks=nchunks)
+        else:
+            self.chunks = chunks
+        self.dataparts = self.pool.map(_worker, self.chunks)
 
     def assemble(self):
         """ Reassemble output parts into single array """
@@ -116,7 +122,8 @@ def map_reduce_array(arrin, pfunc, numbands=1, nchunks=100, nproc=2, keepnodata=
     # read data from global input array
     rfunc = lambda chunk: arrin[:, chunk[1]:chunk[1] + chunk[3], chunk[0]:chunk[0] + chunk[2]]
 
-    mr = MapReduce(inshape, outshape, rfunc=rfunc, pfunc=pfunc, nchunks=nchunks, nproc=nproc, keepnodata=keepnodata)
+    mr = MapReduce(inshape, outshape, rfunc=rfunc, pfunc=pfunc, nproc=nproc, keepnodata=keepnodata)
+    mr.run(nchunks=nchunks)
     return mr.assemble()
 
 
