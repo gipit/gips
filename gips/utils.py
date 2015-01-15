@@ -99,6 +99,23 @@ def basename(str):
     return os.path.splitext(os.path.basename(str))[0]
 
 
+def mkdir(dname):
+    """ Create a directory if it doesn't exist """
+    if not os.path.exists(dname):
+        os.makedirs(dname)
+    return dname
+
+
+def link(src, dst):
+    """ Create link in this directory """
+    if os.path.lexists(dst):
+        os.remove(dst)
+    # link path path relative to dst
+    os.symlink(os.path.relpath(src, os.path.dirname(dst)), os.path.abspath(dst))
+    return dst
+
+
+# mapreduce utils, obsoleted
 def chunk_data(datasz, nchunks=100):
     """ Create chunks given input data size (Y x X)"""
     chunksz = int(datasz[0] / nchunks)
