@@ -38,6 +38,8 @@ class Algorithm(object):
     def __init__(self, **kwargs):
         if 'projdir' in kwargs:
             self.inv = ProjectInventory(kwargs['projdir'], kwargs.get('products'))
+        if 'nproc' in kwargs:
+            self.nproc = kwargs['nproc']
 
     def run_command(self, **kwargs):
         """ Calls "run" function, or "command" if algorithm uses subparser """
