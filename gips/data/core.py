@@ -635,11 +635,11 @@ class Data(object):
         """ Open and return a GeoImage """
         if sensor is None:
             sensor = self.sensors[product]
-        fname = self.filenames[(sensor, product)]
-        if os.path.exists(fname):
+        try:
+            fname = self.filenames[(sensor, product)]
             return gippy.GeoImage(fname)
-        else:
-            raise Exception('%s_%s product does not exist' % (sensor, product))
+        except:
+            raise Exception('error reading product (%s, %s)' % (sensor, product))
 
     def open_assets(self, product):
         """ Open and return a GeoImage of the assets """
