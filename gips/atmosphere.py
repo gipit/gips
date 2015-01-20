@@ -108,7 +108,7 @@ class SIXS():
         # TODO - dynamically adjust AeroProfile?
         s.aero_profile = AeroProfile.PredefinedType(AeroProfile.Continental)
 
-        self.aod = AODData.get_aod(geometry['lat'], geometry['lon'], date_time)
+        self.aod = AODData.get_aod(geometry['lat'], geometry['lon'], date_time.date())
         s.aot550 = self.aod[1]
 
         # Other settings

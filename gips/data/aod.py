@@ -26,6 +26,7 @@ import datetime
 import gdal
 import numpy
 import glob
+import traceback
 
 import gippy
 from gips.data.core import Repository, Asset, Data
@@ -39,7 +40,7 @@ class AODRepository(Repository):
 
     @classmethod
     def path(cls, tile='', date=''):
-        path = os.path.join(cls._rootpath, cls._tilesdir)
+        path = os.path.join(cls.rootpath(), cls._tdir)
         if date != '':
             path = os.path.join(path, str(date.strftime('%Y')), str(date.strftime('%j')))
         return path
@@ -214,15 +215,18 @@ class AODData(Data):
             variances = img[1].Read(roi)
             vals[numpy.where(vals == nodata)] = numpy.nan
             variances[numpy.where(variances == nodata)] = numpy.nan
-            if numpy.isnan(vals[1, 1]):
-                val = numpy.mean(vals[~numpy.isnan(vals)])
-                var = numpy.mean(variances[~numpy.isnan(variances)])
-            else:
+            val = numpy.nan
+            var = numpy.nan
+            if ~numpy.isnan(vals[1, 1]):
                 val = vals[1, 1]
                 var = variances[1, 1]
+            elif numpy.any(~numpy.isnan(vals)) and numpy.any(~numpy.isnan(variances)):
+                val = numpy.mean(vals[~numpy.isnan(vals)])
+                var = numpy.mean(variances[~numpy.isnan(variances)])
             img = None
-            return val, var
+            return (val, var)
         except:
+            VerboseOut(traceback.format_exc(), 4)
             return (numpy.nan, numpy.nan)
 
     @classmethod
@@ -230,22 +234,22 @@ class AODData(Data):
         pixx = int(numpy.round(float(lon) + 179.5))
         pixy = int(numpy.round(89.5 - float(lat)))
         roi = gippy.Recti(pixx - 1, pixy - 1, 3, 3)
-
         # try reading actual data file first
         try:
             # this is just for fetching the data
             inv = cls.inventory(dates=date.strftime('%Y-%j'), fetch=fetch, products=['aod'])
-            img = gippy.GeoImage(inv[date].tiles[''].products['aod'])
-            vals = img[0].Read(roi).squeeze()
+            img = inv[date].tiles[''].open('aod')
+            vals = img[0].Read(roi)
             # TODO - do this automagically in swig wrapper
             vals[numpy.where(vals == img[0].NoDataValue())] = numpy.nan
             aod = vals[1, 1]
             img = None
             source = 'MODIS (MOD08_D3)'
-            if numpy.isnan(aod) and numpy.any(~numpy.isnan(vals)):
+            if ~numpy.isnan(aod) and numpy.any(~numpy.isnan(vals)):
                 aod = numpy.mean(vals[~numpy.isnan(vals)])
                 source = 'MODIS (MOD08_D3) spatial average'
         except Exception:
+            VerboseOut(traceback.format_exc(), 4)
             aod = numpy.nan
 
         var = 0
@@ -270,7 +274,7 @@ class AODData(Data):
                 totalvar = var
                 norm = 1.0 / var
                 cnt = cnt + 1
-            VerboseOut('AOD: LTA-Daily = %s, %s' % (val, var), 3)
+                VerboseOut('AOD: LTA-Daily = %s, %s' % (val, var), 3)
 
             # LTA
             val, var = cls._read_point(os.path.join(repo.cpath(), 'lta.tif'), roi, nodata)
@@ -280,7 +284,7 @@ class AODData(Data):
                 totalvar = totalvar + var
                 norm = norm + 1.0 / var
                 cnt = cnt + 1
-            VerboseOut('AOD: LTA = %s, %s' % (val, var), 3)
+                VerboseOut('AOD: LTA = %s, %s' % (val, var), 3)
 
             # TODO - adjacent days
 
