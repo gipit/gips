@@ -25,11 +25,12 @@ import argparse
 from gips import __version__ as gipsversion
 from gips.data.core import data_class
 from gips.parsers import GIPSParser, add_data_sources
+from gips.utils import Colors
 
 
 def main():
     dhf = argparse.ArgumentDefaultsHelpFormatter
-    h0 = 'GIPS v%s Data Repositories' % (gipsversion)
+    h0 = Colors.BOLD + 'GIPS v%s Data Repositories' % (gipsversion) + Colors.OFF
     parser0 = GIPSParser(description=h0, formatter_class=dhf)
 
     add_data_sources(parser0)
