@@ -31,13 +31,13 @@ def main():
     title = Colors.BOLD + 'GIPS Data Inventory Utility v%s' % gipsversion + Colors.OFF
 
     # argument parsing
-    parser = GIPSParser(description=title)
-    invparser = inventory_parser()
-    group = invparser.add_argument_group('inventory display')
+    parser0 = GIPSParser(description=title)
+    parser = inventory_parser()
+    group = parser.add_argument_group('inventory display')
     group.add_argument('--md', help='Show dates using MM-DD', action='store_true', default=False)
     group.add_argument('--compact', help='Print only dates (no coverage)', default=False, action='store_true')
-    parser.add_data_sources(parents=[invparser])
-    args = parser.parse_args()
+    parser0.add_data_sources(parents=[parser])
+    args = parser0.parse_args()
 
     try:
         print title

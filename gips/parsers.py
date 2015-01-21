@@ -69,19 +69,6 @@ def set_gippy_options(args):
         gippy.Options.SetChunkSize(args.chunksize)
 
 
-def add_data_sources(parser):
-    """ This adds available data sources as subparsers """
-    subparser = parser.add_subparsers(dest='command')
-    for key in sorted(settings.REPOS.keys()):
-        # get description
-        try:
-            repo = repository_class(key)
-            subparser.add_parser(key, help=repo.description)
-        except:
-            print traceback.format_exc()
-    return parser
-
-
 def inventory_parser():
     """ This adds inventory arguments to an argument parser """
     parser = GIPSParser(add_help=False)
@@ -96,4 +83,11 @@ def inventory_parser():
     group.add_argument('--fetch', help='Fetch any missing data (if supported)', default=False, action='store_true')
     group.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2: debug', default=1, type=int)
     group.add_argument('-p', '--products', help='Requested Products (call products command to list)', nargs='*')
+    return parser
+
+
+def default_parser():
+    """ Default parser """
+    parser = GIPSParser(add_help=False)
+    parser.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2: debug', default=1, type=int)
     return parser
