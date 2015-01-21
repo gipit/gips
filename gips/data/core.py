@@ -43,8 +43,28 @@ For a new dataset create children of Repository, Asset, and Data
 """
 
 
+def repository_class(clsname):
+    """ Get ClassRepository class object """
+    exec('from gips.data.%s import %sRepository as cls' % (clsname.lower(), clsname))
+    return cls
+
+
+def asset_class(clsname):
+    """ Get ClassAsset class object """
+    exec('from gips.data.%s import %sAsset as cls' % (clsname.lower(), clsname))
+    return cls
+
+
+def data_class(clsname):
+    """ Get ClassData class object """
+    exec('from gips.data.%s import %sData as cls' % (clsname.lower(), clsname))
+    return cls
+
+
 class Repository(object):
     """ Singleton (all classmethods) of file locations and sensor tiling system  """
+    # Description of the data source
+    _description = 'Data source description'
     # Format code of date directories in repository
     _datedir = '%Y%j'
 
