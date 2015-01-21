@@ -283,6 +283,7 @@ class LandsatData(Data):
         try:
             img = self._readraw()
         except Exception, e:
+            VerboseOut(traceback.format_exc(), 5)
             raise Exception('Error reading %s: %s' % (basename(self.assets[''].filename), e))
 
         meta = self.assets[''].meta
@@ -475,7 +476,7 @@ class LandsatData(Data):
 
         # cleanup directory
         try:
-            if settings.REPOS['landsat']['extract']:
+            if settings.REPOS[self.Repository.name]['extract']:
                 for bname in self.assets[''].datafiles():
                     if bname[-7:] != 'MTL.txt':
                         files = glob.glob(os.path.join(self.path, bname) + '*')
@@ -594,7 +595,7 @@ class LandsatData(Data):
         # make sure metadata is loaded
         self.meta()
 
-        if settings.REPOS['landsat']['extract']:
+        if settings.REPOS[self.Repository.name]['extract']:
             # Extract all files
             datafiles = self.assets[''].extract(self.metadata['filenames'])
         else:
