@@ -43,6 +43,7 @@ for repo, cfg in settings.REPOS.items():
         #    requirements = requirements.extend(reqs)
         #except:
         #    pass
+
 # Algorithms
 for f in glob.glob('gips/algorithms/*.py'):
     try:
@@ -53,20 +54,23 @@ for f in glob.glob('gips/algorithms/*.py'):
     except:
         pass
 
-scripts = []
-if os.path.exists('bin'):
-    files = glob.glob('bin/*.py')
-    for f in files:
-        scripts.append(f)
+# collect scripts
+for f in glob.glob('gips/scripts/*.py'):
+    try:
+        name = os.path.splitext(os.path.basename(f))[0]
+        if name not in ['__init__', 'core']:
+            script = 'gips_%s = gips.scripts.%s:main' % (name, name.lower())
+            console_scripts.append(script)
+    except:
+        pass
 
 setup(
     name='gips',
     version=__version__,
     description='Geospatial Image Processing System',
     author='Matthew Hanson',
-    author_email='mhanson@ags.io',
+    author_email='matt.a.hanson@gmail.com',
     packages=['gips', 'gips.data', 'gips.algorithms'],
     install_requires=['Py6S>=1.5.0', 'shapely', 'gippy', 'python-dateutil', 'pydap'],
-    scripts=scripts,
     entry_points={'console_scripts': console_scripts},
 )
