@@ -23,6 +23,7 @@
 
 import argparse
 from gips import __version__ as gipsversion
+from gips.data.core import data_class
 from gips.parsers import GIPSParser, add_data_sources
 
 
@@ -36,15 +37,5 @@ def main():
     args = parser0.parse_args()
 
     print h0
-
-    # import data class
-
-
-    #cls = 
-
-
-    #add_data_sources(parser0)
-
-    # filter specific data sources
-
-    #subparser = parser0.add_subparsers(dest='command')
+    cls = data_class(args.command)
+    cls.print_products()

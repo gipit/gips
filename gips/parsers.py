@@ -43,7 +43,7 @@ def add_data_sources(parser):
     for key in sorted(settings.REPOS.keys()):
         # get description
         try:
-            repo = repository_class(settings.REPOS[key]['class'])
+            repo = repository_class(key)
             subparser.add_parser(key, help=repo.description)
         except:
             print traceback.format_exc()

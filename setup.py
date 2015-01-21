@@ -35,8 +35,10 @@ import traceback
 # console scripts
 console_scripts = []
 # Data scripts
-for repo, cfg in settings.REPOS.items():
-    if cfg['rootpath'] != '':
+# for backwards compatability
+dscripts = ['AOD', 'CDL', 'landsat', 'modis', 'SAR', 'SARannual', 'merra', 'daymet']
+for repo in dscripts:
+    if settings.REPOS[repo.lower()]['rootpath'] != '':
         console_scripts.append('%s = gips.data.%s:main' % (repo, repo.lower()))
         # trying to customize requirements per data module
         #try:
