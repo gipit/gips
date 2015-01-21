@@ -21,24 +21,29 @@
 #   along with this program. If not, see <http://www.gnu.org/licenses/>
 ################################################################################
 
-import argparse
 from gips import __version__ as gipsversion
+from gips.parsers import GIPSParser
 from gips.data.core import data_class
-from gips.parsers import GIPSParser, add_data_sources
-from gips.utils import Colors
+from gips.utils import Colors, VerboseOut
 
 
 def main():
-    dhf = argparse.ArgumentDefaultsHelpFormatter
-    h0 = Colors.BOLD + 'GIPS v%s Data Repositories' % (gipsversion) + Colors.OFF
-    parser0 = GIPSParser(description=h0, formatter_class=dhf)
+    title = Colors.BOLD + 'GIPS v%s Data Repositories' % (gipsversion) + Colors.OFF
 
-    parser0.add_data_sources()
+    # argument parsing
+    parser = GIPSParser(description=title)
+    parser.add_data_sources()
+    args = parser.parse_args()
 
-    #add_data_sources(parser0)
+    try:
+        print title
+        cls = data_class(args.command)
+        cls.print_products()
+    except Exception, e:
+        import traceback
+        VerboseOut(traceback.format_exc(), 4)
+        print 'GIPS Data Repository error: %s' % e
 
-    args = parser0.parse_args()
 
-    print h0
-    cls = data_class(args.command)
-    cls.print_products()
+if __name__ == "__main__":
+    main()

@@ -21,37 +21,31 @@
 #   along with this program. If not, see <http://www.gnu.org/licenses/>
 ################################################################################
 
-import traceback
-
 from gips import __version__ as gipsversion
-from gips.parsers import GIPSParser, set_gippy_options, inventory_parser
+from gips.parsers import GIPSParser, inventory_parser
 from gips.data.core import data_class
 from gips.utils import Colors, VerboseOut
 
 
 def main():
-    #dhf = argparse.ArgumentDefaultsHelpFormatter
-    h = Colors.BOLD + 'GIPS Data Inventory Utility v%s' % gipsversion + Colors.OFF
-    parser = GIPSParser(description=h)
+    title = Colors.BOLD + 'GIPS Data Inventory Utility v%s' % gipsversion + Colors.OFF
 
-    # arguments
+    # argument parsing
+    parser = GIPSParser(description=title)
     invparser = inventory_parser()
     group = invparser.add_argument_group('inventory display')
     group.add_argument('--md', help='Show dates using MM-DD', action='store_true', default=False)
     group.add_argument('--compact', help='Print only dates (no coverage)', default=False, action='store_true')
-
     parser.add_data_sources(parents=[invparser])
-
     args = parser.parse_args()
 
-    set_gippy_options(args)
-
     try:
-        print h
+        print title
         cls = data_class(args.command)
         inv = cls.inventory(**vars(args))
         inv.pprint(md=args.md, compact=args.compact)
     except Exception, e:
+        import traceback
         VerboseOut(traceback.format_exc(), 4)
         print 'Data inventory error: %s' % e
 
