@@ -37,6 +37,11 @@ class GIPSParser(argparse.ArgumentParser):
         super(GIPSParser, self).__init__(**kwargs)
         self.formatter_class = argparse.ArgumentDefaultsHelpFormatter
 
+    def parse_args(self, **kwargs):
+        args = super(GIPSParser, self).parse_args(**kwargs)
+        set_gippy_options(args)
+        return args
+
     def error(self, message):
         sys.stderr.write('error: %s\n' % message)
         self.print_help()
