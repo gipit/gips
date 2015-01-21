@@ -33,7 +33,9 @@ def main():
     h0 = Colors.BOLD + 'GIPS v%s Data Repositories' % (gipsversion) + Colors.OFF
     parser0 = GIPSParser(description=h0, formatter_class=dhf)
 
-    add_data_sources(parser0)
+    parser0.add_data_sources()
+
+    #add_data_sources(parser0)
 
     args = parser0.parse_args()
 

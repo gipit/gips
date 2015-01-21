@@ -42,6 +42,17 @@ class GIPSParser(argparse.ArgumentParser):
         self.print_help()
         sys.exit(2)
 
+    def add_data_sources(self, **kwargs):
+        """ This should be added after global inventory options added """
+        subparser = self.add_subparsers(dest='command')
+        for key in sorted(settings.REPOS.keys()):
+            # get description
+            try:
+                repo = repository_class(key)
+                subparser.add_parser(key, help=repo.description, **kwargs)
+            except:
+                print traceback.format_exc()
+
 
 def set_gippy_options(args):
     """ Set gippy options from parsed command line arguments """
@@ -66,9 +77,10 @@ def add_data_sources(parser):
     return parser
 
 
-def add_inventory_parser(parser):
+def inventory_parser():
     """ This adds inventory arguments to an argument parser """
-    group = parser.add_argument_group('inventory arguments')
+    parser = GIPSParser(add_help=False)
+    group = parser.add_argument_group('data inventory')
     group.add_argument('-s', '--site', help='Vector file for region of interest', default=None)
     group.add_argument('-t', '--tiles', nargs='*', help='Tile designations', default=None)
     group.add_argument('-d', '--dates', help='Range of dates (YYYY-MM-DD,YYYY-MM-DD)')
@@ -79,3 +91,4 @@ def add_inventory_parser(parser):
     group.add_argument('--fetch', help='Fetch any missing data (if supported)', default=False, action='store_true')
     group.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2: debug', default=1, type=int)
     group.add_argument('-p', '--products', help='Requested Products (call products command to list)', nargs='*')
+    return parser
