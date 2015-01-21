@@ -30,6 +30,7 @@ from setuptools import setup
 import gips.settings as settings
 import glob
 from gips.version import __version__
+import traceback
 
 # console scripts
 console_scripts = []
@@ -52,7 +53,7 @@ for f in glob.glob('gips/scripts/*.py'):
             script = 'gips_%s = gips.scripts.%s:main' % (name, name.lower())
             console_scripts.append(script)
     except:
-        pass
+        print traceback.format_exc()
 
 setup(
     name='gips',
@@ -60,7 +61,7 @@ setup(
     description='Geospatial Image Processing System',
     author='Matthew Hanson',
     author_email='matt.a.hanson@gmail.com',
-    packages=['gips', 'gips.data', 'gips.algorithms'],
+    packages=['gips', 'gips.data'],
     install_requires=['Py6S>=1.5.0', 'shapely', 'gippy', 'python-dateutil', 'pydap'],
     entry_points={'console_scripts': console_scripts},
 )
