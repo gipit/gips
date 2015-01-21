@@ -22,11 +22,10 @@
 ################################################################################
 
 
-
-
 def add_inventory_parser(parser):
     """ This adds inventory arguments to an argument parser """
     group = parser.add_argument_group('inventory arguments')
+    group.add_argument('data', help='Data type to use (e.g. landsat)')
     group.add_argument('-s', '--site', help='Vector file for region of interest', default=None)
     group.add_argument('-t', '--tiles', nargs='*', help='Tile designations', default=None)
     group.add_argument('-d', '--dates', help='Range of dates (YYYY-MM-DD,YYYY-MM-DD)')
