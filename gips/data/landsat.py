@@ -43,7 +43,7 @@ requirements = ['Py6S>=1.5.0']
 
 class LandsatRepository(Repository):
     """ Singleton (all class methods) to be overridden by child data classes """
-    name = 'landsat'
+    name = 'Landsat'
     description = 'Landsat 5 (TM), 7 (ETM+), 8 (OLI)'
 
     @classmethod

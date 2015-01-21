@@ -36,7 +36,7 @@ requirements = ['pydap']
 
 
 class MerraRepository(Repository):
-    name = 'merra'
+    name = 'Merra'
     description = 'Modern Era Retrospective-Analysis for Research and Applications (weather and climate)'
 
     @classmethod

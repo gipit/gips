@@ -42,7 +42,7 @@ def binmask(arr, bit):
 
 
 class ModisRepository(Repository):
-    name = 'modis'
+    name = 'Modis'
     description = 'MODIS Aqua and Terra'
 
     @classmethod
