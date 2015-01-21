@@ -21,36 +21,42 @@
 #   along with this program. If not, see <http://www.gnu.org/licenses/>
 ################################################################################
 
-import argparse
-from gips.parsers import parser_add_inventory
-from gips.inventory import DataInventory
+from gips import __version__ as gipsversion
+from gips.parsers import GIPSParser, add_data_sources, add_inventory_parser, set_gippy_options
+from gips.data.core import data_class
+from gips.utils import Colors
+
 
 def main():
-    dhf = argparse.ArgumentDefaultsHelpFormatter
-    h = 'GIPS Data Inventory Utility v%s' % __version__
-    parser0 = argparse.ArgumentParser(description=h, formatter_class=dhf)
+    #dhf = argparse.ArgumentDefaultsHelpFormatter
+    h = Colors.BOLD + 'GIPS Data Inventory Utility v%s' % gipsversion + Colors.OFF
+    parser0 = GIPSParser(description=h)
 
-    parser_add_inventory(parser0)
+    add_data_sources(parser0)
+
+    add_inventory_parser(parser0)
+
+    # inventory display options
+    group = parser0.add_argument_group('inventory display')
+    group.add_argument('--md', help='Show dates using MM-DD', action='store_true', default=False)
+    group.add_argument('--compact', help='Print only dates (no coverage)', default=False, action='store_true')
 
     args = parser0.parse_args()
 
-    # Set options
-    gippy.Options.SetVerbose(args.verbose)
-    gippy.Options.SetDefaultFormat(args.format)
-    gippy.Options.SetChunkSize(args.chunksize) 
-   
-    # turn requested data into classname
-    eval('from gips.data.%s import %s as dataclass' % args.data)
- 
+    set_gippy_options(args)
+
     try:
-        print Colors.BOLD + 'GIPS Inventory v%s for %s' % (__version__, args.data) + Colors.OFF
+        print h
+        cls = data_class(args.command)
+        inv = cls.inventory(**vars(args))
         #inv = DataInventory(eval(args.data), site=args.site, tiles=args.tiles, dates=args.dates,
-        #                    pcov=args.pcov, ptile=args.ptile, fetch=args.fetch, sensors=args.sensors, **kwargs) 
-        inv = DataInventory(eval(args.data), **args)
+        #                    pcov=args.pcov, ptile=args.ptile, fetch=args.fetch, sensors=args.sensors, **kwargs)
         inv.pprint(md=args.md, compact=args.compact)
     except Exception, e:
-        VerboseOut(traceback.format_exc(), 4)
-        print 'Error with %s: %s' % (args.data, e)
+        import traceback
+        print traceback.format_exc()
+        print e
+        #VerboseOut(traceback.format_exc(), 4)
 
 if __name__ == "__main__":
     main()
