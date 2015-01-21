@@ -36,10 +36,12 @@ import traceback
 console_scripts = []
 # Data scripts
 # for backwards compatability
-dscripts = ['AOD', 'CDL', 'landsat', 'modis', 'SAR', 'SARannual', 'merra', 'daymet']
-for repo in dscripts:
-    if settings.REPOS[repo.lower()]['rootpath'] != '':
-        console_scripts.append('%s = gips.data.%s:main' % (repo, repo.lower()))
+dscripts = {
+    'AOD': 'AOD', 'CDL': 'CDL', 'landsat': 'Landsat', 'modis': 'Modis',
+    'SAR': 'SAR', 'SARannual': 'SARAnnual', 'merra': 'Merra', 'daymet': 'Daymet'}
+for cmd, repo in dscripts.items():
+    if settings.REPOS[repo]['rootpath'] != '':
+        console_scripts.append('%s = gips.data.%s:main' % (cmd, repo.lower()))
         # trying to customize requirements per data module
         #try:
         #    exec('from gips.data.%s import requirements as reqs' % repo.lower())
