@@ -40,11 +40,11 @@ class GIPSParser(argparse.ArgumentParser):
 def add_data_sources(parser):
     """ This adds available data sources as subparsers """
     subparser = parser.add_subparsers(dest='command')
-    for key, val in settings.REPOS.items():
+    for key in sorted(settings.REPOS.keys()):
         # get description
         try:
-            repo = repository_class(val['class'])
-            subparser.add_parser(key, help=repo._description)
+            repo = repository_class(settings.REPOS[key]['class'])
+            subparser.add_parser(key, help=repo.description)
         except:
             print traceback.format_exc()
     return parser

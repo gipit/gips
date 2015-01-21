@@ -36,6 +36,7 @@ from gips.utils import File2List, List2File, VerboseOut
 
 class AODRepository(Repository):
     name = 'AOD'
+    description = 'Aerosol Optical Depth from MODIS (MOD08)'
     _datedir = '%Y%j'
 
     @classmethod

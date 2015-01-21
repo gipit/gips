@@ -22,21 +22,29 @@
 ################################################################################
 
 import argparse
-import gips.settings as settings
-
-__version__ = '0.1.0'
+from gips import __version__ as gipsversion
+from gips.parsers import GIPSParser, add_data_sources
 
 
 def main():
     dhf = argparse.ArgumentDefaultsHelpFormatter
-    parser0 = argparse.ArgumentParser(description='GIPS Data Repositories v%s' % (__version__))
+    h0 = 'GIPS v%s Data Repositories' % (gipsversion)
+    parser0 = GIPSParser(description=h0, formatter_class=dhf)
+
+    add_data_sources(parser0)
+
+    args = parser0.parse_args()
+
+    print h0
+
+    # import data class
+
+
+    #cls = 
+
+
+    #add_data_sources(parser0)
 
     # filter specific data sources
 
-    # Get list of data sources
-    for key, val in settings.REPOS:
-    	# check for validity
-    	print key
-
-
-    #subparser = parser0.add_subparsers(dest='command')	
+    #subparser = parser0.add_subparsers(dest='command')

@@ -35,6 +35,7 @@ from gips.utils import File2List, List2File, RemoveFiles
 
 class SARRepository(Repository):
     name = 'SAR'
+    description = 'Synthetic Aperture Radar PALSAR and JERS-1'
 
     @classmethod
     def feature2tile(cls, feature):

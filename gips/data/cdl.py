@@ -31,6 +31,7 @@ from gips.inventory import DataInventory
 
 class CDLRepository(Repository):
     name = 'CDL'
+    description = 'Crop Data Layer'
     _datedir = '%Y'
     _defaultresolution = [30.0, 30.0]
 

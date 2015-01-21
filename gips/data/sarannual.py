@@ -32,6 +32,7 @@ from gips.utils import RemoveFiles, VerboseOut
 
 class SARAnnualRepository(Repository):
     name = 'SARannual'
+    description = 'Synthetic Aperture Radar PALSAR Mosaics'
     _datedir = '%Y'
 
     @classmethod

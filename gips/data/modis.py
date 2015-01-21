@@ -43,6 +43,7 @@ def binmask(arr, bit):
 
 class ModisRepository(Repository):
     name = 'modis'
+    description = 'MODIS Aqua and Terra'
 
     @classmethod
     def feature2tile(cls, feature):

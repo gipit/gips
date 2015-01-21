@@ -64,7 +64,7 @@ def data_class(clsname):
 class Repository(object):
     """ Singleton (all classmethods) of file locations and sensor tiling system  """
     # Description of the data source
-    _description = 'Data source description'
+    description = 'Data source description'
     # Format code of date directories in repository
     _datedir = '%Y%j'
 
