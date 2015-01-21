@@ -27,14 +27,30 @@ import traceback
 
 import gips.settings as settings
 from gips.data.core import repository_class
+import gippy
 
 
 class GIPSParser(argparse.ArgumentParser):
     """ Extends argparser parser to print help on error """
+
+    def __init__(self, **kwargs):
+        super(GIPSParser, self).__init__(**kwargs)
+        self.formatter_class = argparse.ArgumentDefaultsHelpFormatter
+
     def error(self, message):
         sys.stderr.write('error: %s\n' % message)
         self.print_help()
         sys.exit(2)
+
+
+def set_gippy_options(args):
+    """ Set gippy options from parsed command line arguments """
+    if 'verbose' in args:
+        gippy.Options.SetVerbose(args.verbose)
+    if 'format' in args:
+        gippy.Options.SetDefaultFormat(args.format)
+    if 'chunksize' in args:
+        gippy.Options.SetChunkSize(args.chunksize)
 
 
 def add_data_sources(parser):
@@ -53,7 +69,6 @@ def add_data_sources(parser):
 def add_inventory_parser(parser):
     """ This adds inventory arguments to an argument parser """
     group = parser.add_argument_group('inventory arguments')
-    group.add_argument('data', help='Data type to use (e.g. landsat)')
     group.add_argument('-s', '--site', help='Vector file for region of interest', default=None)
     group.add_argument('-t', '--tiles', nargs='*', help='Tile designations', default=None)
     group.add_argument('-d', '--dates', help='Range of dates (YYYY-MM-DD,YYYY-MM-DD)')
