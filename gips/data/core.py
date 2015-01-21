@@ -390,7 +390,7 @@ class Asset(object):
             raise Exception("Error downloading: %s" % e)
 
     @classmethod
-    def archive(cls, path='.', recursive=False, keep=False):
+    def archive(cls, path='.', recursive=False, keep=False, **kwargs):
         """ Move assets from directory to archive location """
         start = datetime.now()
 
