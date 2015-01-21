@@ -220,6 +220,8 @@ class DataInventory(Inventory):
             self.temporal = TemporalExtent(dates, days)
             self.products = dataclass.RequestedProducts(products)
         except Exception, e:
+            import traceback
+            VerboseOut(traceback.format_exc(), 4)
             raise Exception('Illformed parameters: %s' % e)
 
         if fetch:
