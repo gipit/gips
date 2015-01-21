@@ -54,7 +54,8 @@ PROJ = """PROJCS["unnamed",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",63
 
 
 class DaymetRepository(Repository):
-    name = 'daymet'
+    name = 'Daymet'
+    description = 'Daymet weather data'
 
     # @classmethod
     # def tile_bounds(cls, tile):
