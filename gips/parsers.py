@@ -21,6 +21,34 @@
 #   along with this program. If not, see <http://www.gnu.org/licenses/>
 ################################################################################
 
+import sys
+import argparse
+import traceback
+
+import gips.settings as settings
+from gips.data.core import repository_class
+
+
+class GIPSParser(argparse.ArgumentParser):
+    """ Extends argparser parser to print help on error """
+    def error(self, message):
+        sys.stderr.write('error: %s\n' % message)
+        self.print_help()
+        sys.exit(2)
+
+
+def add_data_sources(parser):
+    """ This adds available data sources as subparsers """
+    subparser = parser.add_subparsers(dest='command')
+    for key, val in settings.REPOS.items():
+        # get description
+        try:
+            repo = repository_class(val['class'])
+            subparser.add_parser(key, help=repo._description)
+        except:
+            print traceback.format_exc()
+    return parser
+
 
 def add_inventory_parser(parser):
     """ This adds inventory arguments to an argument parser """
