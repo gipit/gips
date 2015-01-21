@@ -35,16 +35,13 @@ DATABASES = {
 EMAIL = ''
 
 REPOS = {
-    # MODIS AOD product (MOD08)
     'AOD': {
         'rootpath': '',
     },
-    # Crop Data Layer (USDA NASS)
-    'cdl': {
+    'CDL': {
         'rootpath': '',
     },
-    # Landsat 5, 7, 8
-    'landsat': {
+    'Landsat': {
         'rootpath': '',
         # Atmospheric correction
         '6S': True,
@@ -52,16 +49,19 @@ REPOS = {
         # Extract the files from tar.gz before processing (opposed to accessing directly)
         'extract': False,
     },
-    # MODIS
-    'modis': {
+    'Modis': {
         'rootpath': '',
     },
-    # PALSAR, JERS-1
-    'sar': {
+    'SAR': {
         'rootpath': '',
     },
-    # PALSAR WideBeam Mosaics
-    'sarannual': {
+    'SARAnnual': {
+        'rootpath': '',
+    },
+    'Merra': {
+        'rootpath': '',
+    },
+    'Daymet': {
         'rootpath': '',
     },
 }
