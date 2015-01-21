@@ -44,16 +44,6 @@ for repo, cfg in settings.REPOS.items():
         #except:
         #    pass
 
-# Algorithms
-for f in glob.glob('gips/algorithms/*.py'):
-    try:
-        name = os.path.splitext(os.path.basename(f))[0]
-        if name not in ['__init__', 'core']:
-            script = 'gips_%s = gips.algorithms.%s:main' % (name, name.lower())
-            console_scripts.append(script)
-    except:
-        pass
-
 # collect scripts
 for f in glob.glob('gips/scripts/*.py'):
     try:
