@@ -71,7 +71,7 @@ class GIPSParser(argparse.ArgumentParser):
         group.add_argument('--%tile', dest='ptile', help='Threshold of %% tile used', default=0, type=int)
         group.add_argument('--fetch', help='Fetch any missing data (if supported)', default=False, action='store_true')
         group.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2: debug', default=1, type=int)
-        group.add_argument('-p', '--products', help='Requested Products (call products command to list)', nargs='*')
+        group.add_argument('-p', '--products', help='Requested Products', nargs='*')
         self.parent_parsers.append(parser)
         return parser
 
@@ -79,7 +79,7 @@ class GIPSParser(argparse.ArgumentParser):
         """ This adds a parser with processing options """
         parser = GIPSParser(add_help=False)
         group = parser.add_argument_group('processing options')
-        group.add_argument('--overwrite', help='Overwrite exiting output file(s)', default=False, action='store_true')
+        group.add_argument('--overwrite', help='Overwrite existing output file(s)', default=False, action='store_true')
         group.add_argument('--chunksize', help='Chunk size in MB', default=512.0)
         group.add_argument('--format', help='Format for output file', default="GTiff")
         self.parent_parsers.append(parser)
@@ -89,7 +89,8 @@ class GIPSParser(argparse.ArgumentParser):
         """ This adds a parser with processing options """
         parser = GIPSParser(add_help=False)
         group = parser.add_argument_group('project directory options')
-        group.add_argument('--datadir', help='Directory to store output', default=None)
+        h = 'Directory to store output (auto generated if not provided)'
+        group.add_argument('--datadir', help=h, default=None)
         group.add_argument('--suffix', help='Suffix to add to auto generated output directory', default=None)
         self.parent_parsers.append(parser)
         return parser
