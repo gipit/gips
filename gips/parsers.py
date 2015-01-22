@@ -98,7 +98,8 @@ class GIPSParser(argparse.ArgumentParser):
         """ This adds a parser with warping options """
         parser = GIPSParser(add_help=False)
         group = parser.add_argument_group('warp options')
-        group.add_argument('--res', nargs=2, help='Resolution of (warped) output rasters', default=None, type=float)
+        h = 'Resolution of (warped) output rasters'
+        group.add_argument('--res', nargs=2, help=h, default=None, type=float, required=True)
         h = 'Interpolate using: 0-NN, 1-Bilinear, 2-Cubic'
         group.add_argument('--interpolation', help=h, choices=[0, 1, 2], default=0, type=int)
         group.add_argument('--crop', help='Crop down to minimum bounding box', default=False, action='store_true')
