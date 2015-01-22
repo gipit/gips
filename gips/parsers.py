@@ -88,17 +88,20 @@ class GIPSParser(argparse.ArgumentParser):
     def add_project_parser(self):
         """ This adds a parser with processing options """
         parser = GIPSParser(add_help=False)
-        group = parser.add_argument_group('project options')
-        group.add_argument('--res', nargs=2, help='Resolution of (warped) output rasters', default=None, type=float)
-        group.add_argument('--crop', help='Crop down to minimum bounding box', default=False, action='store_true')
-        group.add_argument('--nowarp', help='Do not warp (or crop)', default=False, action='store_true')
-        h = 'Interpolate using: 0-NN, 1-Bilinear, 2-Cubic'
-        group.add_argument('--interpolation', help=h, choices=[0, 1, 2], default=0, type=int)
-        group.add_argument('--nomosaic', help='Do not mosaic (keep as tiles)', default=False, action='store_true')
-
-        group = parser.add_mutually_exclusive_group()
+        group = parser.add_argument_group('project directory options')
         group.add_argument('--datadir', help='Directory to store output', default=None)
         group.add_argument('--suffix', help='Suffix to add to auto generated output directory', default=None)
+        self.parent_parsers.append(parser)
+        return parser
+
+    def add_warp_parser(self):
+        """ This adds a parser with warping options """
+        parser = GIPSParser(add_help=False)
+        group = parser.add_argument_group('warp options')
+        group.add_argument('--res', nargs=2, help='Resolution of (warped) output rasters', default=None, type=float)
+        h = 'Interpolate using: 0-NN, 1-Bilinear, 2-Cubic'
+        group.add_argument('--interpolation', help=h, choices=[0, 1, 2], default=0, type=int)
+        group.add_argument('--crop', help='Crop down to minimum bounding box', default=False, action='store_true')
         self.parent_parsers.append(parser)
         return parser
 
