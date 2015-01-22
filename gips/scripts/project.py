@@ -24,7 +24,7 @@
 from gips import __version__ as gipsversion
 from gips.parsers import GIPSParser
 from gips.data.core import data_class
-from gips.utils import Colors, VerboseOut
+from gips.utils import Colors, VerboseOut, basename, mkdir
 
 
 def main():
@@ -35,6 +35,7 @@ def main():
     parser0.add_inventory_parser()
     parser0.add_process_parser()
     parser0.add_project_parser()
+    parser0.add_warp_parser()
     parser0.add_data_sources()
     args = parser0.parse_args()
 
@@ -42,8 +43,25 @@ def main():
         print title
         cls = data_class(args.command)
         inv = cls.inventory(**vars(args))
-        del args.products
-        inv.project(**vars(args))
+
+        # create project directory
+        suffix = '' if args.suffix is None else '_' + args.suffix
+        if args.datadir is None:
+            if args.res is None:
+                args.res = cls.Asset._defaultresolution
+            if args.res[0] == args.res[1]:
+                resstr = str(args.res[0])
+            else:
+                resstr = '%sx%s' % (args.res[0], args.res[1])
+            args.datadir = '%s_%s_%s%s' % (basename(args.site).replace('_', '-'), args.command, resstr, suffix)
+        mkdir(args.datadir)
+
+        # warp and mosaic
+        for date in inv.dates:
+            inv[date].process(overwrite=False)
+            inv[date].mosaic(datadir=args.datadir, res=args.res, interpolation=args.interpolation,
+                             crop=args.crop, overwrite=args.overwrite)
+
     except Exception, e:
         import traceback
         VerboseOut(traceback.format_exc(), 4)
