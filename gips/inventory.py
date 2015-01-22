@@ -276,7 +276,6 @@ class DataInventory(Inventory):
         start = dt.now()
         sitename = 'tiles' if self.spatial.site is None else basename(self.spatial.site)
         if res is None:
-            # TODO - determined as min of all Assets
             res = self.dataclass.Asset._defaultresolution
 
         suffix = '' if suffix is None else '_' + suffix
