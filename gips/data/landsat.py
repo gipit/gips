@@ -34,7 +34,6 @@ import gippy
 from gippy.algorithms import ACCA, Fmask, LinearTransform, Indices
 from gips.data.core import Repository, Asset, Data
 from gips.atmosphere import SIXS, MODTRAN
-from gips.inventory import DataInventory
 from gips.utils import VerboseOut, RemoveFiles, basename
 import gips.settings as settings
 

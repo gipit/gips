@@ -26,7 +26,6 @@ from datetime import datetime
 from csv import DictReader
 
 from gips.data.core import Repository, Asset, Data
-from gips.inventory import DataInventory
 
 
 class CDLRepository(Repository):

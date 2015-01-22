@@ -30,7 +30,6 @@ from pydap.client import open_url
 
 import gippy
 from gips.data.core import Repository, Asset, Data
-from gips.inventory import DataInventory
 from gips.utils import VerboseOut, basename
 
 from agspy.utils import raster
