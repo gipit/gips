@@ -80,40 +80,23 @@ class Tiles(object):
         """ Calls Data.process for each tile """
         [t.process(products=self.products.products, overwrite=overwrite, **kwargs) for t in self.tiles.values()]
 
-    def project(self, datadir, res, crop=False, nowarp=False, interpolation=0, nomosaic=False, **kwargs):
-        """ Create image of final product (reprojected/mosaiced) """
+    def mosaic(self, datadir, res=None, interpolation=0, crop=False, overwrite=False):
+        """ Combine tiles into a single mosaic """
         start = datetime.now()
         bname = self.date.strftime('%Y%j')
-
-        if self.spatial.site is None:
-            nomosaic = True
-            nowarp = True
-        if not hasattr(res, "__len__"):
-            res = [res, res]
-
-        if nomosaic:
-            # create project with individual tiles
-            # TODO - allow hard and soft link options
-            for t in self.tiles:
-                self.tiles[t].project(datadir, res, self.products.products, nowarp=nowarp, **kwargs)
-        else:
-            # Shapefile project
-            if not os.path.exists(datadir):
-                os.makedirs(datadir)
-            for product in self.products.products:
-                sensor = self.which_sensor(product)
-                fout = os.path.join(datadir, bname + ('_%s_%s.tif' % (sensor, product)))
-                if not os.path.exists(fout):
-                    try:
-                        filenames = [self.tiles[t].filenames[(sensor, product)] for t in self.tiles]
-                        # TODO - cookiecutter should validate pixels in image.  Throw exception if not
-                        if nowarp:
-                            mosaic(filenames, fout, self.spatial.site)
-                        else:
-                            CookieCutter(filenames, fout, self.spatial.site, res[0], res[1], crop, interpolation)
-                    except:
-                        VerboseOut("Problem projecting %s" % fout, 2)
-                        VerboseOut(traceback.format_exc(), 3)
+        for product in self.products.products:
+            sensor = self.which_sensor(product)
+            fout = os.path.join(datadir, '%s_%s_%s' % (bname, sensor, product))
+            if not os.path.exists(fout) or overwrite:
+                try:
+                    filenames = [self.tiles[t].filenames[(sensor, product)] for t in self.tiles]
+                    if self.spatial.site is not None and res is not None:
+                        CookieCutter(filenames, fout, self.spatial.site, res[0], res[1], crop, interpolation)
+                    else:
+                        mosaic(filenames, fout, self.spatial.site)
+                except Exception, e:
+                    VerboseOut(traceback.format_exc(), 4)
+                    VerboseOut("Error mosaicking %s: %s" % (fout, e))
         t = datetime.now() - start
         VerboseOut('%s: created project files for %s tiles in %s' % (self.date, len(self.tiles), t), 2)
 
