@@ -23,14 +23,13 @@
 
 import sys
 import os
-import argparse
 from datetime import datetime as dt
 import traceback
 import numpy
 from copy import deepcopy
 
 import gippy
-from gips import __version__, SpatialExtent, TemporalExtent
+from gips import SpatialExtent, TemporalExtent
 from gips.tiles import Tiles
 from gips.utils import VerboseOut, Colors, basename, map_reduce
 from gips.data.core import Data
@@ -313,99 +312,3 @@ class DataInventory(Inventory):
         # Header
         #datestr = ' Month/Day' if md else ' Day of Year'
         super(DataInventory, self).pprint(**kwargs)
-
-    @staticmethod
-    def main(cls):
-        """ Command line intrepreter """
-        dhf = argparse.ArgumentDefaultsHelpFormatter
-        parser0 = argparse.ArgumentParser(description='GIPS %s Data Utility v%s' % (cls.name, __version__))
-        subparser = parser0.add_subparsers(dest='command')
-
-        # Archive
-        parser = subparser.add_parser('archive', help='Move files from current directory to data archive')
-        parser.add_argument('--keep', help='Keep files after adding to archive', default=False, action='store_true')
-        parser.add_argument('--recursive', help='Iterate through subdirectories', default=False, action='store_true')
-        parser.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2: debug', default=1, type=int)
-
-        invparser = argparse.ArgumentParser(add_help=False, formatter_class=dhf)
-        group = invparser.add_argument_group('inventory arguments')
-        group.add_argument('-s', '--site', help='Vector file for region of interest', default=None)
-        group.add_argument('-t', '--tiles', nargs='*', help='Tile designations', default=None)
-        group.add_argument('-d', '--dates', help='Range of dates (YYYY-MM-DD,YYYY-MM-DD)')
-        group.add_argument('--days', help='Include data within these days of year (doy1,doy2)', default=None)
-        group.add_argument('--sensors', help='Sensors to include', nargs='*', default=None)
-        group.add_argument('--%cov', dest='pcov', help='Threshold of %% tile coverage over site', default=0, type=int)
-        group.add_argument('--%tile', dest='ptile', help='Threshold of %% tile used', default=0, type=int)
-        group.add_argument('--fetch', help='Fetch any missing data (if supported)', default=False, action='store_true')
-        group.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2: debug', default=1, type=int)
-        group.add_argument('-p', '--products', help='Requested Products (call products command to list)', nargs='*')
-        extra = []
-        for arg, kwargs in cls.extra_arguments().items():
-            extra.append(kwargs['dest'])
-            group.add_argument(arg, **kwargs)
-
-        parents = [invparser, ]
-
-        parser = subparser.add_parser('products', help='List available products')
-
-        # Inventory
-        parser = subparser.add_parser('inventory', help='Get Inventory', parents=parents, formatter_class=dhf)
-        parser.add_argument('--md', help='Show dates using MM-DD', action='store_true', default=False)
-        parser.add_argument('--compact', help='Print only dates (no coverage)', default=False, action='store_true')
-
-        # Processing
-        parserp = subparser.add_parser('process', help='Process scenes', parents=parents, formatter_class=dhf)
-        group = parserp.add_argument_group('Processing Options')
-        group.add_argument('--overwrite', help='Overwrite exiting output file(s)', default=False, action='store_true')
-        group.add_argument('--chunksize', help='Chunk size in MB', default=512.0)
-
-        # Project
-        parser = subparser.add_parser('project', help='Create project', parents=parents, formatter_class=dhf)
-        group = parser.add_argument_group('Project options')
-        group.add_argument('--res', nargs=2, help='Resolution of (warped) output rasters', default=None, type=float)
-        group.add_argument('--crop', help='Crop down to minimum bounding box', default=False, action='store_true')
-        group.add_argument('--nowarp', help='Do not warp (or crop)', default=False, action='store_true')
-        group.add_argument('--interpolation', help='Interpolate using: 0-NN, 1-Bilinear, 2-Cubic', default=0, type=int)
-        group.add_argument('--nomosaic', help='Do not mosaic (keep as tiles)', default=False, action='store_true')
-        group.add_argument('--datadir', help='Directory to store output', default=None)
-        group.add_argument('--suffix', help='Suffix on end of project directory', default=None)
-        group.add_argument('--format', help='Format for output file', default="GTiff")
-        group.add_argument('--chunksize', help='Chunk size in MB', type=float, default=512.0)
-
-        args = parser0.parse_args()
-
-        VerboseOut(Colors.BOLD + 'GIPS %s utility v%s' % (cls.name, __version__) + Colors.OFF, 1)
-
-        if args.command == 'products':
-            cls.print_products()
-            exit(1)
-
-        # Set GIPPY options
-        gippy.Options.SetVerbose(args.verbose)
-        if 'format' in args:
-            gippy.Options.SetDefaultFormat(args.format)
-        if 'chunksize' in args:
-            gippy.Options.SetChunkSize(args.chunksize)
-
-        if args.command == 'archive':
-            cls.Asset.archive(recursive=args.recursive, keep=args.keep)
-            exit(1)
-
-        kwargs = dict(zip(extra, [eval('args.%s' % a) for a in extra]))
-
-        try:
-            inv = cls.inventory(
-                site=args.site, dates=args.dates, days=args.days, tiles=args.tiles, products=args.products,
-                pcov=args.pcov, ptile=args.ptile, fetch=args.fetch, sensors=args.sensors, **kwargs)
-            if args.command == 'inventory':
-                inv.pprint(md=args.md, compact=args.compact)
-            elif args.command == 'process':
-                inv.process(overwrite=args.overwrite, **kwargs)
-            elif args.command == 'project':
-                inv.project(datadir=args.datadir, suffix=args.suffix, res=args.res, crop=args.crop,
-                            nowarp=args.nowarp, interpolation=args.interpolation, nomosaic=args.nomosaic, **kwargs)
-            else:
-                VerboseOut('Command %s not recognized' % args.command, 0)
-        except Exception, e:
-            VerboseOut(traceback.format_exc(), 4)
-            VerboseOut('Error in %s: %s' % (args.command, e))

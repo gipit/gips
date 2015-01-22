@@ -298,11 +298,3 @@ class AODData(Data):
 
         VerboseOut('AOD: Source = %s Value = %s' % (source, aod), 2)
         return (source, aod)
-
-
-def main():
-    DataInventory.main(AODData)
-
-
-def test():
-    AODData.test()

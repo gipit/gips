@@ -308,11 +308,3 @@ class SARData(Data):
         if 'hdr' in datafiles:
             del datafiles['hdr']
         RemoveFiles(datafiles.values(), ['.hdr', '.aux.xml'])
-
-
-def main():
-    DataInventory.main(SARData)
-
-
-def test():
-    SARData.test()

@@ -210,13 +210,3 @@ class DaymetData(Data):
             'assets': ['vp']
         },
     }
-
-
-
-def main():
-    DataInventory.main(DaymetData)
-
-
-
-
-

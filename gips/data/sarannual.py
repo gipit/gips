@@ -164,11 +164,3 @@ class SARAnnualData(Data):
                     img.SetNoData(0)
                     img = None
             self.AddFile(self.sensor_set[0], key, fname)
-
-
-def main():
-    DataInventory.main(SARAnnualData)
-
-
-def test():
-    SARAnnualData.test()

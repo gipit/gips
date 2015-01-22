@@ -634,11 +634,3 @@ class LandsatData(Data):
                 'type': int
             },
         }
-
-
-def main():
-    DataInventory.main(LandsatData)
-
-
-def test():
-    LandsatData.test()

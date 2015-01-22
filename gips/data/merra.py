@@ -366,11 +366,3 @@ class MerraData(Data):
             ####################################################################
             elif val[0] == 'profile':
                 pass
-
-
-def main():
-    DataInventory.main(MerraData)
-
-
-def test():
-    MerraData.test()

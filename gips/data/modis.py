@@ -633,11 +633,3 @@ class ModisData(Data):
             # add product to inventory
             self.AddFile(sensor, key, imgout.Filename())
             VerboseOut(' -> %s: processed in %s' % (os.path.basename(fname), datetime.datetime.now() - start), 1)
-
-
-def main():
-    DataInventory.main(ModisData)
-
-
-def test():
-    ModisData.test()

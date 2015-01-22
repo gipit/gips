@@ -85,11 +85,3 @@ class CDLData(Data):
     def get_cropname(cls, code):
         '''Retrieve name associated with given crop code'''
         return cls._legend[code]
-
-
-def main():
-    DataInventory.main(CDLData)
-
-
-def test():
-    CDLData.test()
