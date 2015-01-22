@@ -20,6 +20,8 @@
 #   along with this program. If not, see <http://www.gnu.org/licenses/>
 ################################################################################
 v0.8.0
+- Indvidual data utilities deprecated (e.g., landsat), replaced with gips_ scripts
+- New gips scripts, each with more specific functionatlity: gips_inventory, gips_warptiles, gips_process
 - Refactor of core inventory and tiles for streamlined code reuse
 - Requirements (python libraries) can be specified for each data module
 - Interpolation option added to project function (neartest neighbor, bilinear, or cubic)
