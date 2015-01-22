@@ -41,6 +41,7 @@ def main():
     group.add_argument('--nomosaic', help='Do not mosaic (keep as tiles)', default=False, action='store_true')
     group.add_argument('--datadir', help='Directory to store output', default=None)
     group.add_argument('--suffix', help='Suffix on end of project directory', default=None)
+    group.add_argument('--overwrite', help='Overwrite exiting output file(s)', default=False, action='store_true')
     group.add_argument('--format', help='Format for output file', default="GTiff")
     group.add_argument('--chunksize', help='Chunk size in MB', type=float, default=512.0)
     parser0.add_data_sources(parents=[parser])
