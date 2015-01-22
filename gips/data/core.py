@@ -32,10 +32,12 @@ from shapely.wkb import loads
 import tarfile
 import traceback
 import ftplib
+import shutil
 
 import gippy
 from gips import settings, GeoVector, __version__
-from gips.utils import VerboseOut, RemoveFiles, File2List, List2File, Colors, basename
+from gips.utils import VerboseOut, RemoveFiles, File2List, List2File, Colors, basename, mkdir
+from gippy.algorithms import CookieCutter
 
 """
 The data.core classes are the base classes that are used by individual Data modules.
@@ -493,16 +495,34 @@ class Data(object):
         """ Retrieve metadata for this tile """
         return {}
 
-    def process(self, products=None, overwrite=False, **kwargs):
-        """ Make sure all products exist and process if needed """
-        # Check to see what needs to be processed
-        if products is None:
-            products = self.RequestedProducts()
-        else:
-            products = self.RequestedProducts([p for p in products if p not in self.products or overwrite])
+    def process(self, products, overwrite=False, **kwargs):
+        """ Make sure all products exist and return those that need processing """
+        products = self.RequestedProducts([p for p in products if p not in self.products or overwrite])
         if len(products) > 0:
             VerboseOut("Processing products for tile %s: %s" % (self.id, products), 2)
         return products
+
+    def copy(self, dout, products, site=None, res=None, interpolation=0, crop=False, overwrite=False):
+        """ Copy products to new directory, warp to projection if given site """
+        # TODO - allow hard and soft linking options
+        # create directory
+        dout = os.path.join(dout, self.id)
+        mkdir(dout)
+        products = self.RequestedProducts(products)
+        bname = '%s_%s' % (self.id, self.date.strftime('%Y%j'))
+        for p in products.requested:
+            sensor = self.sensors[p]
+            fin = self.filenames[(sensor, p)]
+            fout = os.path.join(dout, "%s_%s_%s.tif" % (bname, sensor, p))
+            if not os.path.exists(fout) or overwrite:
+                try:
+                    if site is not None:
+                        CookieCutter([fin], fout, site, res[0], res[1], crop, interpolation)
+                    else:
+                        shutil.copyfile(fin, fout)
+                except Exception:
+                    VerboseOut(traceback.format_exc(), 4)
+                    VerboseOut("Problem creating %s" % fout)
 
     @classmethod
     def process_composites(cls, inventory, products, **kwargs):
