@@ -31,7 +31,7 @@ from copy import deepcopy
 import gippy
 from gips import SpatialExtent, TemporalExtent
 from gips.tiles import Tiles
-from gips.utils import VerboseOut, Colors, basename, map_reduce
+from gips.utils import VerboseOut, Colors, basename
 from gips.data.core import Data
 
 
@@ -187,14 +187,14 @@ class ProjectInventory(Inventory):
         img = gippy.GeoImage(filenames)
         return img
 
-    def map_reduce(self, func, numbands=1, products=None, readfunc=None, **kwargs):
-        """ Apply func to inventory to generate an image with numdim output bands """
-        if products is None:
-            products = self.requested_products
-        if readfunc is None:
-            readfunc = lambda x: self.get_data(products=products, chunk=x)
-        sz = self.data_size()
-        return map_reduce(sz[1:3], readfunc, func, numbands=numbands, **kwargs)
+    #def map_reduce(self, func, numbands=1, products=None, readfunc=None, **kwargs):
+    #    """ Apply func to inventory to generate an image with numdim output bands """
+    #    if products is None:
+    #        products = self.requested_products
+    #    if readfunc is None:
+    #        readfunc = lambda x: self.get_data(products=products, chunk=x)
+    #    sz = self.data_size()
+    #    return map_reduce(sz[1:3], readfunc, func, numbands=numbands, **kwargs)
 
 
 class DataInventory(Inventory):
