@@ -22,7 +22,7 @@
 ################################################################################
 
 from gips import __version__ as gipsversion
-from gips.parsers import GIPSParser, default_parser
+from gips.parsers import GIPSParser
 from gips.data.core import data_class
 from gips.utils import Colors, VerboseOut
 
@@ -32,11 +32,11 @@ def main():
 
     # argument parsing
     parser0 = GIPSParser(description=title)
-    parser = default_parser()
-    group = parser.add_argument_group('inventory display')
+    parser = parser0.add_default_parser()
+    group = parser.add_argument_group('archive options')
     group.add_argument('--keep', help='Keep files after adding to archive', default=False, action='store_true')
     group.add_argument('--recursive', help='Iterate through subdirectories', default=False, action='store_true')
-    parser0.add_data_sources(parents=[parser])
+    parser0.add_data_sources()
     args = parser0.parse_args()
 
     try:

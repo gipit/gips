@@ -22,7 +22,7 @@
 ################################################################################
 
 from gips import __version__ as gipsversion
-from gips.parsers import GIPSParser, inventory_parser
+from gips.parsers import GIPSParser
 from gips.data.core import data_class
 from gips.utils import Colors, VerboseOut
 
@@ -32,11 +32,11 @@ def main():
 
     # argument parsing
     parser0 = GIPSParser(description=title)
-    parser = inventory_parser()
+    parser = parser0.add_inventory_parser()
     group = parser.add_argument_group('inventory display')
     group.add_argument('--md', help='Show dates using MM-DD', action='store_true', default=False)
     group.add_argument('--compact', help='Print only dates (no coverage)', default=False, action='store_true')
-    parser0.add_data_sources(parents=[parser])
+    parser0.add_data_sources()
     args = parser0.parse_args()
 
     try:

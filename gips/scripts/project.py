@@ -22,7 +22,7 @@
 ################################################################################
 
 from gips import __version__ as gipsversion
-from gips.parsers import GIPSParser, inventory_parser
+from gips.parsers import GIPSParser
 from gips.data.core import data_class
 from gips.utils import Colors, VerboseOut
 
@@ -32,19 +32,10 @@ def main():
 
     # argument parsing
     parser0 = GIPSParser(description=title)
-    parser = inventory_parser()
-    group = parser.add_argument_group('project options')
-    group.add_argument('--res', nargs=2, help='Resolution of (warped) output rasters', default=None, type=float)
-    group.add_argument('--crop', help='Crop down to minimum bounding box', default=False, action='store_true')
-    group.add_argument('--nowarp', help='Do not warp (or crop)', default=False, action='store_true')
-    group.add_argument('--interpolation', help='Interpolate using: 0-NN, 1-Bilinear, 2-Cubic', default=0, type=int)
-    group.add_argument('--nomosaic', help='Do not mosaic (keep as tiles)', default=False, action='store_true')
-    group.add_argument('--datadir', help='Directory to store output', default=None)
-    group.add_argument('--suffix', help='Suffix on end of project directory', default=None)
-    group.add_argument('--overwrite', help='Overwrite exiting output file(s)', default=False, action='store_true')
-    group.add_argument('--format', help='Format for output file', default="GTiff")
-    group.add_argument('--chunksize', help='Chunk size in MB', type=float, default=512.0)
-    parser0.add_data_sources(parents=[parser])
+    parser0.add_inventory_parser()
+    parser0.add_process_parser()
+    parser0.add_project_parser()
+    parser0.add_data_sources()
     args = parser0.parse_args()
 
     try:
