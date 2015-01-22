@@ -52,9 +52,8 @@ class Tiles(object):
                 if tile.valid and tile.filter(**kwargs):  # and tile.sensor in sensors:
                     self.tiles[t] = tile
             except Exception, e:            # re-raise all other exceptions
-                print traceback.format_exc()
+                VerboseOut(traceback.format_exc(), 4)
                 raise Exception(e)
-        #VerboseOut('%s: found %s tiles' % (self.date, len(self.tiles)), 4)
 
     def __len__(self):
         return len(self.tiles)
@@ -77,11 +76,11 @@ class Tiles(object):
                 return self.tiles[t].sensors[key]
 
     def process(self, overwrite=False, **kwargs):
-        """ Calls Data.process for each tile """
+        """ Calls process for each tile """
         [t.process(products=self.products.products, overwrite=overwrite, **kwargs) for t in self.tiles.values()]
 
     def mosaic(self, datadir, res=None, interpolation=0, crop=False, overwrite=False):
-        """ Combine tiles into a single mosaic """
+        """ Combine tiles into a single mosaic, warp if site and res provided """
         start = datetime.now()
         bname = self.date.strftime('%Y%j')
         for product in self.products.products:
