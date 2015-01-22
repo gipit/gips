@@ -53,7 +53,7 @@ def main():
                 resstr = str(args.res[0])
             else:
                 resstr = '%sx%s' % (args.res[0], args.res[1])
-            args.datadir = '%s_%s_%s%s' % (basename(args.site).replace('_', '-'), args.command, resstr, suffix)
+            args.datadir = '%s_%s_%s%s' % (basename(args.site).replace('_', '-'), resstr, args.command, suffix)
         mkdir(args.datadir)
 
         # warp and mosaic
