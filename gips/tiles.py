@@ -26,7 +26,6 @@ import os
 from datetime import datetime
 import traceback
 
-import gippy
 from gippy.algorithms import CookieCutter
 from gips import SpatialExtent
 from gips.utils import VerboseOut, Colors, mosaic
@@ -78,7 +77,7 @@ class Tiles(object):
                 return self.tiles[t].sensors[key]
 
     def process(self, overwrite=False, **kwargs):
-        """ Determines what products need to be processed for each tile and calls Data.process """
+        """ Calls Data.process for each tile """
         [t.process(products=self.products.products, overwrite=overwrite, **kwargs) for t in self.tiles.values()]
 
     def project(self, datadir, res, crop=False, nowarp=False, interpolation=0, nomosaic=False, **kwargs):
@@ -93,27 +92,10 @@ class Tiles(object):
             res = [res, res]
 
         if nomosaic:
-            # Tile project
+            # create project with individual tiles
             # TODO - allow hard and soft link options
             for t in self.tiles:
-                tiledir = datadir.replace('TILEID', t)
-                if not os.path.exists(tiledir):
-                    os.makedirs(tiledir)
-                for p in self.products.products:
-                    sensor = self.which_sensor(p)
-                    filename = self.tiles[t].filenames[(sensor, p)]
-                    fout = os.path.join(tiledir, t + '_' + bname + ('_%s_%s.tif' % (sensor, p)))
-                    if not os.path.exists(fout):
-                        try:
-                            VerboseOut("Creating %s" % os.path.basename(fout))
-                            if nowarp:
-                                gippy.GeoImage(filename).Process(fout)
-                            else:
-                                # Warp each tile
-                                CookieCutter([filename], fout, self.spatial.site, res[0], res[1], crop, interpolation)
-                        except Exception:
-                            VerboseOut("Problem creating %s" % fout, 2)
-                            VerboseOut(traceback.format_exc(), 3)
+                self.tiles[t].project(datadir, res, self.products.products, nowarp=nowarp, **kwargs)
         else:
             # Shapefile project
             if not os.path.exists(datadir):
