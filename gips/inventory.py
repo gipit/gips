@@ -248,7 +248,7 @@ class DataInventory(Inventory):
     def sensor_set(self):
         return sorted(self.dataclass.Asset._sensors.keys())
 
-    def process(self, **kwargs):
+    def process(self, *args, **kwargs):
         """ Process data in inventory """
         if len(self.products.standard) + len(self.products.composite) == 0:
             raise Exception('No products specified!')
@@ -258,7 +258,7 @@ class DataInventory(Inventory):
             VerboseOut('Processing %s files: %s' % (sz, ' '.join(self.products.standard)), 1)
             for date in self.dates:
                 try:
-                    self.data[date].process(**kwargs)
+                    self.data[date].process(*args, **kwargs)
                 except:
                     VerboseOut(traceback.format_exc(), 3)
                     pass
@@ -269,7 +269,7 @@ class DataInventory(Inventory):
             self.dataclass.process_composites(self, self.products.composite, **kwargs)
             VerboseOut('Completed processing in %s' % (dt.now() - start), 1)
 
-    def project(self, datadir=None, suffix='', res=None, nomosaic=False, **kwargs):
+    def project(self, datadir=None, suffix='', res=None, interpolation=0, crop=False, **kwargs):
         """ Create project files for data in inventory """
         self.process(**kwargs)
         start = dt.now()
