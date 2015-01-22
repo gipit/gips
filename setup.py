@@ -27,29 +27,12 @@ setup for GIPS
 
 import os
 from setuptools import setup
-import gips.settings as settings
 import glob
 from gips.version import __version__
 import traceback
 
-# console scripts
+# collect console scripts
 console_scripts = []
-# Data scripts
-# for backwards compatability
-dscripts = {
-    'AOD': 'AOD', 'CDL': 'CDL', 'landsat': 'Landsat', 'modis': 'Modis',
-    'SAR': 'SAR', 'SARannual': 'SARAnnual', 'merra': 'Merra', 'daymet': 'Daymet'}
-for cmd, repo in dscripts.items():
-    if settings.REPOS[repo]['rootpath'] != '':
-        console_scripts.append('%s = gips.data.%s:main' % (cmd, repo.lower()))
-        # trying to customize requirements per data module
-        #try:
-        #    exec('from gips.data.%s import requirements as reqs' % repo.lower())
-        #    requirements = requirements.extend(reqs)
-        #except:
-        #    pass
-
-# collect scripts
 for f in glob.glob('gips/scripts/*.py'):
     try:
         name = os.path.splitext(os.path.basename(f))[0]
