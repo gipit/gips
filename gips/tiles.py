@@ -75,9 +75,9 @@ class Tiles(object):
             if key in self.tiles[t].sensors:
                 return self.tiles[t].sensors[key]
 
-    def process(self, overwrite=False, **kwargs):
+    def process(self, *args, **kwargs):
         """ Calls process for each tile """
-        [t.process(products=self.products.products, overwrite=overwrite, **kwargs) for t in self.tiles.values()]
+        [t.process(*args, products=self.products.products, **kwargs) for t in self.tiles.values()]
 
     def mosaic(self, datadir, res=None, interpolation=0, crop=False, overwrite=False):
         """ Combine tiles into a single mosaic, warp if site and res provided """
@@ -85,7 +85,8 @@ class Tiles(object):
         bname = self.date.strftime('%Y%j')
         for product in self.products.products:
             sensor = self.which_sensor(product)
-            fout = os.path.join(datadir, '%s_%s_%s' % (bname, sensor, product))
+            # TODO - this is assuming a tif file.  Use gippy FileExtension function when it is exposed
+            fout = os.path.join(datadir, '%s_%s_%s' % (bname, sensor, product)) + '.tif'
             if not os.path.exists(fout) or overwrite:
                 try:
                     filenames = [self.tiles[t].filenames[(sensor, product)] for t in self.tiles]
