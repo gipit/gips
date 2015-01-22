@@ -409,5 +409,3 @@ class DataInventory(Inventory):
         except Exception, e:
             VerboseOut(traceback.format_exc(), 4)
             VerboseOut('Error in %s: %s' % (args.command, e))
-
-
