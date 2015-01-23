@@ -31,7 +31,7 @@ from copy import deepcopy
 import gippy
 from gips import SpatialExtent, TemporalExtent
 from gips.tiles import Tiles
-from gips.utils import VerboseOut, Colors, basename
+from gips.utils import VerboseOut, Colors, basename, mkdir
 from gips.data.core import Data
 
 
@@ -204,7 +204,7 @@ class DataInventory(Inventory):
                  products=None, fetch=False, pcov=0.0, ptile=0.0, **kwargs):
         """ Create a new inventory
         :dataclass: The Data class to use (e.g., LandsatData, ModisData)
-        :site: The site shapefile
+        :site: The site shapefile or database:layer name
         :tiles: List of tile ids
         :dates: tuple of begin and end date
         :days: tuple of begin and end day of year
@@ -269,33 +269,31 @@ class DataInventory(Inventory):
             self.dataclass.process_composites(self, self.products.composite, **kwargs)
             VerboseOut('Completed processing in %s' % (dt.now() - start), 1)
 
-    def project(self, datadir=None, suffix='', res=None, interpolation=0, crop=False, **kwargs):
+    def project(self, datadir=None, suffix='', res=None, interpolation=0, crop=False, overwrite=False, **kwargs):
         """ Create project files for data in inventory """
-        self.process(**kwargs)
+        self.process(overwrite=False)
         start = dt.now()
-        sitename = 'tiles' if self.spatial.site is None else basename(self.spatial.site)
+        VerboseOut('Creating GIPS project %s' % datadir)
+        VerboseOut('  Dates: %s' % self.datestr)
+        VerboseOut('  Products: %s' % ' '.join(self.products.standard))
+
         if res is None:
             res = self.dataclass.Asset._defaultresolution
 
         suffix = '' if suffix is None else '_' + suffix
         if datadir is None:
-            # formulate project directory name
             if res[0] == res[1]:
                 resstr = str(res[0])
             else:
                 resstr = '%sx%s' % (res[0], res[1])
-            datadir = '%s_%s_%s%s' % (sitename, resstr, self.dataclass.name, suffix)
-        if self.spatial.site is None or nomosaic:
-            datadir = os.path.join(datadir, "TILEID")
+            datadir = '%s_%s_%s%s' % (self.spatial.sitename, resstr, self.dataclass.name, suffix)
+        mkdir(datadir)
 
-        VerboseOut('Creating GIPS project %s' % datadir)
-        VerboseOut('  Dates: %s' % self.datestr)
-        VerboseOut('  Products: %s' % ' '.join(self.products.standard))
-
-        [self.data[d].project(datadir=datadir, res=res, nomosaic=nomosaic, **kwargs) for d in self.dates]
+        for d in self.dates:
+            self.data[d].mosaic(datadir=datadir, res=res, interpolation=interpolation, crop=crop, overwrite=overwrite)
 
         VerboseOut('Completed GIPS project in %s' % (dt.now() - start))
-        if not nomosaic and self.spatial.site is not None:
+        if self.spatial.site is not None:
             inv = ProjectInventory(datadir)
             inv.pprint()
             return inv
@@ -304,7 +302,7 @@ class DataInventory(Inventory):
         """ Print inventory """
         print
         if self.spatial.site is not None:
-            print Colors.BOLD + 'Asset Coverage for site %s' % basename(self.spatial.site) + Colors.OFF
+            print Colors.BOLD + 'Asset Coverage for site %s' % basename(self.spatial.sitename) + Colors.OFF
             self.spatial.print_tile_coverage()
             print
         else:

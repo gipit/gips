@@ -24,7 +24,7 @@
 from gips import __version__ as gipsversion
 from gips.parsers import GIPSParser
 from gips.data.core import data_class
-from gips.utils import Colors, VerboseOut, basename, mkdir
+from gips.utils import Colors, VerboseOut
 
 
 def main():
@@ -44,23 +44,7 @@ def main():
         cls = data_class(args.command)
         inv = cls.inventory(**vars(args))
 
-        # create project directory
-        suffix = '' if args.suffix is None else '_' + args.suffix
-        if args.datadir is None:
-            if args.res is None:
-                args.res = cls.Asset._defaultresolution
-            if args.res[0] == args.res[1]:
-                resstr = str(args.res[0])
-            else:
-                resstr = '%sx%s' % (args.res[0], args.res[1])
-            args.datadir = '%s_%s_%s%s' % (basename(args.site).replace('_', '-'), resstr, args.command, suffix)
-        mkdir(args.datadir)
-
-        # warp and mosaic
-        for date in inv.dates:
-            inv[date].process(overwrite=False)
-            inv[date].mosaic(datadir=args.datadir, res=args.res, interpolation=args.interpolation,
-                             crop=args.crop, overwrite=args.overwrite)
+        inv.project(**vars(args))
 
     except Exception, e:
         import traceback
