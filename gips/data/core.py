@@ -503,11 +503,18 @@ class Data(object):
             VerboseOut("Processing products for tile %s: %s" % (self.id, products), 2)
         return products
 
-    def copy(self, dout, products, site=None, res=None, interpolation=0, crop=False, overwrite=False):
+    @classmethod
+    def process_composites(cls, inventory, products, **kwargs):
+        """ Process composite products using provided inventory """
+        pass
+
+    def copy(self, dout, products, site=None, res=None, interpolation=0, crop=False, overwrite=False, tree=False):
         """ Copy products to new directory, warp to projection if given site """
         # TODO - allow hard and soft linking options
         # create directory
         dout = os.path.join(dout, self.id)
+        if tree:
+            dout = os.path.join(dout, self.date.strftime('%Y%j'))
         mkdir(dout)
         products = self.RequestedProducts(products)
         bname = '%s_%s' % (self.id, self.date.strftime('%Y%j'))
@@ -525,11 +532,6 @@ class Data(object):
                 except Exception:
                     VerboseOut(traceback.format_exc(), 4)
                     VerboseOut("Problem creating %s" % fout)
-
-    @classmethod
-    def process_composites(cls, inventory, products, **kwargs):
-        """ Process composite products using provided inventory """
-        pass
 
     def filter(self, **kwargs):
         """ Check if tile passes filter - autofail if there are no assets or products """

@@ -269,7 +269,7 @@ class DataInventory(Inventory):
             self.dataclass.process_composites(self, self.products.composite, **kwargs)
             VerboseOut('Completed processing in %s' % (dt.now() - start), 1)
 
-    def project(self, datadir=None, suffix='', res=None, interpolation=0, crop=False, overwrite=False, **kwargs):
+    def project(self, datadir=None, suffix='', res=None, **kwargs):
         """ Create project files for data in inventory """
         self.process(overwrite=False)
         start = dt.now()
@@ -290,7 +290,8 @@ class DataInventory(Inventory):
         mkdir(datadir)
 
         for d in self.dates:
-            self.data[d].mosaic(datadir=datadir, res=res, interpolation=interpolation, crop=crop, overwrite=overwrite)
+            self.data[d].mosaic(datadir=datadir, res=res, interpolation=kwargs['interpolation'],
+                                crop=kwargs['crop'], overwrite=kwargs['overwrite'], tree=kwargs['tree'])
 
         VerboseOut('Completed GIPS project in %s' % (dt.now() - start))
         if self.spatial.site is not None:

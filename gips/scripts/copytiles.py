@@ -53,7 +53,7 @@ def main():
         for date in inv.dates:
             for tid in inv[date].tiles:
                 inv[date].tiles[tid].process(args.products, overwrite=False)
-                inv[date].tiles[tid].copy(args.datadir, args.products, overwrite=args.overwrite)
+                inv[date].tiles[tid].copy(args.datadir, args.products, overwrite=args.overwrite, tree=args.tree)
 
     except Exception, e:
         import traceback

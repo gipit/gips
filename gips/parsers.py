@@ -86,12 +86,14 @@ class GIPSParser(argparse.ArgumentParser):
         return parser
 
     def add_project_parser(self):
-        """ This adds a parser with processing options """
+        """ This adds a parser with project options """
         parser = GIPSParser(add_help=False)
         group = parser.add_argument_group('project directory options')
         h = 'Directory to store output (auto generated if not provided)'
         group.add_argument('--datadir', help=h, default=None)
         group.add_argument('--suffix', help='Suffix to add to auto generated output directory', default=None)
+        h = 'Create project directories in tree form'
+        group.add_argument('--tree', help=h, default=False, action='store_true')
         self.parent_parsers.append(parser)
         return parser
 
