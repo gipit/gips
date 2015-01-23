@@ -23,9 +23,11 @@
 
 import datetime
 import calendar
+import traceback
 
 from gips import GeoVector
-from gips.utils import Colors
+from gips.settings import DATABASES
+from gips.utils import Colors, VerboseOut
 
 
 class RequestedProducts(object):
@@ -84,6 +86,20 @@ class SpatialExtent(object):
     def __init__(self, dataclass, site=None, tiles=None, pcov=0.0, ptile=0.0):
         """ Create spatial extent object """
         self.repo = dataclass.Asset.Repository
+
+        self.dbstr = ''
+        if site is not None:
+            if ':' in site:
+                try:
+                    dbname, layer = site.split(':')
+                    db = DATABASES[dbname]
+                    self.dbstr = ("PG:dbname=%s host=%s port=%s user=%s password=%s" %
+                                 (db['NAME'], db['HOST'], db['PORT'], db['USER'], db['PASSWORD']))
+                    print self.dbstr
+                    site = self.dbstr
+                except Exception, e:
+                    VerboseOut(traceback.format_exc(), 4)
+                    VerboseOut('Error accessing database vector %s: %s' % (site, e))
 
         # Spatial extent
         if tiles is None and site is None:
