@@ -3,7 +3,7 @@
 #    GIPS: Geospatial Image Processing System
 #
 #    AUTHOR: Matthew Hanson
-#    EMAIL:  mhanson@ags.io
+#    EMAIL:  matt.a.hanson@gmail.com
 #
 #    Copyright (C) 2014 Applied Geosolutions
 #
