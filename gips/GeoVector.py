@@ -22,7 +22,6 @@
 ################################################################################
 
 import os
-import sys
 from osgeo import ogr
 from osgeo import osr
 from shapely.wkb import loads
@@ -115,9 +114,10 @@ class GeoVector(object):
         """ Compute the union of all geometries in layer and return Shapely object """
         from shapely.ops import unary_union
         shapes = []
-        for i in range(self.num_features):
-            feat = self.layer.GetFeature(i)
-            shapes.append(loads(feat.GetGeometryRef().ExportToWkb()))
+        #for i in range(self.num_features):
+        #    feat = self.layer.GetFeature(i)
+        for feature in self.layer:
+            shapes.append(loads(feature.GetGeometryRef().ExportToWkb()))
         return unary_union(shapes)
 
     def transform(self, srs, filename=''):
