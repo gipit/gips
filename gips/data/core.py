@@ -161,20 +161,21 @@ class Repository(object):
     def tiles_vector(cls):
         """ Get GeoVector of sensor grid """
         tv_name = cls.repo().get('tiles_vector', 'tiles.shp')
-        fname = os.path.join(cls.vpath(), tv_name)
-        if os.path.isfile(fname):
-            tiles = GeoVector(fname)
-            VerboseOut('%s: tiles vector %s' % (cls.__name__, fname), 4)
-        else:
+        if ':' in tv_name:
+            # database
             try:
-                db = settings.DATABASES['tiles']
+                dbname, layer = tv_name.split(':')
+                db = settings.DATABASES[dbname]
                 dbstr = ("PG:dbname=%s host=%s port=%s user=%s password=%s" %
                         (db['NAME'], db['HOST'], db['PORT'], db['USER'], db['PASSWORD']))
-                tiles = GeoVector(dbstr, layer=tv_name)
-                VerboseOut('%s: tiles vector %s' % (cls.__name__, tv_name), 4)
+                return GeoVector(dbstr, layer=layer)
             except:
-                raise Exception('unable to access %s tiles (file or database)' % cls.__name__)
-        return tiles
+                raise Exception('unable to access %s in the database' % tv_name)
+        fname = os.path.join(cls.vpath(), tv_name)
+        if os.path.isfile(fname):
+            return GeoVector(fname)
+        else:
+            raise Exception('unable to access %s' % tv_name)
 
     @classmethod
     def vector2tiles(cls, vector, pcov=0.0, ptile=0.0):
@@ -517,7 +518,8 @@ class Data(object):
             if not os.path.exists(fout) or overwrite:
                 try:
                     if site is not None:
-                        CookieCutter([fin], fout, site, res[0], res[1], crop, interpolation)
+                        # TODO - this won't work with vector in a DB
+                        CookieCutter([fin], fout, site, "", res[0], res[1], crop, interpolation)
                     else:
                         shutil.copyfile(fin, fout)
                 except Exception:

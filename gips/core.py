@@ -27,7 +27,7 @@ import traceback
 
 from gips import GeoVector
 from gips.settings import DATABASES
-from gips.utils import Colors, VerboseOut
+from gips.utils import Colors, VerboseOut, basename
 
 
 class RequestedProducts(object):
@@ -87,19 +87,26 @@ class SpatialExtent(object):
         """ Create spatial extent object """
         self.repo = dataclass.Asset.Repository
 
-        self.dbstr = ''
+        self.sitefilename = site
+        self.layer = ''
         if site is not None:
+            self.sitename = basename(site).replace('_', '-').replace(':', '-')
             if ':' in site:
+                # database
                 try:
-                    dbname, layer = site.split(':')
+                    dbname, self.layer = site.split(':')
                     db = DATABASES[dbname]
-                    self.dbstr = ("PG:dbname=%s host=%s port=%s user=%s password=%s" %
-                                 (db['NAME'], db['HOST'], db['PORT'], db['USER'], db['PASSWORD']))
-                    print self.dbstr
-                    site = self.dbstr
+                    self.sitefilename = ("PG:dbname=%s host=%s port=%s user=%s password=%s" %
+                                        (db['NAME'], db['HOST'], db['PORT'], db['USER'], db['PASSWORD']))
+                    self.site = GeoVector(self.sitefilename, self.layer)
                 except Exception, e:
                     VerboseOut(traceback.format_exc(), 4)
-                    VerboseOut('Error accessing database vector %s: %s' % (site, e))
+                    VerboseOut('Error accessing database vector %s: %s' % (self.sitename, e))
+            else:
+                self.site = GeoVector(site)
+        else:
+            self.site = None
+            self.sitename = 'tiles'
 
         # Spatial extent
         if tiles is None and site is None:
@@ -107,10 +114,9 @@ class SpatialExtent(object):
         if tiles is not None:
             # if tiles only provided, coverage of each is 100%
             tiles = {t: (1, 1) for t in tiles}
-        elif tiles is None and site is not None:
-            tiles = self.repo.vector2tiles(GeoVector(site), pcov, ptile)
+        elif tiles is None and self.site is not None:
+            tiles = self.repo.vector2tiles(self.site, pcov, ptile)
 
-        self.site = site
         self.coverage = tiles
 
     @property
@@ -134,7 +140,7 @@ class SpatialExtent(object):
                 print "{:>8}{:>11.1f}%{:>11.1f}%".format(t, self.coverage[t][0] * 100, self.coverage[t][1] * 100)
 
     def __str__(self):
-        return '%s: %s' % (self.site, ' '.join(self.tiles))
+        return '%s: %s' % (self.sitename, ' '.join(self.tiles))
 
     def __len__(self):
         return len(self.coverage)
