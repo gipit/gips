@@ -91,7 +91,8 @@ class Tiles(object):
                 try:
                     filenames = [self.tiles[t].filenames[(sensor, product)] for t in self.tiles]
                     if self.spatial.site is not None and res is not None:
-                        CookieCutter(filenames, fout, self.spatial.site, res[0], res[1], crop, interpolation)
+                        CookieCutter(filenames, fout, self.spatial.sitefilename, self.spatial.layer,
+                                     res[0], res[1], crop, interpolation)
                     else:
                         mosaic(filenames, fout, self.spatial.site)
                 except Exception, e:
