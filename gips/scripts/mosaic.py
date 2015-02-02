@@ -28,7 +28,7 @@ from gips.utils import Colors, VerboseOut, mkdir, basename
 
 
 def main():
-    title = Colors.BOLD + 'GIPS Copy Tiles Utility v%s' % gipsversion + Colors.OFF
+    title = Colors.BOLD + 'GIPS Mosaic Utility v%s' % gipsversion + Colors.OFF
 
     # argument parsing
     parser0 = GIPSParser(description=title)
@@ -57,7 +57,7 @@ def main():
     except Exception, e:
         import traceback
         VerboseOut(traceback.format_exc(), 4)
-        print 'Copy Tiles error: %s' % e
+        print 'Mosaic error: %s' % e
 
 
 if __name__ == "__main__":
