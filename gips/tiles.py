@@ -97,7 +97,7 @@ class Tiles(object):
                         CookieCutter(filenames, fout, self.spatial.sitefilename, self.spatial.layer,
                                      res[0], res[1], crop, interpolation)
                     else:
-                        mosaic(filenames, fout, self.spatial.site)
+                        mosaic(filenames, fout, self.spatial.sitefilename)
                 except Exception, e:
                     VerboseOut(traceback.format_exc(), 4)
                     VerboseOut("Error mosaicking %s: %s" % (fout, e))

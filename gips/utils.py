@@ -183,9 +183,9 @@ def mosaic(infiles, outfile, vectorfile):
     for b in range(0, img.NumBands()):
         imgout[b].CopyMeta(img[b])
     img = None
-    return imgout
+    #return imgout
     # TODO - fix crop2vector, throwing out of bounds error in GDAL read
-    #return crop2vector(imgout, vector)
+    return crop2vector(imgout, vector)
 
 
 # old code utilizing shared memory array
