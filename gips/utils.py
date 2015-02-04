@@ -25,12 +25,9 @@ import os
 import errno
 import gippy
 from datetime import datetime
-import multiprocessing
-import numpy
 import tempfile
 import commands
 import shutil
-from gips import GeoVector
 
 
 class Colors():
@@ -167,9 +164,10 @@ def mosaic(infiles, outfile, vectorfile):
             raise Exception("Input files have non-matching projections and must be warped")
         _img = None
     # transform vector to image projection
+    from gips.GeoVector import GeoVector, transform_shape
+    # TODO - update to use gippy.GeoVector
     vector = GeoVector(vectorfile)
     vsrs = vector.proj()
-    from gips.GeoVector import transform_shape
     geom = transform_shape(vector.union(), vsrs, srs)
     extent = geom.bounds
     ullr = "%f %f %f %f" % (extent[0], extent[3], extent[2], extent[1])
