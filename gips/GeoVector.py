@@ -31,6 +31,8 @@ import tempfile
 import commands
 #ogr.UseExceptions()
 
+# OBSOLETE FILE - USE gippy.GeoVector 
+
 
 # TODO - are both transform_point and transform_shape needed?
 def transform_point(point, source, target):
