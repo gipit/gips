@@ -26,6 +26,7 @@ import os
 from datetime import datetime
 import traceback
 
+import gippy
 from gippy.algorithms import CookieCutter
 from gips import SpatialExtent
 from gips.utils import VerboseOut, Colors, mosaic, mkdir
@@ -93,9 +94,9 @@ class Tiles(object):
             if not os.path.exists(fout) or overwrite:
                 try:
                     filenames = [self.tiles[t].filenames[(sensor, product)] for t in self.tiles]
+                    images = gippy.GeoImages(filenames)
                     if self.spatial.site is not None and res is not None:
-                        CookieCutter(filenames, fout, self.spatial.sitefilename, self.spatial.layer,
-                                     res[0], res[1], crop, interpolation)
+                        CookieCutter(images, self.spatial.site[0], fout, res[0], res[1], crop, interpolation)
                     else:
                         mosaic(filenames, fout, self.spatial.sitefilename)
                 except Exception, e:
