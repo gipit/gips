@@ -28,15 +28,16 @@ from osgeo import gdal, ogr
 from datetime import datetime
 import glob
 from itertools import groupby
-from shapely.wkb import loads
+from shapely.wkt import loads
 import tarfile
 import traceback
 import ftplib
 import shutil
 
 import gippy
-from gips import settings, GeoVector, __version__
-from gips.utils import VerboseOut, RemoveFiles, File2List, List2File, Colors, basename, mkdir
+from gips import settings, __version__
+from gips.GeoVector import GeoVector
+from gips.utils import VerboseOut, RemoveFiles, File2List, List2File, Colors, basename, mkdir, parse_vectorname
 from gippy.algorithms import CookieCutter
 
 """
@@ -161,40 +162,32 @@ class Repository(object):
     def tiles_vector(cls):
         """ Get GeoVector of sensor grid """
         tv_name = cls.repo().get('tiles_vector', 'tiles.shp')
-        if ':' in tv_name:
-            # database
-            try:
-                dbname, layer = tv_name.split(':')
-                db = settings.DATABASES[dbname]
-                dbstr = ("PG:dbname=%s host=%s port=%s user=%s password=%s" %
-                        (db['NAME'], db['HOST'], db['PORT'], db['USER'], db['PASSWORD']))
-                return GeoVector(dbstr, layer=layer)
-            except:
-                raise Exception('unable to access %s in the database' % tv_name)
-        fname = os.path.join(cls.vpath(), tv_name)
-        if os.path.isfile(fname):
-            return GeoVector(fname)
-        else:
-            raise Exception('unable to access %s' % tv_name)
+        shortname, filename, layer, feature = parse_vectorname(tv_name)
+        return GeoVector(filename, layer)
 
     @classmethod
     def vector2tiles(cls, vector, pcov=0.0, ptile=0.0):
         """ Return matching tiles and coverage % for provided vector """
         start = datetime.now()
         import osr
+        # set spatial filter on tiles vector to speedup
         geom = vector.union()
-        ogrgeom = ogr.CreateGeometryFromWkb(geom.wkb)
+        ogrgeom = ogr.CreateGeometryFromWkt(geom.wkt)
         tvector = cls.tiles_vector()
         tlayer = tvector.layer
         trans = osr.CoordinateTransformation(vector.layer.GetSpatialRef(), tlayer.GetSpatialRef())
         ogrgeom.Transform(trans)
-        geom = loads(ogrgeom.ExportToWkb())
         tlayer.SetSpatialFilter(ogrgeom)
+
+        # geometry of desired site
+        geom = loads(ogrgeom.ExportToWkt())
+
         tiles = {}
+        # step through tiles vector
         tlayer.ResetReading()
         feat = tlayer.GetNextFeature()
         while feat is not None:
-            tgeom = loads(feat.GetGeometryRef().ExportToWkb())
+            tgeom = loads(feat.GetGeometryRef().ExportToWkt())
             area = geom.intersection(tgeom).area
             if area != 0:
                 tile = cls.feature2tile(feat)

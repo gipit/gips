@@ -23,11 +23,9 @@
 
 import datetime
 import calendar
-import traceback
 
-from gips import GeoVector
-from gips.settings import DATABASES
-from gips.utils import Colors, VerboseOut, basename
+import gippy
+from gips.utils import Colors, parse_vectorname
 
 
 class RequestedProducts(object):
@@ -87,35 +85,21 @@ class SpatialExtent(object):
         """ Create spatial extent object """
         self.repo = dataclass.Asset.Repository
 
-        self.sitefilename = site
-        self.layer = ''
         if site is not None:
-            self.sitename = basename(site).replace('_', '-').replace(':', '-')
-            if ':' in site:
-                # database
-                try:
-                    dbname, self.layer = site.split(':')
-                    db = DATABASES[dbname]
-                    self.sitefilename = ("PG:dbname=%s host=%s port=%s user=%s password=%s" %
-                                        (db['NAME'], db['HOST'], db['PORT'], db['USER'], db['PASSWORD']))
-                    self.site = GeoVector(self.sitefilename, self.layer)
-                except Exception, e:
-                    VerboseOut(traceback.format_exc(), 4)
-                    VerboseOut('Error accessing database vector %s: %s' % (self.sitename, e))
-            else:
-                self.site = GeoVector(site)
+            self.sitename, fname, layer, self.feature = parse_vectorname(site)
+            self.site = gippy.GeoVector(fname, layer)
+            # TODO - completely replace with gippy.GeoVector
+            from gips.GeoVector import GeoVector
+            site = GeoVector(fname, layer)
+            tiles = self.repo.vector2tiles(site, pcov, ptile)
         else:
             self.site = None
             self.sitename = 'tiles'
-
-        # Spatial extent
-        if tiles is None and site is None:
-            tiles = self.repo.find_tiles()
-        if tiles is not None:
-            # if tiles only provided, coverage of each is 100%
-            tiles = {t: (1, 1) for t in tiles}
-        elif tiles is None and self.site is not None:
-            tiles = self.repo.vector2tiles(self.site, pcov, ptile)
+            if tiles is None:
+                tiles = self.repo.find_tiles()
+            else:
+                # if tiles only provided, coverage of each is 100%
+                tiles = {t: (1, 1) for t in tiles}
 
         self.coverage = tiles
 

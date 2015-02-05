@@ -28,6 +28,8 @@ from datetime import datetime
 import tempfile
 import commands
 import shutil
+import traceback
+from gips.settings import DATABASES
 
 
 class Colors():
@@ -125,6 +127,27 @@ def fn_timer(function):
         print "%s time: %s seconds" % (function.func_name, str(t1 - t0))
         return result
     return function_timer
+
+
+def parse_vectorname(fname):
+    """ Parse name to determine if database or filename and return (shortname, filename, layer, feature) """
+    parts = fname.split(':')
+    shortname = basename(parts[0]).replace('_', '-').replace(':', '-')
+    if len(parts) == 1:
+        return (shortname, fname, '', 0)
+    if parts[0] in DATABASES.keys():
+        try:
+            db = DATABASES[parts[0]]
+            filename = ("PG:dbname=%s host=%s port=%s user=%s password=%s" %
+                        (db['NAME'], db['HOST'], db['PORT'], db['USER'], db['PASSWORD']))
+            feature = 0 if len(parts) < 3 else parts[2]
+            return (shortname, filename, parts[1], feature)
+        except Exception, e:
+            VerboseOut(traceback.format_exc(), 4)
+            VerboseOut('Error accessing database vector %s: %s' % (fname, e))
+    else:
+        feature = 0 if len(parts) < 2 else parts[1]
+        return (shortname, parts[0], '', feature)
 
 
 def crop2vector(img, vector):
