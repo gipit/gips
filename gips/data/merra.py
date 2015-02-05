@@ -127,7 +127,8 @@ class MerraAsset(Asset):
         self.sensor = 'MERRA'
         self.asset = parts[1]
         self.tile = parts[2]
-        self.date = datetime.datetime.strptime(parts[3] + parts[4], '%Y%j').date()
+        # e.g., ['MERRA', 'TS', 'h06v05', '2010001']
+        self.date = datetime.datetime.strptime(parts[3], '%Y%j').date()
         self.products[self.asset] = filename
 
     @classmethod
@@ -136,7 +137,6 @@ class MerraAsset(Asset):
         url = cls._assets[asset].get('url', '')
         if url == '':
             raise Exception("%s: URL not defined for asset %s" % (cls.__name__, asset))
-
         success = False
         for ver in ['100', '200', '300', '301']:
             f = cls._assets[asset]['source'] % (ver, date.year, date.month, date.day)
@@ -150,7 +150,6 @@ class MerraAsset(Asset):
                 break
         if not success:
             raise Exception('Data unavailable (%s)' % loc)
-
         return dataset
 
     @classmethod
