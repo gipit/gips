@@ -173,7 +173,7 @@ class Repository(object):
                 raise Exception('unable to access %s in the database' % tv_name)
         fname = os.path.join(cls.vpath(), tv_name)
         if os.path.isfile(fname):
-            return GeoVector(fname)
+            return GeoVector.GeoVector(fname)
         else:
             raise Exception('unable to access %s' % tv_name)
 
@@ -353,8 +353,8 @@ class Asset(object):
         if url == '':
             raise Exception("%s: URL not defined for asset %s" % (cls.__name__, asset))
 
-        if not cls.available(asset, date):
-            raise Exception("Requested date (%s) outside of range available for asset" % date)
+#        if not cls.available(asset, date):
+#            raise Exception("Requested date (%s) outside of range available for asset" % date)
 
         VerboseOut('%s: fetch tile %s for %s' % (asset, tile, date), 3)
         return url

@@ -25,7 +25,7 @@ import datetime
 import calendar
 import traceback
 
-from gips import GeoVector
+from gips.GeoVector import GeoVector
 from gips.settings import DATABASES
 from gips.utils import Colors, VerboseOut, basename
 
