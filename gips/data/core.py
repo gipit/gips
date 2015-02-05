@@ -346,8 +346,8 @@ class Asset(object):
         if url == '':
             raise Exception("%s: URL not defined for asset %s" % (cls.__name__, asset))
 
-        if not cls.available(asset, date):
-            raise Exception("Requested date (%s) outside of range available for asset" % date)
+#        if not cls.available(asset, date):
+#            raise Exception("Requested date (%s) outside of range available for asset" % date)
 
         VerboseOut('%s: fetch tile %s for %s' % (asset, tile, date), 3)
         return url
