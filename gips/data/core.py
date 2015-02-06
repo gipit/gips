@@ -161,8 +161,9 @@ class Repository(object):
     @classmethod
     def tiles_vector(cls):
         """ Get GeoVector of sensor grid """
+        # TODO = update to use gippy.GeoVector
         tv_name = cls.repo().get('tiles_vector', 'tiles.shp')
-        shortname, filename, layer, feature = parse_vectorname(tv_name)
+        shortname, filename, layer, feature = parse_vectorname(tv_name, cls.vpath())
         return GeoVector(filename, layer)
 
     @classmethod
@@ -171,15 +172,15 @@ class Repository(object):
         start = datetime.now()
         import osr
         # set spatial filter on tiles vector to speedup
-        geom = vector.union()
-        ogrgeom = ogr.CreateGeometryFromWkt(geom.wkt)
+        ogrgeom = ogr.CreateGeometryFromWkt(vector.WKT())
         tvector = cls.tiles_vector()
         tlayer = tvector.layer
-        trans = osr.CoordinateTransformation(vector.layer.GetSpatialRef(), tlayer.GetSpatialRef())
+        vsrs = osr.SpatialReference(vector.Projection())
+        trans = osr.CoordinateTransformation(vsrs, tlayer.GetSpatialRef())
         ogrgeom.Transform(trans)
         tlayer.SetSpatialFilter(ogrgeom)
 
-        # geometry of desired site
+        # geometry of desired site (transformed)
         geom = loads(ogrgeom.ExportToWkt())
 
         tiles = {}

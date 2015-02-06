@@ -86,12 +86,9 @@ class SpatialExtent(object):
         self.repo = dataclass.Asset.Repository
 
         if site is not None:
-            self.sitename, fname, layer, self.feature = parse_vectorname(site)
-            self.site = gippy.GeoVector(fname, layer)
-            # TODO - completely replace with gippy.GeoVector
-            from gips.GeoVector import GeoVector
-            site = GeoVector(fname, layer)
-            tiles = self.repo.vector2tiles(site, pcov, ptile)
+            self.sitename, fname, layer, feature = parse_vectorname(site)
+            self.site = gippy.GeoFeature(fname, layer, feature)
+            tiles = self.repo.vector2tiles(self.site, pcov, ptile)
         else:
             self.site = None
             self.sitename = 'tiles'
