@@ -72,6 +72,8 @@ class GIPSParser(argparse.ArgumentParser):
         group.add_argument('--fetch', help='Fetch any missing data (if supported)', default=False, action='store_true')
         group.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2: debug', default=1, type=int)
         group.add_argument('-p', '--products', help='Requested Products', nargs='*')
+        h = 'Loop through geometries, getting inventory for each'
+        group.add_argument('--loop', help=h, default=False, action='store_true')
         self.parent_parsers.append(parser)
         return parser
 
