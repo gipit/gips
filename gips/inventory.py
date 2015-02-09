@@ -29,7 +29,7 @@ import numpy
 from copy import deepcopy
 
 import gippy
-from gips import SpatialExtent, TemporalExtent
+from gips.core import SpatialExtent, TemporalExtent
 from gips.tiles import Tiles
 from gips.utils import VerboseOut, Colors, basename, mkdir
 from gips.data.core import Data
@@ -80,6 +80,9 @@ class Inventory(object):
         return self._colors[list(self.sensor_set).index(sensor)]
 
     def pprint(self, md=False, compact=False):
+        if len(self.data) == 0:
+            print 'No matching files in inventory'
+            return
         print self.data[self.data.keys()[0]].pprint_header()
         dformat = '%m-%d' if md else '%j'
         oldyear = 0
@@ -241,8 +244,8 @@ class DataInventory(Inventory):
             except Exception, e:
                 raise Exception('DataInventory: Error accessing tiles in %s repository' % dataclass.name)
 
-        if len(self.data) == 0:
-            raise Exception("No matching files in inventory!")
+        #if len(self.data) == 0:
+        #    raise Exception("No matching files in inventory!")
 
     @property
     def sensor_set(self):
