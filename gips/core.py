@@ -85,6 +85,10 @@ class SpatialExtent(object):
         """ Create spatial extent object """
         self.repo = dataclass.Asset.Repository
 
+        # default to all tiles if none provided
+        if tiles is None and site is None:
+            tiles = self.repo.find_tiles()
+
         if site is not None:
             self.sitename, fname, layer, feature = parse_vectorname(site)
             self.site = gippy.GeoFeature(fname, layer, feature)
@@ -92,11 +96,8 @@ class SpatialExtent(object):
         else:
             self.site = None
             self.sitename = 'tiles'
-            if tiles is None:
-                tiles = self.repo.find_tiles()
-            else:
-                # if tiles only provided, coverage of each is 100%
-                tiles = {t: (1, 1) for t in tiles}
+            # if tiles only provided, coverage of each is 100%
+            tiles = {t: (1, 1) for t in tiles}
 
         self.coverage = tiles
 
