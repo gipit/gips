@@ -28,7 +28,7 @@ import traceback
 
 import gippy
 from gippy.algorithms import CookieCutter
-from gips import SpatialExtent
+from gips.core import SpatialExtent
 from gips.utils import VerboseOut, Colors, mosaic, mkdir
 
 
