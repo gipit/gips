@@ -519,8 +519,8 @@ class Data(object):
             if not os.path.exists(fout) or overwrite:
                 try:
                     if site is not None:
-                        # TODO - this won't work with vector in a DB
-                        CookieCutter([fin], fout, site, "", res[0], res[1], crop, interpolation)
+                        images = gippy.GeoImages([fin])
+                        CookieCutter(images, site, fout, res[0], res[1], crop, interpolation)
                     else:
                         shutil.copyfile(fin, fout)
                 except Exception:
@@ -741,9 +741,20 @@ class Data(object):
         return datas
 
     @classmethod
-    def inventory(cls, **kwargs):
+    def inventory(cls, site=None, loop=False, **kwargs):
+        """ Return list of inventories (size 1 if not looping through geometries) """
         from gips.inventory import DataInventory
-        return DataInventory(cls, **kwargs)
+        invs = []
+        if loop and 'site' is not None:
+            sitename, fname, layer, feature = parse_vectorname(site)
+            vec = gippy.GeoVector(fname, layer)
+            numfeat = vec.NumFeatures()
+            vec = None
+            for f in range(0, numfeat):
+                invs.append(DataInventory(cls, site=site+':'+str(f), **kwargs))
+        else:
+            invs.append(DataInventory(cls, site=site, **kwargs))
+        return invs
 
     @classmethod
     def products2assets(cls, products):
