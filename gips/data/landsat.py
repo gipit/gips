@@ -137,7 +137,7 @@ class LandsatAsset(Asset):
         doy = fname[13:16]
         self.date = datetime.strptime(year + doy, "%Y%j")
         if self.sensor not in self._sensors.keys():
-            raise Exception("Sensor %s not supported" % self.sensor)
+            raise Exception("Sensor %s not supported: %s" % (self.sensor, filename))
         # Landsat specific additions
         smeta = self._sensors[self.sensor]
         self.meta = {}
