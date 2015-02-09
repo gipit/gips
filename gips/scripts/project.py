@@ -42,9 +42,10 @@ def main():
     try:
         print title
         cls = data_class(args.command)
-        inv = cls.inventory(**vars(args))
-
-        inv.project(**vars(args))
+        invs = cls.inventory(**vars(args))
+        for inv in invs:
+            if inv.numfiles > 0:
+                inv.project(**vars(args))
 
     except Exception, e:
         import traceback

@@ -42,8 +42,9 @@ def main():
     try:
         print title
         cls = data_class(args.command)
-        inv = cls.inventory(**vars(args))
-        inv.pprint(md=args.md, compact=args.compact)
+        invs = cls.inventory(**vars(args))
+        for inv in invs:
+            inv.pprint(md=args.md, compact=args.compact)
     except Exception, e:
         import traceback
         VerboseOut(traceback.format_exc(), 4)

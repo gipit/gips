@@ -40,8 +40,9 @@ def main():
     try:
         print title
         cls = data_class(args.command)
-        inv = cls.inventory(**vars(args))
-        inv.process(overwrite=args.overwrite)
+        invs = cls.inventory(**vars(args))
+        for inv in invs:
+            inv.process(overwrite=args.overwrite)
     except Exception, e:
         import traceback
         VerboseOut(traceback.format_exc(), 4)

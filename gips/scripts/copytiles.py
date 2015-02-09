@@ -41,7 +41,7 @@ def main():
     try:
         print title
         cls = data_class(args.command)
-        inv = cls.inventory(**vars(args))
+        inv = cls.inventory(**vars(args))[0]
 
         # create top level directory
         suffix = '' if args.suffix is None else '_' + args.suffix

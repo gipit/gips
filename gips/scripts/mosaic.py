@@ -41,18 +41,19 @@ def main():
     try:
         print title
         cls = data_class(args.command)
-        inv = cls.inventory(**vars(args))
+        invs = cls.inventory(**vars(args))
 
-        # create project directory
-        suffix = '' if args.suffix is None else '_' + args.suffix
-        if args.datadir is None:
-            args.datadir = '%s_%s%s' % (basename(args.site).replace('_', '-'), args.command, suffix)
-        mkdir(args.datadir)
+        for inv in invs:
+            # create project directory
+            suffix = '' if args.suffix is None else '_' + args.suffix
+            if args.datadir is None:
+                args.datadir = '%s_%s%s' % (inv.spatial.sitename, args.command, suffix)
+            mkdir(args.datadir)
 
-        # mosaic the tiles
-        for date in inv.dates:
-            inv[date].process(overwrite=False)
-            inv[date].mosaic(datadir=args.datadir, overwrite=args.overwrite)
+            # mosaic the tiles
+            for date in inv.dates:
+                inv[date].process(overwrite=False)
+                inv[date].mosaic(datadir=args.datadir, overwrite=args.overwrite)
 
     except Exception, e:
         import traceback

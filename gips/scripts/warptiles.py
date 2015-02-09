@@ -42,27 +42,28 @@ def main():
     try:
         print title
         cls = data_class(args.command)
-        inv = cls.inventory(**vars(args))
+        invs = cls.inventory(**vars(args))
 
-        # create top level directory
-        suffix = '' if args.suffix is None else '_' + args.suffix
-        if args.datadir is None:
-            args.datadir = args.command + '_tiles'
-            if args.res is None:
-                args.res = cls.Asset._defaultresolution
-            if args.res[0] == args.res[1]:
-                resstr = str(args.res[0])
-            else:
-                resstr = '%sx%s' % (args.res[0], args.res[1])
-            args.datadir = '%s_%s%s' % (args.datadir, resstr, suffix)
-        mkdir(args.datadir)
+        for inv in invs:
+            # create top level directory
+            suffix = '' if args.suffix is None else '_' + args.suffix
+            if args.datadir is None:
+                args.datadir = args.command + '_tiles'
+                if args.res is None:
+                    args.res = cls.Asset._defaultresolution
+                if args.res[0] == args.res[1]:
+                    resstr = str(args.res[0])
+                else:
+                    resstr = '%sx%s' % (args.res[0], args.res[1])
+                args.datadir = '%s_%s%s' % (args.datadir, resstr, suffix)
+            mkdir(args.datadir)
 
-        # warp the tiles
-        for date in inv.dates:
-            for tid in inv[date].tiles:
-                inv[date].tiles[tid].process(args.products, overwrite=False)
-                inv[date].tiles[tid].copy(args.datadir, args.products, inv.spatial.site,
-                                          args.res, args.interpolation, args.crop, args.overwrite, args.tree)
+            # warp the tiles
+            for date in inv.dates:
+                for tid in inv[date].tiles:
+                    inv[date].tiles[tid].process(args.products, overwrite=False)
+                    inv[date].tiles[tid].copy(args.datadir, args.products, inv.spatial.site,
+                                              args.res, args.interpolation, args.crop, args.overwrite, args.tree)
 
     except Exception, e:
         import traceback
