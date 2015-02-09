@@ -132,7 +132,7 @@ def fn_timer(function):
 def parse_vectorname(fname, path=''):
     """ Parse name to determine if database or filename and return (shortname, filename, layer, feature) """
     parts = fname.split(':')
-    shortname = basename(parts[0]).replace('_', '-').replace(':', '-')
+    shortname = basename(parts[0]).replace('_', '').replace(':', '-')
     if len(parts) == 1:
         return (shortname, os.path.join(path, fname), '', 0)
     if parts[0] in DATABASES.keys():
@@ -140,13 +140,16 @@ def parse_vectorname(fname, path=''):
             db = DATABASES[parts[0]]
             filename = ("PG:dbname=%s host=%s port=%s user=%s password=%s" %
                         (db['NAME'], db['HOST'], db['PORT'], db['USER'], db['PASSWORD']))
+            layer = parts[1]
             feature = 0 if len(parts) < 3 else parts[2]
-            return (shortname, filename, parts[1], int(feature))
+            shortname = '%s-%s-%s' % (shortname, layer.replace('_', ''), feature)
+            return (shortname, filename, layer, int(feature))
         except Exception, e:
             VerboseOut(traceback.format_exc(), 4)
             VerboseOut('Error accessing database vector %s: %s' % (fname, e))
     else:
         feature = 0 if len(parts) < 2 else parts[1]
+        shortname = '%s-%s' % (shortname, feature)
         return (shortname, os.path.join(path, parts[0]), '', int(feature))
 
 
