@@ -92,8 +92,8 @@ class GIPSParser(argparse.ArgumentParser):
         """ This adds a parser with project options """
         parser = GIPSParser(add_help=False)
         group = parser.add_argument_group('project directory options')
-        h = 'Directory to store output (auto generated if not provided)'
-        group.add_argument('--datadir', help=h, default=None)
+        h = 'Directory to store project(s) (default to current directory)'
+        group.add_argument('--outdir', help=h, default='')
         group.add_argument('--suffix', help='Suffix to add to auto generated output directory', default=None)
         h = 'Create project directories in tree form'
         group.add_argument('--tree', help=h, default=False, action='store_true')

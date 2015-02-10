@@ -46,6 +46,10 @@ class Inventory(object):
         """ Indexing operator for class """
         return self.data[date]
 
+    def __len__(self):
+        """ Length of inventory (# of dates) """
+        return len(self.dates)
+
     def get_subset(self, dates):
         """ Return subset of inventory """
         inv = deepcopy(self)
@@ -272,25 +276,27 @@ class DataInventory(Inventory):
             self.dataclass.process_composites(self, self.products.composite, **kwargs)
             VerboseOut('Completed processing in %s' % (dt.now() - start), 1)
 
-    def project(self, datadir=None, suffix='', res=None, **kwargs):
+    def project(self, outdir='', suffix='', res=None, **kwargs):
         """ Create project files for data in inventory """
         self.process(overwrite=False)
         start = dt.now()
-        VerboseOut('Creating GIPS project %s' % datadir)
+        VerboseOut('Creating GIPS project %s' % outdir)
         VerboseOut('  Dates: %s' % self.datestr)
         VerboseOut('  Products: %s' % ' '.join(self.products.standard))
+
+        if outdir != '':
+            mkdir(outdir)
 
         if res is None:
             res = self.dataclass.Asset._defaultresolution
 
         suffix = '' if suffix is None else '_' + suffix
-        if datadir is None:
-            if res[0] == res[1]:
-                resstr = str(res[0])
-            else:
-                resstr = '%sx%s' % (res[0], res[1])
-            datadir = '%s_%s_%s%s' % (self.spatial.sitename, resstr, self.dataclass.name, suffix)
-        mkdir(datadir)
+        if res[0] == res[1]:
+            resstr = str(res[0])
+        else:
+            resstr = '%sx%s' % (res[0], res[1])
+        datadir = '%s_%s_%s%s' % (self.spatial.sitename, resstr, self.dataclass.name, suffix)
+        datadir = os.path.join(outdir, datadir)
 
         for d in self.dates:
             self.data[d].mosaic(datadir=datadir, res=res, interpolation=kwargs['interpolation'],
@@ -299,7 +305,8 @@ class DataInventory(Inventory):
         VerboseOut('Completed GIPS project in %s' % (dt.now() - start))
         if self.spatial.site is not None:
             inv = ProjectInventory(datadir)
-            inv.pprint()
+            if not kwargs['tree']:
+                inv.pprint()
             return inv
 
     def pprint(self, **kwargs):
