@@ -21,6 +21,7 @@
 #   along with this program. If not, see <http://www.gnu.org/licenses/>
 ################################################################################
 
+import os
 from gips import __version__ as gipsversion
 from gips.parsers import GIPSParser
 from gips.data.core import data_class
@@ -41,19 +42,22 @@ def main():
     try:
         print title
         cls = data_class(args.command)
-        inv = cls.inventory(**vars(args))[0]
+        invs = cls.inventory(**vars(args))
 
-        # create top level directory
+        # create top level directory: DATATYPE_tiles
         suffix = '' if args.suffix is None else '_' + args.suffix
-        if args.datadir is None:
-            args.datadir = args.command + '_tiles' + suffix
-        mkdir(args.datadir)
+        datadir = os.path.join(args.outdir, args.command + '_tiles' + suffix)
+        mkdir(datadir)
 
-        # copy the tiles
-        for date in inv.dates:
-            for tid in inv[date].tiles:
-                inv[date].tiles[tid].process(args.products, overwrite=False)
-                inv[date].tiles[tid].copy(args.datadir, args.products, overwrite=args.overwrite, tree=args.tree)
+        for inv in invs:
+            # copy the tiles
+            for date in inv.dates:
+                for tid in inv[date].tiles:
+                    # make sure back-end tiles are processed
+                    inv[date].tiles[tid].process(args.products, overwrite=False)
+                    # copy the tiles
+                    inv[date].tiles[tid].copy(datadir, args.products, overwrite=args.overwrite, tree=args.tree)
+
 
     except Exception, e:
         import traceback

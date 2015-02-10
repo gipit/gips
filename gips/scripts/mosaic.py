@@ -21,6 +21,7 @@
 #   along with this program. If not, see <http://www.gnu.org/licenses/>
 ################################################################################
 
+import os
 from gips import __version__ as gipsversion
 from gips.parsers import GIPSParser
 from gips.data.core import data_class
@@ -43,17 +44,17 @@ def main():
         cls = data_class(args.command)
         invs = cls.inventory(**vars(args))
 
-        for inv in invs:
-            # create project directory
-            suffix = '' if args.suffix is None else '_' + args.suffix
-            if args.datadir is None:
-                args.datadir = '%s_%s%s' % (inv.spatial.sitename, args.command, suffix)
-            mkdir(args.datadir)
+        # create project directory SITENAME_LANDSAT
+        suffix = '' if args.suffix is None else '_' + args.suffix
 
-            # mosaic the tiles
+        for inv in invs:
+            datadir = os.path.join(args.outdir, '%s_%s%s' % (inv.spatial.sitename, args.command, suffix))
+            mkdir(datadir)
             for date in inv.dates:
+                # make sure back-end tiles are processed
                 inv[date].process(overwrite=False)
-                inv[date].mosaic(datadir=args.datadir, overwrite=args.overwrite)
+                # mosaic the tiles
+                inv[date].mosaic(datadir=datadir, overwrite=args.overwrite)
 
     except Exception, e:
         import traceback
