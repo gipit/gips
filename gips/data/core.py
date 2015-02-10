@@ -167,9 +167,8 @@ class Repository(object):
         return GeoVector(filename, layer)
 
     @classmethod
-    def vector2tiles(cls, vector, pcov=0.0, ptile=0.0):
+    def vector2tiles(cls, vector, pcov=0.0, ptile=0.0, tilelist=None):
         """ Return matching tiles and coverage % for provided vector """
-        start = datetime.now()
         import osr
         # set spatial filter on tiles vector to speedup
         ogrgeom = ogr.CreateGeometryFromWkt(vector.WKT())
@@ -195,12 +194,13 @@ class Repository(object):
                 tiles[tile] = (area / geom.area, area / tgeom.area)
             feat = tlayer.GetNextFeature()
         remove_tiles = []
+        if tilelist is None:
+            tilelist = tiles.keys()
         for t in tiles:
-            if (tiles[t][0] < (pcov / 100.0)) or (tiles[t][1] < (ptile / 100.0)):
+            if (tiles[t][0] < (pcov / 100.0)) or (tiles[t][1] < (ptile / 100.0)) or t not in tilelist:
                 remove_tiles.append(t)
         for t in remove_tiles:
             tiles.pop(t, None)
-        VerboseOut('%s: vector2tiles completed in %s' % (cls.__name__, datetime.now() - start), 4)
         return tiles
 
 
@@ -505,7 +505,7 @@ class Data(object):
     def copy(self, dout, products, site=None, res=None, interpolation=0, crop=False, overwrite=False, tree=False):
         """ Copy products to new directory, warp to projection if given site """
         # TODO - allow hard and soft linking options
-        # create directory
+        # create directory TILEID
         dout = os.path.join(dout, self.id)
         if tree:
             dout = os.path.join(dout, self.date.strftime('%Y%j'))
@@ -526,6 +526,8 @@ class Data(object):
                 except Exception:
                     VerboseOut(traceback.format_exc(), 4)
                     VerboseOut("Problem creating %s" % fout)
+        procstr = 'copied' if site is None else 'warped'
+        VerboseOut('%s tile %s: %s files %s' % (self.date, self.id, len(products.requested), procstr))
 
     def filter(self, **kwargs):
         """ Check if tile passes filter - autofail if there are no assets or products """

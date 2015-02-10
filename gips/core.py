@@ -92,7 +92,7 @@ class SpatialExtent(object):
         if site is not None:
             self.sitename, fname, layer, feature = parse_vectorname(site)
             self.site = gippy.GeoFeature(fname, layer, feature)
-            tiles = self.repo.vector2tiles(self.site, pcov, ptile)
+            tiles = self.repo.vector2tiles(self.site, pcov, ptile, tiles)
         else:
             self.site = None
             self.sitename = 'tiles'
