@@ -153,10 +153,25 @@ def parse_vectorname(fname, path=''):
         return (shortname, os.path.join(path, parts[0]), '', int(feature))
 
 
+from shapely.wkt import loads as wktloads
+from osr import SpatialReference, CoordinateTransformation
+from ogr import CreateGeometryFromWkt
+
+def transform_shape(shape, ssrs, tsrs):
+    """ Transform shape from ssrs to tsrs (all wkt) and return as wkt """
+    ogrgeom = CreateGeometryFromWkt(shape)
+    trans = CoordinateTransformation(SpatialReference(ssrs), SpatialReference(tsrs))
+    ogrgeom.Transform(trans)
+    wkt = ogrgeom.ExportToWkt()
+    ogrgeom = None
+    return wkt
+
+
 def crop2vector(img, vector):
     """ Crop a GeoImage down to a vector - only used by mosaic """
+    # TODO - update to use gippy.GeoVector
     # TODO - incorporate into GIPPY?
-    start = datetime.now()
+    #start = datetime.now()
     # transform vector to srs of image
     srs = img.Projection()
     vec_t = vector.transform(srs)
@@ -175,41 +190,38 @@ def crop2vector(img, vector):
     mask = None
     shutil.rmtree(os.path.dirname(maskname))
     shutil.rmtree(os.path.dirname(vecname))
-    VerboseOut('Cropped to vector in %s' % (datetime.now() - start), 3)
+    #VerboseOut('Cropped to vector in %s' % (datetime.now() - start), 3)
     return img
 
 
-def mosaic(infiles, outfile, vectorfile):
+def mosaic(images, outfile, vector):
     """ Mosaic multiple files together, but do not warp """
-    img = gippy.GeoImage(infiles[0])
-    nd = img[0].NoDataValue()
-    srs = img.Projection()
-    for f in range(1, len(infiles)):
-        _img = gippy.GeoImage(infiles[f])
-        if _img.Projection() != srs:
+    nd = images[0][0].NoDataValue()
+    srs = images[0].Projection()
+    # check they all have same projection
+    filenames = [images[0].Filename()]
+    for f in range(1, images.NumImages()):
+        if images[f].Projection() != srs:
             raise Exception("Input files have non-matching projections and must be warped")
-        _img = None
+        filenames.append(images[f].Filename())
     # transform vector to image projection
-    from gips.GeoVector import GeoVector, transform_shape
-    # TODO - update to use gippy.GeoVector
-    vector = GeoVector(vectorfile)
-    vsrs = vector.proj()
-    geom = transform_shape(vector.union(), vsrs, srs)
+    geom = wktloads(transform_shape(vector.WKT(), vector.Projection(), srs))
+
     extent = geom.bounds
     ullr = "%f %f %f %f" % (extent[0], extent[3], extent[2], extent[1])
 
     # run merge command
     nodatastr = '-n %s -a_nodata %s -init %s' % (nd, nd, nd)
-    cmd = 'gdal_merge.py -o %s -ul_lr %s %s %s' % (outfile, ullr, nodatastr, " ".join(infiles))
+    cmd = 'gdal_merge.py -o %s -ul_lr %s %s %s' % (outfile, ullr, nodatastr, " ".join(filenames))
     result = commands.getstatusoutput(cmd)
     VerboseOut('%s: %s' % (cmd, result), 4)
     imgout = gippy.GeoImage(outfile, True)
-    for b in range(0, img.NumBands()):
-        imgout[b].CopyMeta(img[b])
+    for b in range(0, images[0].NumBands()):
+        imgout[b].CopyMeta(images[0][b])
     img = None
-    #return imgout
-    # TODO - fix crop2vector, throwing out of bounds error in GDAL read
-    return crop2vector(imgout, vector)
+    return imgout
+    # TODO - update to use gippy.GeoVector
+    #return crop2vector(imgout, vector)
 
 
 # old code utilizing shared memory array
