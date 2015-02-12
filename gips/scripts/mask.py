@@ -25,6 +25,7 @@ import os
 
 import gippy
 from gips.parsers import GIPSParser
+from gips.inventory import ProjectInventory
 from gips.utils import Colors, VerboseOut, basename
 
 __version__ = '0.1.0'
@@ -32,18 +33,18 @@ __version__ = '0.1.0'
 def main():
     title = Colors.BOLD + 'GIPS Project Masking Utility v%s' % __version__ + Colors.OFF
 
-    parser0 = GIPSParser(description=title)
+    parser0 = GIPSParser(datasources=False, description=title)
     parser0.add_default_parser()
     parser0.add_projdir_parser()
     group = parser0.add_argument_group('masking options')
-    parser0.add_argument('--filemask', help='Mask all files with this static mask', default=None)
-    parser0.add_argument('--pmask', help='Mask files with this corresponding product', nargs='*', default=[])
+    group.add_argument('--filemask', help='Mask all files with this static mask', default=None)
+    group.add_argument('--pmask', help='Mask files with this corresponding product', nargs='*', default=[])
     h = 'Write mask to original image instead of creating new image'
-    parser0.add_argument('--original', help=h, default=False, action='store_true')
+    group.add_argument('--original', help=h, default=False, action='store_true')
     h = 'Overwrite existing files when creating new'
-    parser0.add_argument('--overwrite', help=h, default=False, action='store_true')
+    group.add_argument('--overwrite', help=h, default=False, action='store_true')
     h = 'Suffix to apply to masked file (not compatible with --original)'
-    parser0.add_argument('--suffix', help=h, default='-masked')
+    group.add_argument('--suffix', help=h, default='-masked')
     #parser0.add_argument('-i', '--invert', help='Invert mask (0->1, 1->0)', default=False, action='store_true')
     #parser0.add_argument('--value', help='Mask == val', default=1)
     args = parser0.parse_args()
@@ -57,28 +58,28 @@ def main():
 
         inv = ProjectInventory(args.projdir, args.products)
         for date in inv.dates:
-            VerboseOut('Masking files frm %s' % date)
-            available_masks = self.inv[date].masks(pmask)
-            for p in self.inv.products(date):
+            VerboseOut('Masking files from %s' % date)
+            available_masks = inv[date].masks(args.pmask)
+            for p in inv.products(date):
                 # don't mask any masks
                 if p in available_masks:
                     continue
                 meta = ''
-                update = True if original else False
-                img = self.inv[date].open(p, update=update)
-                if fmask != '':
+                update = True if args.original else False
+                img = inv[date].open(p, update=update)
+                if args.filemask is not None:
                     img.AddMask(mask_file[0])
-                    meta = basename(fmask) + ' '
+                    meta = basename(args.filemask) + ' '
                 for mask in available_masks:
-                    img.AddMask(self.inv[date].open(mask)[0])
-                    meta = meta + basename(self.inv[date][mask]) + ' '
+                    img.AddMask(inv[date].open(mask)[0])
+                    meta = meta + basename(inv[date][mask]) + ' '
                 if meta != '':
-                    if original:
+                    if args.original:
                         VerboseOut('  %s' % (img.Basename()), 2)
                         img.Process()
                         img.SetMeta('MASKS', meta)
                     else:
-                        fout = os.path.splitext(img.Filename())[0] + self.suffix + '.tif'
+                        fout = os.path.splitext(img.Filename())[0] + args.suffix + '.tif'
                         if not os.path.exists(fout) or overwrite:
                             VerboseOut('  %s -> %s' % (img.Basename(), basename(fout)), 2)
                             imgout = img.Process(fout)
@@ -90,7 +91,7 @@ def main():
     except Exception, e:
         import traceback
         VerboseOut(traceback.format_exc(), 4)
-        print 'Masking error: %s' % s
+        print 'Masking error: %s' % e
 
 
 if __name__ == "__main__":
