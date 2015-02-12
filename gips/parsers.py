@@ -112,6 +112,14 @@ class GIPSParser(argparse.ArgumentParser):
         self.parent_parsers.append(parser)
         return parser
 
+    def add_projdir_parser(self):
+        """ This adds a parser with options for reading a project output directory """
+        parser = GIPSParser(add_help=False)
+        group = parser.add_argument_group('input project options')
+        group.add_argument('projdir', help='GIPS Project directory')
+        group.add_argument('-p', '--products', help='Products to operate on', nargs='*')
+        return parser
+
     def add_data_sources(self):
         """ This should be added after all other parsers added """
         subparser = self.add_subparsers(dest='command')
