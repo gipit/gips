@@ -225,7 +225,7 @@ class ModisData(Data):
         if len(products) == 0:
             return
 
-        fname = os.path.join(self.path, self.basename)
+        bname = os.path.join(self.path, self.basename)
 
         for key, val in products.requested.items():
             start = datetime.datetime.now()
@@ -256,7 +256,7 @@ class ModisData(Data):
             meta['AVAILABLE_ASSETS'] = ' '.join(availassets)
 
             if val[0] == "quality":
-                fname = '%s_%s_%s.tif' % (fname, sensor, key)
+                fname = '%s_%s_%s.tif' % (bname, sensor, key)
                 os.symlink(allsds[0], fname)
                 imgout = gippy.GeoImage(fname)
 
@@ -265,7 +265,7 @@ class ModisData(Data):
                 VERSION = "1.0"
                 meta['VERSION'] = VERSION
                 sensor = 'MCD'
-                fname = '%s_%s_%s' % (fname, sensor, key)
+                fname = '%s_%s_%s' % (bname, sensor, key)
 
                 refl = gippy.GeoImage(allsds)
 
@@ -329,7 +329,7 @@ class ModisData(Data):
             if val[0] == "snow":
                 VERSION = "1.0"
                 meta['VERSION'] = VERSION
-                fname = '%s_%s_%s' % (fname, sensor, key)
+                fname = '%s_%s_%s' % (bname, sensor, key)
 
                 if not missingassets:
                     availbands = [0, 1]
@@ -450,7 +450,7 @@ class ModisData(Data):
                 VERSION = "1.1"
                 meta['VERSION'] = VERSION
                 sensor = 'MOD-MYD'
-                fname = '%s_%s_%s' % (fname, sensor, key)
+                fname = '%s_%s_%s' % (bname, sensor, key)
 
                 if not missingassets:
                     availbands = [0, 1, 2, 3]
@@ -561,7 +561,7 @@ class ModisData(Data):
             if val[0] == "obstime":
                 VERSION = "1"
                 meta['VERSION'] = VERSION
-                fname = '%s_%s_%s' % (fname, 'MOD-MYD', key)
+                fname = '%s_%s_%s' % (bname, 'MOD-MYD', key)
 
                 if not missingassets:
                     availbands = [0, 1, 2, 3]
@@ -608,7 +608,7 @@ class ModisData(Data):
                 VERSION = "1.0"
                 meta['VERSION'] = VERSION
                 sensor = 'MOD'
-                fname = '%s_%s_%s' % (fname, sensor, key)
+                fname = '%s_%s_%s' % (bname, sensor, key)
 
                 refl = gippy.GeoImage(allsds)
                 refl.SetBandName("RED", 1)
@@ -621,7 +621,7 @@ class ModisData(Data):
             # TEMPERATURE PRODUCT (8-day) - Terra only
             if val[0] == "temp8":
                 sensor = 'MOD'
-                fname = '%s_%s_%s.tif' % (fname, sensor, key)
+                fname = '%s_%s_%s.tif' % (bname, sensor, key)
                 os.symlink(allsds[0], fname)
                 imgout = gippy.GeoImage(fname)
 
