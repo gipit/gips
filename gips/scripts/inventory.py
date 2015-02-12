@@ -36,7 +36,6 @@ def main():
     group = parser.add_argument_group('inventory display')
     group.add_argument('--md', help='Show dates using MM-DD', action='store_true', default=False)
     group.add_argument('--compact', help='Print only dates (no coverage)', default=False, action='store_true')
-    parser0.add_data_sources()
     args = parser0.parse_args()
 
     try:

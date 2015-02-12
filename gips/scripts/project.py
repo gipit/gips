@@ -36,7 +36,6 @@ def main():
     parser0.add_process_parser()
     parser0.add_project_parser()
     parser0.add_warp_parser()
-    parser0.add_data_sources()
     args = parser0.parse_args()
 
     try:

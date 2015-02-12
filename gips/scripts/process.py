@@ -34,7 +34,6 @@ def main():
     parser0 = GIPSParser(description=title)
     parser0.add_inventory_parser()
     parser0.add_process_parser()
-    parser0.add_data_sources()
     args = parser0.parse_args()
 
     try:

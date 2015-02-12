@@ -33,12 +33,15 @@ import gippy
 class GIPSParser(argparse.ArgumentParser):
     """ Extends argparser parser to print help on error """
 
-    def __init__(self, **kwargs):
+    def __init__(self, datasources=True, **kwargs):
         super(GIPSParser, self).__init__(**kwargs)
+        self.datasources = datasources
         self.formatter_class = argparse.ArgumentDefaultsHelpFormatter
         self.parent_parsers = []
 
     def parse_args(self, **kwargs):
+        if self.datasources:
+            self.add_data_sources()
         args = super(GIPSParser, self).parse_args(**kwargs)
         set_gippy_options(args)
         return args
@@ -114,14 +117,16 @@ class GIPSParser(argparse.ArgumentParser):
 
     def add_projdir_parser(self):
         """ This adds a parser with options for reading a project output directory """
-        parser = GIPSParser(add_help=False)
+        if parser is None:
+            parser = GIPSParser(add_help=False)
         group = parser.add_argument_group('input project options')
         group.add_argument('projdir', help='GIPS Project directory')
         group.add_argument('-p', '--products', help='Products to operate on', nargs='*')
+        self.parent_parsers.append(parser)
         return parser
 
     def add_data_sources(self):
-        """ This should be added after all other parsers added """
+        """ Adds data sources to parser """
         subparser = self.add_subparsers(dest='command')
         for key in sorted(settings.REPOS.keys()):
             # get description

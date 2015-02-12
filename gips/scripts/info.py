@@ -32,7 +32,6 @@ def main():
 
     # argument parsing
     parser = GIPSParser(description=title)
-    parser.add_data_sources()
     args = parser.parse_args()
 
     try:
