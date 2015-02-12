@@ -140,13 +140,13 @@ class SIXS():
             raise AtmCorrException("Error running 6S: %s" % e)
 
         self.results = {}
-        VerboseOut("{:>6} {:>8}{:>8}{:>8}".format('Band', 'T', 'Lu', 'Ld'), 2)
+        VerboseOut("{:>6} {:>8}{:>8}{:>8}".format('Band', 'T', 'Lu', 'Ld'), 4)
         for b, out in enumerate(outputs):
             t = out.trans['global_gas'].upward
             Lu = out.atmospheric_intrinsic_radiance
             Ld = (out.direct_solar_irradiance + out.diffuse_solar_irradiance + out.environmental_irradiance) / numpy.pi
             self.results[bandnums[b]] = [t, Lu, Ld]
-            VerboseOut("{:>6}: {:>8.3f}{:>8.2f}{:>8.2f}".format(bandnums[b], t, Lu, Ld), 2)
+            VerboseOut("{:>6}: {:>8.3f}{:>8.2f}{:>8.2f}".format(bandnums[b], t, Lu, Ld), 4)
 
         VerboseOut('Ran atmospheric model in %s' % str(datetime.datetime.now() - start), 2)
 

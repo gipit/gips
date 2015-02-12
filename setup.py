@@ -48,7 +48,7 @@ setup(
     description='Geospatial Image Processing System',
     author='Matthew Hanson',
     author_email='matt.a.hanson@gmail.com',
-    packages=['gips', 'gips.data'],
+    packages=['gips', 'gips.data', 'gips.scripts'],
     install_requires=['Py6S>=1.5.0', 'shapely', 'gippy', 'python-dateutil', 'pydap'],
     entry_points={'console_scripts': console_scripts},
 )

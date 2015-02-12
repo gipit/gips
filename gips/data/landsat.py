@@ -393,10 +393,11 @@ class LandsatData(Data):
                     imgout.SetGain(0.1)
                     [reflimg[col].Process(imgout[col]) for col in lwbands]
                 elif val[0] == 'dn':
-                    rawimg = gippy.GeoImage(img)
+                    rawimg = self._readraw()
                     rawimg.SetGain(1.0)
                     rawimg.SetOffset(0.0)
                     imgout = rawimg.Process(fname)
+                    rawimg = None
                 elif val[0] == 'volref':
                     bands = deepcopy(visbands)
                     bands.remove("SWIR1")
