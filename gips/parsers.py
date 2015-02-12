@@ -56,14 +56,20 @@ class GIPSParser(argparse.ArgumentParser):
 
     def add_default_parser(self):
         """ This adds a parser with default options """
-        parser = GIPSParser(add_help=False)
+        if self.datasources:
+            parser = GIPSParser(add_help=False)
+        else:
+            parser = self
         parser.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2: debug', default=1, type=int)
         self.parent_parsers.append(parser)
         return parser
 
     def add_inventory_parser(self):
         """ This adds a parser with inventory options """
-        parser = GIPSParser(add_help=False)
+        if self.datasources:
+            parser = GIPSParser(add_help=False)
+        else:
+            parser = self
         group = parser.add_argument_group('inventory options')
         group.add_argument('-s', '--site', help='Vector file for region of interest', default=None)
         group.add_argument('-t', '--tiles', nargs='*', help='Tile designations', default=None)
@@ -82,7 +88,10 @@ class GIPSParser(argparse.ArgumentParser):
 
     def add_process_parser(self):
         """ This adds a parser with processing options """
-        parser = GIPSParser(add_help=False)
+        if self.datasources:
+            parser = GIPSParser(add_help=False)
+        else:
+            parser = self
         group = parser.add_argument_group('processing options')
         group.add_argument('--overwrite', help='Overwrite existing output file(s)', default=False, action='store_true')
         group.add_argument('--chunksize', help='Chunk size in MB', default=512.0)
@@ -93,7 +102,10 @@ class GIPSParser(argparse.ArgumentParser):
 
     def add_project_parser(self):
         """ This adds a parser with project options """
-        parser = GIPSParser(add_help=False)
+        if self.datasources:
+            parser = GIPSParser(add_help=False)
+        else:
+            parser = self
         group = parser.add_argument_group('project directory options')
         h = 'Directory to store project(s) (default to current directory)'
         group.add_argument('--outdir', help=h, default='')
@@ -105,7 +117,10 @@ class GIPSParser(argparse.ArgumentParser):
 
     def add_warp_parser(self):
         """ This adds a parser with warping options """
-        parser = GIPSParser(add_help=False)
+        if self.datasources:
+            parser = GIPSParser(add_help=False)
+        else:
+            parser = self
         group = parser.add_argument_group('warp options')
         h = 'Resolution of (warped) output rasters'
         group.add_argument('--res', nargs=2, help=h, default=None, type=float, required=True)
@@ -117,8 +132,10 @@ class GIPSParser(argparse.ArgumentParser):
 
     def add_projdir_parser(self):
         """ This adds a parser with options for reading a project output directory """
-        if parser is None:
+        if self.datasources:
             parser = GIPSParser(add_help=False)
+        else:
+            parser = self
         group = parser.add_argument_group('input project options')
         group.add_argument('projdir', help='GIPS Project directory')
         group.add_argument('-p', '--products', help='Products to operate on', nargs='*')
