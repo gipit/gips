@@ -85,7 +85,7 @@ class Tiles(object):
         start = datetime.now()
         if tree:
             datadir = os.path.join(datadir, self.date.strftime('%Y%j'))
-            mkdir(datadir)
+        mkdir(datadir)
         bname = self.date.strftime('%Y%j')
         for product in self.products.products:
             sensor = self.which_sensor(product)
