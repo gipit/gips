@@ -35,7 +35,6 @@ from gips.utils import VerboseOut, Colors, basename, mkdir
 from gips.data.core import Data
 from gips.mapreduce import MapReduce
 
-
 class Inventory(object):
     """ Base class for inventories """
     _colors = [Colors.PURPLE, Colors.RED, Colors.GREEN, Colors.BLUE]
@@ -165,7 +164,7 @@ class ProjectInventory(Inventory):
         sz = (len(self.requested_products), img.YSize(), img.XSize())
         return sz
 
-    def get_data(self, dates=None, products=None, chunk=0):
+    def get_data(self, dates=None, products=None, chunk=None):
         """ Read all files as time series, stacking all products """
         # TODO - change to absolute dates
         days = numpy.array([int(d.strftime('%j')) for d in dates])
@@ -177,7 +176,8 @@ class ProjectInventory(Inventory):
         for p in products:
             gimg = self.get_timeseries(p, dates=dates)
             # TODO - move numpy.squeeze into swig interface file?
-            arr = numpy.squeeze(gimg.TimeSeries(days.astype('float64'), chunk))
+            ch = gippy.Recti(chunk[0], chunk[1], chunk[2], chunk[3])
+            arr = numpy.squeeze(gimg.TimeSeries(days.astype('float64'), ch))
             arr[arr == gimg[0].NoDataValue()] = numpy.nan
             if len(days) == 1:
                 dims = arr.shape
