@@ -153,6 +153,15 @@ def parse_vectorname(fname, path=''):
         return (shortname, os.path.join(path, parts[0]), '', int(feature))
 
 
+def features_in_vector(vector):
+    """ Get the number of featurs in a vector """
+    sitename, fname, layer, feature = parse_vectorname(vector)
+    vec = gippy.GeoVector(fname, layer)
+    numfeat = vec.NumFeatures()
+    vec = None
+    return numfeat        
+
+
 from shapely.wkt import loads as wktloads
 from osr import SpatialReference, CoordinateTransformation
 from ogr import CreateGeometryFromWkt
