@@ -33,6 +33,7 @@ from gips.core import SpatialExtent, TemporalExtent
 from gips.tiles import Tiles
 from gips.utils import VerboseOut, Colors, basename, mkdir
 from gips.data.core import Data
+from gips.mapreduce import MapReduce
 
 
 class Inventory(object):
