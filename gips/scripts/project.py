@@ -24,7 +24,7 @@
 from gips import __version__ as gipsversion
 from gips.parsers import GIPSParser
 from gips.data.core import data_class
-from gips.utils import Colors, VerboseOut
+from gips.utils import Colors, VerboseOut, features_in_vector
 
 
 def main():
@@ -41,8 +41,17 @@ def main():
     try:
         print title
         cls = data_class(args.command)
-        invs = cls.inventory(**vars(args))
-        for inv in invs:
+
+        site = args.site
+        if args.loop and site is not None:
+            numfeat = features_in_vector(site)
+            for f in range(0, numfeat):
+                args.site = site + ':' + str(f)
+                inv = cls.inventory(**vars(args))
+                if inv.numfiles > 0:
+                    inv.project(**vars(args))
+        else:
+            inv = cls.inventory(**vars(args))
             if inv.numfiles > 0:
                 inv.project(**vars(args))
 
