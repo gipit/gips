@@ -202,7 +202,7 @@ class ProjectInventory(Inventory):
         if readfunc is None:
             readfunc = lambda x: self.get_data(products=products, chunk=x)
         inshape = self.data_size()
-        outshape = [numbands, inshape[1:2]]
+        outshape = [numbands, inshape[1], inshape[2]]
         mr = MapReduce(inshape, outshape, readfunc, func, **kwargs)
         mr.run(nchunks=nchunks)
         return mr.assemble()
