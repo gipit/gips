@@ -743,9 +743,11 @@ class Data(object):
         return datas
 
     @classmethod
-    def inventory(cls, site=None, loop=False, **kwargs):
+    def inventory(cls, **kwargs):
         """ Return list of inventories (size 1 if not looping through geometries) """
         from gips.inventory import DataInventory
+        return DataInventory(cls, **kwargs)
+        """
         invs = []
         if loop and 'site' is not None:
             sitename, fname, layer, feature = parse_vectorname(site)
@@ -753,10 +755,12 @@ class Data(object):
             numfeat = vec.NumFeatures()
             vec = None
             for f in range(0, numfeat):
+                print f
                 invs.append(DataInventory(cls, site=site+':'+str(f), **kwargs))
         else:
             invs.append(DataInventory(cls, site=site, **kwargs))
         return invs
+        """
 
     @classmethod
     def products2assets(cls, products):
