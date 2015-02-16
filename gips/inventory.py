@@ -194,14 +194,17 @@ class ProjectInventory(Inventory):
         img = gippy.GeoImage(filenames)
         return img
 
-    #def map_reduce(self, func, numbands=1, products=None, readfunc=None, **kwargs):
-    #    """ Apply func to inventory to generate an image with numdim output bands """
-    #    if products is None:
-    #        products = self.requested_products
-    #    if readfunc is None:
-    #        readfunc = lambda x: self.get_data(products=products, chunk=x)
-    #    sz = self.data_size()
-    #    return map_reduce(sz[1:3], readfunc, func, numbands=numbands, **kwargs)
+    def map_reduce(self, func, numbands=1, products=None, readfunc=None, nchunks=100, **kwargs):
+        """ Apply func to inventory to generate an image with numdim output bands """
+        if products is None:
+            products = self.requested_products
+        if readfunc is None:
+            readfunc = lambda x: self.get_data(products=products, chunk=x)
+        inshape = self.data_size()
+        outshape = [numbands, inshape[1:2]]
+        mr = MapReduce(inshape, outshape, readfunc, func, **kwargs)
+        mr.run(nchunks=nchunks)
+        return mr.assemble()
 
 
 class DataInventory(Inventory):
