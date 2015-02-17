@@ -25,6 +25,8 @@ v0.8.0
 - Refactor of core inventory and tiles for streamlined code reuse
 - Requirements (python libraries) can be specified for each data module
 - Interpolation option added to project function (neartest neighbor, bilinear, or cubic)
+- Setup now puts settings.py at /etc/gips/settings.py
+- Ability to loop through all features in a vector layer (using the --loop option)
 
 Landsat
 - Added wtemp product (Water temperature, atm corrected with MODTRAN using custom profiles from MERRA data)

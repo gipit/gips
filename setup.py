@@ -27,9 +27,31 @@ setup for GIPS
 
 import os
 from setuptools import setup
+from pkg_resources import Requirement, resource_filename
+import shutil
 import glob
-from gips.version import __version__
 import traceback
+import imp
+
+__version__ = imp.load_source('gips.version', 'gips/version.py').__version__
+
+
+# copies the GIPPY configuration file
+try:
+    pth = '/etc/gips'
+    configfile = os.path.join(pth, 'settings.py')
+    configtemplate = resource_filename(Requirement.parse("gips"), 'gips/settings.template.py')
+    if not os.path.exists(pth):
+        os.mkdir(pth)
+    if not os.path.exists(configfile):
+        shutil.copyfile(configtemplate, configfile)
+    # create link
+    if not os.path.exists('gips/settings.py'):
+        os.symlink(configfile, 'gips/settings.py')
+except OSError:
+    # perhaps due to not root permissions but this may be a virtualenv so forge on ahead
+    pass
+
 
 # collect console scripts
 console_scripts = []
@@ -49,6 +71,7 @@ setup(
     author='Matthew Hanson',
     author_email='matt.a.hanson@gmail.com',
     packages=['gips', 'gips.data', 'gips.scripts'],
+    package_data={'': ['settings*py']},
     install_requires=['Py6S>=1.5.0', 'shapely', 'gippy', 'python-dateutil', 'pydap'],
     entry_points={'console_scripts': console_scripts},
 )
