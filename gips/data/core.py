@@ -35,9 +35,9 @@ import ftplib
 import shutil
 
 import gippy
-from gips import settings, __version__
+from gips import __version__
 from gips.GeoVector import GeoVector
-from gips.utils import VerboseOut, RemoveFiles, File2List, List2File, Colors, basename, mkdir, parse_vectorname
+from gips.utils import settings, VerboseOut, RemoveFiles, File2List, List2File, Colors, basename, mkdir, parse_vectorname
 from gippy.algorithms import CookieCutter
 
 """
@@ -117,7 +117,7 @@ class Repository(object):
     @classmethod
     def repo(cls):
         """ Get dictionary of repository settings """
-        return settings.REPOS[cls.name]
+        return settings().REPOS[cls.name]
 
     @classmethod
     def rootpath(cls):
@@ -370,7 +370,7 @@ class Asset(object):
         ftpdir = url[len(ftpurl):]
         try:
             ftp = ftplib.FTP(ftpurl)
-            ftp.login('anonymous', settings.EMAIL)
+            ftp.login('anonymous', settings().EMAIL)
             pth = os.path.join(ftpdir, date.strftime('%Y'), date.strftime('%j'))
             ftp.set_pasv(True)
             ftp.cwd(pth)

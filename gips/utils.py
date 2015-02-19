@@ -29,7 +29,6 @@ import tempfile
 import commands
 import shutil
 import traceback
-from gips.settings import DATABASES
 
 
 class Colors():
@@ -114,6 +113,17 @@ def link(src, dst):
     return dst
 
 
+def settings():
+    """ Retrieve GIPS settings """
+    import imp
+    try:
+        import gips.settings
+        return gips.settings
+    except:
+        import imp
+        return imp.load_source('gips.settings', '/etc/gips/settings.py')
+
+
 import time
 from functools import wraps
 
@@ -135,9 +145,9 @@ def parse_vectorname(fname, path=''):
     shortname = basename(parts[0]).replace('_', '').replace(':', '-')
     if len(parts) == 1:
         return (shortname, os.path.join(path, fname), '', 0)
-    if parts[0] in DATABASES.keys():
+    if parts[0] in settings().DATABASES.keys():
         try:
-            db = DATABASES[parts[0]]
+            db = settings().DATABASES[parts[0]]
             filename = ("PG:dbname=%s host=%s port=%s user=%s password=%s" %
                         (db['NAME'], db['HOST'], db['PORT'], db['USER'], db['PASSWORD']))
             layer = parts[1]

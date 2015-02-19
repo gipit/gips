@@ -40,14 +40,12 @@ __version__ = imp.load_source('gips.version', 'gips/version.py').__version__
 try:
     pth = '/etc/gips'
     configfile = os.path.join(pth, 'settings.py')
-    configtemplate = resource_filename(Requirement.parse("gips"), 'gips/settings.template.py')
+    #configtemplate = resource_filename(Requirement.parse(""), 'gips/settings.template.py')
+    configtemplate = 'gips/settings.template.py'
     if not os.path.exists(pth):
         os.mkdir(pth)
     if not os.path.exists(configfile):
         shutil.copyfile(configtemplate, configfile)
-    # create link
-    if not os.path.exists('gips/settings.py'):
-        os.symlink(configfile, 'gips/settings.py')
 except OSError:
     # perhaps due to not root permissions but this may be a virtualenv so forge on ahead
     pass

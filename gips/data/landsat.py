@@ -34,8 +34,7 @@ import gippy
 from gippy.algorithms import ACCA, Fmask, LinearTransform, Indices
 from gips.data.core import Repository, Asset, Data
 from gips.atmosphere import SIXS, MODTRAN
-from gips.utils import VerboseOut, RemoveFiles, basename
-import gips.settings as settings
+from gips.utils import VerboseOut, RemoveFiles, basename, settings
 
 requirements = ['Py6S>=1.5.0']
 
@@ -476,7 +475,7 @@ class LandsatData(Data):
 
         # cleanup directory
         try:
-            if settings.REPOS[self.Repository.name]['extract']:
+            if settings().REPOS[self.Repository.name]['extract']:
                 for bname in self.assets[''].datafiles():
                     if bname[-7:] != 'MTL.txt':
                         files = glob.glob(os.path.join(self.path, bname) + '*')
@@ -595,7 +594,7 @@ class LandsatData(Data):
         # make sure metadata is loaded
         self.meta()
 
-        if settings.REPOS[self.Repository.name]['extract']:
+        if settings().REPOS[self.Repository.name]['extract']:
             # Extract all files
             datafiles = self.assets[''].extract(self.metadata['filenames'])
         else:
