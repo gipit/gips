@@ -23,7 +23,7 @@
 
 import os
 from gips import __version__ as gipsversion
-from gips.parsers import GIPSParser
+from gips.parsers import GIPSParser, parse_sites
 from gips.data.core import data_class
 from gips.utils import Colors, VerboseOut, mkdir, basename
 
@@ -41,12 +41,14 @@ def main():
     try:
         print title
         cls = data_class(args.command)
-        invs = cls.inventory(**vars(args))
 
         # create project directory SITENAME_LANDSAT
         suffix = '' if args.suffix is None else '_' + args.suffix
 
-        for inv in invs:
+        sites = parse_sites(args.site, args.loop)
+        for site in sites:
+            args.site = site
+            inv = cls.inventory(**vars(args))
             datadir = os.path.join(args.outdir, '%s_%s%s' % (inv.spatial.sitename, args.command, suffix))
             mkdir(datadir)
             for date in inv.dates:

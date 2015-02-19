@@ -22,7 +22,7 @@
 ################################################################################
 
 from gips import __version__ as gipsversion
-from gips.parsers import GIPSParser
+from gips.parsers import GIPSParser, parse_sites
 from gips.data.core import data_class
 from gips.utils import Colors, VerboseOut
 
@@ -39,9 +39,13 @@ def main():
     try:
         print title
         cls = data_class(args.command)
-        invs = cls.inventory(**vars(args))
-        for inv in invs:
+
+        sites = parse_sites(args.site, args.loop)
+        for site in sites:
+            args.site = site
+            inv = cls.inventory(**vars(args))
             inv.process(overwrite=args.overwrite)
+
     except Exception, e:
         import traceback
         VerboseOut(traceback.format_exc(), 4)

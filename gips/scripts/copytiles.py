@@ -23,7 +23,7 @@
 
 import os
 from gips import __version__ as gipsversion
-from gips.parsers import GIPSParser
+from gips.parsers import GIPSParser, parse_sites
 from gips.data.core import data_class
 from gips.utils import Colors, VerboseOut, mkdir
 
@@ -41,14 +41,16 @@ def main():
     try:
         print title
         cls = data_class(args.command)
-        invs = cls.inventory(**vars(args))
 
         # create top level directory: DATATYPE_tiles
         suffix = '' if args.suffix is None else '_' + args.suffix
         datadir = os.path.join(args.outdir, args.command + '_tiles' + suffix)
         mkdir(datadir)
 
-        for inv in invs:
+        sites = parse_sites(args.site, args.loop)
+        for site in sites:
+            args.site = site
+            inv = cls.inventory(**vars(args))
             # copy the tiles
             for date in inv.dates:
                 for tid in inv[date].tiles:
@@ -56,7 +58,6 @@ def main():
                     inv[date].tiles[tid].process(args.products, overwrite=False)
                     # copy the tiles
                     inv[date].tiles[tid].copy(datadir, args.products, overwrite=args.overwrite, tree=args.tree)
-
 
     except Exception, e:
         import traceback

@@ -26,7 +26,7 @@ import sys
 import argparse
 import traceback
 
-from gips.utils import settings
+from gips.utils import settings, parse_vectorname
 from gips.data.core import repository_class
 import gippy
 
@@ -170,3 +170,18 @@ def set_gippy_options(args):
         gippy.Options.SetChunkSize(args.chunksize)
     if 'numprocs' in args:
         gippy.Options.SetNumCores(args.numprocs)
+
+
+def parse_sites(site, loop=False):
+    """ Generate complete list of sites (features) """
+    sites = []
+    if loop and site is not None:
+        sitename, fname, layer, feature = parse_vectorname(vector)
+        vec = gippy.GeoVector(fname, layer)
+        numfeat = vec.NumFeatures()
+        vec = None
+        for f in range(0, numfeat):
+            sites.append(site + ':' + str(f))
+    else:
+        sites.append(site)
+    return sites

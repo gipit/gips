@@ -22,9 +22,9 @@
 ################################################################################
 
 from gips import __version__ as gipsversion
-from gips.parsers import GIPSParser
+from gips.parsers import GIPSParser, parse_sites
 from gips.data.core import data_class
-from gips.utils import Colors, VerboseOut, features_in_vector
+from gips.utils import Colors, VerboseOut
 
 
 def main():
@@ -41,16 +41,13 @@ def main():
     try:
         print title
         cls = data_class(args.command)
-        site = args.site
-        if args.loop and site is not None:
-            numfeat = features_in_vector(site)
-            for f in range(0, numfeat):
-                args.site = site+':'+str(f)
-                inv = cls.inventory(**vars(args))
-                inv.pprint(md=args.md, compact=args.compact)
-        else:
+
+        sites = parse_sites(args.site, args.loop)
+        for site in sites:
+            args.site = site
             inv = cls.inventory(**vars(args))
             inv.pprint(md=args.md, compact=args.compact)            
+           
     except Exception, e:
         import traceback
         VerboseOut(traceback.format_exc(), 4)

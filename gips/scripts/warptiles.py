@@ -23,7 +23,7 @@
 
 import os
 from gips import __version__ as gipsversion
-from gips.parsers import GIPSParser
+from gips.parsers import GIPSParser, parse_sites
 from gips.data.core import data_class
 from gips.utils import Colors, VerboseOut, mkdir
 
@@ -42,7 +42,6 @@ def main():
     try:
         print title
         cls = data_class(args.command)
-        invs = cls.inventory(**vars(args))
 
         # create output directory: DATATYPE_tiles_RESOLUTION
         suffix = '' if args.suffix is None else '_' + args.suffix
@@ -56,7 +55,10 @@ def main():
         datadir = os.path.join(args.outdir, '%s_%s%s' % (datadir, resstr, suffix))
         mkdir(datadir)
 
-        for inv in invs:
+        sites = parse_sites(args.site, args.loop)
+        for site in sites:
+            args.site = site
+            inv = cls.inventory(**vars(args))
             for date in inv.dates:
                 for tid in inv[date].tiles:
                     # make sure back-end tiles are processed
