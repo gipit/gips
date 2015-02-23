@@ -95,7 +95,7 @@ class GIPSParser(argparse.ArgumentParser):
             parser = self
         group = parser.add_argument_group('processing options')
         group.add_argument('--overwrite', help='Overwrite existing output file(s)', default=False, action='store_true')
-        group.add_argument('--chunksize', help='Chunk size in MB', default=512.0)
+        group.add_argument('--chunksize', help='Chunk size in MB', default=128.0, type=float)
         group.add_argument('--numprocs', help='Desired number of processors (if allowed)', default=2, type=int)
         group.add_argument('--format', help='Format for output file', default="GTiff")
         self.parent_parsers.append(parser)
@@ -176,7 +176,7 @@ def parse_sites(site, loop=False):
     """ Generate complete list of sites (features) """
     sites = []
     if loop and site is not None:
-        sitename, fname, layer, feature = parse_vectorname(vector)
+        sitename, fname, layer, feature = parse_vectorname(site)
         vec = gippy.GeoVector(fname, layer)
         numfeat = vec.NumFeatures()
         vec = None
