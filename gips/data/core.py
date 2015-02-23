@@ -537,7 +537,6 @@ class Data(object):
     def meta_dict(cls):
         return {
             'GIPS Version': __version__,
-            'GIPPY Version': gippy.__version__,
         }
 
     def find_files(self):
