@@ -234,6 +234,8 @@ class DataInventory(Inventory):
             VerboseOut(traceback.format_exc(), 4)
             raise Exception('Illformed parameters: %s' % e)
 
+        VerboseOut('Site %s' % self.spatial.sitename, 1)
+
         if fetch:
             try:
                 dates = self.temporal.datebounds
@@ -263,22 +265,22 @@ class DataInventory(Inventory):
         """ Process data in inventory """
         if len(self.products.standard) + len(self.products.composite) == 0:
             raise Exception('No products specified!')
-        sz = self.numfiles
+        #sz = self.numfiles
         if len(self.products.standard) > 0:
-            start = dt.now()
-            VerboseOut('Processing %s files: %s' % (sz, ' '.join(self.products.standard)), 1)
+            #start = dt.now()
+            #VerboseOut('   Requested [%s] for %s files' % (' '.join(self.products.standard), sz), 1)
             for date in self.dates:
                 try:
                     self.data[date].process(*args, **kwargs)
                 except:
                     VerboseOut(traceback.format_exc(), 3)
                     pass
-            VerboseOut('Completed processing in %s' % (dt.now() - start), 1)
+            #VerboseOut('Completed processing in %s' % (dt.now() - start), 1)
         if len(self.products.composite) > 0:
-            start = dt.now()
-            VerboseOut('Processing %s files into composites: %s' % (sz, ' '.join(self.products.composite)), 1)
+            #start = dt.now()
+            #VerboseOut('   Requested [%s] for %s files: %s' % (' '.join(self.products.composite), sz), 1)
             self.dataclass.process_composites(self, self.products.composite, **kwargs)
-            VerboseOut('Completed processing in %s' % (dt.now() - start), 1)
+            #VerboseOut('Completed processing in %s' % (dt.now() - start), 1)
 
     def project(self, outdir='', suffix='', res=None, **kwargs):
         """ Create project files for data in inventory """
