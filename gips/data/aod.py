@@ -219,9 +219,11 @@ class AODData(Data):
             var = numpy.nan
             if ~numpy.isnan(vals[1, 1]):
                 val = vals[1, 1]
-                var = variances[1, 1]
-            elif numpy.any(~numpy.isnan(vals)) and numpy.any(~numpy.isnan(variances)):
+            elif numpy.any(~numpy.isnan(vals)):
                 val = numpy.mean(vals[~numpy.isnan(vals)])
+            if ~numpy.isnan(variances[1,1]):
+                var = variances[1, 1]
+            elif numpy.any(~numpy.isnan(variances)):
                 var = numpy.mean(variances[~numpy.isnan(variances)])
             img = None
             return (val, var)
@@ -245,7 +247,8 @@ class AODData(Data):
             aod = vals[1, 1]
             img = None
             source = 'MODIS (MOD08_D3)'
-            if ~numpy.isnan(aod) and numpy.any(~numpy.isnan(vals)):
+             # if invalid center but valid vals exist in 3x3
+            if numpy.isnan(aod) and numpy.any(~numpy.isnan(vals)):
                 aod = numpy.mean(vals[~numpy.isnan(vals)])
                 source = 'MODIS (MOD08_D3) spatial average'
         except Exception:
@@ -269,7 +272,7 @@ class AODData(Data):
             filename = os.path.join(repo.cpath('ltad'), 'ltad%s.tif' % str(day).zfill(3))
             val, var = cls._read_point(filename, roi, nodata)
             var = var if var != 0.0 else val
-            if not numpy.isnan(val):
+            if not numpy.isnan(val) and not numpy.isnan(var):
                 aod = val / var
                 totalvar = var
                 norm = 1.0 / var
@@ -279,7 +282,7 @@ class AODData(Data):
             # LTA
             val, var = cls._read_point(os.path.join(repo.cpath(), 'lta.tif'), roi, nodata)
             var = var if var != 0.0 else val
-            if not numpy.isnan(val):
+            if not numpy.isnan(val) and not numpy.isnan(var):
                 aod = aod + val / var
                 totalvar = totalvar + var
                 norm = norm + 1.0 / var
