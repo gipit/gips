@@ -316,7 +316,7 @@ class DataInventory(Inventory):
         VerboseOut('Completed GIPS project in %s' % (dt.now() - start))
         if self.spatial.site is not None:
             inv = ProjectInventory(datadir)
-            if not kwargs['tree']:
+            if not tree:
                 inv.pprint()
             return inv
 
