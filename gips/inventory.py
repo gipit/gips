@@ -305,8 +305,8 @@ class DataInventory(Inventory):
         datadir = os.path.join(outdir, datadir)
 
         for d in self.dates:
-            self.data[d].mosaic(datadir=datadir, res=res, interpolation=kwargs['interpolation'],
-                                crop=kwargs['crop'], overwrite=kwargs['overwrite'], tree=kwargs['tree'])
+            self.data[d].mosaic(datadir=datadir, res=res, **kwargs)
+                                #interpolation=kwargs['interpolation'], crop=kwargs['crop'], overwrite=kwargs['overwrite'], tree=kwargs['tree'])
 
         VerboseOut('Completed GIPS project in %s' % (dt.now() - start))
         if self.spatial.site is not None:
