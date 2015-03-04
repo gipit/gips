@@ -45,7 +45,7 @@ def main():
         # create project directory SITENAME_LANDSAT
         suffix = '' if args.suffix is None else '_' + args.suffix
 
-        sites = parse_sites(args.site, args.loop)
+        sites = parse_sites(args.site, args.attr, args.loop)
         for site in sites:
             args.site = site
             inv = cls.inventory(**vars(args))

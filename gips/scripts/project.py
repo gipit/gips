@@ -42,7 +42,7 @@ def main():
         print title
         cls = data_class(args.command)
 
-        sites = parse_sites(args.site, args.loop)
+        sites = parse_sites(args.site, args.attr, args.loop)
         for site in sites:
             args.site = site
             inv = cls.inventory(**vars(args))

@@ -174,16 +174,28 @@ def set_gippy_options(args):
         gippy.Options.SetNumCores(args.numprocs)
 
 
-def parse_sites(site, loop=False):
+def parse_sites(site, attr=None, loop=False):
     """ Generate complete list of sites (features) """
     sites = []
     if loop and site is not None:
         sitename, fname, layer, feature = parse_vectorname(site)
         vec = gippy.GeoVector(fname, layer)
-        numfeat = vec.NumFeatures()
-        vec = None
-        for f in range(0, numfeat):
-            sites.append(site + ':' + str(f))
+        if attr is None:
+            numfeat = vec.NumFeatures()
+            vec = None
+            for f in range(0, numfeat):
+                sites.append(site + ':' + str(f))
+        else:
+            attrs = vec.Attributes()
+            # check that attribute exists
+            if attr not in attrs:
+                raise Exception("%s attribute not in %s" % (attr, sitename))
+            # check if unique
+            vals = vec.Values(attr)
+            if len(vals) != len(set(vals)):
+                raise Exception("%s attribute in %s is not unique" % (attr, sitename))
+            for v in vals:
+                sites.append(site + ':' + v)
     else:
         sites.append(site)
     return sites

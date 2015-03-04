@@ -47,7 +47,7 @@ def main():
         datadir = os.path.join(args.outdir, args.command + '_tiles' + suffix)
         mkdir(datadir)
 
-        sites = parse_sites(args.site, args.loop)
+        sites = parse_sites(args.site, args.attr, args.loop)
         for site in sites:
             args.site = site
             inv = cls.inventory(**vars(args))
