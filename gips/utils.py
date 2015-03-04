@@ -104,12 +104,15 @@ def mkdir(dname):
     return dname
 
 
-def link(src, dst):
+def link(src, dst, hard=False):
     """ Create link in this directory """
     if os.path.lexists(dst):
         os.remove(dst)
     # link path path relative to dst
-    os.symlink(os.path.relpath(src, os.path.dirname(dst)), os.path.abspath(dst))
+    if hard:
+        os.link(src, os.path.abspath(dst))
+    else:
+        os.symlink(os.path.relpath(src, os.path.dirname(dst)), os.path.abspath(dst))
     return dst
 
 
