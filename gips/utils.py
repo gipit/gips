@@ -163,7 +163,7 @@ def parse_vectorname(fname, path=''):
     else:
         feature = 0 if len(parts) < 2 else parts[1]
         shortname = '%s-%s' % (shortname, feature)
-        return (shortname, os.path.join(path, parts[0]), '', int(feature))
+        return (shortname, os.path.join(path, parts[0]), '', feature)
 
 
 from shapely.wkt import loads as wktloads

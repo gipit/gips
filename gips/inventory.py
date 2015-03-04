@@ -211,7 +211,7 @@ class ProjectInventory(Inventory):
 class DataInventory(Inventory):
     """ Manager class for data inventories (collection of Tiles class) """
 
-    def __init__(self, dataclass, site=None, tiles=None, dates=None, days=None,
+    def __init__(self, dataclass, site=None, attr=None, tiles=None, dates=None, days=None,
                  products=None, fetch=False, pcov=0.0, ptile=0.0, **kwargs):
         """ Create a new inventory
         :dataclass: The Data class to use (e.g., LandsatData, ModisData)
@@ -226,7 +226,7 @@ class DataInventory(Inventory):
         Repository = dataclass.Asset.Repository
 
         try:
-            self.spatial = SpatialExtent(dataclass, site, tiles, pcov, ptile)
+            self.spatial = SpatialExtent(dataclass, site, attr, tiles, pcov, ptile)
             self.temporal = TemporalExtent(dates, days)
             self.products = dataclass.RequestedProducts(products)
         except Exception, e:

@@ -81,7 +81,7 @@ class RequestedProducts(object):
 class SpatialExtent(object):
     """ Description of spatial extent """
 
-    def __init__(self, dataclass, site=None, tiles=None, pcov=0.0, ptile=0.0):
+    def __init__(self, dataclass, site=None, attr=None, tiles=None, pcov=0.0, ptile=0.0):
         """ Create spatial extent object """
         self.repo = dataclass.Asset.Repository
 
@@ -91,7 +91,15 @@ class SpatialExtent(object):
 
         if site is not None:
             self.sitename, fname, layer, feature = parse_vectorname(site)
-            self.site = gippy.GeoFeature(fname, layer, feature)
+            if attr is None:
+                self.site = gippy.GeoFeature(fname, layer, int(feature))
+            else:
+                # use attribute
+                vec = gippy.GeoVector(fname, layer)
+                vals = vec.Values(attr)
+                if len(vals) != len(set(vals)):
+                    raise Exception("%s attribute in %s is not unique" % (attr, sitename))
+                self.site = vec.where(attr, feature)[0]
             tiles = self.repo.vector2tiles(self.site, pcov, ptile, tiles)
         else:
             self.site = None
