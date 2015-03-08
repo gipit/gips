@@ -54,7 +54,7 @@ def main():
 
         for feature in features:
             inv = cls.inventory(feature=feature, **vars(args))
-        datadir = os.path.join(tld, feature.Value())
+            datadir = os.path.join(tld, feature.Value())
             if inv.numfiles > 0:
                 inv.mosaic(datadir=datadir, **vars(args))
 
