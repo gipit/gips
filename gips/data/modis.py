@@ -182,7 +182,8 @@ class ModisData(Data):
     _pattern = '*.tif'
     _productgroups = {
         "Nadir BRDF-Adjusted 16-day": ['indices', 'quality'],
-        "Terra/Aqua Daily": ['snow', 'temp', 'obstime'],
+        "Terra/Aqua Daily": ['temp', 'obstime'],
+        #"Terra/Aqua Daily": ['snow', 'temp', 'obstime'],
         "Terra 8-day": ['ndvi8', 'temp8'],
     }
     _products = {
