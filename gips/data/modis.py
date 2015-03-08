@@ -29,6 +29,7 @@ import math
 import numpy as np
 
 import gippy
+from gippy.algorithms import Indices
 from gips.data.core import Repository, Asset, Data
 from gips.utils import VerboseOut
 
@@ -615,7 +616,7 @@ class ModisData(Data):
                 refl.SetBandName("NIR", 2)
                 refl.SetNoData(-28762)
 
-                fouts = dict(gippy.Indices(refl, {'ndvi': fname}, meta))
+                fouts = dict(Indices(refl, {'ndvi': fname}, meta))
                 imgout = gippy.GeoImage(fouts['ndvi'])
 
             # TEMPERATURE PRODUCT (8-day) - Terra only
