@@ -129,6 +129,7 @@ def settings():
 
 
 def data_sources():
+    from gips.data.core import repository_class
     sources = {}
     repos = settings().REPOS
     found = False
@@ -141,7 +142,7 @@ def data_sources():
             except:
                 VerboseOut(traceback.format_exc(), 4)
     if not found:
-        print 'There are no available data sources!'
+        print "There are no available data sources!"
     return sources
 
 
