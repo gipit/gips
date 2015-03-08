@@ -37,7 +37,7 @@ import shutil
 import gippy
 from gips import __version__
 from gips.GeoVector import GeoVector
-from gips.utils import settings, VerboseOut, RemoveFiles, File2List, List2File, Colors, basename, mkdir, parse_vectorname
+from gips.utils import settings, VerboseOut, RemoveFiles, File2List, List2File, Colors, basename, mkdir 
 from gippy.algorithms import CookieCutter
 
 """
@@ -163,8 +163,7 @@ class Repository(object):
         """ Get GeoVector of sensor grid """
         # TODO = update to use gippy.GeoVector
         tv_name = cls.repo().get('tiles_vector', 'tiles.shp')
-        shortname, filename, layer, feature = parse_vectorname(tv_name, cls.vpath())
-        return GeoVector(filename, layer)
+        return open_vector(cls.repo().get('tiles_vector', 'tiles.shp'), path=cls.vpath())
 
     @classmethod
     def vector2tiles(cls, vector, pcov=0.0, ptile=0.0, tilelist=None):
