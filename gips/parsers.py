@@ -26,7 +26,7 @@ import sys
 import argparse
 import traceback
 
-from gips.utils import settings, parse_vectorname
+from gips.utils import settings 
 from gips.data.core import repository_class
 import gippy
 
@@ -72,9 +72,10 @@ class GIPSParser(argparse.ArgumentParser):
         else:
             parser = self
         group = parser.add_argument_group('inventory options')
-        group.add_argument('-s', '--site', help='Vector file for region of interest', default=None)
+        h = 'Vector layer (file or db) for region of interest'
+        group.add_argument('-s', '--site', help=h, default=None)
         h = 'Attribute to use as lookup in in vector file (defaults to index)'
-        group.add_argument('-a', '--attr', help=h, default=None)
+        group.add_argument('-k', '--key', help=h, default="index=0")
         group.add_argument('-t', '--tiles', nargs='*', help='Tile designations', default=None)
         group.add_argument('-d', '--dates', help='Range of dates (YYYY-MM-DD,YYYY-MM-DD)')
         group.add_argument('--days', help='Include data within these days of year (doy1,doy2)', default=None)
@@ -84,8 +85,6 @@ class GIPSParser(argparse.ArgumentParser):
         group.add_argument('--fetch', help='Fetch any missing data (if supported)', default=False, action='store_true')
         group.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2: debug', default=1, type=int)
         group.add_argument('-p', '--products', help='Requested Products', nargs='*')
-        h = 'Loop through geometries, getting inventory for each'
-        group.add_argument('--loop', help=h, default=False, action='store_true')
         self.parent_parsers.append(parser)
         return parser
 
@@ -172,30 +171,3 @@ def set_gippy_options(args):
         gippy.Options.SetChunkSize(args.chunksize)
     if 'numprocs' in args:
         gippy.Options.SetNumCores(args.numprocs)
-
-
-def parse_sites(site, attr=None, loop=False):
-    """ Generate complete list of sites (features) """
-    sites = []
-    if loop and site is not None:
-        sitename, fname, layer, feature = parse_vectorname(site)
-        vec = gippy.GeoVector(fname, layer)
-        if attr is None:
-            numfeat = vec.NumFeatures()
-            vec = None
-            for f in range(0, numfeat):
-                sites.append(site + ':' + str(f))
-        else:
-            attrs = vec.Attributes()
-            # check that attribute exists
-            if attr not in attrs:
-                raise Exception("%s attribute not in %s" % (attr, sitename))
-            # check if unique
-            vals = vec.Values(attr)
-            if len(vals) != len(set(vals)):
-                raise Exception("%s attribute in %s is not unique" % (attr, sitename))
-            for v in vals:
-                sites.append(site + ':' + v)
-    else:
-        sites.append(site)
-    return sites
