@@ -488,7 +488,8 @@ class Data(object):
 
     def process(self, products, overwrite=False, **kwargs):
         """ Make sure all products exist and return those that need processing """
-        products = self.RequestedProducts([p for p in products if p not in self.products or overwrite])
+        products = self.RequestedProducts(products)
+        products = self.RequestedProducts([p for p in products.products if p not in self.products or overwrite])
         if len(products) > 0:
             VerboseOut("Processing products for tile %s: %s" % (self.id, products), 2)
         return products
@@ -510,6 +511,9 @@ class Data(object):
         products = self.RequestedProducts(products)
         bname = '%s_%s' % (self.id, self.date.strftime('%Y%j'))
         for p in products.requested:
+            if p not in self.sensors:
+                # this product is not available for this day
+                continue
             sensor = self.sensors[p]
             fin = self.filenames[(sensor, p)]
             fout = os.path.join(dout, "%s_%s_%s.tif" % (bname, sensor, p))
