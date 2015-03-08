@@ -44,39 +44,37 @@ def main():
     try:
         print title
         inv = ProjectInventory(args.projdir, args.products)
+        
+        files = {}
+        for p in args.products:
+            files[p] = open(os.path.join(args.projdir, p + '_stats.txt'), 'w')
+            files[p].write(
+
+        header = ['min', 'max', 'mean', 'sd', 'skew', 'count']
 
         for date in inv.dates:
             VerboseOut('Calculating statistics for %s' % date)
             for p in inv.products(date):
-                # don't mask any masks
-                if p in available_masks:
-                    continue
-                meta = ''
-                update = True if args.original else False
-                img = inv[date].open(p, update=update)
-        for band in img:
-            stats = band.Statistics()
-
-                if args.filemask is not None:
-                    img.AddMask(mask_file[0])
-                    meta = basename(args.filemask) + ' '
-                for mask in available_masks:
-                    img.AddMask(inv[date].open(mask)[0])
-                    meta = meta + basename(inv[date][mask]) + ' '
-                if meta != '':
-                    if args.original:
-                        VerboseOut('  %s' % (img.Basename()), 2)
-                        img.Process()
-                        img.SetMeta('MASKS', meta)
+                img = inv[date].open(p)
+                if p not in files.keys():
+                    files[p] = open(os.path.join(args.projdir, + + '_stats.txt'), 'w')
+                    # write header
+                    files[p].write('date')
+                    if img.NumBands() == 1:
+                        files[p].write(' '.join(header))
                     else:
-                        fout = os.path.splitext(img.Filename())[0] + args.suffix + '.tif'
-                        if not os.path.exists(fout) or overwrite:
-                            VerboseOut('  %s -> %s' % (img.Basename(), basename(fout)), 2)
-                            imgout = img.Process(fout)
-                            imgout.SetMeta('MASKS', meta)
-                            imgout = None
+                        for band in img:
+                            files[p].write((band.Description() + ' ').join(header))
+                    files[p].write('\n')
+                # print date and stats
+                files[p].write(date.strftime('%Y-%j') 
+                for band in img:
+                    stats = band.Statistics()
+                    [files[p].write(str(s)) for s in stats]
+                    files[p].write('\n')
                 img = None
-        mask_file = None            
+        for f in files:
+            files[f].close()
 
     except Exception, e:
         import traceback
