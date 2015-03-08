@@ -21,10 +21,11 @@
 #   along with this program. If not, see <http://www.gnu.org/licenses/>
 ################################################################################
 
+import os
 from gips import __version__ as gipsversion
 from gips.parsers import GIPSParser
 from gips.data.core import data_class
-from gips.utils import Colors, VerboseOut, open_vector
+from gips.utils import Colors, VerboseOut, open_vector, create_tld
 
 
 def main():
@@ -32,7 +33,7 @@ def main():
 
     # argument parsing
     parser0 = GIPSParser(description=title)
-    parser0.add_inventory_parser()
+    parser0.add_inventory_parser(site_required=True)
     parser0.add_process_parser()
     parser0.add_project_parser()
     parser0.add_warp_parser()
@@ -42,10 +43,19 @@ def main():
         print title
         cls = data_class(args.command)
 
-        for feature in open_vector(args.site, args.key, args.where):
+	features = open_vector(args.site, args.key, args.where)
+
+	# create tld: SITENAME--KEY_DATATYPE_SUFFIX
+	bname = features[0].LayerName()
+	if args.res is not None:
+ 	    bname = bname + '_%sx%s' % (args.res[0], args.res[1])
+	tld = create_tld(args.outdir, bname, args.key, args.command, args.suffix)
+
+        for feature in features:
             inv = cls.inventory(feature=feature, **vars(args))
+	    datadir = os.path.join(tld, feature.Value())
             if inv.numfiles > 0:
-                inv.project(**vars(args))
+                inv.mosaic(datadir=datadir, **vars(args))
 
     except Exception, e:
         import traceback
