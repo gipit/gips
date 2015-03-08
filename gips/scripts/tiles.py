@@ -33,7 +33,7 @@ def main():
 
     # argument parsing
     parser0 = GIPSParser(description=title)
-    parser0.add_inventory_parser()
+    parser0.add_inventory_parser(site_required=True)
     parser0.add_process_parser()
     parser0.add_project_parser()
     parser0.add_warp_parser()

@@ -32,7 +32,7 @@ def main():
 
     # argument parsing
     parser0 = GIPSParser(description=title)
-    parser = parser0.add_inventory_parser()
+    parser = parser0.add_inventory_parser(site_required=True)
     group = parser.add_argument_group('inventory display')
     group.add_argument('--md', help='Show dates using MM-DD', action='store_true', default=False)
     group.add_argument('--compact', help='Print only dates (no coverage)', default=False, action='store_true')

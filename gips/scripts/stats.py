@@ -46,10 +46,6 @@ def main():
         inv = ProjectInventory(args.projdir, args.products)
         
         files = {}
-        for p in args.products:
-            files[p] = open(os.path.join(args.projdir, p + '_stats.txt'), 'w')
-            files[p].write(
-
         header = ['min', 'max', 'mean', 'sd', 'skew', 'count']
 
         for date in inv.dates:
@@ -57,9 +53,9 @@ def main():
             for p in inv.products(date):
                 img = inv[date].open(p)
                 if p not in files.keys():
-                    files[p] = open(os.path.join(args.projdir, + + '_stats.txt'), 'w')
+                    files[p] = open(os.path.join(args.projdir, p + '_stats.txt'), 'w')
                     # write header
-                    files[p].write('date')
+                    files[p].write('date ')
                     if img.NumBands() == 1:
                         files[p].write(' '.join(header))
                     else:
@@ -67,10 +63,10 @@ def main():
                             files[p].write((band.Description() + ' ').join(header))
                     files[p].write('\n')
                 # print date and stats
-                files[p].write(date.strftime('%Y-%j') 
+                files[p].write(date.strftime('%Y-%j'))
                 for band in img:
-                    stats = band.Statistics()
-                    [files[p].write(str(s)) for s in stats]
+                    stats = band.Stats()
+                    [files[p].write(' ' + str(s)) for s in stats]
                     files[p].write('\n')
                 img = None
         for f in files:
@@ -79,7 +75,7 @@ def main():
     except Exception, e:
         import traceback
         VerboseOut(traceback.format_exc(), 4)
-        print 'Masking error: %s' % e
+        print 'Error: %s' % e
 
 
 if __name__ == "__main__":
