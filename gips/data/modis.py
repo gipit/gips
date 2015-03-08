@@ -167,7 +167,7 @@ class ModisAsset(Asset):
                 except Exception:
                     raise Exception('Unable to retrieve %s from %s' % (name, url))
                 else:
-                    VerboseOut('Retrieved %s' % name, 2)
+                    #VerboseOut('Retrieved %s' % name, 2)
                     success = True
 
         if not success:
