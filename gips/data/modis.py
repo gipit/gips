@@ -196,10 +196,10 @@ class ModisData(Data):
             'assets': ['MCD43A2'],
         },
         # Daily
-        'snow': {
-            'description': 'Snow and ice cover data',
-            'assets': ['MOD10A1', 'MYD10A1'],
-        },
+        #'snow': {
+        #    'description': 'Snow and ice cover data',
+        #    'assets': ['MOD10A1', 'MYD10A1'],
+        #},
         'temp': {
             'description': 'Surface temperature data',
             'assets': ['MOD11A1', 'MYD11A1'],
