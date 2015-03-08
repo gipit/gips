@@ -141,29 +141,56 @@ def fn_timer(function):
         return result
     return function_timer
 
-
-def parse_vectorname(fname, path=''):
-    """ Parse name to determine if database or filename and return (shortname, filename, layer, feature) """
+def open_vector(fname, key="", where=None, path=''):
+    """ Open vector or feature """
     parts = fname.split(':')
-    shortname = basename(parts[0]).replace('_', '-').replace(':', '-')
     if len(parts) == 1:
-        return (shortname, os.path.join(path, fname), '', 0)
-    if parts[0] in settings().DATABASES.keys():
-        try:
-            db = settings().DATABASES[parts[0]]
-            filename = ("PG:dbname=%s host=%s port=%s user=%s password=%s" %
-                        (db['NAME'], db['HOST'], db['PORT'], db['USER'], db['PASSWORD']))
-            layer = parts[1]
-            feature = 0 if len(parts) < 3 else parts[2]
-            shortname = '%s-%s-%s' % (shortname, layer.replace('_', '-'), feature)
-            return (shortname, filename, layer, int(feature))
-        except Exception, e:
-            VerboseOut(traceback.format_exc(), 4)
-            VerboseOut('Error accessing database vector %s: %s' % (fname, e))
-    else:
-        feature = 0 if len(parts) < 2 else parts[1]
-        shortname = '%s-%s' % (shortname, feature)
-        return (shortname, os.path.join(path, parts[0]), '', feature)
+        vector = GeoVector(os.path.join(path, fname))
+        vector.SetPrimaryKey(key)
+    # or it is a database
+    if parts[0] not in settings().DATABASES.keys():
+        raise Exception("%s is not a valid database" % parts[0])
+    try:
+        db = settings().DATABASES[parts[0]]
+        filename = ("PG:dbname=%s host=%s port=%s user=%s password=%s" %
+                    (db['NAME'], db['HOST'], db['PORT'], db['USER'], db['PASSWORD']))
+        GeoVector vector(filename, parts[1])
+        vector.SetPrimaryKey(key)
+    except Exception, e:
+        VerboseOut(traceback.format_exc(), 4)
+    if where is not None:
+        # return array of features
+        features = []
+            for w in where:
+                parts = w.split('=') 
+                features.extend(vector.where(parts[0], parts[1]) 
+        return features
+    else:  
+        return vector
+
+def feature_factory(site, attr="index"):
+    """ Factory function for creating array of features """
+    features = []
+    if site is not None:
+        vector = open_vector(site)
+        parts = attr.split('=')
+        if parts[0] == "index":
+            # loop through by index
+            indices = range(0, vector.NumFeatures()) if len(parts) == 1 else [int(parts[1])]
+            for f in indices:
+                features.append(gippy.GeoFeature(vector, f))
+        else:
+            attrs = vector.Attributes()
+            # check that attribute exists
+            if parts[0] not in vector.Attributes():
+                raise Exception("%s attribute not in %s" % (attr, site))
+            if len(parts) == 2:
+                features.append(vector.where(parts[0], parts[1])[0])
+            else:
+                features.append
+
+            vals = vector.Values(parts[0])
+            vals =     if len(parts) == 1 else [parts[1]]
 
 
 from shapely.wkt import loads as wktloads
