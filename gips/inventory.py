@@ -286,7 +286,7 @@ class DataInventory(Inventory):
 
     def mosaic(self, res=None, datadir='./', tree=False, overwrite=False, crop=False, interpolation=0, **kwargs):
         """ Create project files for data in inventory """
-    self.process(overwrite=False)
+        self.process(overwrite=False)
         start = dt.now()
         VerboseOut('GIPS project %s' % datadir)
         VerboseOut('  Dates: %s' % self.datestr)
