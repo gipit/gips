@@ -53,40 +53,42 @@ def main():
 
     try:
         print title
-        if args.filemask is not None:
-            mask_file = gippy.GeoImage(args.filemask)
+        for projdir in args.projdir:
 
-        inv = ProjectInventory(args.projdir, args.products)
-        for date in inv.dates:
-            VerboseOut('Masking files from %s' % date)
-            available_masks = inv[date].masks(args.pmask)
-            for p in inv.products(date):
-                # don't mask any masks
-                if p in available_masks:
-                    continue
-                meta = ''
-                update = True if args.original else False
-                img = inv[date].open(p, update=update)
-                if args.filemask is not None:
-                    img.AddMask(mask_file[0])
-                    meta = basename(args.filemask) + ' '
-                for mask in available_masks:
-                    img.AddMask(inv[date].open(mask)[0])
-                    meta = meta + basename(inv[date][mask]) + ' '
-                if meta != '':
-                    if args.original:
-                        VerboseOut('  %s' % (img.Basename()), 2)
-                        img.Process()
-                        img.SetMeta('MASKS', meta)
-                    else:
-                        fout = os.path.splitext(img.Filename())[0] + args.suffix + '.tif'
-                        if not os.path.exists(fout) or overwrite:
-                            VerboseOut('  %s -> %s' % (img.Basename(), basename(fout)), 2)
-                            imgout = img.Process(fout)
-                            imgout.SetMeta('MASKS', meta)
-                            imgout = None
-                img = None
-        mask_file = None            
+            if args.filemask is not None:
+                mask_file = gippy.GeoImage(args.filemask)
+
+            inv = ProjectInventory(projdir, args.products)
+            for date in inv.dates:
+                VerboseOut('Masking files from %s' % date)
+                available_masks = inv[date].masks(args.pmask)
+                for p in inv.products(date):
+                    # don't mask any masks
+                    if p in available_masks:
+                        continue
+                    meta = ''
+                    update = True if args.original else False
+                    img = inv[date].open(p, update=update)
+                    if args.filemask is not None:
+                        img.AddMask(mask_file[0])
+                        meta = basename(args.filemask) + ' '
+                    for mask in available_masks:
+                        img.AddMask(inv[date].open(mask)[0])
+                        meta = meta + basename(inv[date][mask]) + ' '
+                    if meta != '':
+                        if args.original:
+                            VerboseOut('  %s' % (img.Basename()), 2)
+                            img.Process()
+                            img.SetMeta('MASKS', meta)
+                        else:
+                            fout = os.path.splitext(img.Filename())[0] + args.suffix + '.tif'
+                            if not os.path.exists(fout) or overwrite:
+                                VerboseOut('  %s -> %s' % (img.Basename(), basename(fout)), 2)
+                                imgout = img.Process(fout)
+                                imgout.SetMeta('MASKS', meta)
+                                imgout = None
+                    img = None
+            mask_file = None            
 
     except Exception, e:
         import traceback

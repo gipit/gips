@@ -43,34 +43,35 @@ def main():
 
     try:
         print title
-        inv = ProjectInventory(args.projdir, args.products)
-        
-        files = {}
         header = ['min', 'max', 'mean', 'sd', 'skew', 'count']
 
-        for date in inv.dates:
-            VerboseOut('Calculating statistics for %s' % date)
-            for p in inv.products(date):
-                img = inv[date].open(p)
-                if p not in files.keys():
-                    files[p] = open(os.path.join(args.projdir, p + '_stats.txt'), 'w')
-                    # write header
-                    files[p].write('date ')
-                    if img.NumBands() == 1:
-                        files[p].write(' '.join(header))
-                    else:
-                        for band in img:
-                            files[p].write((band.Description() + ' ').join(header))
-                    files[p].write('\n')
-                # print date and stats
-                files[p].write(date.strftime('%Y-%j'))
-                for band in img:
-                    stats = band.Stats()
-                    [files[p].write(' ' + str(s)) for s in stats]
-                    files[p].write('\n')
-                img = None
-        for f in files:
-            files[f].close()
+        for projdir in args.projdir:
+            inv = ProjectInventory(projdir, args.products)
+        
+            files = {}
+            for date in inv.dates:
+                VerboseOut('Calculating statistics for %s' % date)
+                for p in inv.products(date):
+                    img = inv[date].open(p)
+                    if p not in files.keys():
+                        files[p] = open(os.path.join(projdir, p + '_stats.txt'), 'w')
+                        # write header
+                        files[p].write('date ')
+                        if img.NumBands() == 1:
+                            files[p].write(' '.join(header))
+                        else:
+                            for band in img:
+                                files[p].write((band.Description() + ' ').join(header))
+                        files[p].write('\n')
+                    # print date and stats
+                    files[p].write(date.strftime('%Y-%j'))
+                    for band in img:
+                        stats = band.Stats()
+                        [files[p].write(' ' + str(s)) for s in stats]
+                        files[p].write('\n')
+                    img = None
+            for f in files:
+                files[f].close()
 
     except Exception, e:
         import traceback

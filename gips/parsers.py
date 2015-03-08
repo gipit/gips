@@ -113,6 +113,8 @@ class GIPSParser(argparse.ArgumentParser):
         h = 'Directory to store project(s) (default to current directory)'
         group.add_argument('--outdir', help=h, default='')
         group.add_argument('--suffix', help='Suffix to add to auto generated output directory', default='')
+        h = 'Do not create a top-level directory to hold project directories'
+        group.add_argument('--notld', help=h, default=False, action='store_true')
         h = 'Create project directories in tree form'
         group.add_argument('--tree', help=h, default=False, action='store_true')
         self.parent_parsers.append(parser)
@@ -140,7 +142,7 @@ class GIPSParser(argparse.ArgumentParser):
         else:
             parser = self
         group = parser.add_argument_group('input project options')
-        group.add_argument('projdir', help='GIPS Project directory')
+        group.add_argument('projdir', help='GIPS Project directory', nargs='*')
         group.add_argument('-p', '--products', help='Products to operate on', nargs='*')
         self.parent_parsers.append(parser)
         return parser
