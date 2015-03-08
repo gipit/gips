@@ -157,8 +157,8 @@ class Repository(object):
     def vector(cls):
         """ Get GeoVector of sensor grid """
         # TODO = update to use gippy.GeoVector
-	# check location from settings
-	vpath = os.path.join('/etc/gips', cls.name)
+    # check location from settings
+    vpath = os.path.join('/etc/gips', cls.name)
         vector = open_vector(cls.repo().get('vector', 'tiles.shp'), path=vpath)
         return GeoVector(vector.Filename(), vector.LayerName())
 

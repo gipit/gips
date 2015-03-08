@@ -43,14 +43,14 @@ def main():
         print title
         cls = data_class(args.command)
 
-	features = open_vector(args.site, args.key, args.where)
+    features = open_vector(args.site, args.key, args.where)
 
         # create tld: DATATYPE_tiles_RESOLUTION_SUFFIX
-	tld = os.path.join(args.outdir, '%s_tiles' % args.command)
-	if args.res is not None:
-	    tld = tld + '_%sx%s' % (args.res[0], args.res[1])
-	if args.suffix != '':
-	    tld = tld + '_' + args.suffix
+    tld = os.path.join(args.outdir, '%s_tiles' % args.command)
+    if args.res is not None:
+        tld = tld + '_%sx%s' % (args.res[0], args.res[1])
+    if args.suffix != '':
+        tld = tld + '_' + args.suffix
         mkdir(tld)
 
         for feature in open_vector(args.site, args.key, args.where):
