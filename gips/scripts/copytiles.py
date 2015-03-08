@@ -47,7 +47,7 @@ def main():
         datadir = os.path.join(args.outdir, args.command + '_tiles' + suffix)
         mkdir(datadir)
 
-        for feature in open_vector(args.site, args.key, args.where)
+        for feature in open_vector(args.site, args.key, args.where):
             inv = cls.inventory(feature=feature, **vars(args))
             # copy the tiles
             for date in inv.dates:
