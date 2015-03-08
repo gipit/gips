@@ -61,14 +61,16 @@ def main():
                             files[p].write(' '.join(header))
                         else:
                             for band in img:
-                                files[p].write((band.Description() + ' ').join(header))
+                                h = [band.Description() + "-" + a for a in header]
+                                files[p].write(' '.join(h) + ' ')
                         files[p].write('\n')
                     # print date and stats
                     files[p].write(date.strftime('%Y-%j'))
                     for band in img:
                         stats = band.Stats()
                         [files[p].write(' ' + str(s)) for s in stats]
-                        files[p].write('\n')
+                        files[p].write(' ')
+                    files[p].write('\n')
                     img = None
             for f in files:
                 files[f].close()
