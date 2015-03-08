@@ -140,11 +140,6 @@ class Repository(object):
         return cls._path(cls._sdir)
 
     @classmethod
-    def vpath(cls):
-        """ vectors path """
-        return os.path.join('/etc/gips', cls.name) #cls._path(cls._vdir)
-
-    @classmethod
     def _path(cls, dirname, dirs=''):
         """ Get absolute path name to directory, creating if necessary """
         if dirs == '':
@@ -163,7 +158,8 @@ class Repository(object):
         """ Get GeoVector of sensor grid """
         # TODO = update to use gippy.GeoVector
 	# check location from settings
-        vector = open_vector(cls.repo().get('vector', 'tiles.shp'), path=cls.vpath())
+	vpath = os.path.join('/etc/gips', cls.name)
+        vector = open_vector(cls.repo().get('vector', 'tiles.shp'), path=vpath)
         return GeoVector(vector.Filename(), vector.LayerName())
 
     @classmethod
