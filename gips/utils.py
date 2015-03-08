@@ -128,6 +128,23 @@ def settings():
         return imp.load_source('gips.settings', '/etc/gips/settings.py')
 
 
+def data_sources():
+    sources = {}
+    repos = settings().REPOS
+    found = False
+    for key in sorted(repos.keys()):
+        if os.path.isdir(repos[key]['rootpath']):
+            try:
+                repo = repository_class(key)
+                sources[key] = repo.description
+                found = True
+            except:
+                VerboseOut(traceback.format_exc(), 4)
+    if not found:
+        print 'There are no available data sources!'
+    return sources
+
+
 import time
 from functools import wraps
 

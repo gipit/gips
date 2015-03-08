@@ -26,7 +26,7 @@ import sys
 import argparse
 import traceback
 
-from gips.utils import settings 
+from gips.utils import settings, data_sources
 from gips.data.core import repository_class
 import gippy
 
@@ -148,18 +148,8 @@ class GIPSParser(argparse.ArgumentParser):
     def add_data_sources(self):
         """ Adds data sources to parser """
         subparser = self.add_subparsers(dest='command')
-        found = False
-        REPOS = settings().REPOS
-        for key in sorted(REPOS.keys()):
-            if os.path.isdir(REPOS[key]['rootpath']):
-                try:
-                    repo = repository_class(key)
-                    subparser.add_parser(key, help=repo.description, parents=self.parent_parsers)
-                    found = True
-                except:
-                    VerboseOut(traceback.format_exc(), 4)
-        if not found:
-            print 'There are no available data sources!'
+        for src, desc in data_sources().items():
+            subparser.add_parser(src, help=desc, parents=self.parent_parsers)
 
 
 def set_gippy_options(args):
