@@ -56,7 +56,10 @@ except OSError:
 
 # copy the tile vectors
 try:
-    [shutil.copytree(d, '/etc/gips/%s' % os.path.basename(d)) for d in glob.glob('data/*') if os.path.isdir(d)]
+    for d in glob.glob('data/*'):
+        target = '/etc/gips/%s' % os.path.basename(d)
+        if os.path.isdir(d) and not os.path.exists(target):
+            shutil.copytree(d, target)
 except:
     # perhaps due to not root permissions but this may be a virtualenv so forge on ahead
     pass
