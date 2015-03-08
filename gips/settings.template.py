@@ -36,13 +36,15 @@ EMAIL = ''
 
 REPOS = {
     'AOD': {
-        'rootpath': '',
+        'rootpath': '/data/aod',
     },
     'CDL': {
-        'rootpath': '',
+        'rootpath': '/data/cdl',
+	    'tile_attribute': '',
     },
     'Landsat': {
-        'rootpath': '',
+        'rootpath': '/data/landsat',
+	'tile_attribute': 'pr',
         # Atmospheric correction
         '6S': False,
         'MODTRAN': False,
@@ -50,7 +52,7 @@ REPOS = {
         'extract': False,
     },
     'Modis': {
-        'rootpath': '',
+        'rootpath': '/data/modis',
     },
     'SAR': {
         'rootpath': '',
@@ -59,7 +61,8 @@ REPOS = {
         'rootpath': '',
     },
     'Merra': {
-        'rootpath': '',
+        'rootpath': '/data/merra',
+	    'tile_attribute': 'tileid',
     },
     'Daymet': {
         'rootpath': '',
