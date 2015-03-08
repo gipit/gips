@@ -284,32 +284,13 @@ class DataInventory(Inventory):
             self.dataclass.process_composites(self, self.products.composite, **kwargs)
             #VerboseOut('Completed processing in %s' % (dt.now() - start), 1)
 
-    def project(self, outdir='', suffix='', res=None, **kwargs):
+    def mosaic(self, res=None, datadir='./', tree=False, overwrite=False, crop=False, interpolation=0, **kwargs):
         """ Create project files for data in inventory """
-        self.process(overwrite=False)
+	self.process(overwrite=False)
         start = dt.now()
-        VerboseOut('Creating GIPS project %s' % outdir)
+        VerboseOut('GIPS project %s' % datadir)
         VerboseOut('  Dates: %s' % self.datestr)
         VerboseOut('  Products: %s' % ' '.join(self.products.standard))
-
-        if outdir != '':
-            mkdir(outdir)
-
-        if res is None:
-            res = self.dataclass.Asset._defaultresolution
-
-        suffix = '' if suffix is None else '_' + suffix
-        if res[0] == res[1]:
-            resstr = str(res[0])
-        else:
-            resstr = '%sx%s' % (res[0], res[1])
-        datadir = '%s_%s_%s%s' % (self.spatial.sitename, resstr, self.dataclass.name, suffix)
-        datadir = os.path.join(outdir, datadir)
-
-        tree = kwargs.get('tree', False)
-        overwrite = kwargs.get('overwrite', False)
-        crop = kwargs.get('crop', False)
-        interpolation = kwargs.get('interpolation', 0)
 
         for d in self.dates:
             self.data[d].mosaic(datadir=datadir, res=res, interpolation=interpolation, 
