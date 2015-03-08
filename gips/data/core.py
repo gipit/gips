@@ -142,7 +142,7 @@ class Repository(object):
     @classmethod
     def vpath(cls):
         """ vectors path """
-        return cls._path(cls._vdir)
+        return os.path.join('/etc/gips', cls.name) #cls._path(cls._vdir)
 
     @classmethod
     def _path(cls, dirname, dirs=''):
@@ -159,10 +159,11 @@ class Repository(object):
         return path
 
     @classmethod
-    def tiles_vector(cls):
+    def vector(cls):
         """ Get GeoVector of sensor grid """
         # TODO = update to use gippy.GeoVector
-        vector = open_vector(cls.repo().get('tiles_vector', 'tiles.shp'), path=cls.vpath())
+	# check location from settings
+        vector = open_vector(cls.repo().get('vector', 'tiles.shp'), path=cls.vpath())
         return GeoVector(vector.Filename(), vector.LayerName())
 
     @classmethod
@@ -171,7 +172,7 @@ class Repository(object):
         import osr
         # set spatial filter on tiles vector to speedup
         ogrgeom = ogr.CreateGeometryFromWkt(vector.WKT())
-        tvector = cls.tiles_vector()
+        tvector = cls.vector()
         tlayer = tvector.layer
         vsrs = osr.SpatialReference(vector.Projection())
         trans = osr.CoordinateTransformation(vsrs, tlayer.GetSpatialRef())

@@ -58,8 +58,8 @@ class DaymetRepository(Repository):
 
     # @classmethod
     # def tile_bounds(cls, tile):
-    #     """ Get the bounds of the tile (in same units as tiles_vector) """
-    #     tilesvector = cls.tiles_vector()
+    #     """ Get the bounds of the tile (in same units as tiles vector) """
+    #     tilesvector = cls.vector()
     #     for fid in tilesvector.get_fids():
     #         feature = tilesvector.get_feature(fid)
     #         if feature['Name'] == tile:
