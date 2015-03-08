@@ -65,7 +65,7 @@ class GIPSParser(argparse.ArgumentParser):
         self.parent_parsers.append(parser)
         return parser
 
-    def add_inventory_parser(self):
+    def add_inventory_parser(self, site_required=False):
         """ This adds a parser with inventory options """
         if self.datasources:
             parser = GIPSParser(add_help=False)
@@ -73,7 +73,7 @@ class GIPSParser(argparse.ArgumentParser):
             parser = self
         group = parser.add_argument_group('inventory options')
         h = 'Vector layer (file or db) for region of interest'
-        group.add_argument('-s', '--site', help=h, default=None)
+        group.add_argument('-s', '--site', help=h, default=None, required=site_required)
         h = 'Attribute to use as lookup in in vector file (defaults to index)'
         group.add_argument('-k', '--key', help=h, default="")
         group.add_argument('-w', '--where', help="attribute=value pairs to limit features", nargs='*')
@@ -112,7 +112,7 @@ class GIPSParser(argparse.ArgumentParser):
         group = parser.add_argument_group('project directory options')
         h = 'Directory to store project(s) (default to current directory)'
         group.add_argument('--outdir', help=h, default='')
-        group.add_argument('--suffix', help='Suffix to add to auto generated output directory', default=None)
+        group.add_argument('--suffix', help='Suffix to add to auto generated output directory', default='')
         h = 'Create project directories in tree form'
         group.add_argument('--tree', help=h, default=False, action='store_true')
         self.parent_parsers.append(parser)
@@ -125,9 +125,9 @@ class GIPSParser(argparse.ArgumentParser):
         else:
             parser = self
         group = parser.add_argument_group('warp options')
-        h = 'Resolution of (warped) output rasters'
-        group.add_argument('--res', nargs=2, help=h, default=None, type=float, required=True)
-        h = 'Interpolate using: 0-NN, 1-Bilinear, 2-Cubic'
+        h = 'Putput resolution in site projected coordinates (no warping done if not provided)'
+        group.add_argument('--res', nargs=2, help=h, default=None, type=float)
+        h = 'If warping interpolate using: 0-NN, 1-Bilinear, 2-Cubic'
         group.add_argument('--interpolation', help=h, choices=[0, 1, 2], default=0, type=int)
         group.add_argument('--crop', help='Crop down to minimum bounding box', default=False, action='store_true')
         self.parent_parsers.append(parser)
