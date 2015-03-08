@@ -44,8 +44,8 @@ REPOS = {
     'Landsat': {
         'rootpath': '',
         # Atmospheric correction
-        '6S': True,
-        'MODTRAN': True,
+        '6S': False,
+        'MODTRAN': False,
         # Extract the files from tar.gz before processing (opposed to accessing directly)
         'extract': False,
     },
