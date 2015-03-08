@@ -25,7 +25,7 @@ import os
 from gips import __version__ as gipsversion
 from gips.parsers import GIPSParser
 from gips.data.core import data_class
-from gips.utils import Colors, VerboseOut, open_vector, create_tld
+from gips.utils import Colors, VerboseOut, open_vector
 
 
 def main():
@@ -46,10 +46,11 @@ def main():
 	features = open_vector(args.site, args.key, args.where)
 
 	# create tld: SITENAME--KEY_DATATYPE_SUFFIX
-	bname = features[0].LayerName()
-	if args.res is not None:
- 	    bname = bname + '_%sx%s' % (args.res[0], args.res[1])
-	tld = create_tld(args.outdir, bname, args.key, args.command, args.suffix)
+	key = '' if args.key == '' else '--' + args.key
+	suffix = '' if args.suffix == '' else '_' + suffix
+	res = '' if res is None else '_%sx%s' % (args.res[0], args.res[1])
+	bname = feature[0].LayerName() + key + res + '_' + args.command + suffix
+	tld = os.path.join(args.outdir, bname)
 
         for feature in features:
             inv = cls.inventory(feature=feature, **vars(args))
