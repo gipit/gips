@@ -51,6 +51,17 @@ def main():
         VerboseOut(traceback.format_exc(), 4)
         print 'Data inventory error: %s' % e
 
+"""
+def test():
+    from gips.utils import data_sources
+    import sys
+    args = ['', '-s /etc/gips/test/NH.shp', '-v 3']
+    for a in args:
+        sys.argv.append(a)
+    for src in data_sources():
+        sys.argv[1] = src
+        main()
+"""
 
 if __name__ == "__main__":
     main()
