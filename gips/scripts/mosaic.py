@@ -23,7 +23,7 @@
 
 import os
 from gips import __version__ as gipsversion
-from gips.parsers import GIPSParser, parse_sites
+from gips.parsers import GIPSParser
 from gips.data.core import data_class
 from gips.utils import Colors, VerboseOut, mkdir, basename, open_vector
 
@@ -46,7 +46,7 @@ def main():
         suffix = '' if args.suffix is None else '_' + args.suffix
 
         for feature in open_vector(args.site, args.key, args.where):
-            inv = cls.inventory(feature, **vars(args))
+            inv = cls.inventory(feature=feature, **vars(args))
             datadir = os.path.join(args.outdir, '%s_%s%s' % (inv.spatial.sitename, args.command, suffix))
             mkdir(datadir)
             for date in inv.dates:

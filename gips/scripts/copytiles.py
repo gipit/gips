@@ -23,7 +23,7 @@
 
 import os
 from gips import __version__ as gipsversion
-from gips.parsers import GIPSParser, parse_sites
+from gips.parsers import GIPSParser
 from gips.data.core import data_class
 from gips.utils import Colors, VerboseOut, mkdir, open_vector
 
@@ -48,7 +48,7 @@ def main():
         mkdir(datadir)
 
         for feature in open_vector(args.site, args.key, args.where)
-            inv = cls.inventory(feature, **vars(args))
+            inv = cls.inventory(feature=feature, **vars(args))
             # copy the tiles
             for date in inv.dates:
                 for tid in inv[date].tiles:
