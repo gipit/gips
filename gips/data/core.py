@@ -162,8 +162,8 @@ class Repository(object):
     def tiles_vector(cls):
         """ Get GeoVector of sensor grid """
         # TODO = update to use gippy.GeoVector
-        tv_name = cls.repo().get('tiles_vector', 'tiles.shp')
-        return open_vector(cls.repo().get('tiles_vector', 'tiles.shp'), path=cls.vpath())
+        vector = open_vector(cls.repo().get('tiles_vector', 'tiles.shp'), path=cls.vpath())
+        return GeoVector(vector.Filename(), vector.LayerName())
 
     @classmethod
     def vector2tiles(cls, vector, pcov=0.0, ptile=0.0, tilelist=None):
