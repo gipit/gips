@@ -76,6 +76,7 @@ class GIPSParser(argparse.ArgumentParser):
         group.add_argument('-s', '--site', help=h, default=None)
         h = 'Attribute to use as lookup in in vector file (defaults to index)'
         group.add_argument('-k', '--key', help=h, default="index=0")
+        group.add_argument('-w', '--where', help="attribute=value pairs to limit features", nargs='*')
         group.add_argument('-t', '--tiles', nargs='*', help='Tile designations', default=None)
         group.add_argument('-d', '--dates', help='Range of dates (YYYY-MM-DD,YYYY-MM-DD)')
         group.add_argument('--days', help='Include data within these days of year (doy1,doy2)', default=None)
