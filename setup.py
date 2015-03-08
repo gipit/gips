@@ -27,7 +27,6 @@ setup for GIPS
 
 import os
 from setuptools import setup
-from pkg_resources import Requirement, resource_filename
 import shutil
 import glob
 import traceback
@@ -57,7 +56,7 @@ except OSError:
 
 # copy the tile vectors
 try:
-    shutil.copytree('data', '/etc/gips', symlinks=True)
+    [shutil.copytree(d, '/etc/gips/%s' % os.path.basename(d)) for d in glob.glob('data/*') if os.path.isdir(d)]
 except:
     # perhaps due to not root permissions but this may be a virtualenv so forge on ahead
     pass
