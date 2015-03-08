@@ -157,8 +157,8 @@ class Repository(object):
     def vector(cls):
         """ Get GeoVector of sensor grid """
         # TODO = update to use gippy.GeoVector
-    # check location from settings
-    vpath = os.path.join('/etc/gips', cls.name)
+        # check location from settings
+        vpath = os.path.join('/etc/gips', cls.name)
         vector = open_vector(cls.repo().get('vector', 'tiles.shp'), path=vpath)
         return GeoVector(vector.Filename(), vector.LayerName())
 
@@ -501,7 +501,8 @@ class Data(object):
     def copy(self, dout, products, site=None, res=None, interpolation=0, crop=False, overwrite=False, tree=False):
         """ Copy products to new directory, warp to projection if given site """
         # TODO - allow hard and soft linking options
-        # create directory TILEID
+        if res is None:
+            res = self.Asset._defaultresolution
         dout = os.path.join(dout, self.id)
         if tree:
             dout = os.path.join(dout, self.date.strftime('%Y%j'))
