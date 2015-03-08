@@ -28,7 +28,7 @@ from gips.utils import Colors, VerboseOut
 
 
 def main():
-    title = Colors.BOLD + 'GIPS v%s Data Repositories' % (gipsversion) + Colors.OFF
+    title = Colors.BOLD + 'GIPS Data Repositories (v%s)' % (gipsversion) + Colors.OFF
 
     # argument parsing
     parser = GIPSParser(description=title)

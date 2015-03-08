@@ -31,7 +31,7 @@ from gips.utils import Colors, VerboseOut, basename
 __version__ = '0.1.0'
 
 def main():
-    title = Colors.BOLD + 'GIPS Project Masking Utility v%s' % __version__ + Colors.OFF
+    title = Colors.BOLD + 'GIPS Project Masking Utility (v%s)' % __version__ + Colors.OFF
 
     parser0 = GIPSParser(datasources=False, description=title)
     parser0.add_default_parser()

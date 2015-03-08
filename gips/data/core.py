@@ -797,6 +797,8 @@ class Data(object):
         for p in cls._products:
             if p not in grouped_products:
                 groups['Standard'].append(p)
+        if len(groups['Standard']) == 0:
+            del groups['Standard']
         return groups
 
     @classmethod

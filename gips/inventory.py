@@ -236,7 +236,7 @@ class DataInventory(Inventory):
             VerboseOut(traceback.format_exc(), 4)
             raise Exception('Illformed parameters: %s' % e)
 
-        VerboseOut('Site %s' % self.spatial.sitename, 1)
+        VerboseOut('Retrieving inventory for site %s' % self.spatial.sitename, 2)
 
         if fetch:
             try:
