@@ -29,7 +29,7 @@ from gips.utils import Colors, VerboseOut, mkdir, open_vector
 
 
 def main():
-    title = Colors.BOLD + 'GIPS Warp Tiles Utility (v%s)' % gipsversion + Colors.OFF
+    title = Colors.BOLD + 'GIPS Tiles (v%s)' % gipsversion + Colors.OFF
 
     # argument parsing
     parser0 = GIPSParser(description=title)

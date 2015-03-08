@@ -29,7 +29,7 @@ from gips.utils import Colors, VerboseOut, open_vector
 
 
 def main():
-    title = Colors.BOLD + 'GIPS Data Project Utility (v%s)' % gipsversion + Colors.OFF
+    title = Colors.BOLD + 'GIPS Data Project (v%s)' % gipsversion + Colors.OFF
 
     # argument parsing
     parser0 = GIPSParser(description=title)
