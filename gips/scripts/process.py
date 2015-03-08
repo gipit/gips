@@ -24,7 +24,7 @@
 from gips import __version__ as gipsversion
 from gips.parsers import GIPSParser, parse_sites
 from gips.data.core import data_class
-from gips.utils import Colors, VerboseOut
+from gips.utils import Colors, VerboseOut, open_vector
 
 
 def main():
@@ -40,10 +40,8 @@ def main():
         print title
         cls = data_class(args.command)
 
-        sites = parse_sites(args.site, args.attr, args.loop)
-        for site in sites:
-            args.site = site
-            inv = cls.inventory(**vars(args))
+        for feature in open_vector(args.site, args.key, args.where):
+            inv = cls.inventory(feature, **vars(args))
             inv.process(overwrite=args.overwrite)
 
     except Exception, e:
