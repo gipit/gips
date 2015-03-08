@@ -24,6 +24,7 @@
 import os
 import errno
 import gippy
+from gippy import GeoVector
 from datetime import datetime
 import tempfile
 import commands
@@ -154,44 +155,19 @@ def open_vector(fname, key="", where=None, path=''):
         db = settings().DATABASES[parts[0]]
         filename = ("PG:dbname=%s host=%s port=%s user=%s password=%s" %
                     (db['NAME'], db['HOST'], db['PORT'], db['USER'], db['PASSWORD']))
-        GeoVector vector(filename, parts[1])
+        vector = GeoVector(filename, parts[1])
         vector.SetPrimaryKey(key)
     except Exception, e:
         VerboseOut(traceback.format_exc(), 4)
     if where is not None:
         # return array of features
         features = []
-            for w in where:
-                parts = w.split('=') 
-                features.extend(vector.where(parts[0], parts[1]) 
+        for w in where:
+            parts = w.split('=') 
+            features.extend(vector.where(parts[0], parts[1]))
         return features
     else:  
         return vector
-
-def feature_factory(site, attr="index"):
-    """ Factory function for creating array of features """
-    features = []
-    if site is not None:
-        vector = open_vector(site)
-        parts = attr.split('=')
-        if parts[0] == "index":
-            # loop through by index
-            indices = range(0, vector.NumFeatures()) if len(parts) == 1 else [int(parts[1])]
-            for f in indices:
-                features.append(gippy.GeoFeature(vector, f))
-        else:
-            attrs = vector.Attributes()
-            # check that attribute exists
-            if parts[0] not in vector.Attributes():
-                raise Exception("%s attribute not in %s" % (attr, site))
-            if len(parts) == 2:
-                features.append(vector.where(parts[0], parts[1])[0])
-            else:
-                features.append
-
-            vals = vector.Values(parts[0])
-            vals =     if len(parts) == 1 else [parts[1]]
-
 
 from shapely.wkt import loads as wktloads
 from osr import SpatialReference, CoordinateTransformation
