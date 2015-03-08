@@ -1,4 +1,4 @@
-    #!/usr/bin/env python
+#!/usr/bin/env python
 ################################################################################
 #    GIPS: Geospatial Image Processing System
 #
@@ -43,17 +43,15 @@ def main():
         print title
         cls = data_class(args.command)
 
-        # create output directory: DATATYPE_tiles_RESOLUTION
-        suffix = '' if args.suffix is None else '_' + args.suffix
-        datadir = args.command + '_tiles'
-        if args.res is None:
-            args.res = cls.Asset._defaultresolution
-        if args.res[0] == args.res[1]:
-            resstr = str(args.res[0])
-        else:
-            resstr = '%sx%s' % (args.res[0], args.res[1])
-        datadir = os.path.join(args.outdir, '%s_%s%s' % (datadir, resstr, suffix))
-        mkdir(datadir)
+	features = open_vector(args.site, args.key, args.where)
+
+        # create tld: DATATYPE_tiles_RESOLUTION_SUFFIX
+	tld = os.path.join(args.outdir, '%s_tiles' % args.command)
+	if args.res is not None:
+	    tld = tld + '_%sx%s' % (args.res[0], args.res[1])
+	if args.suffix != '':
+	    tld = tld + '_' + args.suffix
+        mkdir(tld)
 
         for feature in open_vector(args.site, args.key, args.where):
             inv = cls.inventory(feature=feature, **vars(args))
@@ -62,7 +60,7 @@ def main():
                     # make sure back-end tiles are processed
                     inv[date].tiles[tid].process(args.products, overwrite=False)
                     # warp the tiles
-                    inv[date].tiles[tid].copy(datadir, args.products, inv.spatial.site,
+                    inv[date].tiles[tid].copy(tld, args.products, inv.spatial.site,
                                               args.res, args.interpolation, args.crop, args.overwrite, args.tree)
 
     except Exception, e:
