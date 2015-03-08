@@ -128,6 +128,17 @@ def settings():
         return imp.load_source('gips.settings', '/etc/gips/settings.py')
 
 
+def create_tld(outdir, bname, key, datatype, suffix=''):
+    """ Create top level directory """
+    if key != '':
+	key = '--' + key
+    if suffix != '':
+	suffix = '--' + suffix
+    tld = os.path.join(outdir, bname + key + '_' + datatype + suffix)
+    mkdir(tld)
+    return tld
+
+
 import time
 from functools import wraps
 
