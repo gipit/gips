@@ -25,7 +25,7 @@ import datetime
 import calendar
 
 import gippy
-from gips.utils import Colors, parse_vectorname
+from gips.utils import Colors, open_vector
 
 
 class RequestedProducts(object):
@@ -81,32 +81,24 @@ class RequestedProducts(object):
 class SpatialExtent(object):
     """ Description of spatial extent """
 
-    def __init__(self, dataclass, site=None, attr=None, tiles=None, pcov=0.0, ptile=0.0):
-        """ Create spatial extent object """
+    def __init__(self, dataclass, feature=None, tiles=None, pcov=0.0, ptile=0.0):
+        """ Create spatial extent with a GeoFeature instance or list of tiles """
         self.repo = dataclass.Asset.Repository
 
+        # TODO - try and close this and only open on demand (make site property)
+        self.site = feature
+
         # default to all tiles if none provided
-        if tiles is None and site is None:
+        if tiles is None and feature is None:
             tiles = self.repo.find_tiles()
 
-        if site is not None:
-            self.sitename, fname, layer, feature = parse_vectorname(site)
-            if attr is None:
-                self.site = gippy.GeoFeature(fname, layer, int(feature))
-            else:
-                # use attribute
-                vec = gippy.GeoVector(fname, layer)
-                vals = vec.Values(attr)
-                if len(vals) != len(set(vals)):
-                    raise Exception("%s attribute in %s is not unique" % (attr, sitename))
-                self.site = vec.where(attr, feature)[0]
-            tiles = self.repo.vector2tiles(self.site, pcov, ptile, tiles)
+        if feature is not None:
+            tiles = self.repo.vector2tiles(feature, pcov, ptile, tiles)
+            self.feature = (feature.Filename(), feature.LayerName(), feature.FID())
+            self.sitename = feature.Basename()
         else:
-            self.site = None
-            self.sitename = 'tiles'
-            # if tiles only provided, coverage of each is 100%
             tiles = {t: (1, 1) for t in tiles}
-
+            self.sitename = 'tiles'
         self.coverage = tiles
 
     @property
