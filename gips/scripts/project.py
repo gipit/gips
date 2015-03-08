@@ -46,11 +46,14 @@ def main():
         features = open_vector(args.site, args.key, args.where)
 
         # create tld: SITENAME--KEY_DATATYPE_SUFFIX
-        key = '' if args.key == '' else '--' + args.key
-        suffix = '' if args.suffix == '' else '_' + suffix
-        res = '' if args.res is None else '_%sx%s' % (args.res[0], args.res[1])
-        bname = features[0].LayerName() + key + res + '_' + args.command + suffix
-        tld = os.path.join(args.outdir, bname)
+        if args.notld:
+            tld = args.outdir
+        else:
+            key = '' if args.key == '' else '--' + args.key
+            suffix = '' if args.suffix == '' else '_' + suffix
+            res = '' if args.res is None else '_%sx%s' % (args.res[0], args.res[1])
+            bname = features[0].LayerName() + key + res + '_' + args.command + suffix
+            tld = os.path.join(args.outdir, bname)
 
         for feature in features:
             inv = cls.inventory(feature=feature, **vars(args))
