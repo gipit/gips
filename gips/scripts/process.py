@@ -21,14 +21,15 @@
 #   along with this program. If not, see <http://www.gnu.org/licenses/>
 ################################################################################
 
-from gips import __version__ as gipsversion
+from gips import __version__
 from gips.parsers import GIPSParser
+from gips.core import SpatialExtent
 from gips.data.core import data_class
 from gips.utils import Colors, VerboseOut, open_vector
 
 
 def main():
-    title = Colors.BOLD + 'GIPS Data Processing (v%s)' % gipsversion + Colors.OFF
+    title = Colors.BOLD + 'GIPS Data Processing (v%s)' % __version__ + Colors.OFF
 
     # argument parsing
     parser0 = GIPSParser(description=title)
@@ -40,8 +41,9 @@ def main():
         print title
         cls = data_class(args.command)
 
-        for feature in open_vector(args.site, args.key, args.where):
-            inv = cls.inventory(feature=feature, **vars(args))
+        extents = SpatialExtent.factory(cls, args.site, args.key, args.where, args.tiles, args.pcov, args.ptile)
+        for extent in extents:
+            inv = cls.inventory(spatial=extent, **vars(args))
             inv.process(overwrite=args.overwrite)
 
     except Exception, e:

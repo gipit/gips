@@ -23,6 +23,7 @@
 
 from gips import __version__ as gipsversion
 from gips.parsers import GIPSParser
+from gips.core import SpatialExtent
 from gips.data.core import data_class
 from gips.utils import Colors, VerboseOut, open_vector
 
@@ -42,8 +43,8 @@ def main():
         print title
         cls = data_class(args.command)
 
-        for feature in open_vector(args.site, args.key, args.where):
-            inv = cls.inventory(feature=feature, **vars(args))
+        for extent in SpatialExtent.factory(cls, args.site, args.key, args.where, args.tiles, args.pcov, args.ptile):
+            inv = cls.inventory(spatial=extent, **vars(args))
             inv.pprint(md=args.md, compact=args.compact)            
            
     except Exception, e:

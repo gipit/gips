@@ -22,18 +22,19 @@
 ################################################################################
 
 import os
-from gips import __version__ as gipsversion
+from gips import __version__
 from gips.parsers import GIPSParser
+from gips.core import SpatialExtent
 from gips.data.core import data_class
 from gips.utils import Colors, VerboseOut, mkdir, open_vector
 
 
 def main():
-    title = Colors.BOLD + 'GIPS Tiles (v%s)' % gipsversion + Colors.OFF
+    title = Colors.BOLD + 'GIPS Tiles (v%s)' % __version__ + Colors.OFF
 
     # argument parsing
     parser0 = GIPSParser(description=title)
-    parser0.add_inventory_parser(site_required=True)
+    parser0.add_inventory_parser()
     parser0.add_process_parser()
     parser0.add_project_parser()
     parser0.add_warp_parser()
@@ -42,8 +43,6 @@ def main():
     try:
         print title
         cls = data_class(args.command)
-
-        features = open_vector(args.site, args.key, args.where)
 
         # create tld: DATATYPE_tiles_RESOLUTION_SUFFIX
         if args.notld:
@@ -56,8 +55,9 @@ def main():
                 tld = tld + '_' + args.suffix
         mkdir(tld)
 
-        for feature in open_vector(args.site, args.key, args.where):
-            inv = cls.inventory(feature=feature, **vars(args))
+        extents = SpatialExtent.factory(cls, args.site, args.key, args.where, args.tiles, args.pcov, args.ptile)
+        for extent in extents:
+            inv = cls.inventory(spatial=extent, **vars(args))
             for date in inv.dates:
                 for tid in inv[date].tiles:
                     # make sure back-end tiles are processed

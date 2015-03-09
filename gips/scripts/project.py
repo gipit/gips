@@ -22,14 +22,15 @@
 ################################################################################
 
 import os
-from gips import __version__ as gipsversion
+from gips import __version__
 from gips.parsers import GIPSParser
+from gips.core import SpatialExtent
 from gips.data.core import data_class
 from gips.utils import Colors, VerboseOut, open_vector
 
 
 def main():
-    title = Colors.BOLD + 'GIPS Data Project (v%s)' % gipsversion + Colors.OFF
+    title = Colors.BOLD + 'GIPS Data Project (v%s)' % __version__ + Colors.OFF
 
     # argument parsing
     parser0 = GIPSParser(description=title)
@@ -43,8 +44,8 @@ def main():
         print title
         cls = data_class(args.command)
 
-        features = open_vector(args.site, args.key, args.where)
-
+        extents = SpatialExtent.factory(cls, args.site, args.key, args.where, args.tiles, args.pcov, args.ptile)
+        
         # create tld: SITENAME--KEY_DATATYPE_SUFFIX
         if args.notld:
             tld = args.outdir
@@ -52,11 +53,11 @@ def main():
             key = '' if args.key == '' else '--' + args.key
             suffix = '' if args.suffix == '' else '_' + suffix
             res = '' if args.res is None else '_%sx%s' % (args.res[0], args.res[1])
-            bname = features[0].LayerName() + key + res + '_' + args.command + suffix
+            bname = extents[0].site.LayerName() + key + res + '_' + args.command + suffix
             tld = os.path.join(args.outdir, bname)
 
-        for feature in features:
-            inv = cls.inventory(feature=feature, **vars(args))
+        for extent in extents:
+            inv = cls.inventory(spatial=extent, **vars(args))
             datadir = os.path.join(tld, feature.Value())
             if inv.numfiles > 0:
                 inv.mosaic(datadir=datadir, **vars(args))
