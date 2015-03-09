@@ -213,8 +213,8 @@ class DataInventory(Inventory):
 
     # TODO - init with SpatialExtent and TemporalExtent instances
 
-    def __init__(self, dataclass, feature=None, tiles=None, dates=None, days=None,
-                 products=None, fetch=False, pcov=0.0, ptile=0.0, **kwargs):
+    def __init__(self, dataclass, spatial, feature=None, dates=None, days=None,
+                 products=None, fetch=False, **kwargs):
         """ Create a new inventory
         :dataclass: The Data class to use (e.g., LandsatData, ModisData)
         :site: The site shapefile or database:layer name
@@ -227,8 +227,10 @@ class DataInventory(Inventory):
         self.dataclass = dataclass
         Repository = dataclass.Asset.Repository
 
+        self.spatial = spatial
+
         try:
-            self.spatial = SpatialExtent(dataclass, feature, tiles, pcov, ptile)
+            # TODO - take in TemporalExtent object directly
             self.temporal = TemporalExtent(dates, days)
             self.products = dataclass.RequestedProducts(products)
         except Exception, e:
