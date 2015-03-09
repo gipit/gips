@@ -58,7 +58,7 @@ def main():
 
         for extent in extents:
             inv = cls.inventory(spatial=extent, **vars(args))
-            datadir = os.path.join(tld, feature.Value())
+            datadir = os.path.join(tld, extent.site.Value())
             if inv.numfiles > 0:
                 inv.mosaic(datadir=datadir, **vars(args))
 
