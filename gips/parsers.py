@@ -127,7 +127,7 @@ class GIPSParser(argparse.ArgumentParser):
         else:
             parser = self
         group = parser.add_argument_group('warp options')
-        h = 'Putput resolution in site projected coordinates (no warping done if not provided)'
+        h = 'Output resolution in site projected coordinates (no warping done if not provided)'
         group.add_argument('--res', nargs=2, help=h, default=None, type=float)
         h = 'If warping interpolate using: 0-NN, 1-Bilinear, 2-Cubic'
         group.add_argument('--interpolation', help=h, choices=[0, 1, 2], default=0, type=int)
