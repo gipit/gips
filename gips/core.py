@@ -81,6 +81,22 @@ class RequestedProducts(object):
 class SpatialExtent(object):
     """ Description of spatial extent """
 
+    @classmethod
+    def factory(cls, dataclass, site=None, key='', where=[], tiles=None, pcov=0.0, ptile=0.0):
+        """ Create array of SpatialExtent instances """
+        if site is None and tiles is None:
+            raise Exception('Site geometry and/or tile ids required')
+        extents = []
+        if site is None:
+            # tiles are spatial extent
+            for t in tiles:
+                extents.append(cls(dataclass, tiles=[t], pcov=pcov, ptile=ptile))
+        else:
+            features = open_vector(site, key, where)
+            for f in features: 
+                extents.append(cls(dataclass, feature=f, tiles=tiles, pcov=pcov, ptile=ptile))
+        return extents
+
     def __init__(self, dataclass, feature=None, tiles=None, pcov=0.0, ptile=0.0):
         """ Create spatial extent with a GeoFeature instance or list of tiles """
         self.repo = dataclass.Asset.Repository
