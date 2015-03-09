@@ -142,7 +142,7 @@ class ModisAsset(Asset):
 
     @classmethod
     def fetch(cls, asset, tile, date):
-        super(ModisAsset, cls).fetch(asset, tile, date)
+        #super(ModisAsset, cls).fetch(asset, tile, date)
 
         year, month, day = date.timetuple()[:3]
         mainurl = '%s/%s.%02d.%02d' % (cls._assets[asset]['url'], str(year), month, day)

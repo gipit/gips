@@ -336,19 +336,6 @@ class Asset(object):
             return False
         return True
 
-    @classmethod
-    def fetch(cls, asset, tile, date):
-        """ Get this asset for this tile and date """
-        url = cls._assets[asset].get('url', '')
-        if url == '':
-            raise Exception("%s: URL not defined for asset %s" % (cls.__name__, asset))
-
-#        if not cls.available(asset, date):
-#            raise Exception("Requested date (%s) outside of range available for asset" % date)
-
-        VerboseOut('%s: fetch tile %s for %s' % (asset, tile, date), 3)
-        return url
-
     # TODO - combine this with fetch to get all dates
     @classmethod
     def dates(cls, asset, tile, dates, days):
@@ -360,8 +347,12 @@ class Asset(object):
         return dates
 
     @classmethod
-    def fetch_ftp(cls, url, asset, tile, date):
-        """ Fetch via FTP - currently not used """
+    def fetch(cls, asset, tile, date):
+        """ Fetch via FTP """
+        url = cls._assets[asset].get('url', '')
+        if url == '':
+            raise Exception("%s: URL not defined for asset %s" % (cls.__name__, asset))
+        VerboseOut('%s: fetch tile %s for %s' % (asset, tile, date), 3)
         ftpurl = url.split('/')[0]
         ftpdir = url[len(ftpurl):]
         try:
