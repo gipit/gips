@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ARGS="-s /etc/gips/test/NHseacoast.shp -d 2012-12-01,2012-12-10 -v 3"
+ARGS="-s /etc/gips/test/NHseacoast.shp -d 2012-12-01,2012-12-2 -v 4"
 
 gips_inventory AOD $ARGS --fetch
 gips_process AOD $ARGS
