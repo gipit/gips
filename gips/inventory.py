@@ -213,7 +213,7 @@ class DataInventory(Inventory):
 
     # TODO - init with SpatialExtent and TemporalExtent instances
 
-    def __init__(self, dataclass, spatial, feature=None, dates=None, days=None,
+    def __init__(self, dataclass, spatial, dates=None, days=None,
                  products=None, fetch=False, **kwargs):
         """ Create a new inventory
         :dataclass: The Data class to use (e.g., LandsatData, ModisData)
