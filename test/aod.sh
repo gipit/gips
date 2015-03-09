@@ -11,6 +11,10 @@ gips_process AOD $ARGS
 gips_project AOD $ARGS --res 250 250 --outdir aod_project --notld
 gips_stats aod_project/*
 
+# mosaic without warping
+gips_project AOD $ARGS --outdir aod_project_nowarp --notld
+gips_stats aod_project_nowarp
+
 # warp tiles
 gips_tiles AOD $ARGS --outdir aod_warped_tiles --notld
 gips_stats aod_warped_tiles/*
