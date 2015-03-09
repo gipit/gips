@@ -46,6 +46,7 @@ def main():
         header = ['min', 'max', 'mean', 'sd', 'skew', 'count']
 
         for projdir in args.projdir:
+            VerboseOut('Stats for Project directory: %s' % projdir, 1)
             inv = ProjectInventory(projdir, args.products)
         
             files = {}
