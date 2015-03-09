@@ -201,24 +201,34 @@ def transform_shape(shape, ssrs, tsrs):
     ogrgeom = None
     return wkt
 
+def transform(filename, srs):
+    """ Transform vector file to another SRS """
+    # TODO - move functionality into GIPPY
+    bname = os.path.splitext(os.path.basename(filename))[0]
+    td = tempfile.mkdtemp()
+    fout = os.path.join(td, bname+'_warped.shp')
+    prjfile = os.path.join(td, bname+'.prj')
+    f = open(prjfile, 'w')
+    f.write(srs)
+    f.close()
+    cmd = 'ogr2ogr %s %s -t_srs %s' % (fout, filename, prjfile)
+    result = commands.getstatusoutput(cmd)
+    return fout
+
 
 def crop2vector(img, vector):
     """ Crop a GeoImage down to a vector - only used by mosaic """
-    # TODO - update to use gippy.GeoVector
-    # TODO - incorporate into GIPPY?
-    #start = datetime.now()
     # transform vector to srs of image
-    srs = img.Projection()
-    vec_t = vector.transform(srs)
-    vecname = vec_t.filename
+    vecname = transform(vector.Filename(), img.Projection())
+
     # rasterize the vector
     td = tempfile.mkdtemp()
-    mask = gippy.GeoImage(os.path.join(td, vector.layer.GetName()), img, gippy.GDT_Byte, 1)
+    mask = gippy.GeoImage(os.path.join(td, vector.LayerName()), img, gippy.GDT_Byte, 1)
     maskname = mask.Filename()
     mask = None
-    cmd = 'gdal_rasterize -at -burn 1 -l %s %s %s' % (vec_t.layer.GetName(), vecname, maskname)
+    cmd = 'gdal_rasterize -at -burn 1 -l %s %s %s' % (vector.LayerName(), vecname, maskname)
     result = commands.getstatusoutput(cmd)
-    VerboseOut('%s: %s' % (cmd, result), 4)
+    #VerboseOut('%s: %s' % (cmd, result), 4)
     mask = gippy.GeoImage(maskname)
     img.AddMask(mask[0]).Process().ClearMasks()
     vec_t = None
@@ -254,9 +264,8 @@ def mosaic(images, outfile, vector):
     for b in range(0, images[0].NumBands()):
         imgout[b].CopyMeta(images[0][b])
     img = None
-    return imgout
-    # TODO - update to use gippy.GeoVector
     #return crop2vector(imgout, vector)
+    return imgout
 
 
 # old code utilizing shared memory array
