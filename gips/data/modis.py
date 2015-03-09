@@ -165,13 +165,18 @@ class ModisAsset(Asset):
                 try:
                     urllib.urlretrieve(url, outpath)
                 except Exception:
-                    raise Exception('Unable to retrieve %s from %s' % (name, url))
+                    # TODO - implement pre-check to only attempt on valid dates
+                    # then uncomment this
+                    #raise Exception('Unable to retrieve %s from %s' % (name, url))
+                    pass
                 else:
                     #VerboseOut('Retrieved %s' % name, 2)
                     success = True
 
         if not success:
-            raise Exception('Unable to find remote match for %s at %s' % (pattern, mainurl))
+            # TODO - implement pre-check to only attempt on valid dates then uncomment below
+            #raise Exception('Unable to find remote match for %s at %s' % (pattern, mainurl))
+            VerboseOut('Unable to find remote match for %s at %s' % (pattern, mainurl), 5)
 
 
 class ModisData(Data):
@@ -250,8 +255,9 @@ class ModisData(Data):
                     availassets.append(asset)
                     allsds.extend(sds)
             if not availassets:
+                # some products aren't available for every day but this is trying every day
                 VerboseOut('There are no available assets (%s) on %s for tile %s'
-                           % (str(missingassets), str(self.date), str(self.id), ), 3)
+                           % (str(missingassets), str(self.date), str(self.id), ), 5)
                 continue
 
             meta = self.meta_dict()
