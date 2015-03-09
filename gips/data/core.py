@@ -348,6 +348,11 @@ class Asset(object):
 
     @classmethod
     def fetch(cls, asset, tile, date):
+        """ Fetch stub """
+        raise Exception("Fetch not supported for this data source")
+
+    @classmethod
+    def fetch_ftp(cls, asset, tile, date):
         """ Fetch via FTP """
         url = cls._assets[asset].get('url', '')
         if url == '':
@@ -734,10 +739,12 @@ class Data(object):
         return datas
 
     @classmethod
-    def inventory(cls, **kwargs):
+    def inventory(cls, site=None, key='', where=[], tiles=None, pcov=0.0, ptile=0.0, **kwargs):
         """ Return list of inventories (size 1 if not looping through geometries) """
         from gips.inventory import DataInventory
-        return DataInventory(cls, **kwargs)
+        from gips.core import SpatialExtent
+        spatial = SpatialExtent.factory(cls, site=site, key=key, where=where, tiles=tiles, pcov=pcov, ptile=ptile)
+        return DataInventory(cls, spatial[0], **kwargs)
         """
         invs = []
         if loop and 'site' is not None:

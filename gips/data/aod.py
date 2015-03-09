@@ -113,6 +113,11 @@ class AODAsset(Asset):
             List2File(datafiles, indexfile)
         return datafiles
 
+    @classmethod
+    def fetch(cls, asset, tile, date):
+        """ Fetch stub """
+        cls.fetch_ftp(asset, tile, date)
+
     #@classmethod
     #def archive(cls, path='.', recursive=False, keep=False):
         #assets = super(AODAsset, cls).archive(path, recursive, keep)
