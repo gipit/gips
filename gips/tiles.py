@@ -89,6 +89,8 @@ class Tiles(object):
         bname = self.date.strftime('%Y%j')
         for product in self.products.products:
             sensor = self.which_sensor(product)
+            if sensor is None:
+                continue
             # TODO - this is assuming a tif file.  Use gippy FileExtension function when it is exposed
             fout = os.path.join(datadir, '%s_%s_%s' % (bname, sensor, product)) + '.tif'
             if not os.path.exists(fout) or overwrite:
