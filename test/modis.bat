@@ -9,5 +9,9 @@ gips_project Modis $ARGS --res 100 100 --outdir modis_project --notld
 gips_stats modis_project/*
 
 # warp just the tiles
-gips_tiles Modis $ARGS --outdir modis_tiles --notld
-gips_stats modis_tiles/*
+gips_tiles Modis $ARGS --outdir modis_warped_tiles --notld
+gips_stats modis_warped_tiles/*
+
+# just copy the tiles
+gips_tiles Modis -t h12v04 -d 2012-12-01,2012-12-10 -v 4 --outdir modis_tiles --notld
+gips_stats modis_tiles
