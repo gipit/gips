@@ -27,6 +27,7 @@ from gips.parsers import GIPSParser
 from gips.core import SpatialExtent
 from gips.data.core import data_class
 from gips.utils import Colors, VerboseOut, mkdir, open_vector
+from gips.inventory import DataInventory
 
 
 def main():
@@ -57,7 +58,7 @@ def main():
 
         extents = SpatialExtent.factory(cls, args.site, args.key, args.where, args.tiles, args.pcov, args.ptile)
         for extent in extents:
-            inv = cls.inventory(spatial=extent, **vars(args))
+            inv = DataInventory(cls, spatial=extent, **vars(args))
             for date in inv.dates:
                 for tid in inv[date].tiles:
                     # make sure back-end tiles are processed
