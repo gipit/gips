@@ -22,5 +22,5 @@ gips_tiles Landsat $ARGS --outdir landsat_warped_tiles --notld
 gips_stats landsat_warped_tiles/*
 
 # copy tiles
-gips_tiles Landsat -t 012030 $DATES -v 4 --outdir landsat_tiles --notld
+gips_tiles Landsat -t 012030 $DATES -v 4 --outdir landsat_tiles --notld -p ref-toa ndvi-toa rad-toa
 gips_stats landsat_tiles
