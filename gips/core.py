@@ -85,7 +85,8 @@ class SpatialExtent(object):
     def factory(cls, dataclass, site=None, key='', where=[], tiles=None, pcov=0.0, ptile=0.0):
         """ Create array of SpatialExtent instances """
         if site is None and tiles is None:
-            raise Exception('Site geometry and/or tile ids required')
+            #raise Exception('Site geometry and/or tile ids required')
+            tiles = dataclass.Asset.Repository.find_tiles()
         extents = []
         if site is None:
             # tiles are spatial extent
