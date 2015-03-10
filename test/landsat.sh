@@ -3,7 +3,7 @@
 SHAPE="-s /etc/gips/test/NHseacoast.shp"
 DATES="-d 2012-256"
 
-ARGS="-s /etc/gips/test/NHseacoast.shp -d 2012-256 -v 4 -p ref-toa ndvi rad"
+ARGS="-s /etc/gips/test/NHseacoast.shp -d 2012-256 -v 4 -p ref-toa ndvi-toa rad-toa"
 
 gips_info Landsat
 gips_inventory Landsat $ARGS
