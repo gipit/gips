@@ -44,7 +44,7 @@ REPOS = {
     },
     'Landsat': {
         'rootpath': '/data/landsat',
-	'tile_attribute': 'pr',
+	    'tile_attribute': 'pr',
         # Atmospheric correction
         '6S': False,
         'MODTRAN': False,
