@@ -107,13 +107,6 @@ class Tiles(object):
         t = datetime.now() - start
         VerboseOut('%s: created project files for %s tiles in %s' % (self.date, len(self.tiles), t), 2)
 
-    def pprint_header(self):
-        """ Print header info for coverage """
-        header = Colors.BOLD + Colors.UNDER + '{:^12}'.format('DATE')
-        for a in sorted(self.dataclass.Asset._assets.keys()):
-            header = header + ('{:^10}'.format(a if a != '' else 'Coverage'))
-        return header + '{:^10}'.format('Products') + Colors.OFF
-
     def asset_coverage(self):
         """ Calculates % coverage of site for each asset """
         asset_coverage = {}

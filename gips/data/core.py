@@ -692,9 +692,21 @@ class Data(object):
                 m.append(p)
         return m
 
-    def pprint_header(self):
-        """ Print product inventory header """
-        return Colors.BOLD + Colors.UNDER + '{:^12}'.format('DATE') + '{:^10}'.format('Products') + Colors.OFF
+    @classmethod
+    def pprint_header(cls):
+        """ Print product inventory header showing product coverage"""
+        header = Colors.BOLD + Colors.UNDER + '{:^12}'.format('DATE')
+        for a in sorted(cls._products.keys()):
+            header = header + ('{:^10}'.format(a if a != '' else 'Coverage'))
+        return header + '{:^10}'.format('Product') + Colors.OFF
+
+    @classmethod
+    def pprint_asset_header(cls):
+        """ Print header info for asset coverage """
+        header = Colors.BOLD + Colors.UNDER + '{:^12}'.format('DATE')
+        for a in sorted(cls.Asset._assets.keys()):
+            header = header + ('{:^10}'.format(a if a != '' else 'Coverage'))
+        return header + '{:^10}'.format('Product') + Colors.OFF
 
     def pprint(self, dformat='%j', colors=None):
         """ Print product inventory for this date """
