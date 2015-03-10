@@ -34,10 +34,9 @@ def main():
 
     # argument parsing
     parser0 = GIPSParser(description=title)
-    parser = parser0.add_inventory_parser(site_required=True)
+    parser = parser0.add_inventory_parser()
     group = parser.add_argument_group('inventory display')
     group.add_argument('--md', help='Show dates using MM-DD', action='store_true', default=False)
-    group.add_argument('--compact', help='Print only dates (no coverage)', default=False, action='store_true')
     args = parser0.parse_args()
 
     try:
@@ -46,7 +45,7 @@ def main():
 
         for extent in SpatialExtent.factory(cls, args.site, args.key, args.where, args.tiles, args.pcov, args.ptile):
             inv = DataInventory(cls, spatial=extent, **vars(args))
-            inv.pprint(md=args.md, compact=args.compact)            
+            inv.pprint(md=args.md)            
            
     except Exception, e:
         import traceback

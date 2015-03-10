@@ -83,24 +83,21 @@ class Inventory(object):
         """ Return color for sensor """
         return self._colors[list(self.sensor_set).index(sensor)]
 
-    def pprint(self, md=False, compact=False):
+    def pprint(self, md=False):
+        """ Print the inventory """
         if len(self.data) == 0:
             print 'No matching files in inventory'
             return
-        print self.data[self.data.keys()[0]].pprint_header()
+        print self.data[self.data.keys()[0]].dataclass.pprint_asset_header()
         dformat = '%m-%d' if md else '%j'
         oldyear = 0
-        formatstr = '\n{:<12}' if compact else '{:<12}\n'
+        formatstr = '{:<12}\n'
         colors = {k: self.color(k) for k in self.sensor_set}
         for date in self.dates:
+            # if new year then write out the year
             if date.year != oldyear:
                 sys.stdout.write(Colors.BOLD + formatstr.format(date.year) + Colors.OFF)
-            if compact:
-                color = self.color(self.data[date].sensor_set[0])
-                dstr = color + ('{:^%s}' % (7 if md else 4)).format(date.strftime(dformat)) + Colors.OFF
-                sys.stdout.write(dstr)
-            else:
-                self.data[date].pprint(dformat, colors)
+            self.data[date].pprint(dformat, colors)
             oldyear = date.year
         if self.numfiles != 0:
             VerboseOut("\n\n%s files on %s dates" % (self.numfiles, len(self.dates)), 1)
