@@ -295,6 +295,8 @@ class LandsatData(Data):
             toa = toa and (self._products[val[0]].get('toa', False) or 'toa' in val)
         if not toa:
             start = datetime.now()
+            if not settings().REPOS[self.Repository.name]['6S']:
+                raise Exception('6S is required for atmospheric correction')
             try:
                 wvlens = [(meta[b]['wvlen1'], meta[b]['wvlen2']) for b in visbands]
                 geo = self.metadata['geometry']
@@ -302,7 +304,7 @@ class LandsatData(Data):
                 md["AOD Source"] = str(atm6s.aod[0])
                 md["AOD Value"] = str(atm6s.aod[1])
             except Exception, e:
-                VerboseOut(traceback.format_exc(), 3)
+                VerboseOut(traceback.format_exc(), 4)
                 raise Exception('Problem running 6S atmospheric model: %s' % e)
 
         # Break down by group
