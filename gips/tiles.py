@@ -47,14 +47,10 @@ class Tiles(object):
         # For each tile locate files/products
         self.tiles = {}
         for t in self.spatial.tiles:
-            try:
-                tile = dataclass(t, self.date)
-                # TODO - fix custom filter based on dataclass...sensor should pass to 'dataclass'
-                if tile.valid and tile.filter(**kwargs):  # and tile.sensor in sensors:
-                    self.tiles[t] = tile
-            except Exception, e:            # re-raise all other exceptions
-                VerboseOut(traceback.format_exc(), 4)
-                raise Exception(e)
+            tile = dataclass(t, self.date)
+            # TODO - fix custom filter based on dataclass...sensor should pass to 'dataclass'
+            if tile.valid and tile.filter(**kwargs):  # and tile.sensor in sensors:
+                self.tiles[t] = tile
 
     def __len__(self):
         return len(self.tiles)
