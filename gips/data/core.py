@@ -751,26 +751,14 @@ class Data(object):
         return datas
 
     @classmethod
-    def inventory(cls, site=None, key='', where=[], tiles=None, pcov=0.0, ptile=0.0, **kwargs):
+    def inventory(cls, site=None, key='', where=[], tiles=None, pcov=0.0, ptile=0.0, 
+                  dates=None, days=None, **kwargs):
         """ Return list of inventories (size 1 if not looping through geometries) """
         from gips.inventory import DataInventory
-        from gips.core import SpatialExtent
+        from gips.core import SpatialExtent, TemporalExtent
         spatial = SpatialExtent.factory(cls, site=site, key=key, where=where, tiles=tiles, pcov=pcov, ptile=ptile)
-        return DataInventory(cls, spatial[0], **kwargs)
-        """
-        invs = []
-        if loop and 'site' is not None:
-            sitename, fname, layer, feature = parse_vectorname(site)
-            vec = gippy.GeoVector(fname, layer)
-            numfeat = vec.NumFeatures()
-            vec = None
-            for f in range(0, numfeat):
-                print f
-                invs.append(DataInventory(cls, site=site+':'+str(f), **kwargs))
-        else:
-            invs.append(DataInventory(cls, site=site, **kwargs))
-        return invs
-        """
+        temporal = TemporalExtent(dates, days)
+        return DataInventory(cls, spatial[0], temporal, **kwargs)
 
     @classmethod
     def products2assets(cls, products):

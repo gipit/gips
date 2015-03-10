@@ -24,7 +24,7 @@
 import os
 from gips import __version__
 from gips.parsers import GIPSParser
-from gips.core import SpatialExtent
+from gips.core import SpatialExtent, TemporalExtent
 from gips.data.core import data_class
 from gips.utils import Colors, VerboseOut, open_vector
 from gips.inventory import DataInventory
@@ -58,7 +58,7 @@ def main():
             tld = os.path.join(args.outdir, bname)
 
         for extent in extents:
-            inv = DataInventory(cls, spatial=extent, **vars(args))
+            inv = DataInventory(cls, extent, TemporalExtent(args.dates, args.days), **vars(args))
             datadir = os.path.join(tld, extent.site.Value())
             if inv.numfiles > 0:
                 inv.mosaic(datadir=datadir, **vars(args))

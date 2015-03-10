@@ -23,7 +23,7 @@
 
 from gips import __version__
 from gips.parsers import GIPSParser
-from gips.core import SpatialExtent
+from gips.core import SpatialExtent, TemporalExtent
 from gips.data.core import data_class
 from gips.utils import Colors, VerboseOut, open_vector
 from gips.inventory import DataInventory
@@ -44,7 +44,7 @@ def main():
 
         extents = SpatialExtent.factory(cls, args.site, args.key, args.where, args.tiles, args.pcov, args.ptile)
         for extent in extents:
-            inv = DataInventory(cls, spatial=extent, **vars(args))
+            inv = DataInventory(cls, extent, TemporalExtent(args.dates, args.days), **vars(args))
             inv.process(overwrite=args.overwrite)
 
     except Exception, e:

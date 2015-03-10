@@ -210,7 +210,7 @@ class DataInventory(Inventory):
 
     # TODO - init with SpatialExtent and TemporalExtent instances
 
-    def __init__(self, dataclass, spatial, dates=None, days=None,
+    def __init__(self, dataclass, spatial, temporal,
                  products=None, fetch=False, **kwargs):
         """ Create a new inventory
         :dataclass: The Data class to use (e.g., LandsatData, ModisData)
@@ -225,10 +225,9 @@ class DataInventory(Inventory):
         Repository = dataclass.Asset.Repository
 
         self.spatial = spatial
+        self.temporal = temporal
 
         try:
-            # TODO - take in TemporalExtent object directly
-            self.temporal = TemporalExtent(dates, days)
             self.products = dataclass.RequestedProducts(products)
         except Exception, e:
             import traceback
