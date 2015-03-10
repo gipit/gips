@@ -208,43 +208,30 @@ class ProjectInventory(Inventory):
 class DataInventory(Inventory):
     """ Manager class for data inventories (collection of Tiles class) """
 
-    # TODO - init with SpatialExtent and TemporalExtent instances
-
-    def __init__(self, dataclass, spatial, temporal,
-                 products=None, fetch=False, **kwargs):
+    def __init__(self, dataclass, spatial, temporal, products=None, fetch=False, **kwargs):
         """ Create a new inventory
         :dataclass: The Data class to use (e.g., LandsatData, ModisData)
-        :site: The site shapefile or database:layer name
-        :tiles: List of tile ids
-        :dates: tuple of begin and end date
-        :days: tuple of begin and end day of year
+        :spatial: The spatial extent requested
+        :temporal: The temporal extent requested
         :products: List of requested products of interest
         :fetch: bool indicated if missing data should be downloaded
         """
+        VerboseOut('Retrieving inventory for site %s' % spatial.sitename, 2)
+
         self.dataclass = dataclass
         Repository = dataclass.Asset.Repository
-
         self.spatial = spatial
         self.temporal = temporal
-
-        try:
-            self.products = dataclass.RequestedProducts(products)
-        except Exception, e:
-            import traceback
-            VerboseOut(traceback.format_exc(), 4)
-            raise Exception('Illformed parameters: %s' % e)
-
-        VerboseOut('Retrieving inventory for site %s' % self.spatial.sitename, 2)
+        self.products = dataclass.RequestedProducts(products)
 
         if fetch:
             try:
-                dates = self.temporal.datebounds
-                days = self.temporal.daybounds
                 dataclass.fetch(self.products.base, self.spatial.tiles, dates, days)
             except Exception:
-                #VerboseOut(traceback.format_exc(), 3)
-                raise Exception('DataInventory: Error downloading')
+                raise Exception('Error downloading %s' % dataclass.name)
             dataclass.Asset.archive(Repository.spath())
+
+        # find data
         self.data = {}
         for date in self.temporal.prune_dates(self.spatial.available_dates):
             try:
@@ -254,62 +241,59 @@ class DataInventory(Inventory):
             except Exception, e:
                 raise Exception('DataInventory: Error accessing tiles in %s repository' % dataclass.name)
 
-        #if len(self.data) == 0:
-        #    raise Exception("No matching files in inventory!")
-
     @property
     def sensor_set(self):
+        """ The set of all sensors used in this inventory """
         return sorted(self.dataclass.Asset._sensors.keys())
 
     def process(self, *args, **kwargs):
-        """ Process data in inventory """
-        if len(self.products.standard) + len(self.products.composite) == 0:
-            raise Exception('No products specified!')
-        #sz = self.numfiles
+        """ Process assets into requested products """
+        # TODO - some check on if any processing was done
+        start = dt.now()
+        VerboseOut('Processing [%s] on %s dates (%s files)' % (self.products, len(self.dates), self.numfiles), 3)
         if len(self.products.standard) > 0:
-            #start = dt.now()
-            #VerboseOut('   Requested [%s] for %s files' % (' '.join(self.products.standard), sz), 1)
             for date in self.dates:
                 try:
                     self.data[date].process(*args, **kwargs)
                 except:
-                    VerboseOut(traceback.format_exc(), 3)
-                    pass
-            #VerboseOut('Completed processing in %s' % (dt.now() - start), 1)
+                    VerboseOut(traceback.format_exc(), 4)
         if len(self.products.composite) > 0:
-            #start = dt.now()
-            #VerboseOut('   Requested [%s] for %s files: %s' % (' '.join(self.products.composite), sz), 1)
             self.dataclass.process_composites(self, self.products.composite, **kwargs)
-            #VerboseOut('Completed processing in %s' % (dt.now() - start), 1)
+        VerboseOut('Processing completed in %s' % (dt.now() - start), 2)
 
-    def mosaic(self, res=None, datadir='./', tree=False, overwrite=False, crop=False, interpolation=0, **kwargs):
+    def mosaic(self, datadir='./', tree=False, **kwargs):
         """ Create project files for data in inventory """
+        # make sure products have been processed first
         self.process(overwrite=False)
         start = dt.now()
-        VerboseOut('GIPS project %s' % datadir)
+        VerboseOut('Creating mosaic project %s' % datadir, 2)
         VerboseOut('  Dates: %s' % self.datestr)
-        VerboseOut('  Products: %s' % ' '.join(self.products.standard))
+        VerboseOut('  Products: %s' % self.products)
 
+        dout = datadir
         for d in self.dates:
-            self.data[d].mosaic(datadir=datadir, res=res, interpolation=interpolation, 
-                                crop=crop, overwrite=overwrite, tree=tree)
+            if tree:
+                dout = os.path.join(datadir, d.strftime('%Y%j'))
+            self.data[d].mosaic(dout, **kwargs)
 
-        VerboseOut('Completed GIPS project in %s' % (dt.now() - start))
-        if self.spatial.site is not None:
+        VerboseOut('Completed mosaic project in %s' % (dt.now() - start), 2)
+
+        # Print project inventory when completed
+        if not tree:
             inv = ProjectInventory(datadir)
-            if not tree:
-                inv.pprint()
+            inv.pprint()
             return inv
+
+    #def warptiles(self):
+        """ Just copy or warp all tiles in the inventory """
 
     def pprint(self, **kwargs):
         """ Print inventory """
         print
         if self.spatial.site is not None:
-            print Colors.BOLD + 'Asset Coverage for site %s' % basename(self.spatial.sitename) + Colors.OFF
+            print Colors.BOLD + 'Asset Coverage for site %s' % (self.spatial.sitename) + Colors.OFF
             self.spatial.print_tile_coverage()
             print
         else:
             print Colors.BOLD + 'Asset Holdings' + Colors.OFF
-        # Header
-        #datestr = ' Month/Day' if md else ' Day of Year'
         super(DataInventory, self).pprint(**kwargs)

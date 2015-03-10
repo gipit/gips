@@ -80,11 +80,11 @@ class Tiles(object):
         """ Calls process for each tile """
         [t.process(*args, products=self.products.products, **kwargs) for t in self.tiles.values()]
 
-    def mosaic(self, datadir, res=None, interpolation=0, crop=False, overwrite=False, tree=False):
-        """ Combine tiles into a single mosaic, warp if site and res provided """
+    def mosaic(self, datadir, res=None, interpolation=0, crop=False, overwrite=False):
+        """ Combine tiles into a single mosaic, warp if res provided """
+        if self.spatial.site is None:
+            raise Exception('Site required for creating mosaics')
         start = datetime.now()
-        if tree:
-            datadir = os.path.join(datadir, self.date.strftime('%Y%j'))
         mkdir(datadir)
         bname = self.date.strftime('%Y%j')
         for product in self.products.products:

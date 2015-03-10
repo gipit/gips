@@ -375,7 +375,7 @@ class Asset(object):
                 ftp.retrbinary('RETR %s' % f, open(os.path.join(cls.Repository.spath(), f), "wb").write)
             ftp.close()
         except Exception, e:
-            VerboseOut(traceback.format_exc(), 3)
+            VerboseOut(traceback.format_exc(), 4)
             raise Exception("Error downloading: %s" % e)
 
     @classmethod
@@ -484,10 +484,10 @@ class Data(object):
 
     def process(self, products, overwrite=False, **kwargs):
         """ Make sure all products exist and return those that need processing """
+        # TODO - clean up this messy thing
         products = self.RequestedProducts(products)
         products = self.RequestedProducts([p for p in products.products if p not in self.products or overwrite])
-        if len(products) > 0:
-            VerboseOut("Processing products for tile %s: %s" % (self.id, products), 2)
+        # TODO - this doesnt know that some products aren't available for all dates
         return products
 
     @classmethod
@@ -772,13 +772,13 @@ class Data(object):
         return set(assets)
 
     @classmethod
-    def fetch(cls, products, tiles, dates, days):
+    def fetch(cls, products, tiles, textent):
         """ Download data for tiles and add to archive """
         assets = cls.products2assets(products)
         fetched = []
         for a in assets:
             for t in tiles:
-                asset_dates = cls.Asset.dates(a, t, dates, days)
+                asset_dates = cls.Asset.dates(a, t, textent.datebounds, textent.daybounds)
                 for d in asset_dates:
                     # if we don't have it already
                     if not cls.Asset.discover(t, d, a):

@@ -61,7 +61,8 @@ def main():
             inv = DataInventory(cls, extent, TemporalExtent(args.dates, args.days), **vars(args))
             datadir = os.path.join(tld, extent.site.Value())
             if inv.numfiles > 0:
-                inv.mosaic(datadir=datadir, **vars(args))
+                inv.mosaic(datadir=datadir, tree=args.tree, overwrite=args.overwrite, 
+                           res=args.res, interpolation=args.interpolation, crop=args.crop)
 
     except Exception, e:
         import traceback
