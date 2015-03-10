@@ -132,6 +132,11 @@ class Tiles(object):
             coverage[p] = cov * 100
         return coverage
 
+    # TODO - remove this nonsense
+    def pprint_asset_header(self):
+        """ Print asset header """
+        self.dataclass.pprint_asset_header()
+
     def pprint(self, dformat='%j', colors=None):
         """ Print coverage for each and every asset """
         #assets = [a for a in self.dataclass.Asset._assets]
