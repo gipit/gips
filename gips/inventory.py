@@ -226,9 +226,9 @@ class DataInventory(Inventory):
 
         if fetch:
             try:
-                dataclass.fetch(self.products.base, self.spatial.tiles, dates, days)
-            except Exception:
-                raise Exception('Error downloading %s' % dataclass.name)
+                dataclass.fetch(self.products.base, self.spatial.tiles, self.temporal)
+            except Exception, e:
+                raise Exception('Error downloading %s: %s' % (dataclass.name, e))
             dataclass.Asset.archive(Repository.spath())
 
         # find data
