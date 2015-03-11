@@ -501,7 +501,7 @@ class Data(object):
         # TODO - allow hard and soft linking options
         if res is None:
             res = self.Asset._defaultresolution
-            VerboseOut('Using default resolution of %s x %s' % (res[0], res[1]))
+            #VerboseOut('Using default resolution of %s x %s' % (res[0], res[1]))
         dout = os.path.join(dout, self.id)
         if tree:
             dout = os.path.join(dout, self.date.strftime('%Y%j'))
@@ -522,9 +522,11 @@ class Data(object):
                         resampler = ['near', 'bilinear', 'cubic']
                         cmd = 'gdalwarp %s %s -t_srs "%s" -tr %s %s -r %s' % \
                                (fin, fout, site.Projection(), res[0], res[1], resampler[interpolation])
-                        result = commands.getstatusoutput(cmd)
+                        print cmd
+                        #result = commands.getstatusoutput(cmd)
                     else:
-                        shutil.copyfile(fin, fout)
+                        gippy.GeoImage(fin).Process(fout)
+                        #shutil.copyfile(fin, fout)
                 except Exception:
                     VerboseOut(traceback.format_exc(), 4)
                     VerboseOut("Problem creating %s" % fout)
