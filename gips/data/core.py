@@ -33,6 +33,7 @@ import tarfile
 import traceback
 import ftplib
 import shutil
+import commands
 
 import gippy
 from gips import __version__
@@ -500,6 +501,7 @@ class Data(object):
         # TODO - allow hard and soft linking options
         if res is None:
             res = self.Asset._defaultresolution
+            VerboseOut('Using default resolution of %s x %s' % (res[0], res[1]))
         dout = os.path.join(dout, self.id)
         if tree:
             dout = os.path.join(dout, self.date.strftime('%Y%j'))
@@ -516,8 +518,11 @@ class Data(object):
             if not os.path.exists(fout) or overwrite:
                 try:
                     if site is not None:
-                        images = gippy.GeoImages([fin])
-                        CookieCutter(images, site, fout, res[0], res[1], crop, interpolation)
+                        # warp just this tile
+                        resampler = ['near', 'bilinear', 'cubic']
+                        cmd = 'gdalwarp %s %s -t_srs "%s" -tr %s %s -r %s' % \
+                               (fin, fout, site.Projection(), res[0], res[1], resampler[interpolation])
+                        result = commands.getstatusoutput(cmd)
                     else:
                         shutil.copyfile(fin, fout)
                 except Exception:
