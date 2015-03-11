@@ -713,7 +713,8 @@ class Data(object):
         header = Colors.BOLD + Colors.UNDER + '{:^12}'.format('DATE')
         for a in sorted(cls.Asset._assets.keys()):
             header = header + ('{:^10}'.format(a if a != '' else 'Coverage'))
-        return header + '{:^10}'.format('Product') + Colors.OFF
+        header = header + '{:^10}'.format('Product') + Colors.OFF
+        print header
 
     def pprint(self, dformat='%j', colors=None):
         """ Print product inventory for this date """
