@@ -39,7 +39,7 @@ REPOS = {
         'rootpath': '/data/aod',
     },
     'CDL': {
-        'rootpath': '/data/cdl',
+        'rootpath': '',
 	    'tile_attribute': '',
     },
     'Landsat': {
@@ -61,7 +61,7 @@ REPOS = {
         'rootpath': '',
     },
     'Merra': {
-        'rootpath': '/data/merra',
+        'rootpath': '',
 	    'tile_attribute': 'tileid',
     },
     'Daymet': {
