@@ -82,7 +82,7 @@ class SpatialExtent(object):
     """ Description of spatial extent """
 
     @classmethod
-    def factory(cls, dataclass, site=None, key='', where=[], tiles=None, pcov=0.0, ptile=0.0):
+    def factory(cls, dataclass, site=None, key='', where='', tiles=None, pcov=0.0, ptile=0.0):
         """ Create array of SpatialExtent instances """
         if site is None and tiles is None:
             #raise Exception('Site geometry and/or tile ids required')

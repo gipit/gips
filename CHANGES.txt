@@ -27,6 +27,7 @@ v0.8.0
 - Interpolation option added to project function (neartest neighbor, bilinear, or cubic)
 - Setup now puts settings.py at /etc/gips/settings.py
 - Ability to loop through all features in a vector layer (using the --loop option)
+- where argument added to include SQL where clauses
 
 Landsat
 - Added wtemp product (Water temperature, atm corrected with MODTRAN using custom profiles from MERRA data)

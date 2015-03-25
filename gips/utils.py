@@ -160,7 +160,7 @@ def fn_timer(function):
         return result
     return function_timer
 
-def open_vector(fname, key="", where=None, path=''):
+def open_vector(fname, key="", where='', path=''):
     """ Open vector or feature """
     parts = fname.split(':')
     if len(parts) == 1:
@@ -173,18 +173,15 @@ def open_vector(fname, key="", where=None, path=''):
         try:
             db = settings().DATABASES[parts[0]]
             filename = ("PG:dbname=%s host=%s port=%s user=%s password=%s" %
-                    (db['NAME'], db['HOST'], db['PORT'], db['USER'], db['PASSWORD']))
+                        (db['NAME'], db['HOST'], db['PORT'], db['USER'], db['PASSWORD']))
             vector = GeoVector(filename, parts[1])
             vector.SetPrimaryKey(key)
         except Exception, e:
             VerboseOut(traceback.format_exc(), 4)
-    if where is not None:
+    if where != '':
         # return array of features
+        return vector.where(where)
         features = []
-        for w in where:
-            parts = w.split('=') 
-            features.extend(vector.where(parts[0], parts[1]))
-        return features
     else:  
         return vector
 
