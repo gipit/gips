@@ -759,7 +759,7 @@ class Data(object):
         return datas
 
     @classmethod
-    def inventory(cls, site=None, key='', where=[], tiles=None, pcov=0.0, ptile=0.0, 
+    def inventory(cls, site=None, key='', where='', tiles=None, pcov=0.0, ptile=0.0, 
                   dates=None, days=None, **kwargs):
         """ Return list of inventories (size 1 if not looping through geometries) """
         from gips.inventory import DataInventory
