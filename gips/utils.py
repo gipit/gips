@@ -182,7 +182,7 @@ def open_vector(fname, key="", where='', path=''):
         # return array of features
         return vector.where(where)
         features = []
-    else:  
+    else:
         return vector
 
 from shapely.wkt import loads as wktloads
@@ -217,15 +217,15 @@ def crop2vector(img, vector):
     """ Crop a GeoImage down to a vector - only used by mosaic """
     # transform vector to srs of image
     vecname = transform(vector.Filename(), img.Projection())
-
+    warped_vec = open_vector(vecname)
     # rasterize the vector
     td = tempfile.mkdtemp()
     mask = gippy.GeoImage(os.path.join(td, vector.LayerName()), img, gippy.GDT_Byte, 1)
     maskname = mask.Filename()
     mask = None
-    cmd = 'gdal_rasterize -at -burn 1 -l %s %s %s' % (vector.LayerName(), vecname, maskname)
+    cmd = 'gdal_rasterize -at -burn 1 -l %s %s %s' % (warped_vec.LayerName(), vecname, maskname)
     result = commands.getstatusoutput(cmd)
-    #VerboseOut('%s: %s' % (cmd, result), 4)
+    VerboseOut('%s: %s' % (cmd, result), 4)
     mask = gippy.GeoImage(maskname)
     img.AddMask(mask[0]).Process().ClearMasks()
     vec_t = None
