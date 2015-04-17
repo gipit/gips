@@ -261,6 +261,7 @@ def mosaic(images, outfile, vector):
     imgout = gippy.GeoImage(outfile, True)
     for b in range(0, images[0].NumBands()):
         imgout[b].CopyMeta(images[0][b])
+    imgout.CopyColorTable(images[0])
     return crop2vector(imgout, vector)
 
 
