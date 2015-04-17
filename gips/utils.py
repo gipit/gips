@@ -25,7 +25,6 @@ import os
 import errno
 import gippy
 from gippy import GeoVector
-from datetime import datetime
 import tempfile
 import commands
 import shutil
@@ -160,6 +159,7 @@ def fn_timer(function):
         return result
     return function_timer
 
+
 def open_vector(fname, key="", where='', path=''):
     """ Open vector or feature """
     parts = fname.split(':')
@@ -189,6 +189,7 @@ from shapely.wkt import loads as wktloads
 from osr import SpatialReference, CoordinateTransformation
 from ogr import CreateGeometryFromWkt
 
+
 def transform_shape(shape, ssrs, tsrs):
     """ Transform shape from ssrs to tsrs (all wkt) and return as wkt """
     ogrgeom = CreateGeometryFromWkt(shape)
@@ -198,13 +199,14 @@ def transform_shape(shape, ssrs, tsrs):
     ogrgeom = None
     return wkt
 
+
 def transform(filename, srs):
     """ Transform vector file to another SRS """
     # TODO - move functionality into GIPPY
     bname = os.path.splitext(os.path.basename(filename))[0]
     td = tempfile.mkdtemp()
-    fout = os.path.join(td, bname+'_warped.shp')
-    prjfile = os.path.join(td, bname+'.prj')
+    fout = os.path.join(td, bname + '_warped.shp')
+    prjfile = os.path.join(td, bname + '.prj')
     f = open(prjfile, 'w')
     f.write(srs)
     f.close()
@@ -228,11 +230,10 @@ def crop2vector(img, vector):
     VerboseOut('%s: %s' % (cmd, result), 4)
     mask = gippy.GeoImage(maskname)
     img.AddMask(mask[0]).Process().ClearMasks()
-    vec_t = None
     mask = None
     shutil.rmtree(os.path.dirname(maskname))
     shutil.rmtree(os.path.dirname(vecname))
-    #VerboseOut('Cropped to vector in %s' % (datetime.now() - start), 3)
+    # VerboseOut('Cropped to vector in %s' % (datetime.now() - start), 3)
     return img
 
 
@@ -260,18 +261,17 @@ def mosaic(images, outfile, vector):
     imgout = gippy.GeoImage(outfile, True)
     for b in range(0, images[0].NumBands()):
         imgout[b].CopyMeta(images[0][b])
-    img = None
     return crop2vector(imgout, vector)
 
 
 # old code utilizing shared memory array
 # Chunk it up
-#chunksz = int(data.shape[0] / nproc)
-#extra = data.shape[0] - chunksz * nproc
-#chunks = [chunksz] * (nproc - extra) + [chunksz + 1] * extra
+# chunksz = int(data.shape[0] / nproc)
+# extra = data.shape[0] - chunksz * nproc
+# chunks = [chunksz] * (nproc - extra) + [chunksz + 1] * extra
 
-#queue = multiprocessing.Queue()
-#from agspy.contrib import shmarray
-#classmap = shmarray.create_copy(classmap)
-#tmp = numpy.ctypeslib.as_ctypes(classmap)
-#cmap = sharedctypes.Array(tmp._type_, tmp, lock=False)
+# queue = multiprocessing.Queue()
+# from agspy.contrib import shmarray
+# classmap = shmarray.create_copy(classmap)
+# tmp = numpy.ctypeslib.as_ctypes(classmap)
+# cmap = sharedctypes.Array(tmp._type_, tmp, lock=False)
