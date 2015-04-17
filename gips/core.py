@@ -23,8 +23,6 @@
 
 import datetime
 import calendar
-
-import gippy
 from gips.utils import Colors, open_vector
 
 
@@ -85,7 +83,7 @@ class SpatialExtent(object):
     def factory(cls, dataclass, site=None, key='', where='', tiles=None, pcov=0.0, ptile=0.0):
         """ Create array of SpatialExtent instances """
         if site is None and tiles is None:
-            #raise Exception('Site geometry and/or tile ids required')
+            # raise Exception('Site geometry and/or tile ids required')
             tiles = dataclass.Asset.Repository.find_tiles()
         extents = []
         if site is None:
@@ -94,7 +92,7 @@ class SpatialExtent(object):
                 extents.append(cls(dataclass, tiles=[t], pcov=pcov, ptile=ptile))
         else:
             features = open_vector(site, key, where)
-            for f in features: 
+            for f in features:
                 extents.append(cls(dataclass, feature=f, tiles=tiles, pcov=pcov, ptile=ptile))
         return extents
 

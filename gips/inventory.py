@@ -29,11 +29,11 @@ import numpy
 from copy import deepcopy
 
 import gippy
-from gips.core import SpatialExtent, TemporalExtent
 from gips.tiles import Tiles
-from gips.utils import VerboseOut, Colors, basename, mkdir
+from gips.utils import VerboseOut, Colors
 from gips.data.core import Data
 from gips.mapreduce import MapReduce
+
 
 class Inventory(object):
     """ Base class for inventories """
@@ -278,14 +278,8 @@ class DataInventory(Inventory):
 
         VerboseOut('Completed mosaic project in %s' % (dt.now() - start), 2)
 
-        # Print project inventory when completed
-        if not tree:
-            inv = ProjectInventory(datadir)
-            inv.pprint()
-            return inv
-
-    #def warptiles(self):
-        """ Just copy or warp all tiles in the inventory """
+    # def warptiles(self):
+    #    """ Just copy or warp all tiles in the inventory """
 
     def pprint(self, **kwargs):
         """ Print inventory """

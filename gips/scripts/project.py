@@ -26,8 +26,8 @@ from gips import __version__
 from gips.parsers import GIPSParser
 from gips.core import SpatialExtent, TemporalExtent
 from gips.data.core import data_class
-from gips.utils import Colors, VerboseOut, open_vector
-from gips.inventory import DataInventory
+from gips.utils import Colors, VerboseOut
+from gips.inventory import DataInventory, ProjectInventory
 
 
 def main():
@@ -46,13 +46,13 @@ def main():
         cls = data_class(args.command)
 
         extents = SpatialExtent.factory(cls, args.site, args.key, args.where, args.tiles, args.pcov, args.ptile)
-        
+
         # create tld: SITENAME--KEY_DATATYPE_SUFFIX
         if args.notld:
             tld = args.outdir
         else:
             key = '' if args.key == '' else '--' + args.key
-            suffix = '' if args.suffix == '' else '_' + suffix
+            suffix = '' if args.suffix == '' else '_' + args.suffix
             res = '' if args.res is None else '_%sx%s' % (args.res[0], args.res[1])
             bname = extents[0].site.LayerName() + key + res + '_' + args.command + suffix
             tld = os.path.join(args.outdir, bname)
@@ -61,8 +61,11 @@ def main():
             inv = DataInventory(cls, extent, TemporalExtent(args.dates, args.days), **vars(args))
             datadir = os.path.join(tld, extent.site.Value())
             if inv.numfiles > 0:
-                inv.mosaic(datadir=datadir, tree=args.tree, overwrite=args.overwrite, 
+                inv.mosaic(datadir=datadir, tree=args.tree, overwrite=args.overwrite,
                            res=args.res, interpolation=args.interpolation, crop=args.crop)
+            if not args.tree:
+                inv = ProjectInventory(datadir)
+                inv.pprint()
 
     except Exception, e:
         import traceback
