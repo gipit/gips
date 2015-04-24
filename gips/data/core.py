@@ -235,6 +235,13 @@ class Asset(object):
         # dictionary of existing products in asset {'product name': [filename(s)]}
         self.products = {}
 
+    def updated(self, newasset):
+        '''
+        Compare the version info for this asset (self) to that of newasset.
+        Return true if newasset version is greater.
+        '''
+        return false
+
     ##########################################################################
     # Child classes should not generally have to override anything below here
     ##########################################################################
@@ -380,7 +387,7 @@ class Asset(object):
             raise Exception("Error downloading: %s" % e)
 
     @classmethod
-    def archive(cls, path='.', recursive=False, keep=False, **kwargs):
+    def archive(cls, path='.', recursive=False, keep=False, update=False, **kwargs):
         """ Move assets from directory to archive location """
         start = datetime.now()
 
@@ -396,7 +403,7 @@ class Asset(object):
         numfiles = 0
         assets = []
         for f in fnames:
-            archived = cls._archivefile(f)
+            archived = cls._archivefile(f, update)
             if archived[1] >= 0:
                 if not keep:
                     RemoveFiles([f], ['.index', '.aux.xml'])
@@ -414,7 +421,7 @@ class Asset(object):
         return assets
 
     @classmethod
-    def _archivefile(cls, filename):
+    def _archivefile(cls, filename, update=False):
         """ archive specific file """
         bname = os.path.basename(filename)
         try:
@@ -439,11 +446,37 @@ class Asset(object):
             if not os.path.exists(newfilename):
                 # check if another asset exists
                 existing = cls.discover(asset.tile, d, asset.asset)
-                if len(existing) > 0:
+                if(len(existing) > 0 and
+                   (not update or not existing[0].updated(asset))):
                     VerboseOut('%s: other version(s) already exists:' % bname, 1)
                     for ef in existing:
                         VerboseOut('\t%s' % os.path.basename(ef.filename), 1)
                     otherversions = True
+                elif len(existing) > 0 and update:
+                    VerboseOut('%s: removing other version(s):' % bname, 1)
+                    for ef in existing:
+                        assert ef.updated(asset), 'Asset is not updated version'
+                        VerboseOut('\t%s' % os.path.basename(ef.filename), 1)
+                        try:
+                            os.remove(ef.filename)
+                        except Exception as e:
+                            raise Exception('Unable to remove old version {}'
+                                            .format(ef.filename))
+                    files = glob.glob(os.path.join(tpath, '*'))
+                    try:
+                        for f in set(files).difference([ef.filename]):
+                            os.remove(f)
+                    except OSError as exc:
+                        VerboseOut('Unable to remove all products from {}'
+                                   .format(tpath))
+                    try:
+                        os.link(os.path.abspath(filename), newfilename)
+                        VerboseOut(bname + ' -> ' + newfilename, 2)
+                        numlinks = numlinks + 1
+                    except Exception, e:
+                        VerboseOut(traceback.format_exc(), 3)
+                        raise Exception('Problem adding {} to archive: {}'
+                                        .format(filename, e))
                 else:
                     try:
                         os.makedirs(tpath)
@@ -759,8 +792,8 @@ class Data(object):
         return datas
 
     @classmethod
-    def inventory(cls, site=None, key='', where='', tiles=None, pcov=0.0, ptile=0.0, 
-                  dates=None, days=None, **kwargs):
+    def inventory(cls, site=None, key='', where='', tiles=None, pcov=0.0,
+                  ptile=0.0, dates=None, days=None, **kwargs):
         """ Return list of inventories (size 1 if not looping through geometries) """
         from gips.inventory import DataInventory
         from gips.core import SpatialExtent, TemporalExtent

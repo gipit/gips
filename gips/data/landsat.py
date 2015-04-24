@@ -134,6 +134,7 @@ class LandsatAsset(Asset):
         self.tile = fname[3:9]
         year = fname[9:13]
         doy = fname[13:16]
+        self.version = int(fname[19:21])
         self.date = datetime.strptime(year + doy, "%Y%j")
         if self.sensor not in self._sensors.keys():
             raise Exception("Sensor %s not supported: %s" % (self.sensor, filename))
@@ -153,6 +154,16 @@ class LandsatAsset(Asset):
             }
         self.visbands = [col for col in smeta['colors'] if col[0:4] != "LWIR"]
         self.lwbands = [col for col in smeta['colors'] if col[0:4] == "LWIR"]
+
+    def updated(self, newasset):
+        '''
+        Compare the version for this to that of newasset.
+        Return true if newasset version is greater.
+        '''
+        return (self.sensor == newasset.sensor and
+                self.tile == newasset.tile and
+                self.date == newasset.date and
+                self.version < newasset.version)
 
 
 class LandsatData(Data):
