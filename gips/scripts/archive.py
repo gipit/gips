@@ -36,6 +36,12 @@ def main():
     group = parser.add_argument_group('archive options')
     group.add_argument('--keep', help='Keep files after adding to archive', default=False, action='store_true')
     group.add_argument('--recursive', help='Iterate through subdirectories', default=False, action='store_true')
+    group.add_argument(
+        '--update',
+        help='Update asset if newer version available, (must call gips_process to regenerate products',
+        default=False,
+        action='store_true'
+    )
     args = parser0.parse_args()
 
     try:
