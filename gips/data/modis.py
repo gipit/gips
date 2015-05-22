@@ -33,6 +33,8 @@ from gippy.algorithms import Indices
 from gips.data.core import Repository, Asset, Data
 from gips.utils import VerboseOut
 
+from pdb import set_trace
+
 
 def binmask(arr, bit):
     """ Return boolean array indicating which elements as binary have a 1 in
@@ -123,6 +125,12 @@ class ModisAsset(Asset):
             'startdate': datetime.date(2000, 3, 5),
             'latency': -7
         },
+        'MYD11A2': {
+            'pattern': 'MYD11A2*hdf',
+            'url': 'http://e4ftl01.cr.usgs.gov/MOLA/MYD11A2.005',
+            'startdate': datetime.date(2002, 7, 4),
+            'latency': -7
+        },
     }
 
     # Should this be specified on a per asset basis? (in which case retrieve from asset)
@@ -149,7 +157,8 @@ class ModisAsset(Asset):
         try:
             listing = urllib.urlopen(mainurl).readlines()
         except Exception:
-            raise Exception("Unable to access %s" % mainurl)
+            raise Exception("Unable to access %s --- is it Wednesday?" % mainurl)
+            #return
 
         pattern = '(%s.A%s%s.%s.005.\d{13}.hdf)' % (asset, str(year), str(date.timetuple()[7]).zfill(3), tile)
         cpattern = re.compile(pattern)
@@ -170,7 +179,7 @@ class ModisAsset(Asset):
                     #raise Exception('Unable to retrieve %s from %s' % (name, url))
                     pass
                 else:
-                    #VerboseOut('Retrieved %s' % name, 2)
+                    VerboseOut('Retrieved %s' % name, 2)
                     success = True
 
         if not success:
@@ -187,9 +196,9 @@ class ModisData(Data):
     _pattern = '*.tif'
     _productgroups = {
         "Nadir BRDF-Adjusted 16-day": ['indices', 'quality'],
-        "Terra/Aqua Daily": ['temp', 'obstime'],
-        #"Terra/Aqua Daily": ['snow', 'temp', 'obstime'],
-        "Terra 8-day": ['ndvi8', 'temp8'],
+        #"Terra/Aqua Daily": ['temp', 'obstime'],
+        "Terra/Aqua Daily": ['snow', 'temp', 'obstime'],
+        "Terra 8-day": ['ndvi8', 'temp8_tn', 'temp8_td'],
     }
     _products = {
         # MCD Products
@@ -202,10 +211,10 @@ class ModisData(Data):
             'assets': ['MCD43A2'],
         },
         # Daily
-        #'snow': {
-        #    'description': 'Snow and ice cover data',
-        #    'assets': ['MOD10A1', 'MYD10A1'],
-        #},
+        'snow': {
+            'description': 'Snow and ice cover data',
+            'assets': ['MOD10A1', 'MYD10A1'],
+        },
         'temp': {
             'description': 'Surface temperature data',
             'assets': ['MOD11A1', 'MYD11A1'],
@@ -219,7 +228,11 @@ class ModisData(Data):
             'description': 'Normalized Difference Vegetation Index: 250m',
             'assets': ['MOD09Q1'],
         },
-        'temp8': {
+        'temp8td': {
+            'description': 'Surface temperature: 1km',
+            'assets': ['MOD11A2'],
+        },
+        'temp8tn': {
             'description': 'Surface temperature: 1km',
             'assets': ['MOD11A2'],
         },
@@ -262,6 +275,7 @@ class ModisData(Data):
 
             meta = self.meta_dict()
             meta['AVAILABLE_ASSETS'] = ' '.join(availassets)
+
 
             if val[0] == "quality":
                 fname = '%s_%s_%s.tif' % (bname, sensor, key)
@@ -452,6 +466,8 @@ class ModisData(Data):
                 imgout[0].Write(coverout)
                 imgout[1].Write(fracout)
 
+                VerboseOut('Completed writing %s' % fname)
+                
             ###################################################################
             # TEMPERATURE PRODUCT (DAILY)
             if val[0] == "temp":
@@ -627,12 +643,24 @@ class ModisData(Data):
                 imgout = gippy.GeoImage(fouts['ndvi'])
 
             # TEMPERATURE PRODUCT (8-day) - Terra only
-            if val[0] == "temp8":
+
+            if val[0] == "temp8td":
                 sensor = 'MOD'
                 fname = '%s_%s_%s.tif' % (bname, sensor, key)
+                if os.path.lexists(fname):
+                    os.remove(fname)
                 os.symlink(allsds[0], fname)
                 imgout = gippy.GeoImage(fname)
+                
 
+            if val[0] == "temp8tn":
+                sensor = 'MOD'
+                fname = '%s_%s_%s.tif' % (bname, sensor, key)
+                if os.path.lexists(fname):
+                    os.remove(fname)
+                os.symlink(allsds[4], fname)
+                imgout = gippy.GeoImage(fname)
+                
             # set metadata
             meta = {k: str(v) for k, v in meta.iteritems()}
             imgout.SetMeta(meta)
