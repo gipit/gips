@@ -5,6 +5,7 @@
     EMAIL:  matt.a.hanson@gmail.com
 
     Copyright (C) 2014 Applied Geosolutions
+    EMAIL: oss@appliedgeosolutions.com
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -19,12 +20,13 @@
    You should have received a copy of the GNU General Public License
    along with this program. If not, see <http://www.gnu.org/licenses/>
 
-# Authors
+# Authors and Contributors
 
 The following have been authors or contributers to GIPS
 
     Matthew Hanson
     Bobby Braswell
+    Ian Cooke
 
 
 # GIPS Installation
