@@ -31,6 +31,9 @@ import gippy
 from gips.data.core import Repository, Asset, Data
 from gips.utils import VerboseOut, basename
 
+from pdb import set_trace
+
+
 requirements = ['pydap']
 
 
@@ -89,14 +92,15 @@ class MerraAsset(Asset):
             'latency': 60,
             'bandnames': _bandnames
         },
-        #'PREC': {
-        #    'description': 'Total Precipitation (kg m-2 s-1)',
-        #    'pattern': 'MST1NXMLD_PREC_*.tif',
-        #    'url': 'http://goldsmr2.sci.gsfc.nasa.gov/opendap/MERRA/MST1NXMLD.5.2.0',
-        #    'source': 'MERRA%s.prod.simul.tavg1_2d_mld_Nx.%04d%02d%02d.hdf',
-        #    'startdate': datetime.date(1980, 1, 1),
-        #    'latency': 60
-        #},
+        'PRECTOT': {
+           'description': 'Total Precipitation (kg m-2 s-1)',
+           'pattern': 'MERRA_PRECTOT_*.tif',
+           'url': 'http://goldsmr2.sci.gsfc.nasa.gov/opendap/MERRA/MST1NXMLD.5.2.0',
+           'source': 'MERRA%s.prod.simul.tavg1_2d_mld_Nx.%04d%02d%02d.hdf',
+           'startdate': datetime.date(1980, 1, 1),
+           'latency': 60,
+           'bandnames': _bandnames
+        },
         'PROFILE': {
             'description': 'Atmospheric Profile',
             'pattern': 'MAI6NVANA_PROFILE_*.tif',
@@ -130,6 +134,7 @@ class MerraAsset(Asset):
         # e.g., ['MERRA', 'TS', 'h06v05', '2010001']
         self.date = datetime.datetime.strptime(parts[3], '%Y%j').date()
         self.products[self.asset] = filename
+
 
     @classmethod
     def opendap_fetch(cls, asset, date):
@@ -189,11 +194,13 @@ class MerraAsset(Asset):
 
         VerboseOut('Retrieving data for bounds (%s, %s) - (%s, %s)' % (bounds[0], bounds[1], bounds[2], bounds[3]), 3)
 
+        # print dataset.keys()
         # TODO - what keys to get?
-        shape = dataset['PS'].shape
+        # shape = dataset['PS'].shape
+        # shape = dataset[asset].shape
+        # print shape
 
-        print dataset.keys()
-        print shape
+        # set_trace()
 
         data = dataset[asset][:, iy0:iy1, ix0:ix1].astype('float32')
         # What's this for?
@@ -208,6 +215,7 @@ class MerraAsset(Asset):
         from agspy.utils import raster
         proj = raster.create_proj(4326)
         geo = (bounds[0], cls._defaultresolution[0], 0.0, bounds[3], 0.0, -cls._defaultresolution[1])
+        print "writing", fout
         raster.write_raster(fout, data, proj, geo, meta, bandnames=cls._assets[asset]['bandnames'])
 
 
@@ -233,7 +241,16 @@ class MerraData(Data):
         'TS': {
             'description': 'Surface temperature',
             'assets': ['TS']
-        }
+        },
+        'PRECTOT': {
+            'description': 'Precipitation rate [kg m-2 s-1]',
+            'assets': ['PRECTOT']
+        },
+        'precip': {
+            'description': 'Daily total precipitation [cm]',
+            'assets': ['PRECTOT']
+        },
+
 
         #'daily_weather': {
         #    'description': 'Climate forcing data, e.g. for DNDC',
@@ -322,6 +339,7 @@ class MerraData(Data):
             """
             ####################################################################
             if val[0] == "temp":
+                # this shouldn't have ever been used for anything
                 img = gippy.GeoImage(assets[0])
 
                 imgout = gippy.GeoImage(fout, img, img.DataType(), 4)
@@ -361,6 +379,55 @@ class MerraData(Data):
                     obsdate = self.date + datetime.timedelta(pickday)
                     descr = " ".join([strtimes[itime], obsdate.isoformat()])
                     imgout.SetBandName(descr, itime + 1)
+
+            ####################################################################
+            if val[0] == "precip":
+
+                img = gippy.GeoImage(assets[0])
+
+                imgout = gippy.GeoImage(fout, img, img.DataType(), 1)
+
+
+                set_trace()
+
+                # Aqua AM, Terra AM, Aqua PM, Terra PM
+                # localtimes = [1.5, 10.5, 13.5, 22.5]
+                # strtimes = ['0130LT', '1030LT', '1330LT', '2230LT']
+                # hroffset = self.gmtoffset()
+
+                # TODO: loop across the scene in latitude
+                # calculate local time for each latitude column
+                # print 'localtimes', localtimes
+                # for itime, localtime in enumerate(localtimes):
+                #     print itime
+                #     picktime = localtime - hroffset
+                #     pickhour = int(picktime)
+
+                #     if pickhour < 0:
+                #         # next day local time
+                #         pickday = +1
+                #     elif pickhour > 24:
+                #         # previous day local time
+                #         pickday = -1
+                #     else:
+                #         # same day local time
+                #         pickday = 0
+
+                #     pickidx = pickhour % 24
+                #     print "localtime", localtime
+                #     print "picktime", picktime
+                #     print "pickhour", pickhour
+                #     print "pickday", pickday
+                #     print "pickidx", pickidx
+
+                #     img[pickidx].Process(imgout[itime])
+
+                #     obsdate = self.date + datetime.timedelta(pickday)
+                #     descr = " ".join([strtimes[itime], obsdate.isoformat()])
+                #     imgout.SetBandName(descr, itime + 1)
+
+
+
             ####################################################################
             elif val[0] == 'profile':
                 pass

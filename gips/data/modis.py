@@ -223,6 +223,14 @@ class ModisData(Data):
             'description': 'Surface temperature: 1km',
             'assets': ['MOD11A2'],
         },
+        'temp8td': {
+            'description': 'Surface temperature: 1km',
+            'assets': ['MOD11A2'],
+        },
+        'temp8tn': {
+            'description': 'Surface temperature: 1km',
+            'assets': ['MOD11A2'],
+        },
 
     }
 
@@ -265,6 +273,8 @@ class ModisData(Data):
 
             if val[0] == "quality":
                 fname = '%s_%s_%s.tif' % (bname, sensor, key)
+                if os.path.lexists(fname):
+                    os.remove(fname)
                 os.symlink(allsds[0], fname)
                 imgout = gippy.GeoImage(fname)
 
@@ -632,6 +642,24 @@ class ModisData(Data):
                 fname = '%s_%s_%s.tif' % (bname, sensor, key)
                 os.symlink(allsds[0], fname)
                 imgout = gippy.GeoImage(fname)
+
+
+            if val[0] == "temp8td":
+                sensor = 'MOD'
+                fname = '%s_%s_%s.tif' % (bname, sensor, key)
+                if os.path.lexists(fname):
+                    os.remove(fname)
+                os.symlink(allsds[0], fname)
+                imgout = gippy.GeoImage(fname)
+
+            if val[0] == "temp8tn":
+                sensor = 'MOD'
+                fname = '%s_%s_%s.tif' % (bname, sensor, key)
+                if os.path.lexists(fname):
+                    os.remove(fname)
+                os.symlink(allsds[4], fname)
+                imgout = gippy.GeoImage(fname)
+
 
             # set metadata
             meta = {k: str(v) for k, v in meta.iteritems()}

@@ -140,6 +140,8 @@ def data_sources():
                 found = True
             except:
                 VerboseOut(traceback.format_exc(), 4)
+        else:
+            raise Exception('ERROR: archive %s is not a directory or is not available' % key)
     if not found:
         print "There are no available data sources!"
     return sources
