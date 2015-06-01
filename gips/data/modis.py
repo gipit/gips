@@ -3,7 +3,7 @@
 #    GIPS: Geospatial Image Processing System
 #
 #    AUTHOR: Matthew Hanson
-#    EMAIL:  matt.a.hanson@gmail.com
+#    EMAIL:  matt.a.hanson@gmail.com 
 #
 #    Copyright (C) 2014 Applied Geosolutions
 #
@@ -204,7 +204,7 @@ class ModisData(Data):
         "Nadir BRDF-Adjusted 16-day": ['indices', 'quality'],
         #"Terra/Aqua Daily": ['temp', 'obstime'],
         "Terra/Aqua Daily": ['snow', 'temp', 'obstime'],
-        "Terra 8-day": ['ndvi8', 'temp8_tn', 'temp8_td'],
+        "Terra 8-day": ['ndvi8', 'temp8tn', 'temp8td'],
     }
     _products = {
         # MCD Products
@@ -233,14 +233,6 @@ class ModisData(Data):
         'ndvi8': {
             'description': 'Normalized Difference Vegetation Index: 250m',
             'assets': ['MOD09Q1'],
-        },
-        'temp8td': {
-            'description': 'Surface temperature: 1km',
-            'assets': ['MOD11A2'],
-        },
-        'temp8tn': {
-            'description': 'Surface temperature: 1km',
-            'assets': ['MOD11A2'],
         },
         'temp8td': {
             'description': 'Surface temperature: 1km',
