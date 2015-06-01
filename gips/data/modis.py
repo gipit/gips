@@ -25,6 +25,8 @@ import os
 import re
 import datetime
 import urllib
+import urllib2
+
 import math
 import numpy as np
 
@@ -32,8 +34,6 @@ import gippy
 from gippy.algorithms import Indices
 from gips.data.core import Repository, Asset, Data
 from gips.utils import VerboseOut
-
-from pdb import set_trace
 
 
 def binmask(arr, bit):
@@ -157,8 +157,8 @@ class ModisAsset(Asset):
         try:
             listing = urllib.urlopen(mainurl).readlines()
         except Exception:
+            # MODIS servers do maintenance on wednesday
             raise Exception("Unable to access %s --- is it Wednesday?" % mainurl)
-            #return
 
         pattern = '(%s.A%s%s.%s.005.\d{13}.hdf)' % (asset, str(year), str(date.timetuple()[7]).zfill(3), tile)
         cpattern = re.compile(pattern)
@@ -171,8 +171,14 @@ class ModisAsset(Asset):
                 name = cpattern.findall(item)[0]
                 url = ''.join([mainurl, '/', name])
                 outpath = os.path.join(cls.Repository.spath(), name)
+
                 try:
-                    urllib.urlretrieve(url, outpath)
+                    #urllib.urlretrieve(url, outpath)
+                    connection = urllib2.urlopen(url)
+                    output = open(outpath, 'wb')
+                    output.write(connection.read())
+                    output.close()
+
                 except Exception:
                     # TODO - implement pre-check to only attempt on valid dates
                     # then uncomment this
@@ -185,7 +191,7 @@ class ModisAsset(Asset):
         if not success:
             # TODO - implement pre-check to only attempt on valid dates then uncomment below
             #raise Exception('Unable to find remote match for %s at %s' % (pattern, mainurl))
-            VerboseOut('Unable to find remote match for %s at %s' % (pattern, mainurl), 5)
+            VerboseOut('Unable to find remote match for %s at %s' % (pattern, mainurl), 4)
 
 
 class ModisData(Data):
