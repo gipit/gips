@@ -58,16 +58,6 @@ class Colors():
     _WHITE  = _c + '47m'
 
 
-def create_settings_file(path, tld):
-    """ Create a settings file using the included template and the provided top level direcotry """
-    from gips.settings_template import __file__ as src
-    dst = os.path.join(path, 'settings.py')
-    with open(dst, 'wt') as fout:
-        with open(src, 'rt') as fin:
-            for line in fin:
-                fout.write(line.replace('$TLD'), tld)
-
-
 def VerboseOut(obj, level=1):
     if gippy.Options.Verbose() >= level:
         #pprint.PrettyPrinter().pprint(obj)
@@ -75,6 +65,9 @@ def VerboseOut(obj, level=1):
             obj = [obj]
         for o in obj:
             print o
+
+
+# Filesystem functions
 
 
 def File2List(filename):
@@ -126,6 +119,16 @@ def link(src, dst, hard=False):
     return dst
 
 
+def create_settings_file(path, tld):
+    """ Create a settings file using the included template and the provided top level direcotry """
+    from gips.settings_template import __file__ as src
+    dst = os.path.join(path, 'settings.py')
+    with open(dst, 'wt') as fout:
+        with open(src, 'rt') as fin:
+            for line in fin:
+                fout.write(line.replace('$TLD'), tld)
+
+
 def settings():
     """ Retrieve GIPS settings """
     import imp
@@ -157,19 +160,7 @@ def data_sources():
     return sources
 
 
-import time
-from functools import wraps
-
-
-def fn_timer(function):
-    @wraps(function)
-    def function_timer(*args, **kwargs):
-        t0 = time.time()
-        result = function(*args, **kwargs)
-        t1 = time.time()
-        print "%s time: %s seconds" % (function.func_name, str(t1 - t0))
-        return result
-    return function_timer
+# Geospatial functions
 
 
 def open_vector(fname, key="", where='', path=''):
