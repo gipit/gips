@@ -36,35 +36,38 @@ EMAIL = ''
 
 REPOS = {
     'AOD': {
-        'rootpath': '/data/aod',
-    },
-    'CDL': {
-        'rootpath': '',
-	    'tile_attribute': '',
+        'rootpath': '$TLD/aod',
     },
     'Landsat': {
-        'rootpath': '/data/landsat',
-	    'tile_attribute': 'pr',
+        'rootpath': '$TLD/landsat',
+        'tile_attribute': 'pr',
         # Atmospheric correction
         '6S': False,
         'MODTRAN': False,
-        # Extract the files from tar.gz before processing (opposed to accessing directly)
+        # extract the files from tar.gz before processing instead of accessing directly
         'extract': False,
     },
     'Modis': {
-        'rootpath': '/data/modis',
+        'rootpath': '$TLD/modis',
+    },
+    # these drivers tend to more specialized and experimental so turned off by default
+    """
+    'CDL': {
+        'rootpath': '$TLD/cdl',
+        'tile_attribute': '',
     },
     'SAR': {
-        'rootpath': '',
+        'rootpath': '$TLD/sar',
     },
     'SARAnnual': {
-        'rootpath': '',
+        'rootpath': '$TLD/sarannual',
     },
     'Merra': {
-        'rootpath': '',
-	    'tile_attribute': 'tileid',
+        'rootpath': '$TLD/Merra',
+        'tile_attribute': 'tileid',
     },
     'Daymet': {
-        'rootpath': '',
+        'rootpath': '$TLD/daymet',
     },
+    """
 }

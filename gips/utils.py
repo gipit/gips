@@ -58,6 +58,16 @@ class Colors():
     _WHITE  = _c + '47m'
 
 
+def create_settings_file(path, tld):
+    """ Create a settings file using the included template and the provided top level direcotry """
+    from gips.settings_template import __file__ as src
+    dst = os.path.join(path, 'settings.py')
+    with open(dst, 'wt') as fout:
+        with open(src, 'rt') as fin:
+            for line in fin:
+                fout.write(line.replace('$TLD'), tld)
+
+
 def VerboseOut(obj, level=1):
     if gippy.Options.Verbose() >= level:
         #pprint.PrettyPrinter().pprint(obj)
