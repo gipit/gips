@@ -34,38 +34,38 @@ import imp
 
 __version__ = imp.load_source('gips.version', 'gips/version.py').__version__
 
-cfgpth = '/etc/gips'
+debug = True
 
-# create cfgpath
-try:
-    if not os.path.exists(cfgpth):
-        os.mkdir(cfgpth)
-except OSError:
-    # perhaps due to not root permissions but this may be a virtualenv so forge on ahead
-    pass
-
-# copies the GIPPY configuration file
-try:
-    configfile = os.path.join(cfgpth, 'settings.py')
-    configtemplate = 'gips/settings.template.py'
-    if not os.path.exists(configfile):
-        shutil.copyfile(configtemplate, configfile)
-except OSError:
-    # perhaps due to not root permissions but this may be a virtualenv so forge on ahead
-    pass
-
-# copy the tile vectors
-try:
-    for d in glob.glob('data/*'):
-        target = '/etc/gips/%s' % os.path.basename(d)
-        if os.path.isdir(d) and not os.path.exists(target):
-            shutil.copytree(d, target)
-except:
-    # perhaps due to not root permissions but this may be a virtualenv so forge on ahead
-    pass
+def create_settings(cfgpath):
+    """ Create settings file and data directory """
+    cfgfile = os.path.join(cfgpath, 'settings.py')
+    try:
+        if not os.path.exists(cfgfile):
+            if not os.path.exists(cfgpath):
+                os.mkdir(cfgpath)
+            with open(cfgfile, 'wt') as fout:
+                with open('gips/settings_template.py', 'rt') as fin:
+                    for line in fin:
+                        fout.write(line.replace('$TLD', '/data/repos'))
+            # copy data (tiles vectors)
+            for d in glob.glob('data/*'):
+                target = os.path.join(cfgpath, os.path.basename(d))
+                if os.path.isdir(d) and not os.path.exists(target):
+                    shutil.copytree(d, target)
+            return True
+    except OSError:
+        # no root permissions, so no system level configs installed
+        if debug:
+            print traceback.format_exc()
+        return False
 
 
-# collect console scripts
+# if global settings file does not exist try to create one, otherwise create user settings
+#if not create_settings('/etc/gips'):
+#    create_settings(os.path.expanduser('~/.gips'))
+
+
+# collect console scripts to install
 console_scripts = []
 for f in glob.glob('gips/scripts/*.py'):
     try:
@@ -82,8 +82,8 @@ setup(
     description='Geospatial Image Processing System',
     author='Matthew Hanson',
     author_email='matt.a.hanson@gmail.com',
-    packages=['gips', 'gips.data', 'gips.scripts'],
-    package_data={'': ['settings*py']},
+    packages=['gips', 'gips.data', 'gips.scripts', 'gips.data.Landsat'],
+    package_data={'' : ['*.shp']},
     install_requires=['Py6S>=1.5.0', 'shapely', 'gippy>=0.3.0', 'python-dateutil', 'pydap'],
     entry_points={'console_scripts': console_scripts},
 )
