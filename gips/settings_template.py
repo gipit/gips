@@ -51,23 +51,21 @@ REPOS = {
         'rootpath': '$TLD/modis',
     },
     # these drivers tend to more specialized and experimental so turned off by default
-    """
-    'CDL': {
-        'rootpath': '$TLD/cdl',
-        'tile_attribute': '',
-    },
-    'SAR': {
-        'rootpath': '$TLD/sar',
-    },
-    'SARAnnual': {
-        'rootpath': '$TLD/sarannual',
-    },
-    'Merra': {
-        'rootpath': '$TLD/Merra',
-        'tile_attribute': 'tileid',
-    },
-    'Daymet': {
-        'rootpath': '$TLD/daymet',
-    },
-    """
+    #'CDL': {
+    #    'rootpath': '$TLD/cdl',
+    #    'tile_attribute': '',
+    #},
+    #'SAR': {
+    #    'rootpath': '$TLD/sar',
+    #},
+    #'SARAnnual': {
+    #    'rootpath': '$TLD/sarannual',
+    #},
+    #'Merra': {
+    #    'rootpath': '$TLD/Merra',
+    #    'tile_attribute': 'tileid',
+    #},
+    #'Daymet': {
+    #    'rootpath': '$TLD/daymet',
+    #},
 }
