@@ -119,7 +119,18 @@ def link(src, dst, hard=False):
     return dst
 
 
-def create_settings_file(path, tld):
+# Settings functions
+
+
+def user_set():
+    """ Get settings from user input """
+    # top level directory of data repositories
+    tld = '/data/repos'
+    tld = raw_input("Location of GIPS repositories (default: %s):\n" % tld) or tld
+    tld = tld.rstrip('\\')
+
+
+def create_user_settings(path, tld):
     """ Create a settings file using the included template and the provided top level direcotry """
     from gips.settings_template import __file__ as src
     dst = os.path.join(path, 'settings.py')
