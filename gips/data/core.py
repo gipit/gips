@@ -49,7 +49,7 @@ For a new dataset create children of Repository, Asset, and Data
 
 def repository_class(clsname):
     """ Get ClassRepository class object """
-    exec('from gips.data.%s.%s import %sRepository as cls' % (clsname.lower(), clsname.lower(), clsname))
+    exec('from gips.data.%s import %sRepository as cls' % (clsname.lower(), clsname))
     return cls
 
 
