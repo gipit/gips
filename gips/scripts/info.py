@@ -31,10 +31,9 @@ def main():
     title = Colors.BOLD + 'GIPS Data Repositories (v%s)' % (gipsversion) + Colors.OFF
 
     # argument parsing
-    parser = GIPSParser(description=title)
-    args = parser.parse_args()
-
     try:
+        parser = GIPSParser(description=title)
+        args = parser.parse_args()
         print title
         cls = data_class(args.command)
         cls.print_products()
