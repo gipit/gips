@@ -21,6 +21,12 @@
 #   along with this program. If not, see <http://www.gnu.org/licenses/>
 ################################################################################
 
+# GIPS complete settings file
+
+# Used for anonymous FTP
+EMAIL = '$EMAIL'
+
+
 # Site files and data tiles vectors can be retrieved from a database
 DATABASES = {
 #    'tiles': {
@@ -32,61 +38,50 @@ DATABASES = {
 #    }
 }
 
-# Used for anonymous FTP
-EMAIL = '$EMAIL'
-
-
-"""
-# to add a repository add a new key to the REPOS dictionary, available params shown below
-
-    'dataname': {
-        # path to driver location (default to gips/data/dataname)
-        'driver': '',
-        # path to top level directory of data
-        'repopath': '',
-        # override location of tiles vector (defaults to gips/data/dataname/tiles.shp)
-       'tiles': '',
-        #'tiles': 'mydatabase:mydatatype_tiles',        # database format
-        #'tiles': '~/randomdir/dataname_tiles.shp'      # file format
-
-       # 'attribute name holding tileid in tiles vector'
-       'tileid_attribute': '',
-    }
-"""
-
 
 REPOS = {
     'AOD': {
-        'rootpath': '$TLD/aod',
+        'repository': '$TLD/aod',
     },
     'Landsat': {
-        'rootpath': '$TLD/landsat',
-        'tile_attribute': 'pr',
-        # Atmospheric correction
-        '6S': False,
-        'MODTRAN': False,
-        # extract the files from tar.gz before processing instead of accessing directly
-        'extract': False,
+        'repository': '$TLD/landsat',
+        # Landsat specific settings
+        '6S': False,            # atm correction for VIS/NIR/SWIR bands
+        'MODTRAN': False,       # atm correction for LWIR
+        'extract': False,       # extract files from tar.gz before processing instead of direct access
     },
     'Modis': {
-        'rootpath': '$TLD/modis',
+        'repository': '$TLD/modis',
     },
     # these drivers tend to more specialized and experimental so turned off by default
     #'CDL': {
-    #    'rootpath': '$TLD/cdl',
-    #    'tile_attribute': '',
+    #    'repository': '$TLD/cdl',
     #},
     #'SAR': {
-    #    'rootpath': '$TLD/sar',
+    #    'repository': '$TLD/sar',
     #},
     #'SARAnnual': {
-    #    'rootpath': '$TLD/sarannual',
+    #    'repository': '$TLD/sarannual',
     #},
     #'Merra': {
-    #    'rootpath': '$TLD/Merra',
-    #    'tile_attribute': 'tileid',
+    #    'repository': '$TLD/Merra',
     #},
     #'Daymet': {
-    #    'rootpath': '$TLD/daymet',
+    #    'repository': '$TLD/daymet',
     #},
 }
+
+
+"""
+# to add repository add new key to the REPOS dictionary
+    'dataname': {
+        # path to driver directory location (default to gips/data/dataname/ if not given)
+        'driver': '',
+        # path to top level directory of data
+        'repository': '',
+        # override location of tiles vector (default to gips/data/dataname/tiles.shp)
+       'tiles': '',
+        #'tiles': 'mydatabase:mydatatype_tiles',        # database format
+        #'tiles': '~/randomdir/dataname_tiles.shp'      # file format
+    }
+"""

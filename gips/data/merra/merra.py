@@ -40,6 +40,7 @@ requirements = ['pydap']
 class MerraRepository(Repository):
     name = 'Merra'
     description = 'Modern Era Retrospective-Analysis for Research and Applications (weather and climate)'
+    _tile_attribute = 'tileid'
 
     @classmethod
     def tile_bounds(cls, tile):

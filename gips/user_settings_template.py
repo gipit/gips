@@ -47,7 +47,7 @@ except:
 
 
 """
-# to add a repository add a new key to the REPOS dictionary
+# to add repository add new key to the REPOS dictionary
 REPOS['dataname'] = {
    	# path to driver location (default to gips/data/dataname)
    	'driver': '',

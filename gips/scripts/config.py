@@ -63,7 +63,8 @@ def main():
 
         elif args.command == 'env':
             try:
-                create_environment_settings(args.repos, email=args.email)
+                cfgfile = create_environment_settings(args.repos, email=args.email)
+                # create directories for repositories
             except Exception, e:
                 print 'Could not create environment settings: %s' % e
 

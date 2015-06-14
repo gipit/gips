@@ -71,6 +71,8 @@ class Repository(object):
     description = 'Data source description'
     # Format code of date directories in repository
     _datedir = '%Y%j'
+    # attribute holding the tile id
+    _tile_attribute = 'tile'
 
     _tdir = 'tiles'
     _cdir = 'composites'
@@ -81,8 +83,7 @@ class Repository(object):
     @classmethod
     def feature2tile(cls, feature):
         """ Get tile designation from a geospatial feature (i.e. a row) """
-        att_name = cls.repo().get('tile_attribute', 'tile')
-        fldindex = feature.GetFieldIndex(att_name)
+        fldindex = feature.GetFieldIndex(cls._tile_attribute)
         return str(feature.GetField(fldindex))
 
     ##########################################################################
