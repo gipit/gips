@@ -146,9 +146,9 @@ def create_environment_settings(repos_path, email=''):
                 with open('gips/settings_template.py', 'rt') as fin:
                     for line in fin:
                         fout.write(line.replace('$TLD', repos_path).replace('$EMAIL', email))
-            return cfgfile
+        return cfgfile
     except OSError:
-        # no root permissions, so no system level configs installed
+        # no permissions, so no environment level config installed
         #print traceback.format_exc()
         return None
 
@@ -167,6 +167,13 @@ def create_user_settings(email=''):
             for line in fin:
                 fout.write(line)
     return cfgfile
+
+
+def create_repos():
+    """ Create any necessary repository directories """
+    repos = settings().REPOS
+    for key in repos.keys():
+        pass
 
 
 def data_sources():
