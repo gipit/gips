@@ -21,18 +21,39 @@
 #   along with this program. If not, see <http://www.gnu.org/licenses/>
 ################################################################################
 
+# Site files and data tiles vectors can be retrieved from a database
 DATABASES = {
-    'tiles': {
-        'NAME': '',
-        'USER': '',
-        'PASSWORD': '',
-        'HOST': '',
-        'PORT': '5432',
-    }
+#    'tiles': {
+#        'NAME': '',
+#        'USER': '',
+#        'PASSWORD': '',
+#        'HOST': '',
+#        'PORT': '5432',
+#    }
 }
 
 # Used for anonymous FTP
-EMAIL = ''
+EMAIL = '$EMAIL'
+
+
+"""
+# to add a repository add a new key to the REPOS dictionary, available params shown below
+
+    'dataname': {
+        # path to driver location (default to gips/data/dataname)
+        'driver': '',
+        # path to top level directory of data
+        'repopath': '',
+        # override location of tiles vector (defaults to gips/data/dataname/tiles.shp)
+       'tiles': '',
+        #'tiles': 'mydatabase:mydatatype_tiles',        # database format
+        #'tiles': '~/randomdir/dataname_tiles.shp'      # file format
+
+       # 'attribute name holding tileid in tiles vector'
+       'tileid_attribute': '',
+    }
+"""
+
 
 REPOS = {
     'AOD': {

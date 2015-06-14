@@ -21,9 +21,44 @@
 #   along with this program. If not, see <http://www.gnu.org/licenses/>
 ################################################################################
 
-try:
-	# run the system setting file
-	execfile('/etc/gips/settings.py')
-except:
-	pass
+# GIPS user settings file
 
+# this block will try to read in an environment (e.g., system-level or virtual)
+# settings file so that individual settings can be changed
+try:
+    import gips.settings
+    execfile(gips.settings.__file__.rstrip('c'))
+except:
+    raise Exception('There are no environment-level GIPS settings!')
+
+
+# change email used for FTP
+#EMAIL = ''
+
+
+# to add in a database add a new key to the DATABASES dictionary
+#DATABASES['mydatabase'] = {
+#        'NAME': '',
+#        'USER': '',
+#        'PASSWORD': '',
+#        'HOST': '',
+#        'PORT': '5432',
+#}
+
+
+"""
+# to add a repository add a new key to the REPOS dictionary
+REPOS['dataname'] = {
+   	# path to driver location (default to gips/data/dataname)
+   	'driver': '',
+   	# path to top level directory of data
+  	'repopath': '',
+   	# override location of tiles vector (defaults to gips/data/dataname/tiles.shp)
+   'tiles': '',
+   	#'tiles': 'mydatabase:mydatatype_tiles',		# database format
+    #'tiles': '~/randomdir/dataname_tiles.shp'  	# file format
+
+   # 'attribute name holding tileid in tiles vector'
+   'tileid_attribute': '',
+}
+"""

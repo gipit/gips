@@ -26,44 +26,13 @@ setup for GIPS
 """
 
 import os
-from setuptools import setup
+from setuptools import setup, find_packages
 import shutil
 import glob
 import traceback
 import imp
 
 __version__ = imp.load_source('gips.version', 'gips/version.py').__version__
-
-debug = True
-
-def create_settings(cfgpath):
-    """ Create settings file and data directory """
-    cfgfile = os.path.join(cfgpath, 'settings.py')
-    try:
-        if not os.path.exists(cfgfile):
-            if not os.path.exists(cfgpath):
-                os.mkdir(cfgpath)
-            with open(cfgfile, 'wt') as fout:
-                with open('gips/settings_template.py', 'rt') as fin:
-                    for line in fin:
-                        fout.write(line.replace('$TLD', '/data/repos'))
-            # copy data (tiles vectors)
-            for d in glob.glob('data/*'):
-                target = os.path.join(cfgpath, os.path.basename(d))
-                if os.path.isdir(d) and not os.path.exists(target):
-                    shutil.copytree(d, target)
-            return True
-    except OSError:
-        # no root permissions, so no system level configs installed
-        if debug:
-            print traceback.format_exc()
-        return False
-
-
-# if global settings file does not exist try to create one, otherwise create user settings
-#if not create_settings('/etc/gips'):
-#    create_settings(os.path.expanduser('~/.gips'))
-
 
 # collect console scripts to install
 console_scripts = []
@@ -82,8 +51,9 @@ setup(
     description='Geospatial Image Processing System',
     author='Matthew Hanson',
     author_email='matt.a.hanson@gmail.com',
-    packages=['gips', 'gips.data', 'gips.scripts', 'gips.data.Landsat'],
-    package_data={'' : ['*.shp']},
+    packages=find_packages(),
+    package_data={'' : ['*.shp', '*.prj', '*.shx', '*.dbf']},
     install_requires=['Py6S>=1.5.0', 'shapely', 'gippy>=0.3.0', 'python-dateutil', 'pydap'],
     entry_points={'console_scripts': console_scripts},
+    zip_safe=False,
 )

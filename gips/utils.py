@@ -118,40 +118,59 @@ def link(src, dst, hard=False):
         os.symlink(os.path.relpath(src, os.path.dirname(dst)), os.path.abspath(dst))
     return dst
 
-
+##############################################################################
 # Settings functions
 
-
-def user_set():
-    """ Get settings from user input """
-    # top level directory of data repositories
-    tld = '/data/repos'
-    tld = raw_input("Location of GIPS repositories (default: %s):\n" % tld) or tld
-    tld = tld.rstrip('\\')
-
-
-def create_user_settings(path, tld):
-    """ Create a settings file using the included template and the provided top level direcotry """
-    from gips.settings_template import __file__ as src
-    dst = os.path.join(path, 'settings.py')
-    with open(dst, 'wt') as fout:
-        with open(src, 'rt') as fin:
-            for line in fin:
-                fout.write(line.replace('$TLD'), tld)
-
-
 def settings():
-    """ Retrieve GIPS settings """
+    """ Retrieve GIPS settings - first from user, then from system """
     import imp
     try:
-        import gips.settings
-        return gips.settings
+        # import user settings first
+        src = imp.load_source('settings', os.path.expanduser('~/.gips/settings.py'))
+        return src
     except:
-        import imp
-        return imp.load_source('gips.settings', '/etc/gips/settings.py')
+        try:
+            import gips.settings
+            return gips.settings
+        except:
+            raise Exception('No settings found...did you run gips_config?')
+
+
+def create_environment_settings(repos_path, email=''):
+    """ Create settings file and data directory """
+    cfgpath = os.path.dirname(__file__)
+    cfgfile = os.path.join(cfgpath, 'settings.py')
+    try:
+        if not os.path.exists(cfgfile):
+            with open(cfgfile, 'wt') as fout:
+                with open('gips/settings_template.py', 'rt') as fin:
+                    for line in fin:
+                        fout.write(line.replace('$TLD', repos_path).replace('$EMAIL', email))
+            return cfgfile
+    except OSError:
+        # no root permissions, so no system level configs installed
+        #print traceback.format_exc()
+        return None
+
+
+def create_user_settings(email=''):
+    """ Create a settings file using the included template and the provided top level directory """
+    from gips.user_settings_template import __file__ as src
+    cfgpath = os.path.expanduser('~/.gips')
+    if not os.path.exists(cfgpath):
+        os.mkdir(cfgpath)
+    cfgfile = os.path.join(cfgpath, 'settings.py')
+    if os.path.exists(cfgfile):
+        raise Exception('User settings file already exists: %s' % cfgfile)
+    with open(cfgfile, 'wt') as fout:
+        with open(src, 'rt') as fin:
+            for line in fin:
+                fout.write(line)
+    return cfgfile
 
 
 def data_sources():
+    """ Get enabled data sources (and verify) from settings """
     from gips.data.core import repository_class
     sources = {}
     repos = settings().REPOS
