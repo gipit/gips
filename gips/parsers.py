@@ -26,7 +26,7 @@ import sys
 import argparse
 import traceback
 
-from gips.utils import settings, data_sources
+from gips.utils import data_sources
 from gips.data.core import repository_class
 import gippy
 
