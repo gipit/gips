@@ -170,7 +170,7 @@ class ModisAsset(Asset):
                     continue
                 name = cpattern.findall(item)[0]
                 url = ''.join([mainurl, '/', name])
-                outpath = os.path.join(cls.Repository.spath(), name)
+                outpath = os.path.join(cls.Repository.path('stage'), name)
 
                 try:
                     #urllib.urlretrieve(url, outpath)

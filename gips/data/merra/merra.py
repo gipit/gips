@@ -211,7 +211,7 @@ class MerraAsset(Asset):
         description = cls._assets[asset]['description']
         meta = {'ASSET': asset, 'TILE': tile, 'DATE': str(date.date()), 'DESCRIPTION': description}
         doy = date.strftime('%j')
-        fout = os.path.join(cls.Repository.spath(), "MERRA_%s_%s_%4d%s.tif" % (asset, tile, date.year, doy))
+        fout = os.path.join(cls.Repository.path('stage'), "MERRA_%s_%s_%4d%s.tif" % (asset, tile, date.year, doy))
         # TODO - use GIPPY to write
         from agspy.utils import raster
         proj = raster.create_proj(4326)

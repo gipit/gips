@@ -39,7 +39,7 @@ class AODRepository(Repository):
     _datedir = '%Y%j'
 
     @classmethod
-    def path(cls, tile='', date=''):
+    def data_path(cls, tile='', date=''):
         path = os.path.join(cls.get_setting('repository'), cls._tdir)
         if date != '':
             path = os.path.join(path, str(date.strftime('%Y')), str(date.strftime('%j')))
@@ -52,11 +52,11 @@ class AODRepository(Repository):
     @classmethod
     def find_dates(cls, tile=''):
         """ Get list of dates available in repository for a tile """
-        #tdir = cls.path()
+        tdir = cls.path('tiles')
         #if os.path.exists(tdir):
         dates = []
-        for year in os.listdir(cls.path()):
-            days = os.listdir(os.path.join(cls.path(), year))
+        for year in os.listdir(tdir):
+            days = os.listdir(os.path.join(tdir, year))
             for day in days:
                 dates.append(datetime.datetime.strptime(year + day, '%Y%j').date())
         return dates
@@ -162,7 +162,7 @@ class AODData(Data):
     @classmethod
     def process_composites(cls, inventory, products, **kwargs):
         for product in products:
-            cpath = os.path.join(cls.Asset.Repository.path_composites(), 'ltad')
+            cpath = os.path.join(cls.Asset.Repository.path('composites'), 'ltad')
             path = os.path.join(cpath, 'ltad')
             # Calculate AOT long-term multi-year averages (lta) for given day
             if product == 'ltad':
@@ -175,7 +175,7 @@ class AODData(Data):
             if product == 'lta':
                 filenames = glob.glob(path + '*.tif')
                 if len(filenames) > 0:
-                    fout = os.path.join(cls.Asset.Repository.path_composites(), 'lta.tif')
+                    fout = os.path.join(cls.Asset.Repository.path('composites'), 'lta.tif')
                     cls.process_mean(filenames, fout)
                 else:
                     raise Exception('No daily LTA files exist!')
@@ -266,6 +266,7 @@ class AODData(Data):
         day = date.strftime('%j')
         # Calculate best estimate from multiple sources
         repo = cls.Asset.Repository
+        cpath = repo.path('composites')
         if numpy.isnan(aod):
             aod = 0.0
             norm = 0.0
@@ -274,7 +275,7 @@ class AODData(Data):
 
             source = 'Weighted estimate using MODIS LTA values'
             # LTA-Daily
-            filename = os.path.join(repo.cpath('ltad'), 'ltad%s.tif' % str(day).zfill(3))
+            filename = os.path.join(cpath, 'ltad', 'ltad%s.tif' % str(day).zfill(3))
             val, var = cls._read_point(filename, roi, nodata)
             var = var if var != 0.0 else val
             if not numpy.isnan(val) and not numpy.isnan(var):
@@ -285,7 +286,7 @@ class AODData(Data):
                 VerboseOut('AOD: LTA-Daily = %s, %s' % (val, var), 3)
 
             # LTA
-            val, var = cls._read_point(os.path.join(repo.cpath(), 'lta.tif'), roi, nodata)
+            val, var = cls._read_point(os.path.join(cpath, 'lta.tif'), roi, nodata)
             var = var if var != 0.0 else val
             if not numpy.isnan(val) and not numpy.isnan(var):
                 aod = aod + val / var

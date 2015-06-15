@@ -84,9 +84,9 @@ class Repository(object):
     # Override these functions if not using a tile/date directory structure
     ##########################################################################
     @classmethod
-    def path(cls, tile='', date=''):
+    def data_path(cls, tile='', date=''):
         """ Get absolute data path for this tile and date """
-        path = cls.path_tiles()
+        path = cls.path('tiles')
         if tile != '':
             path = os.path.join(path, tile)
         if date != '':
@@ -96,12 +96,12 @@ class Repository(object):
     @classmethod
     def find_tiles(cls):
         """ Get list of all available tiles """
-        return os.listdir(cls.path_tiles())
+        return os.listdir(cls.path('tiles'))
 
     @classmethod
     def find_dates(cls, tile):
         """ Get list of dates available in repository for a tile """
-        tdir = cls.path(tile=tile)
+        tdir = cls.data_path(tile=tile)
         if os.path.exists(tdir):
             return sorted([datetime.strptime(os.path.basename(d), cls._datedir).date() for d in os.listdir(tdir)])
         else:
@@ -128,24 +128,9 @@ class Repository(object):
             return r[key]
 
     @classmethod
-    def path_tiles(cls):
-        """ Path to repository tiles """
-        return os.path.join(cls.get_setting('repository'), 'tiles')
-
-    @classmethod
-    def path_composites(cls):
-        """ Path to composite products """
-        return os.path.join(cls.get_setting('repository'), 'composites')
-
-    @classmethod
-    def path_quarantine(cls):
-        """ Path to quarantine area """
-        return os.path.join(cls.get_setting('repository'), 'quarantine')
-
-    @classmethod
-    def path_stage(cls):
-        """ Path to staging area """
-        return os.path.join(cls.get_setting('repository'), 'stage')
+    def path(cls, subdir=''):
+        """ Paths to repository: valid subdirs (tiles, composites, quarantine, stage) """
+        return os.path.join(cls.get_setting('repository'), subdir)
 
     @classmethod
     def vector(cls):
@@ -294,7 +279,7 @@ class Asset(object):
     @classmethod
     def discover(cls, tile, date, asset=None):
         """ Factory function returns list of Assets for this tile and date """
-        tpath = cls.Repository.path(tile, date)
+        tpath = cls.Repository.data_path(tile, date)
         if asset is not None:
             assets = [asset]
         else:
@@ -373,7 +358,7 @@ class Asset(object):
 
             for f in ftp.nlst('*'):
                 VerboseOut("Downloading %s" % f, 2)
-                ftp.retrbinary('RETR %s' % f, open(os.path.join(cls.Repository.spath(), f), "wb").write)
+                ftp.retrbinary('RETR %s' % f, open(os.path.join(cls.Repository.path('stage'), f), "wb").write)
             ftp.close()
         except Exception, e:
             VerboseOut(traceback.format_exc(), 4)
@@ -422,7 +407,7 @@ class Asset(object):
         except Exception, e:
             # if problem with inspection, move to quarantine
             VerboseOut(traceback.format_exc(), 3)
-            qname = os.path.join(cls.Repository.qpath(), bname)
+            qname = os.path.join(cls.Repository.path('quarantine'), bname)
             if not os.path.exists(qname):
                 os.link(os.path.abspath(filename), qname)
             VerboseOut('%s -> quarantine (file error): %s' % (filename, e), 2)
@@ -434,7 +419,7 @@ class Asset(object):
         numlinks = 0
         otherversions = False
         for d in dates:
-            tpath = cls.Repository.path(asset.tile, d)
+            tpath = cls.Repository.data_path(asset.tile, d)
             newfilename = os.path.join(tpath, bname)
             if not os.path.exists(newfilename):
                 # check if another asset exists
@@ -591,7 +576,7 @@ class Data(object):
         self.filenames = {}             # dict of (sensor, product): filename
         self.sensors = {}               # dict of asset/product: sensor
         if tile is not None and date is not None:
-            self.path = self.Repository.path(tile, date)
+            self.path = self.Repository.data_path(tile, date)
             self.basename = self.id + '_' + self.date.strftime(self.Repository._datedir)
             # find all assets
             for asset in self.Asset.discover(tile, date):

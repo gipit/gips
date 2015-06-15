@@ -165,7 +165,7 @@ class DaymetAsset(Asset):
         meta = {'ASSET': asset, 'TILE': tile, 'DATE': str(date.date()), 'DESCRIPTION': description}
 
         sday = str(day).zfill(3)
-        fout = os.path.join(cls.Repository.spath(), "daymet_%s_%s_%4d%s.tif" % (asset, tile, date.year, sday))
+        fout = os.path.join(cls.Repository.path('stage'), "daymet_%s_%s_%4d%s.tif" % (asset, tile, date.year, sday))
 
         geo = [float(x0), cls._defaultresolution[0], 0.0, float(y0), 0.0, -cls._defaultresolution[1]]
         geo = np.array(geo).astype('double')
