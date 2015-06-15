@@ -66,9 +66,9 @@ def VerboseOut(obj, level=1):
         for o in obj:
             print o
 
-
+##############################################################################
 # Filesystem functions
-
+##############################################################################
 
 def File2List(filename):
     f = open(filename)
@@ -120,6 +120,7 @@ def link(src, dst, hard=False):
 
 ##############################################################################
 # Settings functions
+##############################################################################
 
 def settings():
     """ Retrieve GIPS settings - first from user, then from system """
@@ -138,12 +139,13 @@ def settings():
 
 def create_environment_settings(repos_path, email=''):
     """ Create settings file and data directory """
+    from gips.settings_template import __file__ as src
     cfgpath = os.path.dirname(__file__)
     cfgfile = os.path.join(cfgpath, 'settings.py')
     try:
         if not os.path.exists(cfgfile):
             with open(cfgfile, 'wt') as fout:
-                with open('gips/settings_template.py', 'rt') as fin:
+                with open(src, 'rt') as fin:
                     for line in fin:
                         fout.write(line.replace('$TLD', repos_path).replace('$EMAIL', email))
         return cfgfile
@@ -173,7 +175,9 @@ def create_repos():
     """ Create any necessary repository directories """
     repos = settings().REPOS
     for key in repos.keys():
-        pass
+        path = repos[key]['repository']
+        if not os.path.isdir(path):
+            os.makedirs(path)
 
 
 def data_sources():
@@ -183,7 +187,7 @@ def data_sources():
     repos = settings().REPOS
     found = False
     for key in sorted(repos.keys()):
-        if os.path.isdir(repos[key]['rootpath']):
+        if os.path.isdir(repos[key]['repository']):
             try:
                 repo = repository_class(key)
                 sources[key] = repo.description
@@ -196,9 +200,9 @@ def data_sources():
         print "There are no available data sources!"
     return sources
 
-
+##############################################################################
 # Geospatial functions
-
+##############################################################################
 
 def open_vector(fname, key="", where='', path=''):
     """ Open vector or feature """
