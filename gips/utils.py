@@ -204,11 +204,11 @@ def data_sources():
 # Geospatial functions
 ##############################################################################
 
-def open_vector(fname, key="", where='', path=''):
+def open_vector(fname, key="", where=''):
     """ Open vector or feature """
     parts = fname.split(':')
     if len(parts) == 1:
-        vector = GeoVector(os.path.join(path, fname))
+        vector = GeoVector(fname)
         vector.SetPrimaryKey(key)
     else:
         # or it is a database
@@ -220,6 +220,7 @@ def open_vector(fname, key="", where='', path=''):
                         (db['NAME'], db['HOST'], db['PORT'], db['USER'], db['PASSWORD']))
             vector = GeoVector(filename, parts[1])
             vector.SetPrimaryKey(key)
+
         except Exception, e:
             VerboseOut(traceback.format_exc(), 4)
     if where != '':

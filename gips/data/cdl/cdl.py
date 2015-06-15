@@ -72,7 +72,7 @@ class CDLData(Data):
         'cdl': {'description': 'Crop Data Layer'}
     }
 
-    _legend_file = os.path.join(CDLRepository.rootpath(), 'CDL_Legend.csv')
+    _legend_file = os.path.join(CDLRepository.get_setting('repository'), 'CDL_Legend.csv')
     _legend = [row['ClassName'].lower() for row in DictReader(open(_legend_file))]
 
     @classmethod

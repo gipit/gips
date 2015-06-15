@@ -40,7 +40,7 @@ class AODRepository(Repository):
 
     @classmethod
     def path(cls, tile='', date=''):
-        path = os.path.join(cls.rootpath(), cls._tdir)
+        path = os.path.join(cls.get_setting('repository'), cls._tdir)
         if date != '':
             path = os.path.join(path, str(date.strftime('%Y')), str(date.strftime('%j')))
         return path
@@ -162,7 +162,7 @@ class AODData(Data):
     @classmethod
     def process_composites(cls, inventory, products, **kwargs):
         for product in products:
-            cpath = cls.Asset.Repository.cpath('ltad')
+            cpath = os.path.join(cls.Asset.Repository.path_composites(), 'ltad')
             path = os.path.join(cpath, 'ltad')
             # Calculate AOT long-term multi-year averages (lta) for given day
             if product == 'ltad':
@@ -175,7 +175,7 @@ class AODData(Data):
             if product == 'lta':
                 filenames = glob.glob(path + '*.tif')
                 if len(filenames) > 0:
-                    fout = os.path.join(cls.Asset.Repository.cpath(), 'lta.tif')
+                    fout = os.path.join(cls.Asset.Repository.path_composites(), 'lta.tif')
                     cls.process_mean(filenames, fout)
                 else:
                     raise Exception('No daily LTA files exist!')

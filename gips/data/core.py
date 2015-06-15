@@ -74,11 +74,6 @@ class Repository(object):
     # attribute holding the tile id
     _tile_attribute = 'tile'
 
-    _tdir = 'tiles'
-    _cdir = 'composites'
-    _qdir = 'quarantine'
-    _sdir = 'stage'
-
     @classmethod
     def feature2tile(cls, feature):
         """ Get tile designation from a geospatial feature (i.e. a row) """
@@ -91,7 +86,7 @@ class Repository(object):
     @classmethod
     def path(cls, tile='', date=''):
         """ Get absolute data path for this tile and date """
-        path = os.path.join(cls.rootpath(), cls._tdir)
+        path = cls.path_tiles()
         if tile != '':
             path = os.path.join(path, tile)
         if date != '':
@@ -101,7 +96,7 @@ class Repository(object):
     @classmethod
     def find_tiles(cls):
         """ Get list of all available tiles """
-        return os.listdir(os.path.join(cls.rootpath(), cls._tdir))
+        return os.listdir(cls.path_tiles())
 
     @classmethod
     def find_dates(cls, tile):
@@ -116,51 +111,49 @@ class Repository(object):
     # Child classes should not generally have to override anything below here
     ##########################################################################
     @classmethod
-    def repo(cls):
-        """ Get dictionary of repository settings """
-        return settings().REPOS[cls.name]
-
-    @classmethod
-    def rootpath(cls):
-        """ Root path to repository """
-        return cls.repo().get('repository', '')
-
-    @classmethod
-    def cpath(cls, dirs=''):
-        """ Composites path """
-        return cls._path(cls._cdir, dirs)
-
-    @classmethod
-    def qpath(cls):
-        """ quarantine path """
-        return cls._path(cls._qdir)
-
-    @classmethod
-    def spath(cls):
-        """ staging path """
-        return cls._path(cls._sdir)
-
-    @classmethod
-    def _path(cls, dirname, dirs=''):
-        """ Get absolute path name to directory, creating if necessary """
-        if dirs == '':
-            path = os.path.join(cls.rootpath(), dirname)
+    def get_setting(cls, key):
+        """ Get value from repo settings """
+        r = settings().REPOS[cls.name]
+        if key not in r.keys():
+            # not in settings file, use defaults
+            exec('import gips.data.%s as clsname' % cls.name.lower())
+            driverpath = os.path.dirname(clsname.__file__)
+            if key == 'driver':
+                return driverpath
+            elif key == 'tiles':
+                return os.path.join(driverpath, 'tiles.shp')
+            else:
+                raise Exception('%s is not a valid setting!' % key)
         else:
-            path = os.path.join(cls.rootpath(), dirname, dirs)
-        if not os.path.exists(path):
-            try:
-                os.makedirs(path)
-            except Exception:
-                raise Exception("Repository: Error making directory %s" % path)
-        return path
+            return r[key]
+
+    @classmethod
+    def path_tiles(cls):
+        """ Path to repository tiles """
+        return os.path.join(cls.get_setting('repository'), 'tiles')
+
+    @classmethod
+    def path_composites(cls):
+        """ Path to composite products """
+        return os.path.join(cls.get_setting('repository'), 'composites')
+
+    @classmethod
+    def path_quarantine(cls):
+        """ Path to quarantine area """
+        return os.path.join(cls.get_setting('repository'), 'quarantine')
+
+    @classmethod
+    def path_stage(cls):
+        """ Path to staging area """
+        return os.path.join(cls.get_setting('repository'), 'stage')
 
     @classmethod
     def vector(cls):
         """ Get GeoVector of sensor grid """
+        vname = cls.get_setting('tiles')
+        print 'vname = ', vname
+        vector = open_vector(vname)
         # TODO = update to use gippy.GeoVector
-        # check location from settings
-        vpath = os.path.join('/etc/gips', cls.name)
-        vector = open_vector(cls.repo().get('vector', 'tiles.shp'), path=vpath)
         return GeoVector(vector.Filename(), vector.LayerName())
 
     @classmethod
