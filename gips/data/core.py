@@ -73,6 +73,8 @@ class Repository(object):
     _datedir = '%Y%j'
     # attribute holding the tile id
     _tile_attribute = 'tile'
+    # valid sub directories in repo
+    _subdirs = ['tiles', 'stage', 'quarantine', 'composites']
 
     @classmethod
     def feature2tile(cls, feature):

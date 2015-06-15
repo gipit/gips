@@ -175,9 +175,11 @@ def create_repos():
     """ Create any necessary repository directories """
     repos = settings().REPOS
     for key in repos.keys():
-        path = os.path.join(repos[key]['repository'], 'tiles')
-        if not os.path.isdir(path):
-            os.makedirs(path)
+        exec('from gips.data.%s import %sRepository as repo' % (key.lower(), key))
+        for d in repo._subdirs:
+            path = os.path.join(repos[key]['repository'], d)
+            if not os.path.isdir(path):
+                os.makedirs(path)
 
 
 def data_sources():
