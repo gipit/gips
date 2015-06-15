@@ -78,7 +78,6 @@ class Repository(object):
     _cdir = 'composites'
     _qdir = 'quarantine'
     _sdir = 'stage'
-    _vdir = 'vectors'
 
     @classmethod
     def feature2tile(cls, feature):
@@ -124,7 +123,7 @@ class Repository(object):
     @classmethod
     def rootpath(cls):
         """ Root path to repository """
-        return cls.repo().get('rootpath', '')
+        return cls.repo().get('repository', '')
 
     @classmethod
     def cpath(cls, dirs=''):

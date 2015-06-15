@@ -175,7 +175,7 @@ def create_repos():
     """ Create any necessary repository directories """
     repos = settings().REPOS
     for key in repos.keys():
-        path = repos[key]['repository']
+        path = os.path.join(repos[key]['repository'], 'tiles')
         if not os.path.isdir(path):
             os.makedirs(path)
 
