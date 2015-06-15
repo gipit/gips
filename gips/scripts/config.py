@@ -25,7 +25,7 @@ import os
 import gips
 from gips import __version__ as version
 from gips.parsers import GIPSParser
-from gips.utils import VerboseOut, create_environment_settings, create_user_settings
+from gips.utils import VerboseOut, create_environment_settings, create_user_settings, create_repos
 import pprint
 import traceback
 
@@ -64,8 +64,10 @@ def main():
         elif args.command == 'env':
             try:
                 cfgfile = create_environment_settings(args.repos, email=args.email)
-                # create directories for repositories
+                create_repos()
+                print 'Environment settings file: %s' % cfgfile
             except Exception, e:
+                print traceback.format_exc()
                 print 'Could not create environment settings: %s' % e
 
         elif args.command == 'user':
@@ -73,11 +75,14 @@ def main():
                 # first try importing environment settings
                 import gips.settings
                 cfgfile = create_user_settings()
+                create_repos()
                 print 'User settings file: %s' % cfgfile
             except Exception, e:
                 # could not import gips.settings, TODO - see if user wants to proceed with user-only config
                 #raise Exception('No environment settings found...run `gips_config env` to install in environment first')
                 print 'Could not create user settings: %s' % e
+
+
                 
     except Exception, e:
 
