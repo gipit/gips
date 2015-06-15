@@ -29,7 +29,7 @@ from gips.data.core import Repository, Asset, Data
 from gips.utils import RemoveFiles, VerboseOut
 
 
-class SARAnnualRepository(Repository):
+class sarannualRepository(Repository):
     name = 'SARAnnual'
     description = 'Synthetic Aperture Radar PALSAR Mosaics'
     _datedir = '%Y'
@@ -53,8 +53,8 @@ class SARAnnualRepository(Repository):
         return tile
 
 
-class SARAnnualAsset(Asset):
-    Repository = SARAnnualRepository
+class sarannualAsset(Asset):
+    Repository = sarannualRepository
     _sensors = {
         #'AFBS': 'PALSAR FineBeam Single Polarization',
         'PALSAR': {'description': 'PALSAR Mosaic (FineBeam Dual Polarization)'},
@@ -74,7 +74,7 @@ class SARAnnualAsset(Asset):
 
     def __init__(self, filename):
         """ Inspect a single file and get some basic info """
-        super(SARAnnualAsset, self).__init__(filename)
+        super(sarannualAsset, self).__init__(filename)
         bname = os.path.basename(filename)
         self.asset = bname[11:14]
         self.tile = bname[0:7]
@@ -84,7 +84,7 @@ class SARAnnualAsset(Asset):
 
     def extract(self, filenames=[]):
         """ Extract filesnames from asset """
-        files = super(SARAnnualAsset, self).extract(filenames)
+        files = super(sarannualAsset, self).extract(filenames)
         datafiles = {}
         for f in files:
             bname = os.path.basename(f)
@@ -94,11 +94,11 @@ class SARAnnualAsset(Asset):
         return datafiles
 
 
-class SARAnnualData(Data):
+class sarannualData(Data):
     """ Tile of data """
     name = 'SARAnnual'
     version = '0.9.0'
-    Asset = SARAnnualAsset
+    Asset = sarannualAsset
 
     _pattern = '*'
     _products = {
@@ -118,13 +118,13 @@ class SARAnnualData(Data):
 
     def find_files(self):
         """ Search path for valid files """
-        filenames = super(SARAnnualData, self).find_files()
+        filenames = super(sarannualData, self).find_files()
         filenames[:] = [f for f in filenames if os.path.splitext(f)[1] != '.hdr']
         return filenames
 
     def process(self, *args, **kwargs):
         """ Process all requested products for this tile """
-        products = super(SARAnnualData, self).process(*args, **kwargs)
+        products = super(sarannualData, self).process(*args, **kwargs)
         if len(products) == 0:
             return
 

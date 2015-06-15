@@ -32,7 +32,7 @@ from gips.data.core import Repository, Asset, Data
 from gips.utils import File2List, List2File, RemoveFiles
 
 
-class SARRepository(Repository):
+class sarRepository(Repository):
     name = 'SAR'
     description = 'Synthetic Aperture Radar PALSAR and JERS-1'
 
@@ -55,9 +55,9 @@ class SARRepository(Repository):
         return tile
 
 
-class SARAsset(Asset):
+class sarAsset(Asset):
     """ Single original file """
-    Repository = SARRepository
+    Repository = sarRepository
 
     _sensors = {
         'AFBS': {'description': 'PALSAR FineBeam Single Polarization'},
@@ -118,7 +118,7 @@ class SARAsset(Asset):
 
     def __init__(self, filename):
         """ Inspect a single file and get some basic info """
-        super(SARAsset, self).__init__(filename)
+        super(sarAsset, self).__init__(filename)
 
         bname = os.path.basename(filename)
         self.tile = bname[10:17]
@@ -132,7 +132,7 @@ class SARAsset(Asset):
                 datefile = f
                 rootname = f[:-5]
 
-        # unique to SARData (TODO - is this still used later?)
+        # unique to sarData (TODO - is this still used later?)
         self.hdrfile = hdrfile
 
         # Check if inspecting a file in the repository
@@ -207,7 +207,7 @@ class SARAsset(Asset):
 
     def extract(self, filenames=[]):
         """ Extract filenames from asset and create ENVI header files """
-        files = super(SARAsset, self).extract(filenames)
+        files = super(sarAsset, self).extract(filenames)
         for f in files:
             if f[-3:] == 'hdr':
                 meta = self._meta(f)
@@ -227,11 +227,11 @@ class SARAsset(Asset):
         return datafiles
 
 
-class SARData(Data):
+class sarData(Data):
     """ Assets and products for a tile and date """
     name = 'SAR'
     version = '0.9.0'
-    Asset = SARAsset
+    Asset = sarAsset
 
     _pattern = '*'
     _products = {
@@ -257,13 +257,13 @@ class SARData(Data):
 
     def find_files(self):
         """ Search path for valid files """
-        filenames = super(SARData, self).find_files()
+        filenames = super(sarData, self).find_files()
         filenames[:] = [f for f in filenames if os.path.splitext(f)[1] != '.hdr']
         return filenames
 
     def process(self, *args, **kwargs):
         """ Make sure all products have been pre-processed """
-        products = super(SARData, self).process(*args, **kwargs)
+        products = super(sarData, self).process(*args, **kwargs)
         if len(products) == 0:
             return
 
@@ -282,7 +282,7 @@ class SARData(Data):
                 img.AddMask(mask[0] == 255)
                 # apply date mask
                 dateimg = gippy.GeoImage(datafiles['date'], False)
-                dateday = (self.date - SARAsset._launchdate[sensor[0]]).days
+                dateday = (self.date - sarAsset._launchdate[sensor[0]]).days
                 img.AddMask(dateimg[0] == dateday)
                 #imgout = gippy.SigmaNought(img, fname, meta['CF'])
                 imgout = gippy.GeoImage(fname, img, gippy.GDT_Float32)

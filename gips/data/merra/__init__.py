@@ -1,1 +1,1 @@
-from merra import MerraRepository, MerraAsset, MerraData
+from merra import merraRepository, merraAsset, merraData

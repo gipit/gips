@@ -47,21 +47,9 @@ For a new dataset create children of Repository, Asset, and Data
 """
 
 
-def repository_class(clsname):
-    """ Get ClassRepository class object """
-    exec('from gips.data.%s import %sRepository as cls' % (clsname.lower(), clsname))
-    return cls
-
-
-def asset_class(clsname):
-    """ Get ClassAsset class object """
-    exec('from gips.data.%s import %sAsset as cls' % (clsname.lower(), clsname))
-    return cls
-
-
 def data_class(clsname):
     """ Get ClassData class object """
-    exec('from gips.data.%s import %sData as cls' % (clsname.lower(), clsname))
+    exec('from gips.data.%s import %sData as cls' % (clsname, clsname))
     return cls
 
 
@@ -115,10 +103,11 @@ class Repository(object):
     @classmethod
     def get_setting(cls, key):
         """ Get value from repo settings """
-        r = settings().REPOS[cls.name]
+        dataclass = cls.__name__[:-10]
+        r = settings().REPOS[dataclass]
         if key not in r.keys():
             # not in settings file, use defaults
-            exec('import gips.data.%s as clsname' % cls.name.lower())
+            exec('import gips.data.%s as clsname' % dataclass)
             driverpath = os.path.dirname(clsname.__file__)
             if key == 'driver':
                 return driverpath

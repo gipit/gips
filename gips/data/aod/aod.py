@@ -33,7 +33,7 @@ from gips.data.core import Repository, Asset, Data
 from gips.utils import File2List, List2File, VerboseOut
 
 
-class AODRepository(Repository):
+class aodRepository(Repository):
     name = 'AOD'
     description = 'Aerosol Optical Depth from MODIS (MOD08)'
     _datedir = '%Y%j'
@@ -67,8 +67,8 @@ class AODRepository(Repository):
         return {'': (1, 1)}
 
 
-class AODAsset(Asset):
-    Repository = AODRepository
+class aodAsset(Asset):
+    Repository = aodRepository
 
     # ???? Not specific to MODIS
     _sensors = {
@@ -88,7 +88,7 @@ class AODAsset(Asset):
 
     def __init__(self, filename):
         """ Inspect a single file and get some metadata """
-        super(AODAsset, self).__init__(filename)
+        super(aodAsset, self).__init__(filename)
 
         bname = os.path.basename(filename)
         self.asset = bname[0:5]
@@ -120,17 +120,17 @@ class AODAsset(Asset):
 
     #@classmethod
     #def archive(cls, path='.', recursive=False, keep=False):
-        #assets = super(AODAsset, cls).archive(path, recursive, keep)
+        #assets = super(aodAsset, cls).archive(path, recursive, keep)
         # this creates new LTA files every archiving
         #dates = [a.date for a in assets]
         #for date in set(dates):
-        #    AODData.process_aerolta_daily(date.strftime('%j'))
+        #    aodData.process_aerolta_daily(date.strftime('%j'))
 
 
-class AODData(Data):
+class aodData(Data):
     name = 'MODAOD'
     version = '0.9.0'
-    Asset = AODAsset
+    Asset = aodAsset
 
     _products = {
         'aod': {

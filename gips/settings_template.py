@@ -40,33 +40,33 @@ DATABASES = {
 
 
 REPOS = {
-    'AOD': {
+    'aod': {
         'repository': '$TLD/aod',
     },
-    'Landsat': {
+    'landsat': {
         'repository': '$TLD/landsat',
         # Landsat specific settings
         '6S': False,            # atm correction for VIS/NIR/SWIR bands
         'MODTRAN': False,       # atm correction for LWIR
         'extract': False,       # extract files from tar.gz before processing instead of direct access
     },
-    'Modis': {
+    'modis': {
         'repository': '$TLD/modis',
     },
     # these drivers tend to more specialized and experimental so turned off by default
-    #'CDL': {
+    #'cdl': {
     #    'repository': '$TLD/cdl',
     #},
-    #'SAR': {
+    #'sar': {
     #    'repository': '$TLD/sar',
     #},
-    #'SARAnnual': {
+    #'sarannual': {
     #    'repository': '$TLD/sarannual',
     #},
-    #'Merra': {
+    #'merra': {
     #    'repository': '$TLD/Merra',
     #},
-    #'Daymet': {
+    #'daymet': {
     #    'repository': '$TLD/daymet',
     #},
 }

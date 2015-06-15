@@ -1,1 +1,1 @@
-from cdl import CDLRepository, CDLAsset, CDLData
+from cdl import cdlRepository, cdlAsset, cdlData

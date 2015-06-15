@@ -129,7 +129,8 @@ def settings():
         # import user settings first
         src = imp.load_source('settings', os.path.expanduser('~/.gips/settings.py'))
         return src
-    except:
+    except Exception, e:
+        print traceback.format_exc()
         try:
             import gips.settings
             return gips.settings
@@ -184,14 +185,13 @@ def create_repos():
 
 def data_sources():
     """ Get enabled data sources (and verify) from settings """
-    from gips.data.core import repository_class
     sources = {}
     repos = settings().REPOS
     found = False
     for key in sorted(repos.keys()):
         if os.path.isdir(repos[key]['repository']):
             try:
-                repo = repository_class(key)
+                exec('from gips.data.%s import %sRepository as repo' % (key, key))
                 sources[key] = repo.description
                 found = True
             except:

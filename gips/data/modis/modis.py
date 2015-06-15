@@ -43,7 +43,7 @@ def binmask(arr, bit):
     return arr & (1 << (bit - 1)) == (1 << (bit - 1))
 
 
-class ModisRepository(Repository):
+class modisRepository(Repository):
     name = 'Modis'
     description = 'MODIS Aqua and Terra'
 
@@ -66,8 +66,8 @@ class ModisRepository(Repository):
     #         return []
 
 
-class ModisAsset(Asset):
-    Repository = ModisRepository
+class modisAsset(Asset):
+    Repository = modisRepository
 
     _sensors = {
         'MOD': {'description': 'Terra'},
@@ -138,7 +138,7 @@ class ModisAsset(Asset):
 
     def __init__(self, filename):
         """ Inspect a single file and get some metadata """
-        super(ModisAsset, self).__init__(filename)
+        super(modisAsset, self).__init__(filename)
         bname = os.path.basename(filename)
         self.asset = bname[0:7]
         self.tile = bname[17:23]
@@ -150,7 +150,7 @@ class ModisAsset(Asset):
 
     @classmethod
     def fetch(cls, asset, tile, date):
-        #super(ModisAsset, cls).fetch(asset, tile, date)
+        #super(modisAsset, cls).fetch(asset, tile, date)
 
         year, month, day = date.timetuple()[:3]
         mainurl = '%s/%s.%02d.%02d' % (cls._assets[asset]['url'], str(year), month, day)
@@ -194,11 +194,11 @@ class ModisAsset(Asset):
             VerboseOut('Unable to find remote match for %s at %s' % (pattern, mainurl), 4)
 
 
-class ModisData(Data):
+class modisData(Data):
     """ A tile of data (all assets and products) """
     name = 'Modis'
     version = '0.9.0'
-    Asset = ModisAsset
+    Asset = modisAsset
     _pattern = '*.tif'
     _productgroups = {
         "Nadir BRDF-Adjusted 16-day": ['indices', 'quality'],
@@ -247,7 +247,7 @@ class ModisData(Data):
 
     def process(self, *args, **kwargs):
         """ Process all products """
-        products = super(ModisData, self).process(*args, **kwargs)
+        products = super(modisData, self).process(*args, **kwargs)
         if len(products) == 0:
             return
 

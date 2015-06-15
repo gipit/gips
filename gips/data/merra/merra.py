@@ -37,7 +37,7 @@ from pdb import set_trace
 requirements = ['pydap']
 
 
-class MerraRepository(Repository):
+class merraRepository(Repository):
     name = 'Merra'
     description = 'Modern Era Retrospective-Analysis for Research and Applications (weather and climate)'
     _tile_attribute = 'tileid'
@@ -54,8 +54,8 @@ class MerraRepository(Repository):
         return bounds
 
 
-class MerraAsset(Asset):
-    Repository = MerraRepository
+class merraAsset(Asset):
+    Repository = merraRepository
 
     _sensors = {
         'MERRA': {
@@ -127,7 +127,7 @@ class MerraAsset(Asset):
 
     def __init__(self, filename):
         """ Inspect a single file and get some metadata """
-        super(MerraAsset, self).__init__(filename)
+        super(merraAsset, self).__init__(filename)
         parts = basename(filename).split('_')
         self.sensor = 'MERRA'
         self.asset = parts[1]
@@ -220,11 +220,11 @@ class MerraAsset(Asset):
         raster.write_raster(fout, data, proj, geo, meta, bandnames=cls._assets[asset]['bandnames'])
 
 
-class MerraData(Data):
+class merraData(Data):
     """ A tile of data (all assets and products) """
     name = 'Merra'
     version = '0.9.0'
-    Asset = MerraAsset
+    Asset = merraAsset
 
     _products = {
         'temp': {
@@ -312,7 +312,7 @@ class MerraData(Data):
         return houroffset
 
     def process(self, *args, **kwargs):
-        products = super(MerraData, self).process(*args, **kwargs)
+        products = super(merraData, self).process(*args, **kwargs)
         if len(products) == 0:
             return
 
