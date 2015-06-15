@@ -136,7 +136,6 @@ class Repository(object):
     def vector(cls):
         """ Get GeoVector of sensor grid """
         vname = cls.get_setting('tiles')
-        print 'vname = ', vname
         vector = open_vector(vname)
         # TODO = update to use gippy.GeoVector
         return GeoVector(vector.Filename(), vector.LayerName())
