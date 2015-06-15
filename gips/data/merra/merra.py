@@ -29,7 +29,7 @@ import numpy
 
 import gippy
 from gips.data.core import Repository, Asset, Data
-from gips.utils import VerboseOut, basename
+from gips.utils import VerboseOut, basename, open_vector
 
 from pdb import set_trace
 
@@ -45,13 +45,9 @@ class merraRepository(Repository):
     @classmethod
     def tile_bounds(cls, tile):
         """ Get the bounds of the tile (in same units as tiles vector) """
-        tilesvector = cls.vector()
-        for fid in tilesvector.get_fids():
-            feature = tilesvector.get_feature(fid)
-            if feature['tileid'] == tile:
-                break
-        bounds = eval(feature['bounds'])
-        return bounds
+        vector = open_vector(cls.get_setting('tiles'))
+        extent = vector.where('tileid==%s' % tile).extent()
+        return [extent.x0(), extent.y0(), extent.x1(), extent.y1()]
 
 
 class merraAsset(Asset):
