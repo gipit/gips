@@ -37,7 +37,6 @@ import commands
 
 import gippy
 from gips import __version__
-from gips.GeoVector import GeoVector
 from gips.utils import settings, VerboseOut, RemoveFiles, File2List, List2File, Colors, basename, mkdir, open_vector
 from gippy.algorithms import CookieCutter
 
