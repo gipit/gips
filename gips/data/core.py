@@ -123,41 +123,43 @@ class Repository(object):
         """ Paths to repository: valid subdirs (tiles, composites, quarantine, stage) """
         return os.path.join(cls.get_setting('repository'), subdir)
 
-    @classmethod
-    def vector(cls):
-        """ Get GeoVector of sensor grid """
-        vname = cls.get_setting('tiles')
-        vector = open_vector(vname)
-        # TODO = update to use gippy.GeoVector
-        return GeoVector(vector.Filename(), vector.LayerName())
 
     @classmethod
     def vector2tiles(cls, vector, pcov=0.0, ptile=0.0, tilelist=None):
         """ Return matching tiles and coverage % for provided vector """
-        import osr
-        # set spatial filter on tiles vector to speedup
-        ogrgeom = ogr.CreateGeometryFromWkt(vector.WKT())
-        tvector = cls.vector()
-        tlayer = tvector.layer
-        vsrs = osr.SpatialReference(vector.Projection())
-        trans = osr.CoordinateTransformation(vsrs, tlayer.GetSpatialRef())
-        ogrgeom.Transform(trans)
-        tlayer.SetSpatialFilter(ogrgeom)
+        from osgeo import ogr, osr
 
-        # geometry of desired site (transformed)
+        # open tiles vector
+        v = open_vector(cls.get_setting('tiles'))
+        shp = ogr.Open(v.Filename())
+        if v.LayerName() == '':
+            layer = shp.GetLayer(0)
+        else:
+            layer = shp.GetLayer(v.LayerName())
+
+        # create and warp site geometry
+        ogrgeom = ogr.CreateGeometryFromWkt(vector.WKT())
+        srs = osr.SpatialReference(vector.Projection())
+        trans = osr.CoordinateTransformation(srs, layer.GetSpatialRef())
+        ogrgeom.Transform(trans)
+        # convert to shapely
         geom = loads(ogrgeom.ExportToWkt())
 
+        # find overlapping tiles
         tiles = {}
-        # step through tiles vector
-        tlayer.ResetReading()
-        feat = tlayer.GetNextFeature()
+        layer.SetSpatialFilter(ogrgeom)
+        layer.ResetReading()
+        feat = layer.GetNextFeature()
         while feat is not None:
             tgeom = loads(feat.GetGeometryRef().ExportToWkt())
-            area = geom.intersection(tgeom).area
-            if area != 0:
-                tile = cls.feature2tile(feat)
-                tiles[tile] = (area / geom.area, area / tgeom.area)
-            feat = tlayer.GetNextFeature()
+            if tgeom.overlaps(geom):
+                area = geom.intersection(tgeom).area
+                if area != 0:
+                    tile = cls.feature2tile(feat)
+                    tiles[tile] = (area / geom.area, area / tgeom.area)
+            feat = layer.GetNextFeature()
+
+        # remove any tiles not in tilelist or that do not meet thresholds for % cover
         remove_tiles = []
         if tilelist is None:
             tilelist = tiles.keys()
