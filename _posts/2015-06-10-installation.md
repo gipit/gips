@@ -6,33 +6,26 @@ date: 2015-06-10 14:41:53
 order: 0
 ---
 
-First step is to clone this repository to your local machine if you have not already done so.
-Several packages are required for GIPS. These notes are for Ubuntu systems.
 
-    1) First install the UbuntuGIS Repository:
+These installation notes are for Ubuntu 14.04.  While the easiest method is to install GIPS from PyPi, there are some system dependencies that need to be installed beforehand.
+
+    # first install the UbuntuGIS repository if not already on system
     $ sudo apt-get install python-software-properties
     $ sudo add-apt-repository ppa:ubuntugis/ubuntugis-unstable
     $ sudo apt-get update
 
-    2) Then install the required dependencies
+    # install dependencies (for GIPPY)
     $ sudo apt-get install python-setuptools python-numpy python-gdal g++ libgdal1-dev gdal-bin libboost-dev swig2.0 swig
-    These are required for Py6S
-    $ sudo apt-get install python-scipy python-matplotlib
 
-    3) Edit gips/settings.py to update with your environment
-        - DATABASES: set connection settings and database if data tile vectors are stored in PostGIS
-        - REPOS: set 'rootpath' for each dataset you want to enable
-        - EMAIL: administrator email address
 
-    4) Create repository directories
-        - Make sure the directories in settings exist.
-        - For each directory create 'tiles' and 'vectors' subdirectories
-        - For each dataset put a shapefile 'tiles.shp' holding the tiles for the dataset
 
-    5) Then install GIPS
-    $ ./setup.py install
+    # download and install GIPS from PyPi
 
-Some datasets may require 6S to perform atmospheric correction. Follow the instructions here to install 6S:
+    $ sudo pip install gips
+
+
+#### Atmospheric Correction Dependencies
+Currently the Landsat driver requires 6S to perform atmospheric correction in the visible bands. Follow the instructions here to install 6S:
 
     1) Download latest version of 6S (6SV1.1) to a working directory from http://6s.ltdri.org
 
@@ -52,19 +45,30 @@ Some datasets may require 6S to perform atmospheric correction. Follow the instr
     $ cd 6SV1.1
     $ make
 
+    These are required for Py6S
+    $ sudo apt-get install python-scipy python-matplotlib
 
-To update GIPS at a later date (will require root privileges)
 
-    1) Get latest changes from git
-    $ cd [gips directory]
-    $ git pull
+#### Configuring Repositories
 
-    2) Run setup
-    $ ./setup.py install
+Installing GIPS only installs the Python packages and scripts, it does not configure any repositories. Before GIPS is used for the first time, gips_config is run to set up repository locations and preferences, as well as create any necessary directories.
 
-    If there is an error about a bad header, remove the previous GIPS package
-    $ ls /usr/local/lib/python2.7/dist-packages
-        look for GIPS package name
-    $ rm -rf /usr/local/lib/python2.7/dist-packages/[GIPS-package-name]
-        Then go to step 2 again
+
+Editing GIPS settings file
+
+    1) Edit gips/settings.py to update with your environment
+        - DATABASES: set connection settings and database if data tile vectors are stored in PostGIS
+        - REPOS: set 'rootpath' for each dataset you want to enable
+        - EMAIL: administrator email address
+
+    2) Create repository directories
+        - Make sure the directories in settings exist.
+        - For each directory create 'tiles' and 'vectors' subdirectories
+        - For each dataset put a shapefile 'tiles.shp' holding the tiles for the dataset
+
+
+
+
+
+
 
