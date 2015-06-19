@@ -40,11 +40,11 @@ def main():
         subparser.add_parser('print', help='Print current settings')
         p = subparser.add_parser('env', help='Configure GIPS repositories in this environment')
         p.add_argument('-r', '--repos', help='Top level directory for repositories', default='/data/repos')
-        p.add_argument('-e', '--email', help='Set email address (used for anonymous FTP sources)', required=True)
+        p.add_argument('-e', '--email', help='Set email address (used for anonymous FTP sources)', default='')
         p = subparser.add_parser('user', help='Configure GIPS repositories for this user (for per user customizations)')
         #p.add_argument('-e', '--email', help='Set email address (used for anonymous FTP sources)')
-        h = 'Install full configuration file without inheriting from environment settings'
-        p.add_argument('-f', '--full', help=h, default=False, action='store_true')
+        #h = 'Install full configuration file without inheriting from environment settings'
+        #p.add_argument('-f', '--full', help=h, default=False, action='store_true')
         args = parser.parse_args()
         print title
 
@@ -64,8 +64,9 @@ def main():
         elif args.command == 'env':
             try:
                 cfgfile = create_environment_settings(args.repos, email=args.email)
-                create_repos()
                 print 'Environment settings file: %s' % cfgfile
+                print 'Creating repository directories'
+                create_repos()
             except Exception, e:
                 print traceback.format_exc()
                 print 'Could not create environment settings: %s' % e
@@ -75,12 +76,13 @@ def main():
                 # first try importing environment settings
                 import gips.settings
                 cfgfile = create_user_settings()
-                create_repos()
                 print 'User settings file: %s' % cfgfile
+                print 'Creating repository directories'
+                create_repos()
             except Exception, e:
                 # could not import gips.settings, TODO - see if user wants to proceed with user-only config
                 #raise Exception('No environment settings found...run `gips_config env` to install in environment first')
-                print 'Could not create user settings: %s' % e
+                print 'Could not create user settings: %s...run `gips_config env` to install in environment first' % e
 
 
                 
