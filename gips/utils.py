@@ -176,7 +176,7 @@ def create_repos():
     """ Create any necessary repository directories """
     repos = settings().REPOS
     for key in repos.keys():
-        exec('from gips.data.%s import %sRepository as repo' % (key.lower(), key))
+        repo = import_repository_class(clsname)
         for d in repo._subdirs:
             path = os.path.join(repos[key]['repository'], d)
             if not os.path.isdir(path):
@@ -191,16 +191,44 @@ def data_sources():
     for key in sorted(repos.keys()):
         if os.path.isdir(repos[key]['repository']):
             try:
-                exec('from gips.data.%s import %sRepository as repo' % (key, key))
+                repo = import_repository_class(key)
                 sources[key] = repo.description
                 found = True
             except:
-                VerboseOut(traceback.format_exc(), 4)
+                VerboseOut(traceback.format_exc(), 1)
         else:
             raise Exception('ERROR: archive %s is not a directory or is not available' % key)
     if not found:
         print "There are no available data sources!"
     return sources
+
+
+def import_data_module(clsname):
+    """ Import a data driver by name and return as module """
+    import imp
+    path = settings().REPOS[clsname].get('driver', '')
+    if path == '':
+        path = os.path.join( os.path.dirname(__file__), 'data', clsname, clsname + '.py') #__init__.py' )
+    try:
+        mod = imp.load_source(clsname, path)
+        return mod
+    except:
+        print traceback.format_exc()
+
+
+def import_repository_class(clsname):
+    """ Get clsnameRepository class object """
+    mod = import_data_module(clsname)
+    exec('repo = mod.%sRepository' % clsname)
+    return repo
+
+
+def import_data_class(clsname):
+    """ Get clsnameData class object """
+    mod = import_data_module(clsname)
+    exec('repo = mod.%sData' % clsname)
+    return repo    
+
 
 ##############################################################################
 # Geospatial functions

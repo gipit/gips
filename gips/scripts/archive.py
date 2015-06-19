@@ -23,8 +23,7 @@
 
 from gips import __version__ as gipsversion
 from gips.parsers import GIPSParser
-from gips.data.core import data_class
-from gips.utils import Colors, VerboseOut
+from gips.utils import Colors, VerboseOut, import_data_class
 
 
 def main():
@@ -46,7 +45,7 @@ def main():
 
     try:
         print title
-        cls = data_class(args.command)
+        cls = import_data_class(args.command)
         cls.Asset.archive(**vars(args))
     except Exception, e:
         import traceback

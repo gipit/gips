@@ -46,12 +46,6 @@ For a new dataset create children of Repository, Asset, and Data
 """
 
 
-def data_class(clsname):
-    """ Get ClassData class object """
-    exec('from gips.data.%s import %sData as cls' % (clsname, clsname))
-    return cls
-
-
 class Repository(object):
     """ Singleton (all classmethods) of file locations and sensor tiling system  """
     # Description of the data source
