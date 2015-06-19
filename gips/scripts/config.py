@@ -80,11 +80,7 @@ def main():
                 print 'Creating repository directories'
                 create_repos()
             except Exception, e:
-                # could not import gips.settings, TODO - see if user wants to proceed with user-only config
-                #raise Exception('No environment settings found...run `gips_config env` to install in environment first')
-                print 'Could not create user settings: %s...run `gips_config env` to install in environment first' % e
-
-
+                print 'Could not create user settings: %s' % e
                 
     except Exception, e:
 
