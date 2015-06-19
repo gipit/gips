@@ -130,7 +130,6 @@ def settings():
         src = imp.load_source('settings', os.path.expanduser('~/.gips/settings.py'))
         return src
     except Exception, e:
-        print traceback.format_exc()
         try:
             import gips.settings
             return gips.settings
@@ -145,8 +144,9 @@ def create_environment_settings(repos_path, email=''):
     cfgfile = os.path.join(cfgpath, 'settings.py')
     try:
         if not os.path.exists(cfgfile):
-            with open(cfgfile, 'wt') as fout:
-                with open(src, 'rt') as fin:
+            print 'Creating environment settings'
+            with open(cfgfile, 'w') as fout:
+                with open(src, 'r') as fin:
                     for line in fin:
                         fout.write(line.replace('$TLD', repos_path).replace('$EMAIL', email))
         return cfgfile
@@ -165,8 +165,8 @@ def create_user_settings(email=''):
     cfgfile = os.path.join(cfgpath, 'settings.py')
     if os.path.exists(cfgfile):
         raise Exception('User settings file already exists: %s' % cfgfile)
-    with open(cfgfile, 'wt') as fout:
-        with open(src, 'rt') as fin:
+    with open(cfgfile, 'w') as fout:
+        with open(src, 'r') as fin:
             for line in fin:
                 fout.write(line)
     return cfgfile
@@ -174,9 +174,13 @@ def create_user_settings(email=''):
 
 def create_repos():
     """ Create any necessary repository directories """
-    repos = settings().REPOS
+    try:
+        repos = settings().REPOS
+    except:
+        print traceback.format_exc()
+        raise Exception('Problem reading repository...check settings files')
     for key in repos.keys():
-        repo = import_repository_class(clsname)
+        repo = import_repository_class(key)
         for d in repo._subdirs:
             path = os.path.join(repos[key]['repository'], d)
             if not os.path.isdir(path):
