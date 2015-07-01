@@ -82,13 +82,13 @@ def main():
                             img.SetMeta('MASKS', meta)
                         else:
                             fout = os.path.splitext(img.Filename())[0] + args.suffix + '.tif'
-                            if not os.path.exists(fout) or overwrite:
+                            if not os.path.exists(fout) or args.overwrite:
                                 VerboseOut('  %s -> %s' % (img.Basename(), basename(fout)), 2)
                                 imgout = img.Process(fout)
                                 imgout.SetMeta('MASKS', meta)
                                 imgout = None
                     img = None
-            mask_file = None            
+            mask_file = None
 
     except Exception, e:
         import traceback
