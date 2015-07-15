@@ -155,14 +155,16 @@ class TemporalExtent(object):
         else:
             days = days.split(',')
             days = (int(days[0]), int(days[1]))
+
         try:
-            (d1, d2) = dates.replace(',', ' ').split()
-            dates = (self._parse_date(d1), self._parse_date(d2, True))
+            if ',' not in dates:
+                dates = (self._parse_date(dates), self._parse_date(dates, True))
+            else:
+                (d1, d2) = dates.replace(',', ' ').split()
+                dates = (self._parse_date(d1), self._parse_date(d2, True))
         except ValueError as ve:
-            if 'out of range' in ve.message:
-                raise Exception('Bad date specification', ve)
-        except:
-            dates = (self._parse_date(dates), self._parse_date(dates, True))
+            raise Exception('Bad date specification ({}: {}): {}'.format(type(ve), str(ve), dates))
+
         self.datebounds = dates
         self.daybounds = days
         self.datearray = []
