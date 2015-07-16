@@ -42,7 +42,7 @@ class CDLAsset(Asset):
     }
     _assets = {
         '': {
-            'pattern': '*.tif'
+            'pattern': 'CDL_*.tif'
         }
     }
 
