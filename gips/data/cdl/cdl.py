@@ -27,12 +27,15 @@ from csv import DictReader
 
 from gips.data.core import Repository, Asset, Data
 
+from gips.utils import settings
+
 
 class cdlRepository(Repository):
     name = 'CDL'
     description = 'Crop Data Layer'
     _datedir = '%Y'
     _defaultresolution = [30.0, 30.0]
+    _tile_attribute = settings().REPOS[name.lower()]['tile_attribute']
 
 
 class cdlAsset(Asset):
@@ -74,6 +77,7 @@ class cdlData(Data):
 
     _legend_file = os.path.join(cdlRepository.get_setting('repository'), 'CDL_Legend.csv')
     _legend = [row['ClassName'].lower() for row in DictReader(open(_legend_file))]
+
 
     @classmethod
     def get_code(cls, cropname):
