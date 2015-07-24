@@ -49,7 +49,6 @@ REPOS = {
         '6S': False,            # atm correction for VIS/NIR/SWIR bands
         'MODTRAN': False,       # atm correction for LWIR
         'extract': False,       # extract files from tar.gz before processing instead of direct access
-        'tile_attribute': 'pr',
     },
     'modis': {
         'repository': '$TLD/modis',
