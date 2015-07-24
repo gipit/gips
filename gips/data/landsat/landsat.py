@@ -34,7 +34,7 @@ import gippy
 from gippy.algorithms import ACCA, Fmask, LinearTransform, Indices
 from gips.data.core import Repository, Asset, Data
 from gips.atmosphere import SIXS, MODTRAN
-from gips.utils import VerboseOut, RemoveFiles, basename, settings
+from gips.utils import VerboseOut, RemoveFiles, basename, get_settings
 
 requirements = ['Py6S>=1.5.0']
 
@@ -43,7 +43,9 @@ class landsatRepository(Repository):
     """ Singleton (all class methods) to be overridden by child data classes """
     name = 'Landsat'
     description = 'Landsat 5 (TM), 7 (ETM+), 8 (OLI)'
-    _tile_attribute = 'pr'
+    _tile_attribute = settings().REPOS[name.lower()]['tile_attribute']
+
+
 
     @classmethod
     def feature2tile(cls, feature):
