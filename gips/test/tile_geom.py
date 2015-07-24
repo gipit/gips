@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 
-from gips.data.cdl import cdlRepository as repo, cdlData as data
+try:
+    from gips.data.cdl import cdlData as data
+except:
+    from gips.data.cdl import CDLData as data
+
 from gips.core import SpatialExtent
 
 extent = SpatialExtent.factory(data, 'Belknap.shp')
