@@ -145,7 +145,7 @@ class Repository(object):
         feat = layer.GetNextFeature()
         while feat is not None:
             tgeom = loads(feat.GetGeometryRef().ExportToWkt())
-            if tgeom.overlaps(geom):
+            if tgeom.intersects(geom):
                 area = geom.intersection(tgeom).area
                 if area != 0:
                     tile = cls.feature2tile(feat)
