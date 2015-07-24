@@ -34,7 +34,7 @@ import gippy
 from gippy.algorithms import ACCA, Fmask, LinearTransform, Indices
 from gips.data.core import Repository, Asset, Data
 from gips.atmosphere import SIXS, MODTRAN
-from gips.utils import VerboseOut, RemoveFiles, basename, get_settings
+from gips.utils import VerboseOut, RemoveFiles, basename, settings
 
 requirements = ['Py6S>=1.5.0']
 
