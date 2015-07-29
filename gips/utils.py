@@ -142,9 +142,10 @@ def create_environment_settings(repos_path, email=''):
     from gips.settings_template import __file__ as src
     cfgpath = os.path.dirname(__file__)
     cfgfile = os.path.join(cfgpath, 'settings.py')
+    if src[-1] == 'c':
+        src = src[:-1]
     try:
         if not os.path.exists(cfgfile):
-            print 'Creating environment settings'
             with open(cfgfile, 'w') as fout:
                 with open(src, 'r') as fin:
                     for line in fin:
@@ -231,7 +232,7 @@ def import_data_class(clsname):
     """ Get clsnameData class object """
     mod = import_data_module(clsname)
     exec('repo = mod.%sData' % clsname)
-    return repo    
+    return repo
 
 
 ##############################################################################
