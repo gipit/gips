@@ -66,6 +66,9 @@ def VerboseOut(obj, level=1):
         for o in obj:
             print o
 
+##############################################################################
+# Filesystem functions
+##############################################################################
 
 def File2List(filename):
     f = open(filename)
@@ -115,31 +118,89 @@ def link(src, dst, hard=False):
         os.symlink(os.path.relpath(src, os.path.dirname(dst)), os.path.abspath(dst))
     return dst
 
+##############################################################################
+# Settings functions
+##############################################################################
 
 def settings():
-    """ Retrieve GIPS settings """
+    """ Retrieve GIPS settings - first from user, then from system """
     import imp
     try:
-        import gips.settings
-        return gips.settings
+        # import user settings first
+        src = imp.load_source('settings', os.path.expanduser('~/.gips/settings.py'))
+        return src
+    except Exception, e:
+        try:
+            import gips.settings
+            return gips.settings
+        except:
+            raise Exception('No settings found...did you run gips_config?')
+
+
+def create_environment_settings(repos_path, email=''):
+    """ Create settings file and data directory """
+    from gips.settings_template import __file__ as src
+    cfgpath = os.path.dirname(__file__)
+    cfgfile = os.path.join(cfgpath, 'settings.py')
+    if src[-1] == 'c':
+        src = src[:-1]
+    try:
+        if not os.path.exists(cfgfile):
+            with open(cfgfile, 'w') as fout:
+                with open(src, 'r') as fin:
+                    for line in fin:
+                        fout.write(line.replace('$TLD', repos_path).replace('$EMAIL', email))
+        return cfgfile
+    except OSError:
+        # no permissions, so no environment level config installed
+        #print traceback.format_exc()
+        return None
+
+
+def create_user_settings(email=''):
+    """ Create a settings file using the included template and the provided top level directory """
+    from gips.user_settings_template import __file__ as src
+    cfgpath = os.path.expanduser('~/.gips')
+    if not os.path.exists(cfgpath):
+        os.mkdir(cfgpath)
+    cfgfile = os.path.join(cfgpath, 'settings.py')
+    if os.path.exists(cfgfile):
+        raise Exception('User settings file already exists: %s' % cfgfile)
+    with open(cfgfile, 'w') as fout:
+        with open(src, 'r') as fin:
+            for line in fin:
+                fout.write(line)
+    return cfgfile
+
+
+def create_repos():
+    """ Create any necessary repository directories """
+    try:
+        repos = settings().REPOS
     except:
-        import imp
-        return imp.load_source('gips.settings', '/etc/gips/settings.py')
+        print traceback.format_exc()
+        raise Exception('Problem reading repository...check settings files')
+    for key in repos.keys():
+        repo = import_repository_class(key)
+        for d in repo._subdirs:
+            path = os.path.join(repos[key]['repository'], d)
+            if not os.path.isdir(path):
+                os.makedirs(path)
 
 
 def data_sources():
-    from gips.data.core import repository_class
+    """ Get enabled data sources (and verify) from settings """
     sources = {}
     repos = settings().REPOS
     found = False
     for key in sorted(repos.keys()):
-        if os.path.isdir(repos[key]['rootpath']):
+        if os.path.isdir(repos[key]['repository']):
             try:
-                repo = repository_class(key)
+                repo = import_repository_class(key)
                 sources[key] = repo.description
                 found = True
             except:
-                VerboseOut(traceback.format_exc(), 4)
+                VerboseOut(traceback.format_exc(), 1)
         else:
             raise Exception('ERROR: archive %s is not a directory or is not available' % key)
     if not found:
@@ -147,26 +208,42 @@ def data_sources():
     return sources
 
 
-import time
-from functools import wraps
+def import_data_module(clsname):
+    """ Import a data driver by name and return as module """
+    import imp
+    path = settings().REPOS[clsname].get('driver', '')
+    if path == '':
+        path = os.path.join( os.path.dirname(__file__), 'data', clsname, clsname + '.py') #__init__.py' )
+    try:
+        mod = imp.load_source(clsname, path)
+        return mod
+    except:
+        print traceback.format_exc()
 
 
-def fn_timer(function):
-    @wraps(function)
-    def function_timer(*args, **kwargs):
-        t0 = time.time()
-        result = function(*args, **kwargs)
-        t1 = time.time()
-        print "%s time: %s seconds" % (function.func_name, str(t1 - t0))
-        return result
-    return function_timer
+def import_repository_class(clsname):
+    """ Get clsnameRepository class object """
+    mod = import_data_module(clsname)
+    exec('repo = mod.%sRepository' % clsname)
+    return repo
 
 
-def open_vector(fname, key="", where='', path=''):
+def import_data_class(clsname):
+    """ Get clsnameData class object """
+    mod = import_data_module(clsname)
+    exec('repo = mod.%sData' % clsname)
+    return repo
+
+
+##############################################################################
+# Geospatial functions
+##############################################################################
+
+def open_vector(fname, key="", where=''):
     """ Open vector or feature """
     parts = fname.split(':')
     if len(parts) == 1:
-        vector = GeoVector(os.path.join(path, fname))
+        vector = GeoVector(fname)
         vector.SetPrimaryKey(key)
     else:
         # or it is a database
@@ -178,6 +255,7 @@ def open_vector(fname, key="", where='', path=''):
                         (db['NAME'], db['HOST'], db['PORT'], db['USER'], db['PASSWORD']))
             vector = GeoVector(filename, parts[1])
             vector.SetPrimaryKey(key)
+
         except Exception, e:
             VerboseOut(traceback.format_exc(), 4)
     if where != '':

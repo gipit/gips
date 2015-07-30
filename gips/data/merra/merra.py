@@ -29,7 +29,7 @@ import numpy
 
 import gippy
 from gips.data.core import Repository, Asset, Data
-from gips.utils import VerboseOut, basename
+from gips.utils import VerboseOut, basename, open_vector
 
 from pdb import set_trace
 
@@ -37,24 +37,21 @@ from pdb import set_trace
 requirements = ['pydap']
 
 
-class MerraRepository(Repository):
+class merraRepository(Repository):
     name = 'Merra'
     description = 'Modern Era Retrospective-Analysis for Research and Applications (weather and climate)'
+    _tile_attribute = 'tileid'
 
     @classmethod
     def tile_bounds(cls, tile):
         """ Get the bounds of the tile (in same units as tiles vector) """
-        tilesvector = cls.vector()
-        for fid in tilesvector.get_fids():
-            feature = tilesvector.get_feature(fid)
-            if feature['tileid'] == tile:
-                break
-        bounds = eval(feature['bounds'])
-        return bounds
+        vector = open_vector(cls.get_setting('tiles'))
+        extent = vector.where('tileid==%s' % tile).extent()
+        return [extent.x0(), extent.y0(), extent.x1(), extent.y1()]
 
 
-class MerraAsset(Asset):
-    Repository = MerraRepository
+class merraAsset(Asset):
+    Repository = merraRepository
 
     _sensors = {
         'MERRA': {
@@ -126,7 +123,7 @@ class MerraAsset(Asset):
 
     def __init__(self, filename):
         """ Inspect a single file and get some metadata """
-        super(MerraAsset, self).__init__(filename)
+        super(merraAsset, self).__init__(filename)
         parts = basename(filename).split('_')
         self.sensor = 'MERRA'
         self.asset = parts[1]
@@ -210,7 +207,7 @@ class MerraAsset(Asset):
         description = cls._assets[asset]['description']
         meta = {'ASSET': asset, 'TILE': tile, 'DATE': str(date.date()), 'DESCRIPTION': description}
         doy = date.strftime('%j')
-        fout = os.path.join(cls.Repository.spath(), "MERRA_%s_%s_%4d%s.tif" % (asset, tile, date.year, doy))
+        fout = os.path.join(cls.Repository.path('stage'), "MERRA_%s_%s_%4d%s.tif" % (asset, tile, date.year, doy))
         # TODO - use GIPPY to write
         from agspy.utils import raster
         proj = raster.create_proj(4326)
@@ -219,11 +216,11 @@ class MerraAsset(Asset):
         raster.write_raster(fout, data, proj, geo, meta, bandnames=cls._assets[asset]['bandnames'])
 
 
-class MerraData(Data):
+class merraData(Data):
     """ A tile of data (all assets and products) """
     name = 'Merra'
     version = '0.9.0'
-    Asset = MerraAsset
+    Asset = merraAsset
 
     _products = {
         'temp': {
@@ -311,7 +308,7 @@ class MerraData(Data):
         return houroffset
 
     def process(self, *args, **kwargs):
-        products = super(MerraData, self).process(*args, **kwargs)
+        products = super(merraData, self).process(*args, **kwargs)
         if len(products) == 0:
             return
 

@@ -36,8 +36,8 @@ import shutil
 import numpy
 
 from gips.utils import List2File, VerboseOut
-from gips.data.merra import MerraData
-from gips.data.aod import AODData
+from gips.data.merra import merraData
+from gips.data.aod import aodData
 from Py6S import SixS, Geometry, AeroProfile, Altitudes, Wavelength, GroundReflectance, AtmosCorr, SixSHelpers
 
 

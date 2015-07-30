@@ -25,8 +25,7 @@ import os
 from gips import __version__
 from gips.parsers import GIPSParser
 from gips.core import SpatialExtent, TemporalExtent
-from gips.data.core import data_class
-from gips.utils import Colors, VerboseOut, mkdir, open_vector
+from gips.utils import Colors, VerboseOut, mkdir, open_vector, import_data_class
 from gips.inventory import DataInventory
 
 
@@ -43,7 +42,7 @@ def main():
 
     try:
         print title
-        cls = data_class(args.command)
+        cls = import_data_class(args.command)
 
         # create tld: DATATYPE_tiles_RESOLUTION_SUFFIX
         if args.notld:

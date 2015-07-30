@@ -28,15 +28,15 @@ from csv import DictReader
 from gips.data.core import Repository, Asset, Data
 
 
-class CDLRepository(Repository):
+class cdlRepository(Repository):
     name = 'CDL'
     description = 'Crop Data Layer'
     _datedir = '%Y'
     _defaultresolution = [30.0, 30.0]
+    _tile_attribute = 'STATE_ABBR'
 
-
-class CDLAsset(Asset):
-    Repository = CDLRepository
+class cdlAsset(Asset):
+    Repository = cdlRepository
     _sensors = {
         'cdl': {'description': 'Crop Data Layer'}
     }
@@ -48,7 +48,7 @@ class CDLAsset(Asset):
 
     def __init__(self, filename):
         """ Inspect a CDL file """
-        super(CDLAsset, self).__init__(filename)
+        super(cdlAsset, self).__init__(filename)
         # TODO - get tile (state) so we can archive
         bname = os.path.basename(filename)
         try:
@@ -63,16 +63,16 @@ class CDLAsset(Asset):
         raise Exception('Archive not supported')
 
 
-class CDLData(Data):
+class cdlData(Data):
     """ A tile (CONUS State) of CDL """
     name = 'CDL'
     version = '0.9.0'
-    Asset = CDLAsset
+    Asset = cdlAsset
     _products = {
         'cdl': {'description': 'Crop Data Layer'}
     }
 
-    _legend_file = os.path.join(CDLRepository.rootpath(), 'CDL_Legend.csv')
+    _legend_file = os.path.join(cdlRepository.get_setting('repository'), 'CDL_Legend.csv')
     _legend = [row['ClassName'].lower() for row in DictReader(open(_legend_file))]
 
     @classmethod

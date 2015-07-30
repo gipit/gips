@@ -39,20 +39,21 @@ from gips.utils import VerboseOut, RemoveFiles, basename, settings
 requirements = ['Py6S>=1.5.0']
 
 
-class LandsatRepository(Repository):
+class landsatRepository(Repository):
     """ Singleton (all class methods) to be overridden by child data classes """
     name = 'Landsat'
     description = 'Landsat 5 (TM), 7 (ETM+), 8 (OLI)'
+    _tile_attribute = 'pr'
 
     @classmethod
     def feature2tile(cls, feature):
-        tile = super(LandsatRepository, cls).feature2tile(feature)
+        tile = super(landsatRepository, cls).feature2tile(feature)
         return tile.zfill(6)
 
 
-class LandsatAsset(Asset):
+class landsatAsset(Asset):
     """ Landsat asset (original raw tar file) """
-    Repository = LandsatRepository
+    Repository = landsatRepository
 
     # tassled cap coefficients for L5 and L7
     _tcapcoef = [
@@ -128,7 +129,7 @@ class LandsatAsset(Asset):
 
     def __init__(self, filename):
         """ Inspect a single file and get some metadata """
-        super(LandsatAsset, self).__init__(filename)
+        super(landsatAsset, self).__init__(filename)
         fname = os.path.basename(filename)
         self.sensor = fname[0:3]
         self.tile = fname[3:9]
@@ -166,11 +167,11 @@ class LandsatAsset(Asset):
                 self.version < newasset.version)
 
 
-class LandsatData(Data):
+class landsatData(Data):
     name = 'Landsat'
     version = '0.9.0'
 
-    Asset = LandsatAsset
+    Asset = landsatAsset
 
     _prodpattern = '*.tif'
     # Group products belong to ('Standard' if not specified)
@@ -279,7 +280,7 @@ class LandsatData(Data):
 
     def process(self, products=None, overwrite=False, **kwargs):
         """ Make sure all products have been processed """
-        products = super(LandsatData, self).process(products, overwrite, **kwargs)
+        products = super(landsatData, self).process(products, overwrite, **kwargs)
         if len(products) == 0:
             return
 
@@ -597,7 +598,7 @@ class LandsatData(Data):
 
     @classmethod
     def meta_dict(cls):
-        meta = super(LandsatData, cls).meta_dict()
+        meta = super(landsatData, cls).meta_dict()
         meta['GIPS-landsat Version'] = cls.version
         return meta
 

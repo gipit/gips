@@ -37,7 +37,6 @@ import commands
 
 import gippy
 from gips import __version__
-from gips.GeoVector import GeoVector
 from gips.utils import settings, VerboseOut, RemoveFiles, File2List, List2File, Colors, basename, mkdir, open_vector
 from gippy.algorithms import CookieCutter
 
@@ -47,51 +46,30 @@ For a new dataset create children of Repository, Asset, and Data
 """
 
 
-def repository_class(clsname):
-    """ Get ClassRepository class object """
-    exec('from gips.data.%s import %sRepository as cls' % (clsname.lower(), clsname))
-    return cls
-
-
-def asset_class(clsname):
-    """ Get ClassAsset class object """
-    exec('from gips.data.%s import %sAsset as cls' % (clsname.lower(), clsname))
-    return cls
-
-
-def data_class(clsname):
-    """ Get ClassData class object """
-    exec('from gips.data.%s import %sData as cls' % (clsname.lower(), clsname))
-    return cls
-
-
 class Repository(object):
     """ Singleton (all classmethods) of file locations and sensor tiling system  """
     # Description of the data source
     description = 'Data source description'
     # Format code of date directories in repository
     _datedir = '%Y%j'
-
-    _tdir = 'tiles'
-    _cdir = 'composites'
-    _qdir = 'quarantine'
-    _sdir = 'stage'
-    _vdir = 'vectors'
+    # attribute holding the tile id
+    _tile_attribute = 'tile'
+    # valid sub directories in repo
+    _subdirs = ['tiles', 'stage', 'quarantine', 'composites']
 
     @classmethod
     def feature2tile(cls, feature):
         """ Get tile designation from a geospatial feature (i.e. a row) """
-        att_name = cls.repo().get('tile_attribute', 'tile')
-        fldindex = feature.GetFieldIndex(att_name)
+        fldindex = feature.GetFieldIndex(cls._tile_attribute)
         return str(feature.GetField(fldindex))
 
     ##########################################################################
     # Override these functions if not using a tile/date directory structure
     ##########################################################################
     @classmethod
-    def path(cls, tile='', date=''):
+    def data_path(cls, tile='', date=''):
         """ Get absolute data path for this tile and date """
-        path = os.path.join(cls.rootpath(), cls._tdir)
+        path = cls.path('tiles')
         if tile != '':
             path = os.path.join(path, tile)
         if date != '':
@@ -101,12 +79,12 @@ class Repository(object):
     @classmethod
     def find_tiles(cls):
         """ Get list of all available tiles """
-        return os.listdir(os.path.join(cls.rootpath(), cls._tdir))
+        return os.listdir(cls.path('tiles'))
 
     @classmethod
     def find_dates(cls, tile):
         """ Get list of dates available in repository for a tile """
-        tdir = cls.path(tile=tile)
+        tdir = cls.data_path(tile=tile)
         if os.path.exists(tdir):
             return sorted([datetime.strptime(os.path.basename(d), cls._datedir).date() for d in os.listdir(tdir)])
         else:
@@ -116,80 +94,65 @@ class Repository(object):
     # Child classes should not generally have to override anything below here
     ##########################################################################
     @classmethod
-    def repo(cls):
-        """ Get dictionary of repository settings """
-        return settings().REPOS[cls.name]
-
-    @classmethod
-    def rootpath(cls):
-        """ Root path to repository """
-        return cls.repo().get('rootpath', '')
-
-    @classmethod
-    def cpath(cls, dirs=''):
-        """ Composites path """
-        return cls._path(cls._cdir, dirs)
-
-    @classmethod
-    def qpath(cls):
-        """ quarantine path """
-        return cls._path(cls._qdir)
-
-    @classmethod
-    def spath(cls):
-        """ staging path """
-        return cls._path(cls._sdir)
-
-    @classmethod
-    def _path(cls, dirname, dirs=''):
-        """ Get absolute path name to directory, creating if necessary """
-        if dirs == '':
-            path = os.path.join(cls.rootpath(), dirname)
+    def get_setting(cls, key):
+        """ Get value from repo settings """
+        dataclass = cls.__name__[:-10]
+        r = settings().REPOS[dataclass]
+        if key not in r.keys():
+            # not in settings file, use defaults
+            exec('import gips.data.%s as clsname' % dataclass)
+            driverpath = os.path.dirname(clsname.__file__)
+            if key == 'driver':
+                return driverpath
+            elif key == 'tiles':
+                return os.path.join(driverpath, 'tiles.shp')
+            else:
+                raise Exception('%s is not a valid setting!' % key)
         else:
-            path = os.path.join(cls.rootpath(), dirname, dirs)
-        if not os.path.exists(path):
-            try:
-                os.makedirs(path)
-            except Exception:
-                raise Exception("Repository: Error making directory %s" % path)
-        return path
+            return r[key]
 
     @classmethod
-    def vector(cls):
-        """ Get GeoVector of sensor grid """
-        # TODO = update to use gippy.GeoVector
-        # check location from settings
-        vpath = os.path.join('/etc/gips', cls.name)
-        vector = open_vector(cls.repo().get('vector', 'tiles.shp'), path=vpath)
-        return GeoVector(vector.Filename(), vector.LayerName())
+    def path(cls, subdir=''):
+        """ Paths to repository: valid subdirs (tiles, composites, quarantine, stage) """
+        return os.path.join(cls.get_setting('repository'), subdir)
+
 
     @classmethod
     def vector2tiles(cls, vector, pcov=0.0, ptile=0.0, tilelist=None):
         """ Return matching tiles and coverage % for provided vector """
-        import osr
-        # set spatial filter on tiles vector to speedup
-        ogrgeom = ogr.CreateGeometryFromWkt(vector.WKT())
-        tvector = cls.vector()
-        tlayer = tvector.layer
-        vsrs = osr.SpatialReference(vector.Projection())
-        trans = osr.CoordinateTransformation(vsrs, tlayer.GetSpatialRef())
-        ogrgeom.Transform(trans)
-        tlayer.SetSpatialFilter(ogrgeom)
+        from osgeo import ogr, osr
 
-        # geometry of desired site (transformed)
+        # open tiles vector
+        v = open_vector(cls.get_setting('tiles'))
+        shp = ogr.Open(v.Filename())
+        if v.LayerName() == '':
+            layer = shp.GetLayer(0)
+        else:
+            layer = shp.GetLayer(v.LayerName())
+
+        # create and warp site geometry
+        ogrgeom = ogr.CreateGeometryFromWkt(vector.WKT())
+        srs = osr.SpatialReference(vector.Projection())
+        trans = osr.CoordinateTransformation(srs, layer.GetSpatialRef())
+        ogrgeom.Transform(trans)
+        # convert to shapely
         geom = loads(ogrgeom.ExportToWkt())
 
+        # find overlapping tiles
         tiles = {}
-        # step through tiles vector
-        tlayer.ResetReading()
-        feat = tlayer.GetNextFeature()
+        layer.SetSpatialFilter(ogrgeom)
+        layer.ResetReading()
+        feat = layer.GetNextFeature()
         while feat is not None:
             tgeom = loads(feat.GetGeometryRef().ExportToWkt())
-            area = geom.intersection(tgeom).area
-            if area != 0:
-                tile = cls.feature2tile(feat)
-                tiles[tile] = (area / geom.area, area / tgeom.area)
-            feat = tlayer.GetNextFeature()
+            if tgeom.intersects(geom):
+                area = geom.intersection(tgeom).area
+                if area != 0:
+                    tile = cls.feature2tile(feat)
+                    tiles[tile] = (area / geom.area, area / tgeom.area)
+            feat = layer.GetNextFeature()
+
+        # remove any tiles not in tilelist or that do not meet thresholds for % cover
         remove_tiles = []
         if tilelist is None:
             tilelist = tiles.keys()
@@ -301,7 +264,7 @@ class Asset(object):
     @classmethod
     def discover(cls, tile, date, asset=None):
         """ Factory function returns list of Assets for this tile and date """
-        tpath = cls.Repository.path(tile, date)
+        tpath = cls.Repository.data_path(tile, date)
         if asset is not None:
             assets = [asset]
         else:
@@ -380,7 +343,7 @@ class Asset(object):
 
             for f in ftp.nlst('*'):
                 VerboseOut("Downloading %s" % f, 2)
-                ftp.retrbinary('RETR %s' % f, open(os.path.join(cls.Repository.spath(), f), "wb").write)
+                ftp.retrbinary('RETR %s' % f, open(os.path.join(cls.Repository.path('stage'), f), "wb").write)
             ftp.close()
         except Exception, e:
             VerboseOut(traceback.format_exc(), 4)
@@ -429,7 +392,7 @@ class Asset(object):
         except Exception, e:
             # if problem with inspection, move to quarantine
             VerboseOut(traceback.format_exc(), 3)
-            qname = os.path.join(cls.Repository.qpath(), bname)
+            qname = os.path.join(cls.Repository.path('quarantine'), bname)
             if not os.path.exists(qname):
                 os.link(os.path.abspath(filename), qname)
             VerboseOut('%s -> quarantine (file error): %s' % (filename, e), 2)
@@ -441,7 +404,7 @@ class Asset(object):
         numlinks = 0
         otherversions = False
         for d in dates:
-            tpath = cls.Repository.path(asset.tile, d)
+            tpath = cls.Repository.data_path(asset.tile, d)
             newfilename = os.path.join(tpath, bname)
             if not os.path.exists(newfilename):
                 # check if another asset exists
@@ -598,7 +561,7 @@ class Data(object):
         self.filenames = {}             # dict of (sensor, product): filename
         self.sensors = {}               # dict of asset/product: sensor
         if tile is not None and date is not None:
-            self.path = self.Repository.path(tile, date)
+            self.path = self.Repository.data_path(tile, date)
             self.basename = self.id + '_' + self.date.strftime(self.Repository._datedir)
             # find all assets
             for asset in self.Asset.discover(tile, date):

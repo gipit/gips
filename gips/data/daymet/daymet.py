@@ -52,7 +52,7 @@ PROJ = """PROJCS["unnamed",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",63
 
 
 
-class DaymetRepository(Repository):
+class daymetRepository(Repository):
     name = 'Daymet'
     description = 'Daymet weather data'
 
@@ -68,8 +68,8 @@ class DaymetRepository(Repository):
     #     return bounds
 
 
-class DaymetAsset(Asset):
-    Repository = DaymetRepository
+class daymetAsset(Asset):
+    Repository = daymetRepository
 
     _sensors = {
         'daymet': {
@@ -129,7 +129,7 @@ class DaymetAsset(Asset):
 
     def __init__(self, filename):
         """ Inspect a single file and get some metadata """
-        super(DaymetAsset, self).__init__(filename)
+        super(daymetAsset, self).__init__(filename)
 
         parts = basename(filename).split('_')
         self.sensor = 'daymet'
@@ -144,7 +144,7 @@ class DaymetAsset(Asset):
     @classmethod
     def fetch(cls, asset, tile, date):
         """ Get this asset for this tile and date (using OpenDap service) """
-        super(DaymetAsset, cls).fetch(asset, tile, date)
+        super(daymetAsset, cls).fetch(asset, tile, date)
         url = cls._assets[asset].get('url', '') % (date.year, tile, date.year)
         source = cls._assets[asset]['source'] 
         loc = "%s/%s" % (url, source)
@@ -165,7 +165,7 @@ class DaymetAsset(Asset):
         meta = {'ASSET': asset, 'TILE': tile, 'DATE': str(date.date()), 'DESCRIPTION': description}
 
         sday = str(day).zfill(3)
-        fout = os.path.join(cls.Repository.spath(), "daymet_%s_%s_%4d%s.tif" % (asset, tile, date.year, sday))
+        fout = os.path.join(cls.Repository.path('stage'), "daymet_%s_%s_%4d%s.tif" % (asset, tile, date.year, sday))
 
         geo = [float(x0), cls._defaultresolution[0], 0.0, float(y0), 0.0, -cls._defaultresolution[1]]
         geo = np.array(geo).astype('double')
@@ -181,11 +181,11 @@ class DaymetAsset(Asset):
 
 
 
-class DaymetData(Data):
+class daymetData(Data):
     """ A tile of data (all assets and products) """
     name = 'Daymet'
     version = '0.1'
-    Asset = DaymetAsset
+    Asset = daymetAsset
 
     _products = {
         'tmin': {

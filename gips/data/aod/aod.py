@@ -33,14 +33,14 @@ from gips.data.core import Repository, Asset, Data
 from gips.utils import File2List, List2File, VerboseOut
 
 
-class AODRepository(Repository):
+class aodRepository(Repository):
     name = 'AOD'
     description = 'Aerosol Optical Depth from MODIS (MOD08)'
     _datedir = '%Y%j'
 
     @classmethod
-    def path(cls, tile='', date=''):
-        path = os.path.join(cls.rootpath(), cls._tdir)
+    def data_path(cls, tile='', date=''):
+        path = os.path.join(cls.get_setting('repository'), cls._tdir)
         if date != '':
             path = os.path.join(path, str(date.strftime('%Y')), str(date.strftime('%j')))
         return path
@@ -52,11 +52,11 @@ class AODRepository(Repository):
     @classmethod
     def find_dates(cls, tile=''):
         """ Get list of dates available in repository for a tile """
-        #tdir = cls.path()
+        tdir = cls.path('tiles')
         #if os.path.exists(tdir):
         dates = []
-        for year in os.listdir(cls.path()):
-            days = os.listdir(os.path.join(cls.path(), year))
+        for year in os.listdir(tdir):
+            days = os.listdir(os.path.join(tdir, year))
             for day in days:
                 dates.append(datetime.datetime.strptime(year + day, '%Y%j').date())
         return dates
@@ -67,8 +67,8 @@ class AODRepository(Repository):
         return {'': (1, 1)}
 
 
-class AODAsset(Asset):
-    Repository = AODRepository
+class aodAsset(Asset):
+    Repository = aodRepository
 
     # ???? Not specific to MODIS
     _sensors = {
@@ -88,7 +88,7 @@ class AODAsset(Asset):
 
     def __init__(self, filename):
         """ Inspect a single file and get some metadata """
-        super(AODAsset, self).__init__(filename)
+        super(aodAsset, self).__init__(filename)
 
         bname = os.path.basename(filename)
         self.asset = bname[0:5]
@@ -120,17 +120,17 @@ class AODAsset(Asset):
 
     #@classmethod
     #def archive(cls, path='.', recursive=False, keep=False):
-        #assets = super(AODAsset, cls).archive(path, recursive, keep)
+        #assets = super(aodAsset, cls).archive(path, recursive, keep)
         # this creates new LTA files every archiving
         #dates = [a.date for a in assets]
         #for date in set(dates):
-        #    AODData.process_aerolta_daily(date.strftime('%j'))
+        #    aodData.process_aerolta_daily(date.strftime('%j'))
 
 
-class AODData(Data):
+class aodData(Data):
     name = 'MODAOD'
     version = '0.9.0'
-    Asset = AODAsset
+    Asset = aodAsset
 
     _products = {
         'aod': {
@@ -162,7 +162,7 @@ class AODData(Data):
     @classmethod
     def process_composites(cls, inventory, products, **kwargs):
         for product in products:
-            cpath = cls.Asset.Repository.cpath('ltad')
+            cpath = os.path.join(cls.Asset.Repository.path('composites'), 'ltad')
             path = os.path.join(cpath, 'ltad')
             # Calculate AOT long-term multi-year averages (lta) for given day
             if product == 'ltad':
@@ -175,7 +175,7 @@ class AODData(Data):
             if product == 'lta':
                 filenames = glob.glob(path + '*.tif')
                 if len(filenames) > 0:
-                    fout = os.path.join(cls.Asset.Repository.cpath(), 'lta.tif')
+                    fout = os.path.join(cls.Asset.Repository.path('composites'), 'lta.tif')
                     cls.process_mean(filenames, fout)
                 else:
                     raise Exception('No daily LTA files exist!')
@@ -266,6 +266,7 @@ class AODData(Data):
         day = date.strftime('%j')
         # Calculate best estimate from multiple sources
         repo = cls.Asset.Repository
+        cpath = repo.path('composites')
         if numpy.isnan(aod):
             aod = 0.0
             norm = 0.0
@@ -274,7 +275,7 @@ class AODData(Data):
 
             source = 'Weighted estimate using MODIS LTA values'
             # LTA-Daily
-            filename = os.path.join(repo.cpath('ltad'), 'ltad%s.tif' % str(day).zfill(3))
+            filename = os.path.join(cpath, 'ltad', 'ltad%s.tif' % str(day).zfill(3))
             val, var = cls._read_point(filename, roi, nodata)
             var = var if var != 0.0 else val
             if not numpy.isnan(val) and not numpy.isnan(var):
@@ -285,7 +286,7 @@ class AODData(Data):
                 VerboseOut('AOD: LTA-Daily = %s, %s' % (val, var), 3)
 
             # LTA
-            val, var = cls._read_point(os.path.join(repo.cpath(), 'lta.tif'), roi, nodata)
+            val, var = cls._read_point(os.path.join(cpath, 'lta.tif'), roi, nodata)
             var = var if var != 0.0 else val
             if not numpy.isnan(val) and not numpy.isnan(var):
                 aod = aod + val / var

@@ -118,6 +118,7 @@ class SpatialExtent(object):
 
     @property
     def tiles(self):
+        """ List of tile ids """
         return self.coverage.keys()
 
     @property
@@ -137,10 +138,8 @@ class SpatialExtent(object):
                 print "{:>8}{:>11.1f}%{:>11.1f}%".format(t, self.coverage[t][0] * 100, self.coverage[t][1] * 100)
 
     def __str__(self):
+        """ String representation of spatial extent """
         return '%s: %s' % (self.sitename, ' '.join(self.tiles))
-
-    def __len__(self):
-        return len(self.coverage)
 
 
 class TemporalExtent(object):
@@ -198,4 +197,5 @@ class TemporalExtent(object):
         return datetime.date(int(d[0]), int(d[1]), int(d[2]))
 
     def __str__(self):
+        """ String representation of a temporal extent """
         return '%s - %s (days %s-%s)' % (self.datebounds[0], self.datebounds[1], self.daybounds[0], self.daybounds[1])
