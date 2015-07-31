@@ -40,7 +40,7 @@ class aodRepository(Repository):
 
     @classmethod
     def data_path(cls, tile='', date=''):
-        path = os.path.join(cls.get_setting('repository'), cls._tdir)
+        path = cls.path('tiles')
         if date != '':
             path = os.path.join(path, str(date.strftime('%Y')), str(date.strftime('%j')))
         return path
