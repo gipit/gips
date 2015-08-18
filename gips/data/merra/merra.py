@@ -38,23 +38,35 @@ requirements = ['pydap']
 
 
 class merraRepository(Repository):
-    name = 'Merra'
+    name = 'merra'
     description = 'Modern Era Retrospective-Analysis for Research and Applications (weather and climate)'
     _tile_attribute = 'tileid'
 
     @classmethod
     def tile_bounds(cls, tile):
         """ Get the bounds of the tile (in same units as tiles vector) """
+
+        # vector = open_vector(cls.get_setting('tiles'))
+        # extent = vector.where('tileid==%s' % tile).extent()
+        # return [extent.x0(), extent.y0(), extent.x1(), extent.y1()]
+
         vector = open_vector(cls.get_setting('tiles'))
-        extent = vector.where('tileid==%s' % tile).extent()
+        features = vector.where('tileid', tile)
+        if len(features) != 1:
+            raise Exception('there should be a single tile with id %s' % tile)
+
+            # set_trace()
+
+        extent = features[0].Extent()
         return [extent.x0(), extent.y0(), extent.x1(), extent.y1()]
+
 
 
 class merraAsset(Asset):
     Repository = merraRepository
 
     _sensors = {
-        'MERRA': {
+        'merra': {
             'description': 'Modern Era Retrospective-analysis for Resarch and Application',
         }
     }
@@ -125,7 +137,7 @@ class merraAsset(Asset):
         """ Inspect a single file and get some metadata """
         super(merraAsset, self).__init__(filename)
         parts = basename(filename).split('_')
-        self.sensor = 'MERRA'
+        self.sensor = 'merra'
         self.asset = parts[1]
         self.tile = parts[2]
         # e.g., ['MERRA', 'TS', 'h06v05', '2010001']
@@ -218,15 +230,11 @@ class merraAsset(Asset):
 
 class merraData(Data):
     """ A tile of data (all assets and products) """
-    name = 'Merra'
+    name = 'merra'
     version = '0.9.0'
     Asset = merraAsset
 
     _products = {
-        'temp': {
-            'description': 'Air temperature data',
-            'assets': ['TS', 'T2M', 'T10M']
-        },
         'T2M': {
             'description': 'Temperature at 2 m above the displacement height',
             'assets': ['T2M']
@@ -243,11 +251,27 @@ class merraData(Data):
             'description': 'Precipitation rate [kg m-2 s-1]',
             'assets': ['PRECTOT']
         },
-        'precip': {
+
+        'temp_modis': {
+            'description': 'Air temperature data',
+            'assets': ['TS', 'T2M', 'T10M']
+        },
+        'tave': {
+            'description': 'Ave daily air temperature data',
+            'assets': ['T2M']
+        },
+        'tmin': {
+            'description': 'Min daily air temperature data',
+            'assets': ['T2M']
+        },
+        'tmax': {
+            'description': 'Max daily air temperature data',
+            'assets': ['T2M']
+        },
+        'prcp': {
             'description': 'Daily total precipitation [cm]',
             'assets': ['PRECTOT']
         },
-
 
         #'daily_weather': {
         #    'description': 'Climate forcing data, e.g. for DNDC',
@@ -311,41 +335,74 @@ class merraData(Data):
         products = super(merraData, self).process(*args, **kwargs)
         if len(products) == 0:
             return
-
-        self.basename = self.basename + '_' + self.sensor_set[0]
         for key, val in products.requested.items():
             try:
                 assets = self.asset_filenames(val[0])
             except:
                 # Required assets unavailable, continue to next product
                 continue
-            fout = os.path.join(self.path, self.basename + '_' + key)
+            fout = os.path.join(self.path, self.basename + "_merra_" + key)
 
             ####################################################################
-            """
-            # This doesn't currently save anything
-            if val[0] == "daily_weather":
-                t10 = img[0].Read()
-                prectot = img[1].Read()
 
-                print t10.shape
-                print t10.min(), t10.mean(), t10.max()
-
-                print prectot.shape
-                print prectot.min(), prectot.mean(), prectot.max()
-            """
-            ####################################################################
-            if val[0] == "temp":
-                # this shouldn't have ever been used for anything
+            if val[0] == "tave":
                 img = gippy.GeoImage(assets[0])
+                imgout = gippy.GeoImage(fout, img, img.DataType(), 1)
+                thourly = img.Read()
+                temp = thourly.mean(axis=0)
+                temp = (temp - 273.16)*1.8 + 32.0
+                imgout[0].Write(temp)
+                imgout.SetBandName(val[0], 1)
+                imgout.SetUnits('C')
 
+            ####################################################################
+
+            if val[0] == "tmax":
+                img = gippy.GeoImage(assets[0])
+                imgout = gippy.GeoImage(fout, img, img.DataType(), 1)
+                thourly = img.Read()
+                temp = thourly.max(axis=0)
+                temp = (temp - 273.16)*1.8 + 32.0
+                imgout[0].Write(temp)
+                imgout.SetBandName(val[0], 1)
+                imgout.SetUnits('C')
+
+            ####################################################################
+
+            if val[0] == "tmin":
+                img = gippy.GeoImage(assets[0])
+                imgout = gippy.GeoImage(fout, img, img.DataType(), 1)
+                thourly = img.Read()
+                temp = thourly.min(axis=0)
+                temp = (temp - 273.16)*1.8 + 32.0
+                imgout[0].Write(temp)
+                imgout.SetBandName(val[0], 1)
+                imgout.SetUnits('C')
+
+            ####################################################################
+
+            if val[0] == "prcp":
+
+                img = gippy.GeoImage(assets[0])
+                imgout = gippy.GeoImage(fout, img, img.DataType(), 1)
+                phourly = img.Read()
+                prcp = phourly.mean(axis=0)                
+                prcp = prcp * 36. * 24. * 1000
+                imgout[0].Write(prcp)
+                imgout.SetBandName(val[0], 1)
+                imgout.SetUnits('mm d-1')
+
+            ####################################################################
+
+            if val[0] == "temp_modis":
+
+                img = gippy.GeoImage(assets[0])
                 imgout = gippy.GeoImage(fout, img, img.DataType(), 4)
 
                 # Aqua AM, Terra AM, Aqua PM, Terra PM
                 localtimes = [1.5, 10.5, 13.5, 22.5]
                 strtimes = ['0130LT', '1030LT', '1330LT', '2230LT']
                 hroffset = self.gmtoffset()
-
                 # TODO: loop across the scene in latitude
                 # calculate local time for each latitude column
                 print 'localtimes', localtimes
@@ -353,7 +410,6 @@ class merraData(Data):
                     print itime
                     picktime = localtime - hroffset
                     pickhour = int(picktime)
-
                     if pickhour < 0:
                         # next day local time
                         pickday = +1
@@ -363,67 +419,16 @@ class merraData(Data):
                     else:
                         # same day local time
                         pickday = 0
-
                     pickidx = pickhour % 24
                     print "localtime", localtime
                     print "picktime", picktime
                     print "pickhour", pickhour
                     print "pickday", pickday
                     print "pickidx", pickidx
-
                     img[pickidx].Process(imgout[itime])
-
                     obsdate = self.date + datetime.timedelta(pickday)
                     descr = " ".join([strtimes[itime], obsdate.isoformat()])
                     imgout.SetBandName(descr, itime + 1)
-
-            ####################################################################
-            if val[0] == "precip":
-
-                img = gippy.GeoImage(assets[0])
-
-                imgout = gippy.GeoImage(fout, img, img.DataType(), 1)
-
-
-                set_trace()
-
-                # Aqua AM, Terra AM, Aqua PM, Terra PM
-                # localtimes = [1.5, 10.5, 13.5, 22.5]
-                # strtimes = ['0130LT', '1030LT', '1330LT', '2230LT']
-                # hroffset = self.gmtoffset()
-
-                # TODO: loop across the scene in latitude
-                # calculate local time for each latitude column
-                # print 'localtimes', localtimes
-                # for itime, localtime in enumerate(localtimes):
-                #     print itime
-                #     picktime = localtime - hroffset
-                #     pickhour = int(picktime)
-
-                #     if pickhour < 0:
-                #         # next day local time
-                #         pickday = +1
-                #     elif pickhour > 24:
-                #         # previous day local time
-                #         pickday = -1
-                #     else:
-                #         # same day local time
-                #         pickday = 0
-
-                #     pickidx = pickhour % 24
-                #     print "localtime", localtime
-                #     print "picktime", picktime
-                #     print "pickhour", pickhour
-                #     print "pickday", pickday
-                #     print "pickidx", pickidx
-
-                #     img[pickidx].Process(imgout[itime])
-
-                #     obsdate = self.date + datetime.timedelta(pickday)
-                #     descr = " ".join([strtimes[itime], obsdate.isoformat()])
-                #     imgout.SetBandName(descr, itime + 1)
-
-
 
             ####################################################################
             elif val[0] == 'profile':
