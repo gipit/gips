@@ -178,6 +178,10 @@ class merraAsset(Asset):
         """ Get this asset for this tile and date (using OpenDap service) """
         #super(MerraAsset, cls).fetch(asset, tile, date)
 
+        if date > datetime.datetime.now():
+            print "These data are not available for future dates."
+            return None
+
         dataset = cls.opendap_fetch(asset, date)
 
         # Find the bounds of the tile requested
