@@ -142,9 +142,15 @@ class ProjectInventory(Inventory):
             VerboseOut(traceback.format_exc(), 4)
             raise Exception("%s does not appear to be a GIPS project directory" % self.projdir)
 
-    def products(self, date):
+    def products(self, date=None):
         """ Intersection of available products and requested products for this date """
-        return set(self.data[date].products).intersection(set(self.requested_products))
+        if date is not None:
+            return set(self.data[date].products).intersection(set(self.requested_products))
+        else:
+            products = {}
+            for date in self.dates:
+                products[date] = set(self.data[date].products).intersection(set(self.requested_products))
+            return products
 
     def new_image(self, filename, dtype=gippy.GDT_Byte, numbands=1, nodata=None):
         """ Create new image with the same template as the files in project """
@@ -182,6 +188,17 @@ class ProjectInventory(Inventory):
             imgarr.append(arr)
         data = numpy.vstack(tuple(imgarr))
         return data
+
+    def get_filepaths(self):
+        filepaths = {}
+        for date in self.dates:
+            products = list(set(self.data[date].products).intersection(set(self.requested_products)))
+            for product in products:
+                try:
+                    filepaths[date][product] = self.data[date][product]
+                except:
+                    filepaths[date] = {product: self.data[date][product]}
+        return filepaths
 
     def get_timeseries(self, product='', dates=None):
         """ Read all files as time series """
