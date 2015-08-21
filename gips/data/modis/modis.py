@@ -292,7 +292,7 @@ class modisData(Data):
 
             # LAND VEGETATION INDICES PRODUCT
             if val[0] == "indices":
-                VERSION = "1.0"
+                VERSION = "2.0"
                 meta['VERSION'] = VERSION
                 sensor = 'MCD'
                 fname = '%s_%s_%s' % (bname, sensor, key)
@@ -306,34 +306,50 @@ class modisData(Data):
                 bluimg = refl[2].Read()
                 grnimg = refl[3].Read()
                 mirimg = refl[5].Read()
-                swir2img = refl[6].Read()
+                swrimg = refl[6].Read() # formerly swir2
 
                 redimg[redimg < 0.0] = 0.0
                 nirimg[nirimg < 0.0] = 0.0
                 bluimg[bluimg < 0.0] = 0.0
                 grnimg[grnimg < 0.0] = 0.0
                 mirimg[mirimg < 0.0] = 0.0
-                swir2img[swir2img < 0.0] = 0.0
+                swrimg[swrimg < 0.0] = 0.0
 
+                redimg[redimg > 1.0] = 1.0
+                nirimg[nirimg > 1.0] = 1.0
+                bluimg[bluimg > 1.0] = 1.0
+                grnimg[grnimg > 1.0] = 1.0
+                mirimg[mirimg > 1.0] = 1.0
+                swrimg[swrimg > 1.0] = 1.0
+
+                # red, nir
                 ndvi = missing + np.zeros_like(redimg)
                 wg = np.where((redimg != missing) & (nirimg != missing) & (redimg + nirimg != 0.0))
                 ndvi[wg] = (nirimg[wg] - redimg[wg]) / (nirimg[wg] + redimg[wg])
 
+                # nir, mir
                 lswi = missing + np.zeros_like(redimg)
                 wg = np.where((nirimg != missing) & (mirimg != missing) & (nirimg + mirimg != 0.0))
                 lswi[wg] = (nirimg[wg] - mirimg[wg]) / (nirimg[wg] + mirimg[wg])
 
+                # blu, grn, red
                 vari = missing + np.zeros_like(redimg)
                 wg = np.where((grnimg != missing) & (redimg != missing) & (bluimg != missing) & (grnimg + redimg - bluimg != 0.0))
                 vari[wg] = (grnimg[wg] - redimg[wg]) / (grnimg[wg] + redimg[wg] - bluimg[wg])
 
+                # blu, grn, red, nir
                 brgt = missing + np.zeros_like(redimg)
                 wg = np.where((nirimg != missing)&(redimg != missing)&(bluimg != missing)&(grnimg != missing))
                 brgt[wg] = 0.3*bluimg[wg] + 0.3*redimg[wg] + 0.1*nirimg[wg] + 0.3*grnimg[wg]
 
+                # red, mir, swr
                 satvi = missing + np.zeros_like(redimg)
-                wg = np.where((redimg != missing)&(mirimg != missing)&(swir2img != missing)&(((mirimg + redimg + 0.5)*swir2img) != 0.0))
-                satvi[wg] = (((mirimg[wg] - redimg[wg])/(mirimg[wg] + redimg[wg] + 0.5))*1.5) - (swir2img[wg] / 2.0)
+                # I think the following line has an error:
+                # wg = np.where((redimg != missing)&(mirimg != missing)&(swrimg != missing)&(((mirimg + redimg + 0.5)*swrimg) != 0.0))
+                wg = np.where((redimg != missing)&(mirimg != missing)&(swrimg != missing)&((mirimg + redimg + 0.5) != 0.0))
+                satvi[wg] = (((mirimg[wg] - redimg[wg])/(mirimg[wg] + redimg[wg] + 0.5))*1.5) - (swrimg[wg] / 2.0)
+
+                print "writing", fname
 
                 # create output gippy image
                 imgout = gippy.GeoImage(fname, refl, gippy.GDT_Int16, 5)
