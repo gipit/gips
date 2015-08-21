@@ -238,10 +238,6 @@ def import_data_class(clsname):
 # Geospatial functions
 ##############################################################################
 
-
-from pdb import set_trace
-
-
 def open_vector(fname, key="", where=''):
     """ Open vector or feature """
     parts = fname.split(':')
