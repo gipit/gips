@@ -354,7 +354,8 @@ class merraData(Data):
                 imgout = gippy.GeoImage(fout, img, img.DataType(), 1)
                 thourly = img.Read()
                 temp = thourly.mean(axis=0)
-                temp = (temp - 273.16)*1.8 + 32.0
+                # temp = (temp - 273.16)*1.8 + 32.0
+                temp = temp - 273.16
                 imgout[0].Write(temp)
                 imgout.SetBandName(val[0], 1)
                 imgout.SetUnits('C')
@@ -366,7 +367,7 @@ class merraData(Data):
                 imgout = gippy.GeoImage(fout, img, img.DataType(), 1)
                 thourly = img.Read()
                 temp = thourly.max(axis=0)
-                temp = (temp - 273.16)*1.8 + 32.0
+                temp = temp - 273.16
                 imgout[0].Write(temp)
                 imgout.SetBandName(val[0], 1)
                 imgout.SetUnits('C')
@@ -378,7 +379,7 @@ class merraData(Data):
                 imgout = gippy.GeoImage(fout, img, img.DataType(), 1)
                 thourly = img.Read()
                 temp = thourly.min(axis=0)
-                temp = (temp - 273.16)*1.8 + 32.0
+                temp = temp - 273.16
                 imgout[0].Write(temp)
                 imgout.SetBandName(val[0], 1)
                 imgout.SetUnits('C')
