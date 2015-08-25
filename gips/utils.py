@@ -259,13 +259,7 @@ def open_vector(fname, key="", where=''):
             VerboseOut(traceback.format_exc(), 4)
     if where != '':
         # return array of features
-
-        # return vector.where(where)
-        # it looks like a GeoVector now only handles key=value and not
-        # general SQL, which I think is less useful. So, temporary fix:
-        key, value = where.split('=')
-        return vector.where(key, value)
-
+        return vector.where(where)
         features = []
     else:
         return vector
