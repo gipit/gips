@@ -28,6 +28,9 @@ v0.8.0
 - Setup now puts settings.py at /etc/gips/settings.py
 - Ability to loop through all features in a vector layer (using the --loop option)
 - where argument added to include SQL where clauses
+- Setup no-longer puts settings.py in /etc/gips/
+- Configuration managed through gips_config command
+- Fixed bug in handling date specification
 
 Landsat
 - Added wtemp product (Water temperature, atm corrected with MODTRAN using custom profiles from MERRA data)
@@ -38,9 +41,14 @@ MODIS
 
 CDL
 - Updated CDL directory structure to use standard GIPS format (tiledir/datedir)
+- added tiles.shp to repository
 
 MERRA
 - Updated merra data module
+
+AOD
+- updated to be in-line with new gips.utils.settings framework
+
 
 v0.7.1
 - Better internal handling of sensors for data where there can be multiple sensors on a single day
