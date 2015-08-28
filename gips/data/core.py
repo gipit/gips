@@ -40,6 +40,10 @@ from gips import __version__
 from gips.utils import settings, VerboseOut, RemoveFiles, File2List, List2File, Colors, basename, mkdir, open_vector
 from gippy.algorithms import CookieCutter
 
+
+from pdb import set_trace
+
+
 """
 The data.core classes are the base classes that are used by individual Data modules.
 For a new dataset create children of Repository, Asset, and Data
@@ -145,7 +149,7 @@ class Repository(object):
         feat = layer.GetNextFeature()
         while feat is not None:
             tgeom = loads(feat.GetGeometryRef().ExportToWkt())
-            if tgeom.overlaps(geom):
+            if tgeom.intersects(geom):
                 area = geom.intersection(tgeom).area
                 if area != 0:
                     tile = cls.feature2tile(feat)
@@ -261,6 +265,8 @@ class Asset(object):
     ##########################################################################
     # Class methods
     ##########################################################################
+
+
     @classmethod
     def discover(cls, tile, date, asset=None):
         """ Factory function returns list of Assets for this tile and date """
@@ -728,17 +734,19 @@ class Data(object):
     @classmethod
     def discover(cls, path):
         """ Find products in path and return Data object for each date """
-        files0 = glob.glob(os.path.join(path, cls._pattern))
         files = []
         datedir = cls.Asset.Repository._datedir
-        for f in files0:
-            parts = basename(f).split('_')
-            if len(parts) == 3 or len(parts) == 4:
-                try:
-                    datetime.strptime(parts[len(parts) - 3], datedir)
-                    files.append(f)
-                except:
-                    pass
+        for root, dirs, filenames in os.walk(path):
+            for filename in filenames:
+                f = os.path.join(root, filename)
+                print f
+                parts = basename(f).split('_')
+                if len(parts) == 3 or len(parts) == 4:
+                    try:
+                        datetime.strptime(parts[len(parts) - 3], datedir)
+                        files.append(f)
+                    except:
+                        pass
 
         datas = []
         if len(files) == 0:
@@ -752,6 +760,7 @@ class Data(object):
             dat = cls(path=path)
             dat.ParseAndAddFiles(list(fnames))
             datas.append(dat)
+
         return datas
 
     @classmethod

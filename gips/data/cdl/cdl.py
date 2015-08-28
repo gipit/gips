@@ -33,7 +33,7 @@ class cdlRepository(Repository):
     description = 'Crop Data Layer'
     _datedir = '%Y'
     _defaultresolution = [30.0, 30.0]
-
+    _tile_attribute = 'STATE_ABBR'
 
 class cdlAsset(Asset):
     Repository = cdlRepository
