@@ -32,11 +32,10 @@ import gippy
 from gips.data.core import Repository, Asset, Data
 from gips.utils import VerboseOut, basename
 
-from agspy.utils import raster
 
+from pdb import set_trace
 
 requirements =['pydap']
-
 
 PROJ = """PROJCS["unnamed",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],AUTHORITY["EPSG","4326"]],PROJECTION["Lambert_Conformal_Conic_2SP"],PARAMETER["standard_parallel_1",25],PARAMETER["standard_parallel_2",60],PARAMETER["latitude_of_origin",42.5],PARAMETER["central_meridian",-100],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]]]"""
 
@@ -51,21 +50,17 @@ PROJ = """PROJCS["unnamed",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",63
 # daylength (sec day-1) - dayl.nc
 
 
+def create_datatype(np_dtype):
+    """ provide translation between data type codes """
+    gippy.GDT_UInt8 = gippy.GDT_Byte
+    np_dtype = str(np_dtype)
+    typestr = 'gippy.GDT_' + np_dtype.title().replace('Ui', 'UI')
+    g_dtype = eval(typestr)
+    return g_dtype
 
 class daymetRepository(Repository):
     name = 'Daymet'
     description = 'Daymet weather data'
-
-    # @classmethod
-    # def tile_bounds(cls, tile):
-    #     """ Get the bounds of the tile (in same units as tiles vector) """
-    #     tilesvector = cls.vector()
-    #     for fid in tilesvector.get_fids():
-    #         feature = tilesvector.get_feature(fid)
-    #         if feature['Name'] == tile:
-    #             break
-    #     bounds = eval(feature['bounds'])
-    #     return bounds
 
 
 class daymetAsset(Asset):
@@ -77,7 +72,6 @@ class daymetAsset(Asset):
         }
     }
 
-    _bandnames = ['%02d30GMT' % i for i in range(24)]
     _latency = 0
     _startdate = datetime.date(1980, 1, 1)
     _url = "http://thredds.daac.ornl.gov/thredds/dodsC/ornldaac/1219/tiles/%d/%s_%d"
@@ -130,13 +124,10 @@ class daymetAsset(Asset):
     def __init__(self, filename):
         """ Inspect a single file and get some metadata """
         super(daymetAsset, self).__init__(filename)
-
         parts = basename(filename).split('_')
         self.sensor = 'daymet'
-
         self.asset = parts[1]
         self.tile = parts[2]
-
         self.date = datetime.datetime.strptime(parts[3], '%Y%j').date()
         self.products[self.asset] = filename
 
@@ -144,41 +135,30 @@ class daymetAsset(Asset):
     @classmethod
     def fetch(cls, asset, tile, date):
         """ Get this asset for this tile and date (using OpenDap service) """
-        super(daymetAsset, cls).fetch(asset, tile, date)
         url = cls._assets[asset].get('url', '') % (date.year, tile, date.year)
         source = cls._assets[asset]['source'] 
         loc = "%s/%s" % (url, source)
-
+        print loc
         dataset = open_url(loc)
-
         x0 = dataset['x'].data[0] - 500.0
         y0 = dataset['y'].data[0] + 500.0
-
         day = date.timetuple().tm_yday
         iday = day - 1
-
         data = np.array(dataset[asset][iday, :, :]).squeeze().astype('float32')
-
         ysz, xsz = data.shape
-
         description = cls._assets[asset]['description']
         meta = {'ASSET': asset, 'TILE': tile, 'DATE': str(date.date()), 'DESCRIPTION': description}
-
         sday = str(day).zfill(3)
         fout = os.path.join(cls.Repository.path('stage'), "daymet_%s_%s_%4d%s.tif" % (asset, tile, date.year, sday))
-
         geo = [float(x0), cls._defaultresolution[0], 0.0, float(y0), 0.0, -cls._defaultresolution[1]]
         geo = np.array(geo).astype('double')
-
-        dtype = raster.create_datatype(data.dtype)
-
+        dtype = create_datatype(data.dtype)
         imgout = gippy.GeoImage(fout, xsz, ysz, 1, dtype)
-        imgout.SetBandName('tmin', 1)
+        imgout.SetBandName(asset, 1)
         imgout.SetNoData(-9999.)
         imgout.SetProjection(PROJ)
         imgout.SetAffine(geo)
-        imgout[0].Write(data)
-
+        imgout[0].Write(data)    
 
 
 class daymetData(Data):

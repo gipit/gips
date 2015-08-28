@@ -62,9 +62,12 @@ def main():
             if inv.numfiles > 0:
                 inv.mosaic(datadir=datadir, tree=args.tree, overwrite=args.overwrite,
                            res=args.res, interpolation=args.interpolation, crop=args.crop)
-            if not args.tree:
-                inv = ProjectInventory(datadir)
-                inv.pprint()
+            # if not args.tree:
+            #     inv = ProjectInventory(datadir)
+            #     inv.pprint()
+            inv = ProjectInventory(datadir)
+            inv.pprint()
+
 
     except Exception, e:
         import traceback
