@@ -152,19 +152,19 @@ class ProjectInventory(Inventory):
                 products[date] = set(self.data[date].products).intersection(set(self.requested_products))
             return products
 
-    def new_image(self, filename, dtype=gippy.GDT_Byte, numbands=1, nodata=None):
+    def new_image(self, filename, dtype="byte", numbands=1, nodata=None):
         """ Create new image with the same template as the files in project """
-        img = gippy.GeoImage(self.data[self.dates[0]].open(self.requested_products[0]))
-        imgout = gippy.GeoImage(filename, img, dtype, numbands)
+        img = self.data[self.dates[0]].open(self.requested_products[0])
+        imgout = gippy.GeoImage.create_from(img, filename, nb=numbands, dtype=dtype)
         img = None
         if nodata is not None:
-            imgout.SetNoData(nodata)
+            imgout.set_nodata(nodata)
         return imgout
 
     def data_size(self):
         """ Get 'shape' of inventory: #products x rows x columns """
-        img = gippy.GeoImage(self.data[self.dates[0]].open(self.requested_products[0]))
-        sz = (len(self.requested_products), img.YSize(), img.XSize())
+        img = self.data[self.dates[0]].open(self.requested_products[0])
+        sz = (len(self.requested_products), img.ysize(), img.xsize())
         return sz
 
     def get_data(self, dates=None, products=None, chunk=None):
@@ -181,7 +181,7 @@ class ProjectInventory(Inventory):
             # TODO - move numpy.squeeze into swig interface file?
             ch = gippy.Recti(chunk[0], chunk[1], chunk[2], chunk[3])
             arr = numpy.squeeze(gimg.TimeSeries(days.astype('float64'), ch))
-            arr[arr == gimg[0].NoDataValue()] = numpy.nan
+            arr[arr == gimg[0].nodata()] = numpy.nan
             if len(days) == 1:
                 dims = arr.shape
                 arr = arr.reshape(1, dims[0], dims[1])
@@ -209,8 +209,13 @@ class ProjectInventory(Inventory):
         img = gippy.GeoImage(filenames)
         return img
 
+    """
+    # time series not supported by Gippy 1.0....this also seems out of scope for GIPS
+    #  time series processing/multiproc stuff should be handled in another library
+    #  perhaps called from here if really needed
+    #  see github.com/matthewhanson/multitool.git as a start
     def map_reduce(self, func, numbands=1, products=None, readfunc=None, nchunks=100, **kwargs):
-        """ Apply func to inventory to generate an image with numdim output bands """
+    #    "" Apply func to inventory to generate an image with numdim output bands ""
         if products is None:
             products = self.requested_products
         if readfunc is None:
@@ -220,6 +225,7 @@ class ProjectInventory(Inventory):
         mr = MapReduce(inshape, outshape, readfunc, func, **kwargs)
         mr.run(nchunks=nchunks)
         return mr.assemble()
+    """
 
 
 class DataInventory(Inventory):

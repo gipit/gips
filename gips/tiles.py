@@ -27,7 +27,7 @@ from datetime import datetime
 import traceback
 
 import gippy
-from gippy.algorithms import CookieCutter
+from gippy.algorithms import cookie_cutter
 from gips.core import SpatialExtent
 from gips.utils import VerboseOut, Colors, mosaic, mkdir
 
@@ -95,7 +95,8 @@ class Tiles(object):
                     filenames = [self.tiles[t].filenames[(sensor, product)] for t in self.tiles]
                     images = gippy.GeoImages(filenames)
                     if self.spatial.site is not None and res is not None:
-                        CookieCutter(images, self.spatial.site, fout, res[0], res[1], crop, interpolation)
+                        cookie_cutter(images, filename=fout, feature=self.spatial.site, 
+                                      xres=res[0], yres=res[1], crop=crop, interpolation=nterpolation)
                     else:
                         mosaic(images, fout, self.spatial.site)
                 except Exception, e:

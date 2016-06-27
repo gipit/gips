@@ -59,7 +59,7 @@ class Colors():
 
 
 def VerboseOut(obj, level=1):
-    if gippy.Options.Verbose() >= level:
+    if gippy.Options.verbose() >= level:
         #pprint.PrettyPrinter().pprint(obj)
         if not isinstance(obj, (list, tuple)):
             obj = [obj]
@@ -244,7 +244,7 @@ def open_vector(fname, key="", where=''):
     parts = fname.split(':')
     if len(parts) == 1:
         vector = GeoVector(fname)
-        vector.SetPrimaryKey(key)
+        vector.set_primary_key(key)
     else:
         # or it is a database
         if parts[0] not in settings().DATABASES.keys():
@@ -254,7 +254,7 @@ def open_vector(fname, key="", where=''):
             filename = ("PG:dbname=%s host=%s port=%s user=%s password=%s" %
                         (db['NAME'], db['HOST'], db['PORT'], db['USER'], db['PASSWORD']))
             vector = GeoVector(filename, parts[1])
-            vector.SetPrimaryKey(key)
+            vector.set_primary_key(key)
 
         except Exception, e:
             VerboseOut(traceback.format_exc(), 4)

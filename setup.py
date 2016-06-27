@@ -53,7 +53,7 @@ setup(
     author_email='matt.a.hanson@gmail.com',
     packages=find_packages(),
     package_data={'' : ['*.shp', '*.prj', '*.shx', '*.dbf']},
-    install_requires=['Py6S>=1.5.0', 'shapely', 'gippy>=0.3.0', 'python-dateutil', 'pydap'],
+    install_requires=['Py6S>=1.5.0', 'shapely', 'gippy>=1.0.0b1', 'python-dateutil', 'pydap'],
     entry_points={'console_scripts': console_scripts},
     zip_safe=False,
 )

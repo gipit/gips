@@ -38,7 +38,6 @@ import commands
 import gippy
 from gips import __version__
 from gips.utils import settings, VerboseOut, RemoveFiles, File2List, List2File, Colors, basename, mkdir, open_vector
-from gippy.algorithms import CookieCutter
 
 
 from pdb import set_trace
@@ -128,15 +127,15 @@ class Repository(object):
 
         # open tiles vector
         v = open_vector(cls.get_setting('tiles'))
-        shp = ogr.Open(v.Filename())
-        if v.LayerName() == '':
+        shp = ogr.Open(v.filename())
+        if v.layer_name() == '':
             layer = shp.GetLayer(0)
         else:
-            layer = shp.GetLayer(v.LayerName())
+            layer = shp.GetLayer(v.layer_name())
 
         # create and warp site geometry
-        ogrgeom = ogr.CreateGeometryFromWkt(vector.WKT())
-        srs = osr.SpatialReference(vector.Projection())
+        ogrgeom = ogr.CreateGeometryFromWkt(vector.geometry())
+        srs = osr.SpatialReference(vector.srs())
         trans = osr.CoordinateTransformation(srs, layer.GetSpatialRef())
         ogrgeom.Transform(trans)
         # convert to shapely
@@ -527,7 +526,7 @@ class Data(object):
                         print cmd
                         #result = commands.getstatusoutput(cmd)
                     else:
-                        gippy.GeoImage(fin).Process(fout)
+                        gippy.GeoImage(fin).save(fout)
                         #shutil.copyfile(fin, fout)
                 except Exception:
                     VerboseOut(traceback.format_exc(), 4)

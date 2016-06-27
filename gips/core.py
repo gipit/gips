@@ -109,8 +109,8 @@ class SpatialExtent(object):
 
         if feature is not None:
             tiles = self.repo.vector2tiles(feature, pcov, ptile, tiles)
-            self.feature = (feature.Filename(), feature.LayerName(), feature.FID())
-            self.sitename = feature.Basename()
+            self.feature = (feature.filename(), feature.layer_name(), feature.fid())
+            self.sitename = feature.basename()
         else:
             tiles = {t: (1, 1) for t in tiles}
             self.sitename = 'tiles'

@@ -31,7 +31,7 @@ import math
 import numpy as np
 
 import gippy
-from gippy.algorithms import Indices
+from gippy.algorithms import indices
 from gips.data.core import Repository, Asset, Data
 from gips.utils import VerboseOut
 
@@ -164,7 +164,8 @@ class modisAsset(Asset):
         cpattern = re.compile(pattern)
         success = False
 
-        for item in listing:
+
+        for item in listing[450:451]:
             if cpattern.search(item):
                 if 'xml' in item:
                     continue
@@ -395,8 +396,8 @@ class modisData(Data):
                 for iband, band in enumerate(availbands):
 
                     # get the data values for both bands
-                    cover = img[2 * iband].Read()
-                    frac = img[2 * iband + 1].Read()
+                    cover = img[2 * iband].read()
+                    frac = img[2 * iband + 1].read()
 
                     # check out frac
                     wbad1 = np.where((frac == 200) | (frac == 201) | (frac == 211) |
@@ -480,15 +481,14 @@ class modisData(Data):
                 meta['NUMVALIDCOVER'] = numvalidcover
 
                 # create output gippy image
-                imgout = gippy.GeoImage(fname, img, gippy.GDT_Byte, 2)
-                imgout.SetNoData(127)
-                imgout.SetOffset(0.0)
-                imgout.SetGain(1.0)
-                imgout.SetBandName('Snow Cover', 1)
-                imgout.SetBandName('Fractional Snow Cover', 2)
+                imgout = gippy.GeoImage.create_from(img, filename=fname, dtype='byte', nb=2)
+                imgout.set_nodata(127)
+                imgout.set_offset(0.0)
+                imgout.set_gain(1.0)
+                imgout.set_bandnames(['Snow Cover', 'Fractional Snow Cover'])
 
-                imgout[0].Write(coverout)
-                imgout[1].Write(fracout)
+                imgout[0].write(coverout)
+                imgout[1].write(fracout)
 
                 VerboseOut('Completed writing %s' % fname)
                 
@@ -522,14 +522,14 @@ class modisData(Data):
                 qcbands = gippy.GeoImage(qcsds)
                 hourbands = gippy.GeoImage(hoursds)
 
-                imgout = gippy.GeoImage(fname, tempbands, gippy.GDT_UInt16, 5)
-                imgout.SetNoData(65535)
-                imgout.SetGain(0.02)
+                imgout = gippy.GeoImage.create_from(tepbands, filename=fname, dtype='uint16', nb=5)
+                imgout.set_nodata(65535)
+                imgout.set_gain(0.02)
 
                 # there are four temperature bands
                 for iband, band in enumerate(availbands):
                     # get meta name template info
-                    basename = tempbands[iband].Basename()
+                    basename = tempbands[iband].basename()
                     platform = self.Asset._sensors[basename[:3]]['description']
 
                     if basename.find('daytime'):
@@ -596,13 +596,16 @@ class modisData(Data):
 
                     tempbands[iband].Process(imgout[band])
 
-                imgout[4].SetGain(1.0)
-                imgout[4].Write(bestmask)
-                imgout.SetBandName('Temperature Daytime Terra', 1)
-                imgout.SetBandName('Temperature Nighttime Terra', 2)
-                imgout.SetBandName('Temperature Daytime Aqua', 3)
-                imgout.SetBandName('Temperature Nighttime Aqua', 4)
-                imgout.SetBandName('Temperature Best Quality', 5)
+                imgout[4].set_gain(1.0)
+                imgout[4].write(bestmask)
+                imgout.set_bandnames([
+                    'Temperature Daytime Terra',
+                    'Temperature Nighttime Terra',
+                    'Temperature Daytime Aqua',
+                    'Temperature Nighttime Aqua',
+                    'Temperature Best Quality'
+                ])
+
 
             ###################################################################
             # OBSERVATION TIME PRODUCT (DAILY)
@@ -625,14 +628,14 @@ class modisData(Data):
 
                 hourbands = gippy.GeoImage(hoursds)
 
-                imgout = gippy.GeoImage(fname, hourbands, gippy.GDT_Byte, 4)
-                imgout.SetNoData(0)
-                imgout.SetGain(0.1)
+                imgout = gippy.GeoImage.create_from(hourbands, filename=fname, dtype='byte', nb=4)
+                imgout.set_nodata(0)
+                imgout.set_gain(0.1)
 
                 # there are four temperature bands
                 for iband, band in enumerate(availbands):
                     # get meta name template info
-                    basename = hourbands[iband].Basename()
+                    basename = hourbands[iband].basename()
                     platform = self.Asset._sensors[basename[:3]]['description']
 
                     if basename.find('daytime'):
@@ -644,10 +647,13 @@ class modisData(Data):
 
                     hourbands[iband].Process(imgout[band])
 
-                imgout.SetBandName('Observation Time Daytime Terra', 1)
-                imgout.SetBandName('Observation Time Nighttime Terra', 2)
-                imgout.SetBandName('Observation Time Daytime Aqua', 3)
-                imgout.SetBandName('Observation Time Nighttime Aqua', 4)
+                imgout.set_bandnames([
+                    'Observation Time Daytime Terra',
+                    'Observation Time Nighttime Terra',
+                    'Observation Time Daytime Aqua',
+                    'Observation Time Nighttime Aqua'
+                ])
+
 
 
             ###################################################################
@@ -659,12 +665,11 @@ class modisData(Data):
                 fname = '%s_%s_%s' % (bname, sensor, key)
 
                 refl = gippy.GeoImage(allsds)
-                refl.SetBandName("RED", 1)
-                refl.SetBandName("NIR", 2)
-                refl.SetNoData(-28762)
+                refl.set_bandnames(['red', 'nir'])
+                refl.set_nodata(-28762)
 
-                fouts = dict(Indices(refl, {'ndvi': fname}, meta))
-                imgout = gippy.GeoImage(fouts['ndvi'])
+                imgout = dict(indices(refl, {'ndvi': fname}))[0]
+                imgout.set_meta(meta)
 
             # TEMPERATURE PRODUCT (8-day) - Terra only
 
@@ -686,7 +691,7 @@ class modisData(Data):
 
             # set metadata
             meta = {k: str(v) for k, v in meta.iteritems()}
-            imgout.SetMeta(meta)
+            imgout.set_meta(meta)
 
             # add product to inventory
             self.AddFile(sensor, key, imgout.Filename())

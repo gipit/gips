@@ -98,7 +98,7 @@ class Algorithm(object):
         parser = cls.parser(parser)
 
         args = parser.parse_args()
-        gippy.Options.SetVerbose(args.verbose)
+        gippy.Options.set_verbose(args.verbose)
         VerboseOut(cls.info())
 
         try:
