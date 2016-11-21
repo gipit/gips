@@ -302,10 +302,10 @@ class modisData(Data):
         # Misc
         # ndvi8 fails and causes errors further down the processing run for a run like this:
         # gips_process modis -s NHseacoast.shp -d 2012-12-02,2012-12-03 -v 4
-        #'ndvi8': {
-        #    'description': 'Normalized Difference Vegetation Index: 250m',
-        #    'assets': ['MOD09Q1'],
-        #},
+        'ndvi8': {
+            'description': 'Normalized Difference Vegetation Index: 250m',
+            'assets': ['MOD09Q1'],
+        },
         'temp8td': {
             'description': 'Surface temperature: 1km',
             'assets': ['MOD11A2'],
