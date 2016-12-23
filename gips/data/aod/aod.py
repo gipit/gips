@@ -233,6 +233,7 @@ class aodData(Data):
             img = None
             return (val, var)
         except:
+            # TODO error-handling-fix: read through for refactor, otherwise standard handler
             VerboseOut(traceback.format_exc(), 4)
             return (numpy.nan, numpy.nan)
 
@@ -257,6 +258,7 @@ class aodData(Data):
                 aod = numpy.mean(vals[~numpy.isnan(vals)])
                 source = 'MODIS (MOD08_D3) spatial average'
         except Exception:
+            # TODO error-handling-fix: std handler but mind `aod`
             VerboseOut(traceback.format_exc(), 4)
             aod = numpy.nan
 

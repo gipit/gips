@@ -36,6 +36,10 @@ DATABASES = {
 #        'HOST': '',
 #        'PORT': '5432',
 #    }
+    'inventory': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': '$TLD/gips-inv-db.sqlite3',
+    },
 }
 
 
@@ -52,6 +56,9 @@ REPOS = {
     },
     'modis': {
         'repository': '$TLD/modis',
+        # For NASA EarthData Authentication
+        #'username': '' 
+        #'password': ''
     },
     # these drivers tend to more specialized and experimental so turned off by default
     #'cdl': {
