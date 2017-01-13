@@ -27,6 +27,7 @@ import gippy
 from gips.parsers import GIPSParser
 from gips.inventory import ProjectInventory
 from gips.utils import Colors, VerboseOut, basename
+from gips import utils
 
 __version__ = '0.1.0'
 
@@ -34,14 +35,15 @@ def main():
     title = Colors.BOLD + 'GIPS Image Statistics (v%s)' % __version__ + Colors.OFF
 
     parser0 = GIPSParser(datasources=False, description=title)
-    parser0.add_default_parser()
     parser0.add_projdir_parser()
     group = parser0.add_argument_group('masking options')
     args = parser0.parse_args()
 
+    utils.gips_script_setup(stop_on_error=args.stop_on_error)
+
     # TODO - check that at least 1 of filemask or pmask is supplied
 
-    try:
+    with utils.error_handler():
         print title
         header = ['min', 'max', 'mean', 'sd', 'skew', 'count']
 
@@ -76,10 +78,7 @@ def main():
             for f in files:
                 files[f].close()
 
-    except Exception, e:
-        import traceback
-        VerboseOut(traceback.format_exc(), 4)
-        print 'Error: %s' % e
+    utils.gips_exit() # produce a summary error report then quit with a proper exit status
 
 
 if __name__ == "__main__":

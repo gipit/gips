@@ -29,6 +29,7 @@ try:
     import gips.settings
     execfile(gips.settings.__file__.rstrip('c'))
 except:
+    # TODO error-handling-fix: with handler
     raise Exception('There are no environment-level GIPS settings!')
 
 

@@ -105,5 +105,6 @@ class Algorithm(object):
             alg = cls(**vars(args))
             alg.run_command(**vars(args))
         except Exception, e:
+            # TODO error-handling-fix: use unified high-level error handler
             VerboseOut('Error in %s: %s' % (cls.name, e))
             VerboseOut(traceback.format_exc(), 3)

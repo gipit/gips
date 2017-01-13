@@ -26,7 +26,9 @@ from gips import __version__
 from gips.parsers import GIPSParser
 from gips.core import SpatialExtent, TemporalExtent
 from gips.utils import Colors, VerboseOut, mkdir, open_vector, import_data_class
+from gips import utils
 from gips.inventory import DataInventory
+from gips.inventory import orm
 
 
 def main():
@@ -40,11 +42,12 @@ def main():
     parser0.add_warp_parser()
     args = parser0.parse_args()
 
-    try:
-        print title
-        cls = import_data_class(args.command)
+    cls = utils.gips_script_setup(args.command, args.stop_on_error)
+    print title
 
-        # create tld: DATATYPE_tiles_RESOLUTION_SUFFIX
+    with utils.error_handler():
+        # create output directory if needed
+        # tld is "{}_tiles_{}_{}".format(DATATYPE, RESOLUTION, SUFFIX)
         if args.notld:
             tld = args.outdir
         else:
@@ -62,14 +65,11 @@ def main():
                 for tid in inv[date].tiles:
                     # make sure back-end tiles are processed
                     inv[date].tiles[tid].process(args.products, overwrite=False)
-                    # warp the tiles
+                    # warp the tiles & copy into place in the output dir
                     inv[date].tiles[tid].copy(tld, args.products, inv.spatial.site,
                                               args.res, args.interpolation, args.crop, args.overwrite, args.tree)
 
-    except Exception, e:
-        import traceback
-        VerboseOut(traceback.format_exc(), 4)
-        print 'Warp Tiles error: %s' % e
+    utils.gips_exit() # produce a summary error report then quit with a proper exit status
 
 
 if __name__ == "__main__":
