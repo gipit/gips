@@ -170,12 +170,15 @@ class ProjectInventory(Inventory):
     def get_data(self, dates=None, products=None, chunk=None):
         """ Read all files as time series, stacking all products """
         # TODO - change to absolute dates
-        days = numpy.array([int(d.strftime('%j')) for d in dates])
-        imgarr = []
+
         if dates is None:
             dates = self.dates
+
+        days = numpy.array([int(d.strftime('%j')) for d in dates])
+        imgarr = []
         if products is None:
             products = self.requested_products
+
         for p in products:
             gimg = self.get_timeseries(p, dates=dates)
             # TODO - move numpy.squeeze into swig interface file?
@@ -188,6 +191,12 @@ class ProjectInventory(Inventory):
             imgarr.append(arr)
         data = numpy.vstack(tuple(imgarr))
         return data
+
+    def get_location(self):
+        # this is a terrible hack to get the name of the feature associated with the inventory
+        data = self.data[self.dates[0]]
+        location = os.path.split(os.path.split(data.filenames.values()[0])[0])[1]
+        return location
 
     def get_filepaths(self):
         filepaths = {}
@@ -225,7 +234,7 @@ class ProjectInventory(Inventory):
 class DataInventory(Inventory):
     """ Manager class for data inventories (collection of Tiles class) """
 
-    def __init__(self, dataclass, spatial, temporal, products=None, fetch=False, **kwargs):
+    def __init__(self, dataclass, spatial, temporal, products=None, fetch=False, update=False, **kwargs):
         """ Create a new inventory
         :dataclass: The Data class to use (e.g., LandsatData, ModisData)
         :spatial: The spatial extent requested
@@ -241,22 +250,24 @@ class DataInventory(Inventory):
         self.temporal = temporal
         self.products = dataclass.RequestedProducts(products)
 
+        self.update = update
+
         if fetch:
             try:
-                dataclass.fetch(self.products.base, self.spatial.tiles, self.temporal)
+                dataclass.fetch(self.products.base, self.spatial.tiles, self.temporal, self.update)
             except Exception, e:
                 raise Exception('Error downloading %s: %s' % (dataclass.name, e))
-            dataclass.Asset.archive(Repository.path('stage'))
+            dataclass.Asset.archive(Repository.path('stage'), update=self.update)
 
         # find data
         self.data = {}
         for date in self.temporal.prune_dates(self.spatial.available_dates):
-            try:
-                dat = Tiles(dataclass, self.spatial, date, self.products, **kwargs)
-                if len(dat) > 0:
-                    self.data[date] = dat
-            except Exception, e:
-                raise Exception('DataInventory: Error accessing tiles in %s repository' % dataclass.name)
+            # try:
+            dat = Tiles(dataclass, self.spatial, date, self.products, **kwargs)
+            if len(dat) > 0:
+                self.data[date] = dat
+            # except Exception, e:
+            #     raise Exception('DataInventory: Error accessing tiles in %s repository' % dataclass.name)
 
     @property
     def sensor_set(self):

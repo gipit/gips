@@ -38,6 +38,11 @@ import numpy
 from gips.utils import List2File, VerboseOut
 from gips.data.merra import merraData
 from gips.data.aod import aodData
+
+# since Py6S pulls in matplotlib, we need to shut down all that gui business
+import matplotlib as mpl
+mpl.use('Agg')
+
 from Py6S import SixS, Geometry, AeroProfile, Altitudes, Wavelength, GroundReflectance, AtmosCorr, SixSHelpers
 
 
@@ -108,7 +113,7 @@ class SIXS():
         # TODO - dynamically adjust AeroProfile?
         s.aero_profile = AeroProfile.PredefinedType(AeroProfile.Continental)
 
-        self.aod = AODData.get_aod(geometry['lat'], geometry['lon'], date_time.date())
+        self.aod = aodData.get_aod(geometry['lat'], geometry['lon'], date_time.date())
         s.aot550 = self.aod[1]
 
         # Other settings
@@ -182,7 +187,7 @@ class MODTRAN():
             os.symlink(self._datadir, 'DATA')
 
         if profile:
-            mprofile = MerraData.profile(lon, lat, dtime)
+            mprofile = merraData.profile(lon, lat, dtime)
             pressure = mprofile['pressure']
             temp = mprofile['temp']
             humidity = mprofile['humidity']

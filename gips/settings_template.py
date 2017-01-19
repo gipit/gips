@@ -52,6 +52,9 @@ REPOS = {
     },
     'modis': {
         'repository': '$TLD/modis',
+        # For NASA EarthData Authentication
+        #'username': '' 
+        #'password': ''
     },
     # these drivers tend to more specialized and experimental so turned off by default
     #'cdl': {

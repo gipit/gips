@@ -41,10 +41,45 @@ def main():
         print title
         cls = import_data_class(args.command)
 
-        extents = SpatialExtent.factory(cls, args.site, args.key, args.where, args.tiles, args.pcov, args.ptile)
+        extents = SpatialExtent.factory(
+            cls, args.site, args.key, args.where, args.tiles, args.pcov,
+            args.ptile
+        )
+        batchargs = None
+        if args.batchout:
+            tdl = []
+            batchargs = '--chunksize ' + str(args.chunksize)
+            batchargs += ' --format ' + str(args.format)
+            if args.overwrite:
+                batchargs += ' --overwrite '
+            if args.products:
+                batchargs += ' -p ' + ' '.join(args.products)
+
         for extent in extents:
-            inv = DataInventory(cls, extent, TemporalExtent(args.dates, args.days), **vars(args))
-            inv.process(overwrite=args.overwrite)
+            inv = DataInventory(
+                cls, extent,
+                TemporalExtent(args.dates, args.days), **vars(args)
+            )
+            if args.batchout:
+                tdl = reduce(
+                    list.__add__,
+                    map(
+                        lambda tiles: [
+                            args.command + ' -t ' + str(tile) +
+                            ' -d ' + str(tiles.date) + ' ' +
+                            batchargs + '\n'
+                            for tile in tiles.tiles.keys()
+                        ],
+                        inv.data.values(),
+                    ),
+                    tdl
+                )
+
+            else:
+                inv.process(overwrite=args.overwrite)
+        if args.batchout:
+            with open(args.batchout, 'w') as ofile:
+                ofile.writelines(tdl)
 
     except Exception, e:
         import traceback

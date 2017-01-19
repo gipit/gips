@@ -30,6 +30,7 @@ import glob
 from itertools import groupby
 from shapely.wkt import loads
 import tarfile
+import zipfile
 import traceback
 import ftplib
 import shutil
@@ -178,6 +179,7 @@ class Asset(object):
         '': {'description': ''},
     }
     # dictionary of assets
+    # TODO - support regular expressions for patterns
     _assets = {
         '': {
             'pattern': '*',
@@ -225,6 +227,10 @@ class Asset(object):
                 tfile = tarfile.open(self.filename)
                 tfile = tarfile.open(self.filename)
                 datafiles = tfile.getnames()
+            elif zipfile.is_zipfile(self.filename):
+                zfile = zipfile.ZipFile(self.filename)
+                datafiles = ['/vsizip/' + os.path.join(self.filename, f)
+                             for f in zfile.namelist()]
             else:
                 # Try subdatasets
                 fh = gdal.Open(self.filename)
@@ -235,8 +241,9 @@ class Asset(object):
                 return datafiles
             else:
                 return [self.filename]
-        except:
-            raise Exception('Problem accessing asset(s) in %s' % self.filename)
+        except Exception as e:
+            raise Exception('Problem accessing asset(s) in {}\n ({})'
+                            .format(self.filename, e))
 
     def extract(self, filenames=[]):
         """ Extract filenames from asset (if archive file) """
@@ -683,8 +690,9 @@ class Data(object):
         try:
             fname = self.filenames[(sensor, product)]
             return gippy.GeoImage(fname)
-        except:
-            raise Exception('error reading product (%s, %s)' % (sensor, product))
+
+        except Exception as e:
+            raise Exception('error reading product (%s, %s, %s)' % (sensor, product, e))
 
     def open_assets(self, product):
         """ Open and return a GeoImage of the assets """
@@ -693,7 +701,7 @@ class Data(object):
     # TODO - make general product_filter function
     def masks(self, patterns=None):
         """ List all products that are masks """
-        if not patterns:
+        if patterns is None:
             patterns = ['acca', 'fmask', 'mask']
         m = []
         for p in self.products:
@@ -739,7 +747,7 @@ class Data(object):
         for root, dirs, filenames in os.walk(path):
             for filename in filenames:
                 f = os.path.join(root, filename)
-                print f
+                VerboseOut(f, 2)
                 parts = basename(f).split('_')
                 if len(parts) == 3 or len(parts) == 4:
                     try:
@@ -785,16 +793,16 @@ class Data(object):
         return set(assets)
 
     @classmethod
-    def fetch(cls, products, tiles, textent):
-        """ Download data for tiles and add to archive """
+    def fetch(cls, products, tiles, textent, update=False):
+        """ Download data for tiles and add to archive. update forces fetch """
         assets = cls.products2assets(products)
         fetched = []
         for a in assets:
             for t in tiles:
                 asset_dates = cls.Asset.dates(a, t, textent.datebounds, textent.daybounds)
                 for d in asset_dates:
-                    # if we don't have it already
-                    if not cls.Asset.discover(t, d, a):
+                    # if we don't have it already, or if update (force) flag
+                    if not cls.Asset.discover(t, d, a) or update == True:
                         try:
                             cls.Asset.fetch(a, t, d)
                             fetched.append((a, t, d))

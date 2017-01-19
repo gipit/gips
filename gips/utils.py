@@ -30,6 +30,8 @@ import commands
 import shutil
 import traceback
 
+from pdb import set_trace
+
 
 class Colors():
     _c = '\033['
@@ -59,6 +61,11 @@ class Colors():
 
 
 def VerboseOut(obj, level=1):
+    '''
+    TODO: Add real documentation of rules regarding levels used within
+          GIPS. Levels 1-4 are used frequently.  Setting `-v5` is
+          "let me see everything" level.
+    '''
     if gippy.Options.Verbose() >= level:
         #pprint.PrettyPrinter().pprint(obj)
         if not isinstance(obj, (list, tuple)):
@@ -122,19 +129,23 @@ def link(src, dst, hard=False):
 # Settings functions
 ##############################################################################
 
+
 def settings():
     """ Retrieve GIPS settings - first from user, then from system """
     import imp
     try:
         # import user settings first
-        src = imp.load_source('settings', os.path.expanduser('~/.gips/settings.py'))
+        src = imp.load_source(
+            'settings',
+            os.path.expanduser('~/.gips/settings.py')
+        )
         return src
-    except Exception, e:
+    except (ImportError, IOError) as e:
         try:
             import gips.settings
             return gips.settings
-        except:
-            raise Exception('No settings found...did you run gips_config?')
+        except ImportError:
+            raise ImportError('No settings found...did you run gips_config?')
 
 
 def create_environment_settings(repos_path, email=''):
@@ -160,6 +171,8 @@ def create_environment_settings(repos_path, email=''):
 def create_user_settings(email=''):
     """ Create a settings file using the included template and the provided top level directory """
     from gips.user_settings_template import __file__ as src
+    if src[-1] == 'c':
+        src = src[:-1]
     cfgpath = os.path.expanduser('~/.gips')
     if not os.path.exists(cfgpath):
         os.mkdir(cfgpath)
@@ -213,9 +226,10 @@ def import_data_module(clsname):
     import imp
     path = settings().REPOS[clsname].get('driver', '')
     if path == '':
-        path = os.path.join( os.path.dirname(__file__), 'data', clsname, clsname + '.py') #__init__.py' )
+        path = os.path.join( os.path.dirname(__file__), 'data', clsname)
     try:
-        mod = imp.load_source(clsname, path)
+        fmtup = imp.find_module(clsname, [path])
+        mod = imp.load_module(clsname, *fmtup)
         return mod
     except:
         print traceback.format_exc()
@@ -256,10 +270,13 @@ def open_vector(fname, key="", where=''):
             vector = GeoVector(filename, parts[1])
             vector.SetPrimaryKey(key)
 
-        except Exception, e:
+        except Exception as e:
             VerboseOut(traceback.format_exc(), 4)
     if where != '':
         # return array of features
+
+        # set_trace()
+
         return vector.where(where)
         features = []
     else:

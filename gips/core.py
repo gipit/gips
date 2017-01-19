@@ -84,6 +84,8 @@ class SpatialExtent(object):
         """ Create array of SpatialExtent instances """
         if site is None and tiles is None:
             # raise Exception('Site geometry and/or tile ids required')
+            # TODO: make this better. It only returns the tiles you have without telling
+            # you that is what it is doing.
             tiles = dataclass.Asset.Repository.find_tiles()
         extents = []
         if site is None:

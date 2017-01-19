@@ -21,10 +21,8 @@
 #   along with this program. If not, see <http://www.gnu.org/licenses/>
 ################################################################################
 
-import os
 import sys
 import argparse
-import traceback
 
 from gips.utils import data_sources
 import gippy
@@ -83,6 +81,8 @@ class GIPSParser(argparse.ArgumentParser):
         group.add_argument('--%cov', dest='pcov', help='Threshold of %% tile coverage over site', default=0, type=int)
         group.add_argument('--%tile', dest='ptile', help='Threshold of %% tile used', default=0, type=int)
         group.add_argument('--fetch', help='Fetch any missing data (if supported)', default=False, action='store_true')
+        group.add_argument('--update', help='Force fetch and/ or update data (if supported)', default=False, action='store_true')
+
         group.add_argument('-v', '--verbose', help='Verbosity - 0: quiet, 1: normal, 2: debug', default=1, type=int)
         group.add_argument('-p', '--products', help='Requested Products', nargs='*')
         self.parent_parsers.append(parser)
@@ -99,6 +99,11 @@ class GIPSParser(argparse.ArgumentParser):
         group.add_argument('--chunksize', help='Chunk size in MB', default=128.0, type=float)
         group.add_argument('--numprocs', help='Desired number of processors (if allowed)', default=2, type=int)
         group.add_argument('--format', help='Format for output file', default="GTiff")
+        h = ('Don\'t process. Instead, generate batch file with single '
+             'gips_process command on each line.  \'overwrite\', '
+             '\'chunksize\', and `\format\' are passed through.  '
+             '\'numprocs\' is set to 1.')
+        group.add_argument('--batchout', help=h, default=None)
         self.parent_parsers.append(parser)
         return parser
 
@@ -130,7 +135,11 @@ class GIPSParser(argparse.ArgumentParser):
         group.add_argument('--res', nargs=2, help=h, default=None, type=float)
         h = 'If warping interpolate using: 0-NN, 1-Bilinear, 2-Cubic'
         group.add_argument('--interpolation', help=h, choices=[0, 1, 2], default=0, type=int)
-        group.add_argument('--crop', help='Crop down to minimum bounding box', default=False, action='store_true')
+        h = ('Crop output to intersection of the images and the vector bounding boxes'
+             ' (USE CAUTIOUSLY, as strange behaviors may arise).')
+        group.add_argument('--crop', help=h, default=False, action='store_true')
+        h = 'Crop out spatial extent to include all pixels touched by the polygons(s)'
+        group.add_argument('--alltouch', help=h, default=False, action='store_true')
         self.parent_parsers.append(parser)
         return parser
 

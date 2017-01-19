@@ -44,7 +44,10 @@ def main():
         print title
         cls = import_data_class(args.command)
 
-        extents = SpatialExtent.factory(cls, args.site, args.key, args.where, args.tiles, args.pcov, args.ptile)
+        extents = SpatialExtent.factory(
+            cls, args.site, args.key, args.where, args.tiles, args.pcov,
+            args.ptile
+        )
 
         # create tld: SITENAME--KEY_DATATYPE_SUFFIX
         if args.notld:
@@ -53,23 +56,31 @@ def main():
             key = '' if args.key == '' else '--' + args.key
             suffix = '' if args.suffix == '' else '_' + args.suffix
             res = '' if args.res is None else '_%sx%s' % (args.res[0], args.res[1])
-            bname = extents[0].site.LayerName() + key + res + '_' + args.command + suffix
+            bname = (
+                extents[0].site.LayerName() +
+                key + res + '_' + args.command + suffix
+            )
             tld = os.path.join(args.outdir, bname)
 
         for extent in extents:
-            inv = DataInventory(cls, extent, TemporalExtent(args.dates, args.days), **vars(args))
+            t_extent = TemporalExtent(args.dates, args.days)
+            inv = DataInventory(cls, extent, t_extent, **vars(args))
             datadir = os.path.join(tld, extent.site.Value())
             if inv.numfiles > 0:
-                inv.mosaic(datadir=datadir, tree=args.tree, overwrite=args.overwrite,
-                           res=args.res, interpolation=args.interpolation, crop=args.crop)
-            # if not args.tree:
-            #     inv = ProjectInventory(datadir)
-            #     inv.pprint()
-            inv = ProjectInventory(datadir)
-            inv.pprint()
-
-
-    except Exception, e:
+                inv.mosaic(
+                    datadir=datadir, tree=args.tree, overwrite=args.overwrite,
+                    res=args.res, interpolation=args.interpolation,
+                    crop=args.crop, alltouch=args.alltouch,
+                )
+                inv = ProjectInventory(datadir)
+                inv.pprint()
+            else:
+                VerboseOut(
+                    'No data found for {} within temporal extent {}'
+                    .format(str(t_extent), str(t_extent)),
+                    2,
+                )
+    except Exception as e:
         import traceback
         VerboseOut(traceback.format_exc(), 4)
         print 'Data Project error: %s' % e

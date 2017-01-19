@@ -21,7 +21,7 @@
 #   along with this program. If not, see <http://www.gnu.org/licenses/>
 ################################################################################
 
-import os
+import os, sys
 import gips
 from gips import __version__ as version
 from gips.parsers import GIPSParser
@@ -34,60 +34,57 @@ def main():
     import gips
     title = 'GIPS Configuration Utility (v%s)' % (version)
 
-    try:
-        parser = GIPSParser(description=title, datasources=False)
-        subparser = parser.add_subparsers(dest='command')
-        subparser.add_parser('print', help='Print current settings')
-        p = subparser.add_parser('env', help='Configure GIPS repositories in this environment')
-        p.add_argument('-r', '--repos', help='Top level directory for repositories', default='/data/repos')
-        p.add_argument('-e', '--email', help='Set email address (used for anonymous FTP sources)', default='')
-        p = subparser.add_parser('user', help='Configure GIPS repositories for this user (for per user customizations)')
-        #p.add_argument('-e', '--email', help='Set email address (used for anonymous FTP sources)')
-        #h = 'Install full configuration file without inheriting from environment settings'
-        #p.add_argument('-f', '--full', help=h, default=False, action='store_true')
-        args = parser.parse_args()
-        print title
+    parser = GIPSParser(description=title, datasources=False)
+    subparser = parser.add_subparsers(dest='command')
+    subparser.add_parser('print', help='Print current settings')
+    p = subparser.add_parser('env', help='Configure GIPS repositories in this environment')
+    p.add_argument('-r', '--repos', help='Top level directory for repositories', default='/data/repos')
+    p.add_argument('-e', '--email', help='Set email address (used for anonymous FTP sources)', default='')
+    p = subparser.add_parser('user', help='Configure GIPS repositories for this user (for per user customizations)')
+    #p.add_argument('-e', '--email', help='Set email address (used for anonymous FTP sources)')
+    #h = 'Install full configuration file without inheriting from environment settings'
+    #p.add_argument('-f', '--full', help=h, default=False, action='store_true')
+    args = parser.parse_args()
+    print title
 
-        if args.command == 'print':
-            try:
-                from gips.utils import settings
-                s = settings()
-                for v in dir(s):
-                    if not v.startswith('__') and v != 'gips':
-                        print
-                        print v
-                        exec('pprint.pprint(s.%s)' % v)
-            except Exception, e:
-                #print traceback.format_exc()
-                print 'Unable to access settings. Run `gips_config env`'
+    if args.command == 'print':
+        try:
+            from gips.utils import settings
+            s = settings()
+            for v in dir(s):
+                if not v.startswith('__') and v != 'gips':
+                    print
+                    print v
+                    exec('pprint.pprint(s.%s)' % v)
+        except Exception as e:
+            # print traceback.format_exc()
+            print 'Unable to access settings: {}'.format(e)
+            sys.exit(1)
 
-        elif args.command == 'env':
-            try:
-                cfgfile = create_environment_settings(args.repos, email=args.email)
-                print 'Environment settings file: %s' % cfgfile
-                print 'Creating repository directories'
-                create_repos()
-            except Exception, e:
-                print traceback.format_exc()
-                print 'Could not create environment settings: %s' % e
+    elif args.command == 'env':
+        try:
+            cfgfile = create_environment_settings(args.repos, email=args.email)
+            print 'Environment settings file: %s' % cfgfile
+            print 'Creating repository directories'
+            create_repos()
+        except Exception, e:
+            print traceback.format_exc()
+            print 'Could not create environment settings: %s' % e
 
-        elif args.command == 'user':
-            try:
-                # first try importing environment settings
-                import gips.settings
-                cfgfile = create_user_settings()
-                print 'User settings file: %s' % cfgfile
-                print 'Creating repository directories'
-                create_repos()
-            except Exception, e:
-                print 'Could not create user settings: %s' % e
-                
-    except Exception, e:
+    elif args.command == 'user':
+        try:
+            # first try importing environment settings
+            import gips.settings
+            cfgfile = create_user_settings()
+        except ImportError:
+            print 'Could not create user settings: %s' % e
 
-        VerboseOut(traceback.format_exc(), 1)
-        print 'GIPS error: %s' % e
-
+        try:
+            print 'User settings file: %s' % cfgfile
+            print 'Creating repository directories'
+            create_repos()
+        except Exception as e:
+            print 'Could not create repository directories'
 
 if __name__ == "__main__":
     main()
-

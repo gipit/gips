@@ -48,8 +48,7 @@ class Tiles(object):
         self.tiles = {}
         for t in self.spatial.tiles:
             tile = dataclass(t, self.date)
-            # TODO - fix custom filter based on dataclass...sensor should pass to 'dataclass'
-            if tile.valid and tile.filter(**kwargs):  # and tile.sensor in sensors:
+            if tile.valid and tile.filter(**kwargs):
                 self.tiles[t] = tile
 
     def __len__(self):
@@ -76,7 +75,8 @@ class Tiles(object):
         """ Calls process for each tile """
         [t.process(*args, products=self.products.products, **kwargs) for t in self.tiles.values()]
 
-    def mosaic(self, datadir, res=None, interpolation=0, crop=False, overwrite=False):
+    def mosaic(self, datadir, res=None, interpolation=0, crop=False,
+               overwrite=False, alltouch=False):
         """ Combine tiles into a single mosaic, warp if res provided """
         if self.spatial.site is None:
             raise Exception('Site required for creating mosaics')
@@ -95,7 +95,10 @@ class Tiles(object):
                     filenames = [self.tiles[t].filenames[(sensor, product)] for t in self.tiles]
                     images = gippy.GeoImages(filenames)
                     if self.spatial.site is not None and res is not None:
-                        CookieCutter(images, self.spatial.site, fout, res[0], res[1], crop, interpolation)
+                        CookieCutter(
+                            images, self.spatial.site, fout, res[0], res[1],
+                            crop, interpolation, {}, alltouch,
+                        )
                     else:
                         mosaic(images, fout, self.spatial.site)
                 except Exception, e:
@@ -138,22 +141,30 @@ class Tiles(object):
         """ Print asset header """
         self.dataclass.pprint_asset_header()
 
+    def _colorize_product(self, prod, colors=None):
+        color = ['', '']
+        if colors is not None:
+            s = self.which_sensor(prod)
+            if s is not None:
+                color = [colors[s], Colors.OFF]
+        return color[0] + prod + color[1]
+
+
     def pprint(self, dformat='%j', colors=None):
         """ Print coverage for each and every asset """
         #assets = [a for a in self.dataclass.Asset._assets]
         sys.stdout.write('{:^12}'.format(self.date.strftime(dformat)))
         asset_coverage = self.asset_coverage()
         for a in sorted(asset_coverage):
-            color = ['', '']
-            if colors is not None:
-                s = self.which_sensor(a)
-                if s is not None:
-                    color = [colors[s], Colors.OFF]
             cov = asset_coverage[a]
             if cov > 0:
-                sys.stdout.write(color[0] + '  {:>4.1f}%   '.format(cov) + color[1])
+                text = self._colorize_product(
+                    '  {:>4.1f}%   '.format(cov), colors
+                )
             else:
-                sys.stdout.write('          ')
+                text = '          '
+            sys.stdout.write(text)
+
         products = [p for t in self.tiles for p in self.tiles[t].products]
         # Check product is available for all tiles before reporting as processed
         prods = []
@@ -161,6 +172,6 @@ class Tiles(object):
             if products.count(p) == len(self.tiles):
                 prods.append(p)
         for p in sorted(set(prods)):
-            color = colors[self.which_sensor(p)]
-            sys.stdout.write('  ' + color + p + Colors.OFF)
+            text = self._colorize_product(p, colors)
+            sys.stdout.write('  ' + text)
         sys.stdout.write('\n')
