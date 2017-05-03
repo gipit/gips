@@ -42,31 +42,6 @@ from gips.data.core import Repository, Asset, Data
 from gips.utils import basename, open_vector
 from gips import utils
 
-from pdb import set_trace
-
-
-
-
-#from cookielib import CookieJar
-#from urllib import urlencode
-#import urllib2
-
-#def managed_request(url, username, password, debug=False):
-#    manager_url = "https://urs.earthdata.nasa.gov"
-#    password_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
-#    password_manager.add_password(None, manager_url, username, password)
-#    cookie_jar = CookieJar()
-#    opener = urllib2.build_opener(
-#        urllib2.HTTPBasicAuthHandler(password_manager),
-#        urllib2.HTTPHandler(debuglevel=debug),
-#        urllib2.HTTPSHandler(debuglevel=debug),
-#        urllib2.HTTPCookieProcessor(cookie_jar))
-#    urllib2.install_opener(opener)
-#    request = urllib2.Request(url)
-#    response = urllib2.urlopen(request)
-#    return response
-
-
 
 class Timeout():
     """Timeout class using ALARM signal."""
@@ -93,6 +68,7 @@ class merraRepository(Repository):
     description = 'Modern Era Retrospective-Analysis for Research and Applications (weather and climate)'
     _tile_attribute = 'tileid'
 
+    # NASA assets require special authentication
     _manager_url = "https://urs.earthdata.nasa.gov"
 
     @classmethod
@@ -195,7 +171,6 @@ class merraAsset(Asset):
         super(merraAsset, self).__init__(filename)
         self.sensor = 'merra'
         self.tile = 'h01v01'
-
         parts = basename(filename).split('.')
         self.asset = parts[1].split('_')[2].upper()
         self.version = int(parts[0].split('_')[1])
@@ -208,8 +183,6 @@ class merraAsset(Asset):
     @classmethod
     def query_service(cls, asset, tile, date):
         year, month, day = date.timetuple()[:3]
-        username = cls.Repository.get_setting('username')
-        password = cls.Repository.get_setting('password')
         if asset != "ASM":
             mainurl = "%s/%04d/%02d" % (cls._assets[asset]['url'], year, month)
             pattern = cls._assets[asset]['re_pattern'] % (year, month, day)
@@ -220,7 +193,7 @@ class merraAsset(Asset):
         cpattern = re.compile(pattern)
         err_msg = "Error downloading"
         with utils.error_handler(err_msg):
-            #listing = managed_request(mainurl, username, password).readlines()
+            # obtain the list of files
             listing = cls.Repository.managed_request(mainurl).readlines()
         available = []
         for item in listing:
@@ -253,11 +226,8 @@ class merraAsset(Asset):
             outpath = os.path.join(cls.Repository.path('stage'), basename)
 
             with utils.error_handler("Asset fetch error", continuable=True):
-                #username = cls.Repository.get_setting('username')
-                #password = cls.Repository.get_setting('password')
-                #response = managed_request(url, username, password)
+                # obtain the data
                 response = cls.Repository.managed_request(url)
-
                 if response.msg != "OK":
                     print('Download of', basename, 'failed:', response.code,
                           '\nFull URL:', url, file=sys.stderr)

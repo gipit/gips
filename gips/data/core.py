@@ -47,8 +47,6 @@ from cookielib import CookieJar
 from urllib import urlencode
 import urllib2
 
-from pdb import set_trace
-
 
 """
 The data.core classes are the base classes that are used by individual Data modules.
