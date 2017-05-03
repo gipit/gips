@@ -45,6 +45,33 @@ from gips import utils
 from pdb import set_trace
 
 
+
+#### earthdata request stuff
+
+from cookielib import CookieJar
+from urllib import urlencode
+import urllib2
+
+def earthrequest(url, username, password, debug=False):
+    earthdata_url = "https://urs.earthdata.nasa.gov"
+    password_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
+    password_manager.add_password(None, earthdata_url, username, password)
+    cookie_jar = CookieJar()
+    opener = urllib2.build_opener(
+        urllib2.HTTPBasicAuthHandler(password_manager),
+        urllib2.HTTPHandler(debuglevel=debug),
+        urllib2.HTTPSHandler(debuglevel=debug),
+        urllib2.HTTPCookieProcessor(cookie_jar))
+    urllib2.install_opener(opener)
+    request = urllib2.Request(url)
+    response = urllib2.urlopen(request)
+    return response
+
+#### end earthdata request stuff
+
+
+
+
 class Timeout():
     """Timeout class using ALARM signal."""
 
@@ -195,7 +222,8 @@ class merraAsset(Asset):
         cpattern = re.compile(pattern)
         err_msg = "Error downloading"
         with utils.error_handler(err_msg):
-            listing = urllib.urlopen(mainurl).readlines()
+            #listing = urllib.urlopen(mainurl).readlines()
+            listing = earthrequest(mainurl, username, password).readlines()
         available = []
         for item in listing:
             # inspect the page and extract the full name of the needed file
@@ -214,6 +242,7 @@ class merraAsset(Asset):
     def fetch(cls, asset, tile, date):
 
         if asset == "ASM" and date.date() != cls._assets[asset]['startdate']:
+            #TODO which should it be?
             #raise Exception, "constants are available for %s only" % cls._assets[asset]['startdate']
             utils.verbose_out('constants are available for %s only' % cls._assets[asset]['startdate'])
             return
@@ -227,23 +256,38 @@ class merraAsset(Asset):
             outpath = os.path.join(cls.Repository.path('stage'), basename)
 
             with utils.error_handler("Asset fetch error", continuable=True):
-                kw = {'timeout': 30}
+                #kw = {'timeout': 30}
                 username = cls.Repository.get_setting('username')
                 password = cls.Repository.get_setting('password')
-                kw['auth'] = (username, password)
-                response = requests.get(url, **kw)
-                if response.status_code != requests.codes.ok:
-                    print('Download of', basename, 'failed:', response.status_code,
-                          response.reason, '\nFull URL:', url, file=sys.stderr)
+
+                response = earthrequest(url, username, password)
+                if response.msg != "OK":
+                    print('Download of', basename, 'failed:', response.code,
+                          '\nFull URL:', url, file=sys.stderr)
                     return
-                # download to a temp file
                 tmp_outpath = tempfile.mkstemp(
                     suffix='.nc4', prefix='downloading',
                     dir=cls.Repository.path('stage')
                 )[1]
                 with open(tmp_outpath, 'w') as fd:
-                    for chunk in response.iter_content():
-                        fd.write(chunk)
+                    fd.write(response.read())
+
+                
+                #kw['auth'] = (username, password)
+                #response = requests.get(url, **kw)
+                #if response.status_code != requests.codes.ok:
+                #    print('Download of', basename, 'failed:', response.status_code,
+                #          response.reason, '\nFull URL:', url, file=sys.stderr)
+                #    return
+                ## download to a temp file
+                #tmp_outpath = tempfile.mkstemp(
+                #    suffix='.nc4', prefix='downloading',
+                #    dir=cls.Repository.path('stage')
+                #)[1]
+                #with open(tmp_outpath, 'w') as fd:
+                #    for chunk in response.iter_content():
+                #        fd.write(chunk)
+
 
                 # Verify that it is a netcdf file
                 try:
