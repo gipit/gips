@@ -43,6 +43,10 @@ from gips.utils import settings, VerboseOut, RemoveFiles, File2List, List2File, 
 from gips import utils
 from ..inventory import dbinv, orm
 
+from cookielib import CookieJar
+from urllib import urlencode
+import urllib2
+
 from pdb import set_trace
 
 
@@ -120,6 +124,27 @@ class Repository(object):
                 raise Exception('%s is not a valid setting!' % key)
         else:
             return r[key]
+
+
+    @classmethod
+    def managed_request(cls, url, debug=False):
+        username = cls.get_setting('username')
+        password = cls.get_setting('password')
+        manager_url = cls._manager_url
+        password_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
+        password_manager.add_password(
+            None, manager_url, username, password)
+        cookie_jar = CookieJar()
+        opener = urllib2.build_opener(
+            urllib2.HTTPBasicAuthHandler(password_manager),
+            urllib2.HTTPHandler(debuglevel=debug),
+            urllib2.HTTPSHandler(debuglevel=debug),
+            urllib2.HTTPCookieProcessor(cookie_jar))
+        urllib2.install_opener(opener)
+        request = urllib2.Request(url)
+        response = urllib2.urlopen(request)
+        return response
+
 
     @classmethod
     def path(cls, subdir=''):
