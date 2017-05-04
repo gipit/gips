@@ -213,6 +213,7 @@ class merraAsset(Asset):
     def fetch(cls, asset, tile, date):
 
         if asset == "ASM" and date.date() != cls._assets[asset]['startdate']:
+            #TODO: which should it be? if message then remove comment
             #raise Exception, "constants are available for %s only" % cls._assets[asset]['startdate']
             utils.verbose_out('constants are available for %s only' % cls._assets[asset]['startdate'])
             return
