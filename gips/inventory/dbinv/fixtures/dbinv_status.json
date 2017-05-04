@@ -1,0 +1,30 @@
+[
+  {
+    "model": "dbinv.status",
+    "pk": 0,
+    "fields": {
+      "status": "requested"
+    }
+  },
+  {
+    "model": "dbinv.status",
+    "pk": 1,
+    "fields": {
+      "status": "in-progress"
+    }
+  },
+  {
+    "model": "dbinv.status",
+    "pk": 2,
+    "fields": {
+      "status": "complete"
+    }
+  },
+  {
+    "model": "dbinv.status",
+    "pk": 3,
+    "fields": {
+      "status": "failed"
+    }
+  }
+]

@@ -136,6 +136,7 @@ class sarannualData(Data):
             try:
                 datafiles = self.assets[asset].extract()
             except:
+                # TODO error-handling-fix: put `continue` in conditional; use with handler
                 VerboseOut("Asset %s doesn't exist for tile %s" % (asset, self.id), 3)
                 continue
             if val[0] == 'sign':

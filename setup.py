@@ -52,8 +52,22 @@ setup(
     author='Matthew Hanson',
     author_email='matt.a.hanson@gmail.com',
     packages=find_packages(),
-    package_data={'' : ['*.shp', '*.prj', '*.shx', '*.dbf']},
-    install_requires=['Py6S>=1.5.0', 'shapely', 'gippy>=0.3.0', 'python-dateutil', 'pydap'],
+    package_data={'': ['*.shp', '*.prj', '*.shx', '*.dbf']},
+    install_requires=[
+        'Py6S>=1.5.0',
+        'shapely',
+        'gippy>=0.3.8',
+        'python-dateutil',
+        'pydap==3.2',
+        'pysolar==0.6',
+        'landsat-util==0.8.0ircwaves0',
+    ],
+    extras_require={
+        'rq': ['rq'],
+    },
+    dependency_links=[
+        'http://github.com/ircwaves/landsat-util/tarball/landsat_util#egg=landsat-util-0.8.0ircwaves0'
+    ],
     entry_points={'console_scripts': console_scripts},
     zip_safe=False,
 )

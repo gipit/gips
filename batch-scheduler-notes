@@ -1,0 +1,40 @@
+
+# on orange
+
+createdb -U geokit braswell_test
+
+psql -U geokit braswell_test
+
+GRANT ALL PRIVILEGES ON DATABASE braswell_test TO geokit;
+
+# configure settings.py
+
+./install.sh
+
+
+
+# from orange
+qsub -I -qNASgeokit2_@schedprd.ags.io -lnodes=nile
+
+qsub -I -qNASgeokit2_@schedprd.ags.io -lnodes=nile:ppn=2
+
+
+
+# on nile
+./install_nile.sh
+
+
+
+# on orange
+* * * * * /home/rbraswell/repo/gips/.venv/bin/python /home/rbraswell/repo/gips/gips/datahandler/scheduler.py >> /net/cluster/scratch/rbraswell/gips/scheduler\
+.proddb.out 2>&1
+
+# on orange, python shell - .venv activated
+from gips.datahandler import geokit_api
+
+geokit_api.get_datacatalog()
+
+job_id = geokit_api.submit_job('donkus', 'modis_indices_ndvi', {'key':'id', 'site': '/home/rbraswell/repo/gips/gips/test/NHseacoast.shp'}, {'dates': '2010-001,2010-003'})
+
+geokit_api.job_status(job_id)
+

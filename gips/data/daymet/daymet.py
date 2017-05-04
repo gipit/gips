@@ -74,7 +74,7 @@ class daymetAsset(Asset):
 
     _latency = 0
     _startdate = datetime.date(1980, 1, 1)
-    _url = "http://thredds.daac.ornl.gov/thredds/dodsC/ornldaac/1219/tiles/%d/%s_%d"
+    _url = "https://thredds.daac.ornl.gov/thredds/dodsC/ornldaac/1328/tiles/%d/%s_%d"
 
     _assets = {
         'tmin': {
@@ -136,7 +136,7 @@ class daymetAsset(Asset):
     def fetch(cls, asset, tile, date):
         """ Get this asset for this tile and date (using OpenDap service) """
         url = cls._assets[asset].get('url', '') % (date.year, tile, date.year)
-        source = cls._assets[asset]['source'] 
+        source = cls._assets[asset]['source']
         loc = "%s/%s" % (url, source)
         print loc
         dataset = open_url(loc)
@@ -144,7 +144,8 @@ class daymetAsset(Asset):
         y0 = dataset['y'].data[0] + 500.0
         day = date.timetuple().tm_yday
         iday = day - 1
-        data = np.array(dataset[asset][iday, :, :]).squeeze().astype('float32')
+        var = dataset[asset]
+        data = np.array(var.array[iday, :, :]).squeeze().astype('float32')
         ysz, xsz = data.shape
         description = cls._assets[asset]['description']
         meta = {'ASSET': asset, 'TILE': tile, 'DATE': str(date.date()), 'DESCRIPTION': description}
@@ -158,7 +159,7 @@ class daymetAsset(Asset):
         imgout.SetNoData(-9999.)
         imgout.SetProjection(PROJ)
         imgout.SetAffine(geo)
-        imgout[0].Write(data)    
+        imgout[0].Write(data)
 
 
 class daymetData(Data):
@@ -167,25 +168,39 @@ class daymetData(Data):
     version = '0.1'
     Asset = daymetAsset
 
+    _latency = 0
+    _startdate = datetime.date(1980, 1, 1)
+
+
     _products = {
         'tmin': {
             'description': 'Daily minimum air temperature (C)',
-            'assets': ['tmin']
+            'assets': ['tmin'],
+            'startdate': _startdate,
+            'latency': _latency,
         },
         'tmax': {
             'description': 'Daily maximum air temperature (C)',
-            'assets': ['tmax']
+            'assets': ['tmax'],
+            'startdate': _startdate,
+            'latency': _latency,
         },
         'prcp': {
             'description': 'Daily precipitation (mm)',
-            'assets': ['prcp']
+            'assets': ['prcp'],
+            'startdate': _startdate,
+            'latency': _latency,
         },
         'srad': {
             'description': 'Daily solar radiation (W m-2)',
-            'assets': ['srad']
+            'assets': ['srad'],
+            'startdate': _startdate,
+            'latency': _latency,
         },
         'vp': {
             'description': 'Daily vapor pressure (Pa)',
-            'assets': ['vp']
+            'assets': ['vp'],
+            'startdate': _startdate,
+            'latency': _latency,
         },
     }
