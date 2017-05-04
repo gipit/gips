@@ -42,8 +42,6 @@ from gips.data.core import Repository, Asset, Data
 from gips.utils import basename, open_vector
 from gips import utils
 
-from pdb import set_trace
-
 
 class Timeout():
     """Timeout class using ALARM signal."""
@@ -69,6 +67,9 @@ class merraRepository(Repository):
     name = 'merra'
     description = 'Modern Era Retrospective-Analysis for Research and Applications (weather and climate)'
     _tile_attribute = 'tileid'
+
+    # NASA assets require special authentication
+    _manager_url = "https://urs.earthdata.nasa.gov"
 
     @classmethod
     def tile_bounds(cls, tile):
@@ -170,7 +171,6 @@ class merraAsset(Asset):
         super(merraAsset, self).__init__(filename)
         self.sensor = 'merra'
         self.tile = 'h01v01'
-
         parts = basename(filename).split('.')
         self.asset = parts[1].split('_')[2].upper()
         self.version = int(parts[0].split('_')[1])
@@ -183,8 +183,6 @@ class merraAsset(Asset):
     @classmethod
     def query_service(cls, asset, tile, date):
         year, month, day = date.timetuple()[:3]
-        username = cls.Repository.get_setting('username')
-        password = cls.Repository.get_setting('password')
         if asset != "ASM":
             mainurl = "%s/%04d/%02d" % (cls._assets[asset]['url'], year, month)
             pattern = cls._assets[asset]['re_pattern'] % (year, month, day)
@@ -195,7 +193,8 @@ class merraAsset(Asset):
         cpattern = re.compile(pattern)
         err_msg = "Error downloading"
         with utils.error_handler(err_msg):
-            listing = urllib.urlopen(mainurl).readlines()
+            # obtain the list of files
+            listing = cls.Repository.managed_request(mainurl).readlines()
         available = []
         for item in listing:
             # inspect the page and extract the full name of the needed file
@@ -227,25 +226,20 @@ class merraAsset(Asset):
             outpath = os.path.join(cls.Repository.path('stage'), basename)
 
             with utils.error_handler("Asset fetch error", continuable=True):
-                kw = {'timeout': 30}
-                username = cls.Repository.get_setting('username')
-                password = cls.Repository.get_setting('password')
-                kw['auth'] = (username, password)
-                response = requests.get(url, **kw)
-                if response.status_code != requests.codes.ok:
-                    print('Download of', basename, 'failed:', response.status_code,
-                          response.reason, '\nFull URL:', url, file=sys.stderr)
+                # obtain the data
+                response = cls.Repository.managed_request(url)
+                if response.msg != "OK":
+                    print('Download of', basename, 'failed:', response.code,
+                          '\nFull URL:', url, file=sys.stderr)
                     return
-                # download to a temp file
                 tmp_outpath = tempfile.mkstemp(
                     suffix='.nc4', prefix='downloading',
                     dir=cls.Repository.path('stage')
                 )[1]
                 with open(tmp_outpath, 'w') as fd:
-                    for chunk in response.iter_content():
-                        fd.write(chunk)
+                    fd.write(response.read())
 
-                # Verify that it is a netcdf file
+                # verify that it is a netcdf file
                 try:
                     ncroot = Dataset(tmp_outpath)
                     os.rename(tmp_outpath, outpath)
