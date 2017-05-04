@@ -53,8 +53,11 @@ def binmask(arr, bit):
 
 class modisRepository(Repository):
     name = 'Modis'
-    description = 'MODIS Aqua and Terra'
+    description = 'NASA Moderate Resolution Imaging Spectroradiometer (MODIS)'
 
+    # NASA assets require special authentication
+    _manager_url = "https://urs.earthdata.nasa.gov"
+    
     @classmethod
     def feature2tile(cls, feature):
         """ convert tile field attributes to tile identifier """
@@ -188,11 +191,11 @@ class modisAsset(Asset):
             return
 
         # if it's going to fail, let's find out early:
-        http_query = {'timeout': 30}
-        if asset not in cls._skip_auth:
-            username = cls.Repository.get_setting('username')
-            password = cls.Repository.get_setting('password')
-            http_query['auth'] = (username, password)
+        #http_query = {'timeout': 30}
+        #if asset not in cls._skip_auth:
+        #    username = cls.Repository.get_setting('username')
+        #    password = cls.Repository.get_setting('password')
+        #    http_query['auth'] = (username, password)
 
         mainurl = "%s/%s.%02d.%02d" % (cls._assets[asset]['url'], str(year), month, day)
         pattern = '(%s.A%s%s.%s.\d{3}.\d{13}.hdf)' % (asset, str(year), str(date.timetuple()[7]).zfill(3), tile)
@@ -202,15 +205,26 @@ class modisAsset(Asset):
             err_msg = "Error downloading on a Wednesday; possible planned MODIS provider downtime: " + mainurl
         else:
             err_msg = "Error downloading: " + mainurl
-        with utils.error_handler(err_msg):
-            listing = requests.get(mainurl, **http_query)
-            if listing.status_code != requests.codes.ok:
-                err_msg = '{} gave bad response code: {}'.format(mainurl, listing.status_code)
-                utils.verbose_out(err_msg, 1, stream=sys.stderr)
-                # return [] # TODO possibly do nothing here, as empty list case is handled below
+            
+        with utils.error_handler(err_msg):          
+            response = cls.Repository.managed_request(mainurl)
+            if response.msg != "OK":
+                raise Exception, "Response code: {}".format(
+                    response.code)
+
+        listing = response.readlines()
+
+        #with utils.error_handler(err_msg):
+        #    listing = requests.get(mainurl, **http_query)
+        #    if listing.status_code != requests.codes.ok:
+        #        err_msg = '{} gave bad response code: {}'.format(mainurl, listing.status_code)
+        #        utils.verbose_out(err_msg, 1, stream=sys.stderr)
+        #        # return [] # TODO possibly do nothing here, as empty list case is handled below
+
 
         available = []
-        for item in listing.iter_lines():
+        #for item in listing.iter_lines():
+        for item in listing:
             # screen-scrape the content of the page and extract the full name of the needed file
             # (this step is needed because part of the filename, the creation timestamp, is
             # effectively random).
@@ -255,26 +269,32 @@ class modisAsset(Asset):
                         fd.write(connection.read())
 
                 else:  # http
-                    kw = {'timeout': 10}
-                    if asset not in cls._skip_auth:
-                        username = cls.Repository.get_setting('username')
-                        password = cls.Repository.get_setting('password')
-                        kw['auth'] = (username, password)
-                    response = requests.get(url, **kw)
+                    #kw = {'timeout': 10}
+                    #if asset not in cls._skip_auth:
+                    #    username = cls.Repository.get_setting('username')
+                    #    password = cls.Repository.get_setting('password')
+                    #    kw['auth'] = (username, password)
+                    #response = requests.get(url, **kw)
 
-                    if response.status_code != requests.codes.ok:
+                    response = cls.Repository.managed_request(url)
+                    
+                    #if response.status_code != requests.codes.ok:
+                    if response.msg != "OK":   
                         utils.verbose_out(
-                            'Download failed({}): code={} reason="{}" url="{}"'
-                            .format(basename, response.status_code,
-                                    response.reason, url),
+                            'Download failed({}): code={} url="{}"'
+                            .format(basename, response.code, url),
                             2,
                             sys.stderr
                         )
                         return retrieved_filenames  # might as well stop b/c the rest will probably fail too
 
+                    #with open(outpath, 'wb') as fd:
+                    #    for chunk in response.iter_content():
+                    #        fd.write(chunk)
+
                     with open(outpath, 'wb') as fd:
-                        for chunk in response.iter_content():
-                            fd.write(chunk)
+                        fd.write(response.read())
+                    
                 utils.verbose_out('Retrieved %s' % basename, 2)
                 retrieved_filenames.append(outpath)
 
