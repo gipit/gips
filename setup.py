@@ -58,7 +58,7 @@ setup(
         'shapely',
         'gippy>=0.3.8',
         'python-dateutil',
-        'pydap',
+        'pydap==3.2',
         'pysolar==0.6',
         'landsat-util==0.8.0ircwaves0',
     ],

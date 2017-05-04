@@ -74,7 +74,7 @@ class daymetAsset(Asset):
 
     _latency = 0
     _startdate = datetime.date(1980, 1, 1)
-    _url = "http://thredds.daac.ornl.gov/thredds/dodsC/ornldaac/1219/tiles/%d/%s_%d"
+    _url = "https://thredds.daac.ornl.gov/thredds/dodsC/ornldaac/1328/tiles/%d/%s_%d"
 
     _assets = {
         'tmin': {
@@ -144,7 +144,8 @@ class daymetAsset(Asset):
         y0 = dataset['y'].data[0] + 500.0
         day = date.timetuple().tm_yday
         iday = day - 1
-        data = np.array(dataset[asset][iday, :, :]).squeeze().astype('float32')
+        var = dataset[asset]
+        data = np.array(var.array[iday, :, :]).squeeze().astype('float32')
         ysz, xsz = data.shape
         description = cls._assets[asset]['description']
         meta = {'ASSET': asset, 'TILE': tile, 'DATE': str(date.date()), 'DESCRIPTION': description}
