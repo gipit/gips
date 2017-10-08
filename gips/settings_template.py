@@ -36,8 +36,19 @@ DATABASES = {
 #        'HOST': '',
 #        'PORT': '5432',
 #    }
+    'inventory': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': '$TLD/gips-inv-db.sqlite3',
+    },
 }
 
+# For NASA EarthData Authentication
+EARTHDATA_USER = ""
+EARTHDATA_PASS = ""
+
+# For USGS machine-to-machine authentication
+USGS_USER = ""
+USGS_PASS = ""
 
 REPOS = {
     'aod': {
@@ -49,9 +60,21 @@ REPOS = {
         '6S': False,            # atm correction for VIS/NIR/SWIR bands
         'MODTRAN': False,       # atm correction for LWIR
         'extract': False,       # extract files from tar.gz before processing instead of direct access
+        'username': USGS_USER,
+        'password': USGS_PASS,
+        # 'ACOLITE_DIR':  '',   # ACOLITE installation for atm correction over water
     },
     'modis': {
         'repository': '$TLD/modis',
+        'username': EARTHDATA_USER,
+        'password': EARTHDATA_PASS
+    },
+    'sentinel2': {
+        'repository': '$TLD/sentinel2',
+        # sign up for access to data source here:  https://scihub.copernicus.eu/dhus/#/self-registration
+        'username': '',
+        'password': '',
+        'extract': False,  # extract files from tar.gz before processing instead of direct access
     },
     # these drivers tend to more specialized and experimental so turned off by default
     #'cdl': {
@@ -63,9 +86,11 @@ REPOS = {
     #'sarannual': {
     #    'repository': '$TLD/sarannual',
     #},
-    #'merra': {
-    #    'repository': '$TLD/Merra',
-    #},
+    'merra': {
+        'repository': '$TLD/merra',
+        'username': EARTHDATA_USER,
+        'password': EARTHDATA_PASS
+    },
     #'daymet': {
     #    'repository': '$TLD/daymet',
     #},

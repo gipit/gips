@@ -28,6 +28,7 @@ import traceback
 import gippy
 import gips
 from gips.utils import VerboseOut, Colors
+from gips import utils
 from gips.inventory import ProjectInventory
 
 
@@ -101,9 +102,10 @@ class Algorithm(object):
         gippy.Options.SetVerbose(args.verbose)
         VerboseOut(cls.info())
 
-        try:
+        utils.gips_script_setup(driver_string=None, setup_orm=False)
+
+        with utils.error_handler('Error in {}'.format(cls.name)):
             alg = cls(**vars(args))
             alg.run_command(**vars(args))
-        except Exception, e:
-            VerboseOut('Error in %s: %s' % (cls.name, e))
-            VerboseOut(traceback.format_exc(), 3)
+
+        utils.gips_exit()

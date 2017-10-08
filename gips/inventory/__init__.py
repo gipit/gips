@@ -27,17 +27,19 @@ from datetime import datetime as dt
 import traceback
 import numpy
 from copy import deepcopy
+from collections import defaultdict
 
 import gippy
 from gips.tiles import Tiles
 from gips.utils import VerboseOut, Colors
-from gips.data.core import Data
+from gips import utils
 from gips.mapreduce import MapReduce
+from . import dbinv, orm
 
 
 class Inventory(object):
     """ Base class for inventories """
-    _colors = [Colors.PURPLE, Colors.RED, Colors.GREEN, Colors.BLUE]
+    _colors = [Colors.PURPLE, Colors.RED, Colors.GREEN, Colors.BLUE, Colors.YELLOW]
 
     def __init__(self):
         pass
@@ -101,18 +103,6 @@ class Inventory(object):
             oldyear = date.year
         if self.numfiles != 0:
             VerboseOut("\n\n%s files on %s dates" % (self.numfiles, len(self.dates)), 1)
-            self.print_legend()
-
-    def print_legend(self):
-        print Colors.BOLD + '\nSENSORS' + Colors.OFF
-        for key in sorted(self.sensor_set):
-            try:
-                desc = self.dataclass.Asset._sensors[key]['description']
-                scode = key + ': ' if key != '' else ''
-            except:
-                desc = ''
-                scode = key
-            print self.color(key) + '%s%s' % (scode, desc) + Colors.OFF
 
 
 class ProjectInventory(Inventory):
@@ -127,7 +117,9 @@ class ProjectInventory(Inventory):
         self.data = {}
         product_set = set()
         sensor_set = set()
-        try:
+        with utils.error_handler("Project directory error for " + self.projdir):
+            # can't import Data at module scope due to circular dependencies
+            from gips.data.core import Data
             for dat in Data.discover(self.projdir):
                 self.data[dat.date] = dat
                 # All products and sensors used across all dates
@@ -138,9 +130,6 @@ class ProjectInventory(Inventory):
                 products = list(product_set)
             self.requested_products = products
             self.sensors = sensor_set
-        except:
-            VerboseOut(traceback.format_exc(), 4)
-            raise Exception("%s does not appear to be a GIPS project directory" % self.projdir)
 
     def products(self, date=None):
         """ Intersection of available products and requested products for this date """
@@ -170,12 +159,15 @@ class ProjectInventory(Inventory):
     def get_data(self, dates=None, products=None, chunk=None):
         """ Read all files as time series, stacking all products """
         # TODO - change to absolute dates
-        days = numpy.array([int(d.strftime('%j')) for d in dates])
-        imgarr = []
+
         if dates is None:
             dates = self.dates
+
+        days = numpy.array([int(d.strftime('%j')) for d in dates])
+        imgarr = []
         if products is None:
             products = self.requested_products
+
         for p in products:
             gimg = self.get_timeseries(p, dates=dates)
             # TODO - move numpy.squeeze into swig interface file?
@@ -189,16 +181,11 @@ class ProjectInventory(Inventory):
         data = numpy.vstack(tuple(imgarr))
         return data
 
-    def get_filepaths(self):
-        filepaths = {}
-        for date in self.dates:
-            products = list(set(self.data[date].products).intersection(set(self.requested_products)))
-            for product in products:
-                try:
-                    filepaths[date][product] = self.data[date][product]
-                except:
-                    filepaths[date] = {product: self.data[date][product]}
-        return filepaths
+    def get_location(self):
+        # this is a terrible hack to get the name of the feature associated with the inventory
+        data = self.data[self.dates[0]]
+        location = os.path.split(os.path.split(data.filenames.values()[0])[0])[1]
+        return location
 
     def get_timeseries(self, product='', dates=None):
         """ Read all files as time series """
@@ -225,10 +212,10 @@ class ProjectInventory(Inventory):
 class DataInventory(Inventory):
     """ Manager class for data inventories (collection of Tiles class) """
 
-    def __init__(self, dataclass, spatial, temporal, products=None, fetch=False, **kwargs):
+    def __init__(self, dataclass, spatial, temporal, products=None, fetch=False, update=False, **kwargs):
         """ Create a new inventory
         :dataclass: The Data class to use (e.g., LandsatData, ModisData)
-        :spatial: The spatial extent requested
+        :spatial: The SpatialExtent requested
         :temporal: The temporal extent requested
         :products: List of requested products of interest
         :fetch: bool indicated if missing data should be downloaded
@@ -241,22 +228,86 @@ class DataInventory(Inventory):
         self.temporal = temporal
         self.products = dataclass.RequestedProducts(products)
 
-        if fetch:
-            try:
-                dataclass.fetch(self.products.base, self.spatial.tiles, self.temporal)
-            except Exception, e:
-                raise Exception('Error downloading %s: %s' % (dataclass.name, e))
-            dataclass.Asset.archive(Repository.path('stage'))
+        self.update = update
 
-        # find data
+        if fetch:
+            dataclass.fetch(self.products.base, self.spatial.tiles, self.temporal, self.update)
+            archived_assets = dataclass.Asset.archive(Repository.path('stage'), update=self.update)
+
+            if orm.use_orm():
+                # save metadata about the fetched assets in the database
+                driver = dataclass.name.lower()
+                for a in archived_assets:
+                    dbinv.update_or_add_asset(
+                            asset=a.asset, sensor=a.sensor, tile=a.tile, date=a.date,
+                            name=a.archived_filename, driver=driver)
+                    # if the new asset comes with any "free" products, save that info:
+                    for (prod_type, fp) in a.products.items():
+                        dbinv.update_or_add_product(
+                                product=prod_type, sensor=a.sensor, tile=a.tile, date=a.date,
+                                name=fp, driver=driver)
+
+        # Build up the inventory:  One Tiles object per date.  Each contains one Data object.  Each
+        # of those contain one or more Asset objects.
         self.data = {}
-        for date in self.temporal.prune_dates(self.spatial.available_dates):
-            try:
-                dat = Tiles(dataclass, self.spatial, date, self.products, **kwargs)
-                if len(dat) > 0:
-                    self.data[date] = dat
-            except Exception, e:
-                raise Exception('DataInventory: Error accessing tiles in %s repository' % dataclass.name)
+        dates = self.temporal.prune_dates(spatial.available_dates)
+        if orm.use_orm():
+            # populate the object tree under the DataInventory (Tiles, Data, Asset) by querying the
+            # DB quick-like then assigning things we iterate:  The DB is a flat table of data; we
+            # have to hierarchy-ize it.  Do this by setting up a temporary collection of objects
+            # for populating Data instances: the collection is basically a simple version of the
+            # complicated hierarchy that GIPS constructs on its own:
+            #   collection = {
+            #       (tile, date): {'a': [asset, asset, asset],
+            #                      'p': [product, product, product]},
+            #       (tile, date): {'a': [asset, asset, asset],
+            #                      'p': [product, product, product]},
+            #   }
+            collection = defaultdict(lambda: {'a': [], 'p': []})
+            def add_to_collection(date, tile, kind, item):
+                key = (date, str(tile)) # str() to avoid possible unicode trouble
+                collection[key][kind].append(item)
+
+            search_criteria = { # same for both Assets and Products
+                'driver': Repository.name.lower(),
+                'tile__in': spatial.tiles,
+                'date__in': dates,
+            }
+            for p in dbinv.product_search(**search_criteria).order_by('date', 'tile'):
+                add_to_collection(p.date, p.tile, 'p', str(p.name))
+            for a in dbinv.asset_search(**search_criteria).order_by('date', 'tile'):
+                add_to_collection(a.date, a.tile, 'a', str(a.name))
+
+            # the collection is now complete so use it to populate the GIPS object hierarchy
+            for k, v in collection.items():
+                (date, tile) = k
+                # find or else make a Tiles object
+                if date not in self.data:
+                    self.data[date] = Tiles(dataclass, spatial, date, self.products, **kwargs)
+                tiles_obj = self.data[date]
+                # add a Data object (should not be in tiles_obj.tiles already)
+                assert tile not in tiles_obj.tiles # sanity check
+                data_obj = dataclass(tile, date, search=False)
+                # add assets and products
+                [data_obj.add_asset(dataclass.Asset(a)) for a in v['a']]
+                data_obj.ParseAndAddFiles(v['p'])
+                # add the new Data object to the Tiles object if it checks out
+                if data_obj.valid and data_obj.filter(**kwargs):
+                    tiles_obj.tiles[tile] = data_obj
+            return
+
+        # Perform filesystem search since user wants that.  Data object instantiation results
+        # in filesystem search (thanks to search=True).
+        self.data = {} # clear out data dict in case it has partial results
+        for date in dates:
+            tiles_obj = Tiles(dataclass, spatial, date, self.products, **kwargs)
+            for t in spatial.tiles:
+                data_obj = dataclass(t, date, search=True)
+                if data_obj.valid and data_obj.filter(**kwargs):
+                    tiles_obj.tiles[t] = data_obj
+            if len(tiles_obj) > 0:
+                self.data[date] = tiles_obj
+
 
     @property
     def sensor_set(self):
@@ -270,10 +321,8 @@ class DataInventory(Inventory):
         VerboseOut('Processing [%s] on %s dates (%s files)' % (self.products, len(self.dates), self.numfiles), 3)
         if len(self.products.standard) > 0:
             for date in self.dates:
-                try:
+                with utils.error_handler(continuable=True):
                     self.data[date].process(*args, **kwargs)
-                except:
-                    VerboseOut(traceback.format_exc(), 4)
         if len(self.products.composite) > 0:
             self.dataclass.process_composites(self, self.products.composite, **kwargs)
         VerboseOut('Processing completed in %s' % (dt.now() - start), 2)
@@ -306,5 +355,21 @@ class DataInventory(Inventory):
             self.spatial.print_tile_coverage()
             print
         else:
-            print Colors.BOLD + 'Asset Holdings' + Colors.OFF
+            # constructor makes it safe to assume there is only one tile when
+            # self.spatial.site is None, but raise an error anyway just in case
+            if len(self.spatial.tiles) > 1:
+                raise RuntimeError('Expected 1 tile but got ' + repr(self.spatial.tiles))
+            print Colors.BOLD + 'Asset Holdings for tile ' + self.spatial.tiles[0] + Colors.OFF
+
         super(DataInventory, self).pprint(**kwargs)
+
+        print Colors.BOLD + '\nSENSORS' + Colors.OFF
+        _sensors = self.dataclass.Asset._sensors
+        for key in sorted(self.sensor_set):
+            if key in _sensors:
+                desc = _sensors[key]['description']
+                scode = key + ': ' if key != '' else ''
+            else:
+                desc = ''
+                scode = key
+            print self.color(key) + '%s%s' % (scode, desc) + Colors.OFF

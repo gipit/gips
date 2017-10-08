@@ -23,6 +23,9 @@
 
 import datetime
 import calendar
+import sys
+
+from gips import utils
 from gips.utils import Colors, open_vector
 
 
@@ -82,8 +85,12 @@ class SpatialExtent(object):
     @classmethod
     def factory(cls, dataclass, site=None, key='', where='', tiles=None, pcov=0.0, ptile=0.0):
         """ Create array of SpatialExtent instances """
+        if tiles is not None:
+            tiles = [dataclass.normalize_tile_string(t) for t in tiles]
         if site is None and tiles is None:
             # raise Exception('Site geometry and/or tile ids required')
+            # TODO: make this better. It only returns the tiles you have without telling
+            # you that is what it is doing.
             tiles = dataclass.Asset.Repository.find_tiles()
         extents = []
         if site is None:
@@ -96,16 +103,12 @@ class SpatialExtent(object):
                 extents.append(cls(dataclass, feature=f, tiles=tiles, pcov=pcov, ptile=ptile))
         return extents
 
-    def __init__(self, dataclass, feature=None, tiles=None, pcov=0.0, ptile=0.0):
+    def __init__(self, dataclass, tiles, pcov, ptile, feature=None):
         """ Create spatial extent with a GeoFeature instance or list of tiles """
         self.repo = dataclass.Asset.Repository
 
         # TODO - try and close this and only open on demand (make site property)
         self.site = feature
-
-        # default to all tiles if none provided
-        if tiles is None and feature is None:
-            tiles = self.repo.find_tiles()
 
         if feature is not None:
             tiles = self.repo.vector2tiles(feature, pcov, ptile, tiles)
@@ -155,14 +158,12 @@ class TemporalExtent(object):
             days = days.split(',')
             days = (int(days[0]), int(days[1]))
 
-        try:
+        with utils.error_handler('Bad date specification'):
             if ',' not in dates:
                 dates = (self._parse_date(dates), self._parse_date(dates, True))
             else:
                 (d1, d2) = dates.replace(',', ' ').split()
                 dates = (self._parse_date(d1), self._parse_date(d2, True))
-        except ValueError as ve:
-            raise Exception('Bad date specification ({}: {}): {}'.format(type(ve), str(ve), dates))
 
         self.datebounds = dates
         self.daybounds = days

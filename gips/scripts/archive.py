@@ -24,14 +24,15 @@
 from gips import __version__ as gipsversion
 from gips.parsers import GIPSParser
 from gips.utils import Colors, VerboseOut, import_data_class
+from gips import utils
+from gips.inventory import orm, dbinv
 
 
 def main():
     title = Colors.BOLD + 'GIPS Data Archive Utility (v%s)' % gipsversion + Colors.OFF
 
     # argument parsing
-    parser0 = GIPSParser(description=title)
-    parser = parser0.add_default_parser()
+    parser = GIPSParser(description=title)
     group = parser.add_argument_group('archive options')
     group.add_argument('--keep', help='Keep files after adding to archive', default=False, action='store_true')
     group.add_argument('--recursive', help='Iterate through subdirectories', default=False, action='store_true')
@@ -41,16 +42,24 @@ def main():
         default=False,
         action='store_true'
     )
-    args = parser0.parse_args()
+    args = parser.parse_args()
 
-    try:
+    utils.gips_script_setup(None, args.stop_on_error)
+
+    with utils.error_handler('Data archive error'):
         print title
         cls = import_data_class(args.command)
-        cls.Asset.archive(**vars(args))
-    except Exception, e:
-        import traceback
-        VerboseOut(traceback.format_exc(), 4)
-        print 'Data archive error: %s' % e
+        orm.setup() # set up DB orm in case it's needed for Asset.archive()
+        # TODO archive accepts limited args, pass them in explicitly
+        archived_assets = cls.Asset.archive(**vars(args))
+
+        # if DB inventory is enabled, update it to contain the newly archived assets
+        if orm.use_orm():
+            for a in archived_assets:
+                dbinv.update_or_add_asset(asset=a.asset, sensor=a.sensor, tile=a.tile, date=a.date,
+                                          name=a.archived_filename, driver=cls.name.lower())
+
+    utils.gips_exit()
 
 
 if __name__ == "__main__":

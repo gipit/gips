@@ -27,6 +27,7 @@ import datetime
 import gippy
 from gips.data.core import Repository, Asset, Data
 from gips.utils import RemoveFiles, VerboseOut
+from gips import utils
 
 
 class sarannualRepository(Repository):
@@ -63,10 +64,10 @@ class sarannualAsset(Asset):
     }
     _assets = {
         'MOS': {
-            'pattern': '???????_??_MOS.tar.gz'
+            'pattern': r'^.{7}_.{2}_MOS\.tar\.gz$'
         },
         'FNF': {
-            'pattern': '???????_??_FNF.tar.gz'
+            'pattern': r'^.{7}_.{2}_FNF\.tar\.gz$'
         },
     }
 
@@ -132,12 +133,18 @@ class sarannualData(Data):
         for key, val in products.requested.items():
             fname = os.path.join(self.path, self.basename + '_' + key)
             # Verify that asset exists
-            asset = self._products[val[0]]['assets'][0]
-            try:
-                datafiles = self.assets[asset].extract()
-            except:
-                VerboseOut("Asset %s doesn't exist for tile %s" % (asset, self.id), 3)
+            a_type = self._products[val[0]]['assets'][0]
+            a_obj = self.assets.get(a_type)
+            if a_obj is None:
+                utils.verbose_out("Asset {} doesn't exist for tile {}".format(a_type, self.id), 3)
                 continue
+            datafiles = None
+            with utils.error_handler("Error extracting files from asset {}".format(a_obj.filename),
+                                     continuable=True):
+                datafiles = a_obj.extract()
+            if datafiles is None:
+                continue
+
             if val[0] == 'sign':
                 bands = [datafiles[b] for b in ["sl_HH", "sl_HV"] if b in datafiles]
                 if len(bands) > 0:

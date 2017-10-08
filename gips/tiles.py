@@ -28,29 +28,25 @@ import traceback
 
 import gippy
 from gippy.algorithms import CookieCutter
-from gips.core import SpatialExtent
 from gips.utils import VerboseOut, Colors, mosaic, mkdir
+from gips import utils
 
 
 class Tiles(object):
-    """ Collection of files for single date and multiple regions (tiles) """
+    """ Collection of files for single date and one or more regions (tiles) """
 
-    def __init__(self, dataclass, spatial=None, date=None, products=None, **kwargs):
+    def __init__(self, dataclass, spatial, date=None, products=None, **kwargs):
         """ Locate data matching vector location (or tiles) and date
         self.coverage      dict of tile id: %coverage with site
-        self.tiles              dict of tile id: tile instance
+        self.tiles         mapping of tile IDs to Data instances, eg for modis:
+                           {'h12v04': <modis.modisData object at 0x7fb34ab9e550>}
         """
         self.dataclass = dataclass
-        self.spatial = spatial if spatial is not None else SpatialExtent()
+        self.spatial = spatial
         self.products = products if products is not None else dataclass.RequestedProducts()
         self.date = date
         # For each tile locate files/products
         self.tiles = {}
-        for t in self.spatial.tiles:
-            tile = dataclass(t, self.date)
-            # TODO - fix custom filter based on dataclass...sensor should pass to 'dataclass'
-            if tile.valid and tile.filter(**kwargs):  # and tile.sensor in sensors:
-                self.tiles[t] = tile
 
     def __len__(self):
         return len(self.tiles)
@@ -76,8 +72,11 @@ class Tiles(object):
         """ Calls process for each tile """
         [t.process(*args, products=self.products.products, **kwargs) for t in self.tiles.values()]
 
-    def mosaic(self, datadir, res=None, interpolation=0, crop=False, overwrite=False):
-        """ Combine tiles into a single mosaic, warp if res provided """
+    def mosaic(self, datadir, res=None, interpolation=0, crop=False,
+               overwrite=False, alltouch=False):
+        """For each product, combine its tiles into a single mosaic.
+
+        Warp if res provided."""
         if self.spatial.site is None:
             raise Exception('Site required for creating mosaics')
         start = datetime.now()
@@ -91,16 +90,16 @@ class Tiles(object):
             # TODO - this is assuming a tif file.  Use gippy FileExtension function when it is exposed
             fout = os.path.join(datadir, '%s_%s_%s' % (bname, sensor, product)) + '.tif'
             if not os.path.exists(fout) or overwrite:
-                try:
+                with utils.error_handler("Error mosaicking " + fout, continuable=True):
                     filenames = [self.tiles[t].filenames[(sensor, product)] for t in self.tiles]
                     images = gippy.GeoImages(filenames)
                     if self.spatial.site is not None and res is not None:
-                        CookieCutter(images, self.spatial.site, fout, res[0], res[1], crop, interpolation)
+                        CookieCutter(
+                            images, self.spatial.site, fout, res[0], res[1],
+                            crop, interpolation, {}, alltouch,
+                        )
                     else:
                         mosaic(images, fout, self.spatial.site)
-                except Exception, e:
-                    VerboseOut(traceback.format_exc(), 4)
-                    VerboseOut("Error mosaicking %s: %s" % (fout, e))
         t = datetime.now() - start
         VerboseOut('%s: created project files for %s tiles in %s' % (self.date, len(self.tiles), t), 2)
 
@@ -138,22 +137,30 @@ class Tiles(object):
         """ Print asset header """
         self.dataclass.pprint_asset_header()
 
+    def _colorize_product(self, prod, colors=None):
+        color = ['', '']
+        if colors is not None:
+            s = self.which_sensor(prod)
+            if s is not None:
+                color = [colors[s], Colors.OFF]
+        return color[0] + prod + color[1]
+
+
     def pprint(self, dformat='%j', colors=None):
         """ Print coverage for each and every asset """
         #assets = [a for a in self.dataclass.Asset._assets]
         sys.stdout.write('{:^12}'.format(self.date.strftime(dformat)))
         asset_coverage = self.asset_coverage()
         for a in sorted(asset_coverage):
-            color = ['', '']
-            if colors is not None:
-                s = self.which_sensor(a)
-                if s is not None:
-                    color = [colors[s], Colors.OFF]
             cov = asset_coverage[a]
             if cov > 0:
-                sys.stdout.write(color[0] + '  {:>4.1f}%   '.format(cov) + color[1])
+                text = self._colorize_product(
+                    '  {:>4.1f}%   '.format(cov), colors
+                )
             else:
-                sys.stdout.write('          ')
+                text = '          '
+            sys.stdout.write(text)
+
         products = [p for t in self.tiles for p in self.tiles[t].products]
         # Check product is available for all tiles before reporting as processed
         prods = []
@@ -161,6 +168,6 @@ class Tiles(object):
             if products.count(p) == len(self.tiles):
                 prods.append(p)
         for p in sorted(set(prods)):
-            color = colors[self.which_sensor(p)]
-            sys.stdout.write('  ' + color + p + Colors.OFF)
+            text = self._colorize_product(p, colors)
+            sys.stdout.write('  ' + text)
         sys.stdout.write('\n')

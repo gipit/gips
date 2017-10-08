@@ -45,6 +45,7 @@ for f in glob.glob('gips/scripts/*.py'):
     except:
         print traceback.format_exc()
 
+
 setup(
     name='gips',
     version=__version__,
@@ -52,8 +53,25 @@ setup(
     author='Matthew Hanson',
     author_email='matt.a.hanson@gmail.com',
     packages=find_packages(),
-    package_data={'' : ['*.shp', '*.prj', '*.shx', '*.dbf']},
-    install_requires=['Py6S>=1.5.0', 'shapely', 'gippy>=0.3.0', 'python-dateutil', 'pydap'],
+    package_data={'': ['*.shp', '*.prj', '*.shx', '*.dbf']},
+    install_requires=[
+        'Py6S>=1.7.0',
+        'shapely',
+        'gippy>=0.3.11,<0.4',
+        'homura==0.1.3',
+        'python-dateutil',
+        'pydap==3.2',
+        'pysolar==0.6',
+        'dbfread==2.0.7',
+        'rios==1.4.3',
+        'python-fmask==0.4.5',
+        'usgs', # 0.2.1 known to work
+    ],
+    dependency_links=[
+        'https://bitbucket.org/chchrsc/rios/downloads/rios-1.4.3.zip#egg=rios-1.4.3',
+        'https://bitbucket.org/chchrsc/python-fmask/downloads/python-fmask-0.4.5.zip#egg=python-fmask-0.4.5',
+        'https://github.com/Applied-GeoSolutions/gippy/archive/v0.3.11.tar.gz#egg=gippy-0.3.11',
+    ],
     entry_points={'console_scripts': console_scripts},
     zip_safe=False,
 )
